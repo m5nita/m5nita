@@ -232,16 +232,16 @@
 
 **Purpose**: PWA, seed data, error handling, and overall quality improvements
 
-- [ ] T078 [P] Configure PWA manifest (name, icons, theme_color #1a1a2e, display standalone) and service worker with runtime caching in apps/web/vite.config.ts
-- [ ] T079 [P] Create dev seed script with sample users, pools, matches, predictions, and payments in apps/api/src/db/seed.ts
-- [ ] T080 [P] Create env.example files for apps/api and apps/web with all required environment variables
-- [ ] T081 Add global error boundary component with user-friendly error messages and retry action in apps/web/src/components/ui/ErrorBoundary.tsx
-- [ ] T082 Add empty state components for pools list, predictions, and ranking in apps/web/src/components/ui/EmptyState.tsx
-- [ ] T083 Add loading skeleton components for pool cards, match cards, and ranking rows in apps/web/src/components/ui/Skeleton.tsx
-- [ ] T084 Review and add all database indexes per data-model.md specification
-- [ ] T085 Run quickstart.md validation — verify full setup from clone to running dev environment
-- [ ] T086 Accessibility audit: verify WCAG 2.1 AA compliance across all pages — ARIA labels, keyboard navigation, color contrast, focus management, screen reader support
-- [ ] T087 Add bundle size monitoring to CI — fail build if any chunk exceeds budget threshold per constitution Principle IV
+- [x] T078 [P] Configure PWA manifest (name, icons, theme_color #1a1a2e, display standalone) and service worker with runtime caching in apps/web/vite.config.ts
+- [x] T079 [P] Create dev seed script with sample users, pools, matches, predictions, and payments in apps/api/src/db/seed.ts
+- [x] T080 [P] Create env.example files for apps/api and apps/web with all required environment variables
+- [x] T081 Add global error boundary component with user-friendly error messages and retry action in apps/web/src/components/ui/ErrorBoundary.tsx
+- [x] T082 Add empty state components for pools list, predictions, and ranking in apps/web/src/components/ui/EmptyState.tsx
+- [x] T083 Add loading skeleton components for pool cards, match cards, and ranking rows in apps/web/src/components/ui/Skeleton.tsx
+- [x] T084 Review and add all database indexes per data-model.md specification
+- [x] T085 Run quickstart.md validation — verify full setup from clone to running dev environment
+- [x] T086 Accessibility audit: verify WCAG 2.1 AA compliance across all pages — ARIA labels, keyboard navigation, color contrast, focus management, screen reader support
+- [x] T087 Add bundle size monitoring to CI — fail build if any chunk exceeds budget threshold per constitution Principle IV
 
 ---
 
