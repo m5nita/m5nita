@@ -42,28 +42,28 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T011 Configure Drizzle ORM client and connection in apps/api/src/db/client.ts
-- [ ] T012 Create drizzle.config.ts at apps/api root with PostgreSQL dialect and schema path
-- [ ] T013 Generate Better Auth base schema (user, session, account, verification tables) via `npx auth@latest generate` and place in apps/api/src/db/schema/auth.ts
-- [ ] T014 Create Pool table schema with all fields, constraints, and indexes in apps/api/src/db/schema/pool.ts
-- [ ] T015 [P] Create PoolMember table schema with unique(poolId, userId) constraint in apps/api/src/db/schema/poolMember.ts
-- [ ] T016 [P] Create Payment table schema with unique(stripePaymentIntentId) index in apps/api/src/db/schema/payment.ts
-- [ ] T017 [P] Create Match table schema with unique(externalId) and indexes on status, matchDate in apps/api/src/db/schema/match.ts
-- [ ] T018 [P] Create Prediction table schema with unique(userId, poolId, matchId) constraint in apps/api/src/db/schema/prediction.ts
-- [ ] T019 Create Drizzle relations for all entities in apps/api/src/db/schema/relations.ts
-- [ ] T020 Create schema barrel export and run drizzle-kit generate + migrate in apps/api/src/db/schema/index.ts
-- [ ] T021 Configure Better Auth server with phone-number plugin, Drizzle adapter, session config (90 days, 24h updateAge), and sendOTP callback (Twilio placeholder) in apps/api/src/lib/auth.ts
-- [ ] T022 Create Hono app entry point with CORS, error handling, and route mounting in apps/api/src/index.ts
-- [ ] T023 Create auth session middleware for protected routes in apps/api/src/middleware/auth.ts
-- [ ] T024 [P] Create rate limiting middleware using hono-rate-limiter in apps/api/src/middleware/rateLimit.ts
-- [ ] T025 Mount Better Auth handler on /api/auth/* routes in apps/api/src/routes/auth.ts
-- [ ] T026 Configure Stripe SDK singleton in apps/api/src/lib/stripe.ts
-- [ ] T027 Create Hono RPC client for frontend type-safe API calls in apps/web/src/lib/api.ts
-- [ ] T028 [P] Create Better Auth client for frontend session management in apps/web/src/lib/auth.ts
-- [ ] T029 [P] Create Stripe Elements setup (loadStripe, Elements provider) in apps/web/src/lib/stripe.ts
-- [ ] T030 Create shared Zod schemas for pool (name, entryFee), prediction (homeScore, awayScore), and user (name) in packages/shared/src/schemas/index.ts
-- [ ] T031 Create shared TypeScript types for all entities in packages/shared/src/types/index.ts
-- [ ] T032 Create reusable UI primitives (Button, Input, Card, Loading, ErrorMessage) with ARIA labels, keyboard navigation, and WCAG 2.1 AA color contrast in apps/web/src/components/ui/
+- [x] T011 Configure Drizzle ORM client and connection in apps/api/src/db/client.ts
+- [x] T012 Create drizzle.config.ts at apps/api root with PostgreSQL dialect and schema path
+- [x] T013 Generate Better Auth base schema (user, session, account, verification tables) via `npx auth@latest generate` and place in apps/api/src/db/schema/auth.ts
+- [x] T014 Create Pool table schema with all fields, constraints, and indexes in apps/api/src/db/schema/pool.ts
+- [x] T015 [P] Create PoolMember table schema with unique(poolId, userId) constraint in apps/api/src/db/schema/poolMember.ts
+- [x] T016 [P] Create Payment table schema with unique(stripePaymentIntentId) index in apps/api/src/db/schema/payment.ts
+- [x] T017 [P] Create Match table schema with unique(externalId) and indexes on status, matchDate in apps/api/src/db/schema/match.ts
+- [x] T018 [P] Create Prediction table schema with unique(userId, poolId, matchId) constraint in apps/api/src/db/schema/prediction.ts
+- [x] T019 Create Drizzle relations for all entities in apps/api/src/db/schema/relations.ts
+- [x] T020 Create schema barrel export and run drizzle-kit generate + migrate in apps/api/src/db/schema/index.ts
+- [x] T021 Configure Better Auth server with phone-number plugin, Drizzle adapter, session config (90 days, 24h updateAge), and sendOTP callback (Twilio placeholder) in apps/api/src/lib/auth.ts
+- [x] T022 Create Hono app entry point with CORS, error handling, and route mounting in apps/api/src/index.ts
+- [x] T023 Create auth session middleware for protected routes in apps/api/src/middleware/auth.ts
+- [x] T024 [P] Create rate limiting middleware using hono-rate-limiter in apps/api/src/middleware/rateLimit.ts
+- [x] T025 Mount Better Auth handler on /api/auth/* routes in apps/api/src/routes/auth.ts
+- [x] T026 Configure Stripe SDK singleton in apps/api/src/lib/stripe.ts
+- [x] T027 Create Hono RPC client for frontend type-safe API calls in apps/web/src/lib/api.ts
+- [x] T028 [P] Create Better Auth client for frontend session management in apps/web/src/lib/auth.ts
+- [x] T029 [P] Create Stripe Elements setup (loadStripe, Elements provider) in apps/web/src/lib/stripe.ts
+- [x] T030 Create shared Zod schemas for pool (name, entryFee), prediction (homeScore, awayScore), and user (name) in packages/shared/src/schemas/index.ts
+- [x] T031 Create shared TypeScript types for all entities in packages/shared/src/types/index.ts
+- [x] T032 Create reusable UI primitives (Button, Input, Card, Loading, ErrorMessage) with ARIA labels, keyboard navigation, and WCAG 2.1 AA color contrast in apps/web/src/components/ui/
 
 **Checkpoint**: Foundation ready — database migrated, auth working, Stripe configured, API client connected. User story implementation can now begin.
 

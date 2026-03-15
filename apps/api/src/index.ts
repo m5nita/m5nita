@@ -1,6 +1,9 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { HTTPException } from 'hono/http-exception'
+import { authRoutes } from './routes/auth'
+import { globalRateLimit } from './middleware/rateLimit'
 
 const app = new Hono()
 
@@ -12,7 +15,23 @@ app.use(
   }),
 )
 
+app.use('/api/*', globalRateLimit)
+
+app.route('/api', authRoutes)
+
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
+
+app.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    return c.json({ error: err.message, message: err.cause?.toString() ?? err.message }, err.status)
+  }
+  console.error('Unhandled error:', err)
+  return c.json({ error: 'INTERNAL_ERROR', message: 'Erro interno do servidor' }, 500)
+})
+
+app.notFound((c) => {
+  return c.json({ error: 'NOT_FOUND', message: 'Rota nao encontrada' }, 404)
+})
 
 const port = Number(process.env.PORT) || 3001
 

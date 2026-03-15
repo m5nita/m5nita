@@ -17,13 +17,14 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
+    "@manita/shared": "workspace:*",
     "better-auth": "^1.2.8",
     "drizzle-orm": "^0.41.0",
     "hono": "^4.7.6",
+    "hono-rate-limiter": "^0.5.3",
     "postgres": "^3.4.5",
     "stripe": "^18.1.0",
-    "zod": "^3.24.2",
-    "@manita/shared": "workspace:*"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
