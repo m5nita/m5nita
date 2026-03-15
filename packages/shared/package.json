@@ -1,0 +1,25 @@
+{
+  "name": "@manita/shared",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./constants": "./src/constants/index.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vitest": "^3.1.1"
+  }
+}
