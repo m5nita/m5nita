@@ -142,17 +142,17 @@
 
 ### Implementation for User Story 4
 
-- [ ] T054 [US4] Create match sync service with API-Football integration: fetch fixtures, upsert matches, sync live scores in apps/api/src/services/match.ts
-- [ ] T055 [US4] Create cron jobs for fixture sync (daily) and live score sync (every minute during matches) in apps/api/src/jobs/syncFixtures.ts and apps/api/src/jobs/syncLive.ts
-- [ ] T056 [US4] Create matches route with GET /api/matches (with stage/group/status filters) and GET /api/matches/live in apps/api/src/routes/matches.ts
-- [ ] T057 [US4] Create prediction service with upsert logic (validate match not started, validate membership, enforce unique constraint) in apps/api/src/services/prediction.ts
-- [ ] T058 [US4] Create predictions route with GET /api/pools/:poolId/predictions and PUT /api/pools/:poolId/predictions/:matchId in apps/api/src/routes/predictions.ts
-- [ ] T059 [US4] Create score input component with two number inputs (home x away), debounce 500ms auto-save, and status indicators (saved/locked/finished with points) in apps/web/src/components/prediction/ScoreInput.tsx
-- [ ] T060 [US4] Create match card component showing flags, team names, date/time, status badge (scheduled/live/finished), and score in apps/web/src/components/match/MatchCard.tsx
-- [ ] T061 [US4] Create predictions page with matches grouped by group (A-L tabs/accordion), each with ScoreInput, using TanStack Query for data fetching in apps/web/src/routes/pools/$poolId/predictions.tsx
-- [ ] T062 [US4] Create pool details page with pool info, stats, quick-access to Predictions/Ranking, and admin button (if owner) in apps/web/src/routes/pools/$poolId/index.tsx
-- [ ] T062a [US4] Write integration tests for PUT /api/pools/:poolId/predictions/:matchId (valid save, match started rejection, non-member rejection, unique constraint) in apps/api/src/routes/__tests__/predictions.test.ts
-- [ ] T062b [US4] Write unit tests for prediction service (matchDate validation, upsert logic) in apps/api/src/services/__tests__/prediction.test.ts
+- [x] T054 [US4] Create match sync service with API-Football integration: fetch fixtures, upsert matches, sync live scores in apps/api/src/services/match.ts
+- [x] T055 [US4] Create cron jobs for fixture sync (daily) and live score sync (every minute during matches) in apps/api/src/jobs/syncFixtures.ts and apps/api/src/jobs/syncLive.ts
+- [x] T056 [US4] Create matches route with GET /api/matches (with stage/group/status filters) and GET /api/matches/live in apps/api/src/routes/matches.ts
+- [x] T057 [US4] Create prediction service with upsert logic (validate match not started, validate membership, enforce unique constraint) in apps/api/src/services/prediction.ts
+- [x] T058 [US4] Create predictions route with GET /api/pools/:poolId/predictions and PUT /api/pools/:poolId/predictions/:matchId in apps/api/src/routes/predictions.ts
+- [x] T059 [US4] Create score input component with two number inputs (home x away), debounce 500ms auto-save, and status indicators (saved/locked/finished with points) in apps/web/src/components/prediction/ScoreInput.tsx
+- [x] T060 [US4] Create match card component showing flags, team names, date/time, status badge (scheduled/live/finished), and score in apps/web/src/components/match/MatchCard.tsx
+- [x] T061 [US4] Create predictions page with matches grouped by group (A-L tabs/accordion), each with ScoreInput, using TanStack Query for data fetching in apps/web/src/routes/pools/$poolId/predictions.tsx
+- [x] T062 [US4] Create pool details page with pool info, stats, quick-access to Predictions/Ranking, and admin button (if owner) in apps/web/src/routes/pools/$poolId/index.tsx
+- [x] T062a [US4] Write integration tests for PUT /api/pools/:poolId/predictions/:matchId (valid save, match started rejection, non-member rejection, unique constraint) in apps/api/src/routes/__tests__/predictions.test.ts
+- [x] T062b [US4] Write unit tests for prediction service (matchDate validation, upsert logic) in apps/api/src/services/__tests__/prediction.test.ts
 
 **Checkpoint**: User Story 4 fully functional — members can make and edit predictions on group stage matches
 

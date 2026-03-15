@@ -6,6 +6,8 @@ import { authRoutes } from './routes/auth'
 import { usersRoutes } from './routes/users'
 import { poolsRoutes } from './routes/pools'
 import { webhooksRoutes } from './routes/webhooks'
+import { matchesRoutes } from './routes/matches'
+import { predictionsRoutes } from './routes/predictions'
 import { globalRateLimit } from './middleware/rateLimit'
 
 const app = new Hono()
@@ -24,6 +26,8 @@ app.route('/api', authRoutes)
 app.route('/api', usersRoutes)
 app.route('/api', poolsRoutes)
 app.route('/api', webhooksRoutes)
+app.route('/api', matchesRoutes)
+app.route('/api', predictionsRoutes)
 
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
 
