@@ -77,14 +77,14 @@
 
 ### Implementation for User Story 1
 
-- [ ] T033 [US1] Create login page with phone input (+55 mask), OTP request button, and OTP verification form in apps/web/src/routes/login.tsx
-- [ ] T034 [US1] Create phone number input component with Brazilian mask (+55 DD NNNNN-NNNN) and validation in apps/web/src/components/ui/PhoneInput.tsx
-- [ ] T035 [US1] Create OTP input component (6-digit code) with auto-focus and submit in apps/web/src/components/ui/OtpInput.tsx
-- [ ] T036 [US1] Create complete-profile page that prompts for name when user.name is null in apps/web/src/routes/complete-profile.tsx
-- [ ] T037 [US1] Create users route with GET /api/users/me and PATCH /api/users/me endpoints in apps/api/src/routes/users.ts
-- [ ] T038 [US1] Create auth guard that redirects unauthenticated users to /login and checks name completion in apps/web/src/lib/authGuard.ts
-- [ ] T039 [US1] Create Home page with user greeting, "Criar bolao" and "Entrar em bolao" CTAs, "Meus boloes" list, and next matches (empty state if no match data yet) in apps/web/src/routes/index.tsx
-- [ ] T039a [US1] Write integration tests for GET /api/users/me and PATCH /api/users/me endpoints (auth required, name update, phone read-only) in apps/api/src/routes/__tests__/users.test.ts
+- [x] T033 [US1] Create login page with phone input (+55 mask), OTP request button, and OTP verification form in apps/web/src/routes/login.tsx
+- [x] T034 [US1] Create phone number input component with Brazilian mask (+55 DD NNNNN-NNNN) and validation in apps/web/src/components/ui/PhoneInput.tsx
+- [x] T035 [US1] Create OTP input component (6-digit code) with auto-focus and submit in apps/web/src/components/ui/OtpInput.tsx
+- [x] T036 [US1] Create complete-profile page that prompts for name when user.name is null in apps/web/src/routes/complete-profile.tsx
+- [x] T037 [US1] Create users route with GET /api/users/me and PATCH /api/users/me endpoints in apps/api/src/routes/users.ts
+- [x] T038 [US1] Create auth guard that redirects unauthenticated users to /login and checks name completion in apps/web/src/lib/authGuard.ts
+- [x] T039 [US1] Create Home page with user greeting, "Criar bolao" and "Entrar em bolao" CTAs, "Meus boloes" list, and next matches (empty state if no match data yet) in apps/web/src/routes/index.tsx
+- [x] T039a [US1] Write integration tests for GET /api/users/me and PATCH /api/users/me endpoints (auth required, name update, phone read-only) in apps/api/src/routes/__tests__/users.test.ts
 
 **Checkpoint**: User Story 1 fully functional — users can authenticate via phone OTP, complete profile, and see Home
 

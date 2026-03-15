@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { authRoutes } from './routes/auth'
+import { usersRoutes } from './routes/users'
 import { globalRateLimit } from './middleware/rateLimit'
 
 const app = new Hono()
@@ -18,6 +19,7 @@ app.use(
 app.use('/api/*', globalRateLimit)
 
 app.route('/api', authRoutes)
+app.route('/api', usersRoutes)
 
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
 
