@@ -166,15 +166,15 @@
 
 ### Implementation for User Story 6
 
-- [ ] T063 [US6] Create scoring service with points calculation logic (exact=10, winner+diff=7, winner=5, draw=3, miss=0) triggered when match status changes to finished in apps/api/src/services/scoring.ts
-- [ ] T064 [US6] Create calcPoints job that processes all predictions for a finished match and updates points in apps/api/src/jobs/calcPoints.ts
-- [ ] T065 [US6] Create ranking service with query (SUM points, COUNT exact matches, RANK with tiebreaker) in apps/api/src/services/ranking.ts
-- [ ] T066 [US6] Create ranking route with GET /api/pools/:poolId/ranking in apps/api/src/routes/ranking.ts
-- [ ] T067 [US6] Create ranking page with ordered list (position, name, points, exact matches), current user highlighted, pull-to-refresh, and prize total in apps/web/src/routes/pools/$poolId/ranking.tsx
-- [ ] T068 [US6] Create matches page with full calendar, filters by stage and group, live indicator badge, and chronological ordering in apps/web/src/routes/matches.tsx
-- [ ] T069 [US6] Add live scores polling with TanStack Query refetchInterval (30s when live matches exist) to match-related pages
-- [ ] T069a [US6] Write unit tests for scoring service with all 5 point scenarios (exact=10, winner+diff=7, winner=5, draw=3, miss=0) and edge cases in apps/api/src/services/__tests__/scoring.test.ts
-- [ ] T069b [US6] Write integration tests for GET /api/pools/:poolId/ranking (correct ordering, tiebreaker by exact matches, current user flag) in apps/api/src/routes/__tests__/ranking.test.ts
+- [x] T063 [US6] Create scoring service with points calculation logic (exact=10, winner+diff=7, winner=5, draw=3, miss=0) triggered when match status changes to finished in apps/api/src/services/scoring.ts
+- [x] T064 [US6] Create calcPoints job that processes all predictions for a finished match and updates points in apps/api/src/jobs/calcPoints.ts
+- [x] T065 [US6] Create ranking service with query (SUM points, COUNT exact matches, RANK with tiebreaker) in apps/api/src/services/ranking.ts
+- [x] T066 [US6] Create ranking route with GET /api/pools/:poolId/ranking in apps/api/src/routes/ranking.ts
+- [x] T067 [US6] Create ranking page with ordered list (position, name, points, exact matches), current user highlighted, pull-to-refresh, and prize total in apps/web/src/routes/pools/$poolId/ranking.tsx
+- [x] T068 [US6] Create matches page with full calendar, filters by stage and group, live indicator badge, and chronological ordering in apps/web/src/routes/matches.tsx
+- [x] T069 [US6] Add live scores polling with TanStack Query refetchInterval (30s when live matches exist) to match-related pages
+- [x] T069a [US6] Write unit tests for scoring service with all 5 point scenarios (exact=10, winner+diff=7, winner=5, draw=3, miss=0) and edge cases in apps/api/src/services/__tests__/scoring.test.ts
+- [x] T069b [US6] Write integration tests for GET /api/pools/:poolId/ranking (correct ordering, tiebreaker by exact matches, current user flag) in apps/api/src/routes/__tests__/ranking.test.ts
 
 **Checkpoint**: User Story 6 fully functional — ranking accurate with tiebreaker, match calendar filterable with live indicators
 
