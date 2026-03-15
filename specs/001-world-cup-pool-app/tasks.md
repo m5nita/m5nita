@@ -123,12 +123,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T049 [US3] Add GET /api/pools/invite/:inviteCode endpoint (public pool info) and POST /api/pools/:poolId/join endpoint (create PaymentIntent for joining) to apps/api/src/routes/pools.ts
-- [ ] T050 [US3] Add join validation logic to pool service: check isOpen, check not already member, calculate prize total in apps/api/src/services/pool.ts
-- [ ] T051 [US3] Update webhook handler to create PoolMember on payment_intent.succeeded for join payments in apps/api/src/services/payment.ts
-- [ ] T052 [US3] Create invite page that loads pool info by inviteCode, shows ticket with details (name, owner, members, prize, fee), and "Pagar e entrar" button in apps/web/src/routes/invite/$inviteCode.tsx
-- [ ] T053 [US3] Add redirect-after-auth logic: store pending invite URL before auth redirect, restore after login in apps/web/src/lib/authGuard.ts
-- [ ] T053a [US3] Write integration tests for GET /api/pools/invite/:inviteCode and POST /api/pools/:poolId/join (closed pool, already member, valid join) in apps/api/src/routes/__tests__/pools-join.test.ts
+- [x] T049 [US3] Add GET /api/pools/invite/:inviteCode endpoint (public pool info) and POST /api/pools/:poolId/join endpoint (create PaymentIntent for joining) to apps/api/src/routes/pools.ts
+- [x] T050 [US3] Add join validation logic to pool service: check isOpen, check not already member, calculate prize total in apps/api/src/services/pool.ts
+- [x] T051 [US3] Update webhook handler to create PoolMember on payment_intent.succeeded for join payments in apps/api/src/services/payment.ts
+- [x] T052 [US3] Create invite page that loads pool info by inviteCode, shows ticket with details (name, owner, members, prize, fee), and "Pagar e entrar" button in apps/web/src/routes/invite/$inviteCode.tsx
+- [x] T053 [US3] Add redirect-after-auth logic: store pending invite URL before auth redirect, restore after login in apps/web/src/lib/authGuard.ts
+- [x] T053a [US3] Write integration tests for GET /api/pools/invite/:inviteCode and POST /api/pools/:poolId/join (closed pool, already member, valid join) in apps/api/src/routes/__tests__/pools-join.test.ts
 
 **Checkpoint**: User Story 3 fully functional — invite flow works end-to-end including unauthenticated users
 
