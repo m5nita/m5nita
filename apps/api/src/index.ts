@@ -4,6 +4,8 @@ import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { authRoutes } from './routes/auth'
 import { usersRoutes } from './routes/users'
+import { poolsRoutes } from './routes/pools'
+import { webhooksRoutes } from './routes/webhooks'
 import { globalRateLimit } from './middleware/rateLimit'
 
 const app = new Hono()
@@ -20,6 +22,8 @@ app.use('/api/*', globalRateLimit)
 
 app.route('/api', authRoutes)
 app.route('/api', usersRoutes)
+app.route('/api', poolsRoutes)
+app.route('/api', webhooksRoutes)
 
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
 

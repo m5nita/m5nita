@@ -98,18 +98,18 @@
 
 ### Implementation for User Story 2
 
-- [ ] T040 [US2] Create pool service with create logic (validate name/fee, generate inviteCode, create PaymentIntent) in apps/api/src/services/pool.ts
-- [ ] T041 [US2] Create payment service with createPaymentIntent, handleWebhook (succeeded/failed), and createRefund logic in apps/api/src/services/payment.ts
-- [ ] T042 [US2] Create pools route with POST /api/pools (create), GET /api/pools (list user pools), GET /api/pools/:poolId (details) in apps/api/src/routes/pools.ts
-- [ ] T043 [US2] Create Stripe webhook route at POST /api/webhooks/stripe with signature verification and event handling in apps/api/src/routes/webhooks.ts
-- [ ] T044 [US2] Create pool creation page with name input, entry fee quick-select (R$20/50/100/200), custom value input, and 5% fee display in apps/web/src/routes/pools/create.tsx
-- [ ] T045 [US2] Create payment component with Stripe PaymentElement (handles Pix QR + card) and 30min Pix timer in apps/web/src/components/pool/PaymentForm.tsx
-- [ ] T046 [US2] Create invite ticket component with QR code, "Compartilhar via WhatsApp" button (deep link with pre-formatted message: "Entra no meu bolao {name} na Manita! {link}"), and "Copiar link" button in apps/web/src/components/pool/InviteTicket.tsx
-- [ ] T047 [US2] Create pool card component for "Meus boloes" list on Home (name, members, position) in apps/web/src/components/pool/PoolCard.tsx
-- [ ] T048 [US2] Update Home page (apps/web/src/routes/index.tsx) to fetch and display user pools list using GET /api/pools
-- [ ] T048a [US2] Write integration tests for POST /api/pools, GET /api/pools, GET /api/pools/:poolId (validation, payment intent creation, fee calculation) in apps/api/src/routes/__tests__/pools.test.ts
-- [ ] T048b [US2] Write integration test for POST /api/webhooks/stripe (payment_intent.succeeded creates PoolMember, idempotent handling) in apps/api/src/routes/__tests__/webhooks.test.ts
-- [ ] T048c [US2] Write unit tests for pool service (inviteCode generation, fee calculation, name/entryFee validation) in apps/api/src/services/__tests__/pool.test.ts
+- [x] T040 [US2] Create pool service with create logic (validate name/fee, generate inviteCode, create PaymentIntent) in apps/api/src/services/pool.ts
+- [x] T041 [US2] Create payment service with createPaymentIntent, handleWebhook (succeeded/failed), and createRefund logic in apps/api/src/services/payment.ts
+- [x] T042 [US2] Create pools route with POST /api/pools (create), GET /api/pools (list user pools), GET /api/pools/:poolId (details) in apps/api/src/routes/pools.ts
+- [x] T043 [US2] Create Stripe webhook route at POST /api/webhooks/stripe with signature verification and event handling in apps/api/src/routes/webhooks.ts
+- [x] T044 [US2] Create pool creation page with name input, entry fee quick-select (R$20/50/100/200), custom value input, and 5% fee display in apps/web/src/routes/pools/create.tsx
+- [x] T045 [US2] Create payment component with Stripe PaymentElement (handles Pix QR + card) and 30min Pix timer in apps/web/src/components/pool/PaymentForm.tsx
+- [x] T046 [US2] Create invite ticket component with QR code, "Compartilhar via WhatsApp" button (deep link with pre-formatted message: "Entra no meu bolao {name} na Manita! {link}"), and "Copiar link" button in apps/web/src/components/pool/InviteTicket.tsx
+- [x] T047 [US2] Create pool card component for "Meus boloes" list on Home (name, members, position) in apps/web/src/components/pool/PoolCard.tsx
+- [x] T048 [US2] Update Home page (apps/web/src/routes/index.tsx) to fetch and display user pools list using GET /api/pools
+- [x] T048a [US2] Write integration tests for POST /api/pools, GET /api/pools, GET /api/pools/:poolId (validation, payment intent creation, fee calculation) in apps/api/src/routes/__tests__/pools.test.ts
+- [x] T048b [US2] Write integration test for POST /api/webhooks/stripe (payment_intent.succeeded creates PoolMember, idempotent handling) in apps/api/src/routes/__tests__/webhooks.test.ts
+- [x] T048c [US2] Write unit tests for pool service (inviteCode generation, fee calculation, name/entryFee validation) in apps/api/src/services/__tests__/pool.test.ts
 
 **Checkpoint**: User Story 2 fully functional — users can create pools, pay via Pix/card, and share invite links
 
