@@ -188,9 +188,9 @@
 
 ### Implementation for User Story 5
 
-- [ ] T070 [US5] Create bracket component with visual connected lines between stages (round-of-32 to final) in apps/web/src/components/match/Bracket.tsx
-- [ ] T071 [US5] Create knockout predictions page with bracket view and ScoreInput for each defined match in apps/web/src/routes/pools/$poolId/predictions.tsx (extend existing page with knockout tab)
-- [ ] T072 [US5] Add knockout match filtering to predictions route — separate group and knockout stages in response in apps/api/src/routes/predictions.ts
+- [x] T070 [US5] Create bracket component with visual connected lines between stages (round-of-32 to final) in apps/web/src/components/match/Bracket.tsx
+- [x] T071 [US5] Create knockout predictions page with bracket view and ScoreInput for each defined match in apps/web/src/routes/pools/$poolId/predictions.tsx (extend existing page with knockout tab)
+- [x] T072 [US5] Add knockout match filtering to predictions route — separate group and knockout stages in response in apps/api/src/routes/predictions.ts
 
 **Checkpoint**: User Story 5 fully functional — bracket displays correctly with empty slots for undefined teams
 
@@ -204,11 +204,11 @@
 
 ### Implementation for User Story 7
 
-- [ ] T073 [US7] Add admin endpoints to pools route: GET /api/pools/:poolId/members, DELETE /api/pools/:poolId/members/:memberId, POST /api/pools/:poolId/cancel in apps/api/src/routes/pools.ts
-- [ ] T074 [US7] Add refund logic to payment service: single member refund and bulk refund (cancel pool) via Stripe Refund API in apps/api/src/services/payment.ts
-- [ ] T075 [US7] Add owner authorization middleware check for admin endpoints in apps/api/src/middleware/auth.ts
-- [ ] T076 [US7] Create pool management page with: edit name, member list with remove button, toggle isOpen, cancel pool button with confirmation in apps/web/src/routes/pools/$poolId/manage.tsx
-- [ ] T076a [US7] Write integration tests for admin endpoints (owner-only access, remove member with refund, cancel pool, block cancel after prize) in apps/api/src/routes/__tests__/pools-admin.test.ts
+- [x] T073 [US7] Add admin endpoints to pools route: GET /api/pools/:poolId/members, DELETE /api/pools/:poolId/members/:memberId, POST /api/pools/:poolId/cancel in apps/api/src/routes/pools.ts
+- [x] T074 [US7] Add refund logic to payment service: single member refund and bulk refund (cancel pool) via Stripe Refund API in apps/api/src/services/payment.ts
+- [x] T075 [US7] Add owner authorization middleware check for admin endpoints in apps/api/src/middleware/auth.ts
+- [x] T076 [US7] Create pool management page with: edit name, member list with remove button, toggle isOpen, cancel pool button with confirmation in apps/web/src/routes/pools/$poolId/manage.tsx
+- [x] T076a [US7] Write integration tests for admin endpoints (owner-only access, remove member with refund, cancel pool, block cancel after prize) in apps/api/src/routes/__tests__/pools-admin.test.ts
 
 **Checkpoint**: User Story 7 fully functional — admin can manage pool, refunds processed correctly
 
@@ -222,7 +222,7 @@
 
 ### Implementation for User Story 8
 
-- [ ] T077 [US8] Create settings page with name edit form, phone display (read-only), notification toggle (UI-only, persists preference locally), help/FAQ section (static content), logout button, and app version in apps/web/src/routes/settings.tsx
+- [x] T077 [US8] Create settings page with name edit form, phone display (read-only), notification toggle (UI-only, persists preference locally), help/FAQ section (static content), logout button, and app version in apps/web/src/routes/settings.tsx
 
 **Checkpoint**: User Story 8 fully functional — settings, profile, notifications toggle, help, and logout working
 
