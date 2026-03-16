@@ -95,6 +95,11 @@ function InvitePage() {
     )
   }
 
+  if (step === 'payment' && clientSecret?.startsWith('mock_')) {
+    setStep('success')
+    return null
+  }
+
   if (step === 'payment' && clientSecret && stripePromise) {
     return (
       <div className="flex flex-col gap-6">

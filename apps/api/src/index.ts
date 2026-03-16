@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
-import { authRoutes } from './routes/auth'
+import { auth } from './lib/auth'
 import { usersRoutes } from './routes/users'
 import { poolsRoutes } from './routes/pools'
 import { webhooksRoutes } from './routes/webhooks'
@@ -23,10 +23,15 @@ app.use(
 
 app.use('/api/*', globalRateLimit)
 
-app.route('/api', authRoutes)
+// Better Auth — mounted directly, no auth middleware
+app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
+
+// Webhooks — no auth middleware (uses Stripe signature)
+app.route('/api', webhooksRoutes)
+
+// Protected routes
 app.route('/api', usersRoutes)
 app.route('/api', poolsRoutes)
-app.route('/api', webhooksRoutes)
 app.route('/api', matchesRoutes)
 app.route('/api', predictionsRoutes)
 app.route('/api', rankingRoutes)

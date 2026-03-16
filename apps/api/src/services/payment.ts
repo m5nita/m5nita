@@ -2,8 +2,7 @@ import { eq, and } from 'drizzle-orm'
 import { db } from '../db/client'
 import { payment } from '../db/schema/payment'
 import { poolMember } from '../db/schema/poolMember'
-import { pool } from '../db/schema/pool'
-import { stripe } from '../lib/stripe'
+import { stripe, isStripeConfigured } from '../lib/stripe'
 import { POOL } from '@manita/shared'
 
 export async function createEntryPayment(
@@ -13,37 +12,56 @@ export async function createEntryPayment(
 ) {
   const platformFee = Math.floor(amount * POOL.PLATFORM_FEE_RATE)
 
-  // Create Stripe PaymentIntent
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount,
-    currency: 'brl',
-    payment_method_types: ['pix', 'card'],
-    metadata: {
-      userId,
-      poolId,
-      type: 'entry',
-    },
-  })
+  let stripePaymentIntentId: string | null = null
+  let clientSecret: string | null = null
 
-  // Create payment record
+  if (isStripeConfigured() && stripe) {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'brl',
+      payment_method_types: ['pix', 'card'],
+      metadata: { userId, poolId, type: 'entry' },
+    })
+    stripePaymentIntentId = paymentIntent.id
+    clientSecret = paymentIntent.client_secret!
+  } else {
+    // Mock mode: auto-complete payment
+    stripePaymentIntentId = `mock_pi_${crypto.randomUUID()}`
+    clientSecret = `mock_secret_${crypto.randomUUID()}`
+    console.log(`[DEV] Mock payment: ${amount / 100} BRL for pool ${poolId}`)
+  }
+
   const [paymentRecord] = await db.insert(payment).values({
     userId,
     poolId,
     amount,
     platformFee,
-    stripePaymentIntentId: paymentIntent.id,
-    status: 'pending',
+    stripePaymentIntentId,
+    status: isStripeConfigured() ? 'pending' : 'completed',
     type: 'entry',
   }).returning()
 
+  // In mock mode, auto-create pool member
+  if (!isStripeConfigured()) {
+    const existing = await db.query.poolMember.findFirst({
+      where: and(eq(poolMember.poolId, poolId), eq(poolMember.userId, userId)),
+    })
+    if (!existing) {
+      await db.insert(poolMember).values({
+        poolId,
+        userId,
+        paymentId: paymentRecord!.id,
+      })
+    }
+  }
+
   return {
     payment: paymentRecord!,
-    clientSecret: paymentIntent.client_secret!,
+    clientSecret,
   }
 }
 
 export async function handlePaymentSucceeded(stripePaymentIntentId: string) {
-  // Find payment record
   const paymentRecord = await db.query.payment.findFirst({
     where: eq(payment.stripePaymentIntentId, stripePaymentIntentId),
   })
@@ -53,18 +71,14 @@ export async function handlePaymentSucceeded(stripePaymentIntentId: string) {
     return
   }
 
-  // Idempotency: skip if already completed
   if (paymentRecord.status === 'completed') return
 
-  // Update payment status
   await db
     .update(payment)
     .set({ status: 'completed', updatedAt: new Date() })
     .where(eq(payment.id, paymentRecord.id))
 
-  // Create pool member
   if (paymentRecord.type === 'entry') {
-    // Check if already a member (idempotency)
     const existing = await db.query.poolMember.findFirst({
       where: and(
         eq(poolMember.poolId, paymentRecord.poolId),
@@ -98,7 +112,7 @@ export async function createRefund(paymentId: string) {
     throw new Error('Payment not found or not completed')
   }
 
-  if (paymentRecord.stripePaymentIntentId) {
+  if (isStripeConfigured() && stripe && paymentRecord.stripePaymentIntentId) {
     await stripe.refunds.create({
       payment_intent: paymentRecord.stripePaymentIntentId,
     })
@@ -109,7 +123,6 @@ export async function createRefund(paymentId: string) {
     .set({ status: 'refunded', updatedAt: new Date() })
     .where(eq(payment.id, paymentId))
 
-  // Remove pool member
   await db
     .delete(poolMember)
     .where(

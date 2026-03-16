@@ -11,13 +11,14 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@manita/shared": "workspace:*",
     "@stripe/react-stripe-js": "^3.5.0",
     "@stripe/stripe-js": "^5.5.0",
     "@tanstack/react-query": "^5.68.0",
     "@tanstack/react-router": "^1.114.3",
+    "better-auth": "^1.2.8",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "@manita/shared": "workspace:*"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.3",

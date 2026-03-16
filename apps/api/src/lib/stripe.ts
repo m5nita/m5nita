@@ -2,10 +2,14 @@ import Stripe from 'stripe'
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY
 
-if (!stripeSecretKey) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required')
+if (!stripeSecretKey || stripeSecretKey === 'sk_test_xxx') {
+  console.warn('[Stripe] No valid STRIPE_SECRET_KEY configured. Payment features will use mock mode.')
 }
 
-export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2025-03-31.basil',
-})
+export const stripe = stripeSecretKey && stripeSecretKey !== 'sk_test_xxx'
+  ? new Stripe(stripeSecretKey)
+  : null
+
+export function isStripeConfigured(): boolean {
+  return stripe !== null
+}

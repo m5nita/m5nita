@@ -41,6 +41,9 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    conditions: ['default', 'import', 'module'],
+  },
   server: {
     port: 5173,
     proxy: {

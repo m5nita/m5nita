@@ -43,7 +43,7 @@ function LoginPage() {
     setError('')
 
     try {
-      const result = await authClient.phoneNumber.verifyOtp({
+      const result = await authClient.phoneNumber.verify({
         phoneNumber: phone,
         code: otp,
       })

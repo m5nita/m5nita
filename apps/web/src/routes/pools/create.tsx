@@ -80,6 +80,12 @@ function CreatePoolPage() {
     )
   }
 
+  // Mock mode: skip payment step if clientSecret is mock
+  if (step === 'payment' && clientSecret?.startsWith('mock_')) {
+    setStep('invite')
+    return null
+  }
+
   if (step === 'payment' && clientSecret && stripePromise) {
     return (
       <div className="flex flex-col gap-6">
