@@ -18,13 +18,13 @@ export default defineConfig({
       manifest: {
         name: 'Manita - Bolao Copa 2026',
         short_name: 'Manita',
-        theme_color: '#1a1a2e',
-        background_color: '#1a1a2e',
+        theme_color: '#111111',
+        background_color: '#F5F0E8',
         display: 'standalone',
         start_url: '/',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icon-192.svg', sizes: '192x192', type: 'image/svg+xml' },
+          { src: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml' },
         ],
       },
       workbox: {

@@ -16,19 +16,25 @@ const stageLabels: Record<string, string> = {
 
 function BracketMatch({ match }: { match: Match }) {
   const hasTeams = match.homeTeam && match.awayTeam
+  const homeWon = match.status === 'finished' && match.homeScore != null && match.awayScore != null && match.homeScore > match.awayScore
+  const awayWon = match.status === 'finished' && match.homeScore != null && match.awayScore != null && match.awayScore > match.homeScore
 
   return (
-    <div className="flex flex-col rounded-lg border border-navy/10 bg-white overflow-hidden text-xs">
-      <div className={`flex items-center gap-2 px-2 py-1.5 ${match.status === 'finished' && match.homeScore != null && match.awayScore != null && match.homeScore > match.awayScore ? 'bg-green/5 font-bold' : ''}`}>
+    <div className="border-2 border-border overflow-hidden">
+      <div className={`flex items-center gap-2 px-3 py-2 ${homeWon ? 'bg-green/5' : ''}`}>
         {match.homeFlag && <img src={match.homeFlag} alt="" className="h-4 w-4 rounded-full" aria-hidden="true" />}
-        <span className="flex-1 truncate">{hasTeams ? match.homeTeam : 'A definir'}</span>
-        {match.homeScore != null && <span className="font-heading font-bold">{match.homeScore}</span>}
+        <span className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${homeWon ? 'font-black text-black' : hasTeams ? 'font-bold text-gray-dark' : 'font-bold text-gray-muted'}`}>
+          {hasTeams ? match.homeTeam : 'A definir'}
+        </span>
+        {match.homeScore != null && <span className="font-display text-sm font-black text-black">{match.homeScore}</span>}
       </div>
-      <div className="h-px bg-navy/10" />
-      <div className={`flex items-center gap-2 px-2 py-1.5 ${match.status === 'finished' && match.homeScore != null && match.awayScore != null && match.awayScore > match.homeScore ? 'bg-green/5 font-bold' : ''}`}>
+      <div className="h-px bg-border" />
+      <div className={`flex items-center gap-2 px-3 py-2 ${awayWon ? 'bg-green/5' : ''}`}>
         {match.awayFlag && <img src={match.awayFlag} alt="" className="h-4 w-4 rounded-full" aria-hidden="true" />}
-        <span className="flex-1 truncate">{hasTeams ? match.awayTeam : 'A definir'}</span>
-        {match.awayScore != null && <span className="font-heading font-bold">{match.awayScore}</span>}
+        <span className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${awayWon ? 'font-black text-black' : hasTeams ? 'font-bold text-gray-dark' : 'font-bold text-gray-muted'}`}>
+          {hasTeams ? match.awayTeam : 'A definir'}
+        </span>
+        {match.awayScore != null && <span className="font-display text-sm font-black text-black">{match.awayScore}</span>}
       </div>
     </div>
   )
@@ -50,9 +56,12 @@ export function Bracket({ matches }: BracketProps) {
 
         return (
           <div key={stage}>
-            <h3 className="mb-2 font-heading text-sm font-bold uppercase tracking-wider text-gray-dark">
-              {stageLabels[stage] ?? stage}
-            </h3>
+            <div className="flex items-center gap-3 mb-3">
+              <h3 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+                {stageLabels[stage] ?? stage}
+              </h3>
+              <div className="h-px flex-1 bg-border" />
+            </div>
             <div className="grid grid-cols-1 gap-2">
               {stageMatches.map((m) => (
                 <BracketMatch key={m.id} match={m} />
