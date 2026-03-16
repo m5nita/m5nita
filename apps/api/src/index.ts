@@ -10,6 +10,7 @@ import { matchesRoutes } from './routes/matches'
 import { predictionsRoutes } from './routes/predictions'
 import { rankingRoutes } from './routes/ranking'
 import { globalRateLimit } from './middleware/rateLimit'
+import { syncFixtures, syncLiveScores } from './services/match'
 
 const app = new Hono()
 
@@ -54,6 +55,20 @@ const port = Number(process.env.PORT) || 3001
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`Manita API running on http://localhost:${port}`)
+
+  // Run fixture sync on startup
+  syncFixtures().catch((err) => console.error('[Startup] Fixture sync failed:', err))
+
+  // Schedule cron jobs
+  // Sync fixtures every 6 hours
+  setInterval(() => {
+    syncFixtures().catch((err) => console.error('[Cron] Fixture sync failed:', err))
+  }, 6 * 60 * 60 * 1000)
+
+  // Sync live scores every minute
+  setInterval(() => {
+    syncLiveScores().catch((err) => console.error('[Cron] Live sync failed:', err))
+  }, 60 * 1000)
 })
 
 export default app
