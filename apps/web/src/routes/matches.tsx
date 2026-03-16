@@ -8,14 +8,8 @@ import { MATCH } from '@manita/shared'
 import type { Match } from '@manita/shared'
 
 const stageLabels: Record<string, string> = {
-  all: 'Todos',
-  group: 'Grupos',
-  'round-of-32': '32-avos',
-  'round-of-16': 'Oitavas',
-  quarter: 'Quartas',
-  semi: 'Semi',
-  'third-place': '3o Lugar',
-  final: 'Final',
+  all: 'Todos', group: 'Grupos', 'round-of-32': '32-avos', 'round-of-16': 'Oitavas',
+  quarter: 'Quartas', semi: 'Semi', 'third-place': '3o Lugar', final: 'Final',
 }
 
 function MatchesPage() {
@@ -35,34 +29,34 @@ function MatchesPage() {
     },
   })
 
-  if (isPending) return <Loading message="Carregando jogos..." />
+  if (isPending) return <Loading />
   if (error) return <ErrorMessage message={error.message} onRetry={() => refetch()} />
 
   const allMatches = data?.matches ?? []
-
   let filtered = allMatches
-  if (activeStage !== 'all') {
-    filtered = filtered.filter((m) => m.stage === activeStage)
-  }
-  if (activeGroup && activeStage === 'group') {
-    filtered = filtered.filter((m) => m.group === activeGroup)
-  }
-
+  if (activeStage !== 'all') filtered = filtered.filter((m) => m.stage === activeStage)
+  if (activeGroup && activeStage === 'group') filtered = filtered.filter((m) => m.group === activeGroup)
   const hasLive = allMatches.some((m) => m.status === 'live')
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold text-navy">Jogos</h1>
-        {hasLive && (
-          <span className="flex items-center gap-1.5 rounded-full bg-red/10 px-3 py-1 text-xs font-bold text-red">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-red" aria-hidden="true" />
-            AO VIVO
-          </span>
-        )}
+    <div className="flex flex-col gap-6">
+      <div>
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Calendario</p>
+            <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Jogos</h1>
+          </div>
+          {hasLive && (
+            <span className="ml-auto flex items-center gap-1.5 bg-red px-3 py-1 font-display text-[10px] font-bold uppercase tracking-widest text-white">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-hidden="true" />
+              Ao Vivo
+            </span>
+          )}
+        </div>
+        <div className="mt-3 h-1 w-12 bg-red" />
       </div>
 
-      <div className="flex gap-1 overflow-x-auto pb-1" role="tablist" aria-label="Filtro por fase">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5" role="tablist">
         {['all', ...MATCH.STAGES].map((stage) => (
           <button
             key={stage}
@@ -70,10 +64,8 @@ function MatchesPage() {
             role="tab"
             aria-selected={activeStage === stage}
             onClick={() => { setActiveStage(stage); setActiveGroup(null) }}
-            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeStage === stage
-                ? 'bg-navy text-cream'
-                : 'text-gray-dark hover:bg-navy/5'
+            className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
+              activeStage === stage ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
             }`}
           >
             {stageLabels[stage] ?? stage}
@@ -82,29 +74,14 @@ function MatchesPage() {
       </div>
 
       {activeStage === 'group' && (
-        <div className="flex gap-1 overflow-x-auto pb-1" role="tablist" aria-label="Filtro por grupo">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!activeGroup}
-            onClick={() => setActiveGroup(null)}
-            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium ${
-              !activeGroup ? 'bg-navy text-cream' : 'text-gray-dark hover:bg-navy/5'
-            }`}
-          >
+        <div className="flex gap-1 overflow-x-auto -mx-5 px-5" role="tablist">
+          <button type="button" role="tab" aria-selected={!activeGroup} onClick={() => setActiveGroup(null)}
+            className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 cursor-pointer ${!activeGroup ? 'bg-black text-white' : 'text-gray-muted hover:text-black'}`}>
             Todos
           </button>
           {MATCH.GROUPS.map((g) => (
-            <button
-              key={g}
-              type="button"
-              role="tab"
-              aria-selected={activeGroup === g}
-              onClick={() => setActiveGroup(g)}
-              className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
-                activeGroup === g ? 'bg-navy text-cream' : 'text-gray-dark hover:bg-navy/5'
-              }`}
-            >
+            <button key={g} type="button" role="tab" aria-selected={activeGroup === g} onClick={() => setActiveGroup(g)}
+              className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 cursor-pointer ${activeGroup === g ? 'bg-black text-white' : 'text-gray-muted hover:text-black'}`}>
               {g}
             </button>
           ))}
@@ -112,20 +89,16 @@ function MatchesPage() {
       )}
 
       {filtered.length === 0 ? (
-        <div className="py-8 text-center">
-          <p className="text-gray-dark">Nenhum jogo encontrado.</p>
+        <div className="border-2 border-dashed border-border py-12 text-center">
+          <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">Nenhum jogo</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {filtered.map((m) => (
-            <MatchCard key={m.id} match={m} />
-          ))}
+          {filtered.map((m) => <MatchCard key={m.id} match={m} />)}
         </div>
       )}
     </div>
   )
 }
 
-export const Route = createFileRoute('/matches')({
-  component: MatchesPage,
-})
+export const Route = createFileRoute('/matches')({ component: MatchesPage })

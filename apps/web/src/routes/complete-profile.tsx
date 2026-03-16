@@ -11,14 +11,9 @@ function CompleteProfilePage() {
 
   async function handleSubmit() {
     const trimmed = name.trim()
-    if (trimmed.length < 1) {
-      setError('Informe seu nome')
-      return
-    }
-
+    if (trimmed.length < 1) { setError('Informe seu nome'); return }
     setLoading(true)
     setError('')
-
     try {
       const res = await fetch('/api/users/me', {
         method: 'PATCH',
@@ -26,38 +21,35 @@ function CompleteProfilePage() {
         credentials: 'include',
         body: JSON.stringify({ name: trimmed }),
       })
-
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.message || 'Erro ao salvar nome')
-        return
-      }
-
+      if (!res.ok) { const data = await res.json(); setError(data.message || 'Erro ao salvar'); return }
       navigate({ to: '/' })
     } catch {
-      setError('Erro de conexao. Tente novamente.')
+      setError('Erro de conexao.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-[70vh] flex-col items-center justify-center gap-8">
-      <div className="text-center">
-        <h1 className="font-heading text-2xl font-bold text-navy">Bem-vindo ao Manita!</h1>
-        <p className="mt-2 text-gray-dark">Como quer ser chamado?</p>
+    <div className="flex min-h-[75vh] flex-col justify-center">
+      <div className="mb-8">
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Primeiro acesso</p>
+        <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
+          Seu Nome
+        </h1>
+        <div className="mt-3 h-1 w-12 bg-red" />
+        <p className="mt-4 text-sm text-gray-dark">Como quer ser chamado no Manita?</p>
       </div>
 
-      <div className="flex w-full max-w-sm flex-col gap-6">
+      <div className="flex flex-col gap-6">
         <Input
-          label="Seu nome"
+          label="Nome"
           placeholder="Ex: Igor"
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={error || undefined}
           autoFocus
         />
-
         <Button onClick={handleSubmit} loading={loading} className="w-full" size="lg">
           Continuar
         </Button>

@@ -3,18 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import { formatCurrency } from '../../../lib/utils'
 import { Loading } from '../../../components/ui/Loading'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
-import { Card } from '../../../components/ui/Card'
 import type { RankingEntry } from '@manita/shared'
 
 function RankingPage() {
   const { poolId } = Route.useParams()
 
-  const {
-    data,
-    isPending,
-    error,
-    refetch,
-  } = useQuery({
+  const { data, isPending, error, refetch } = useQuery({
     queryKey: ['ranking', poolId],
     queryFn: async () => {
       const res = await fetch(`/api/pools/${poolId}/ranking`, { credentials: 'include' })
@@ -23,81 +17,69 @@ function RankingPage() {
     },
   })
 
-  if (isPending) return <Loading message="Carregando ranking..." />
+  if (isPending) return <Loading />
   if (error) return <ErrorMessage message={error.message} onRetry={() => refetch()} />
 
   const ranking = data?.ranking ?? []
   const prizeTotal = data?.prizeTotal ?? 0
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold text-navy">Ranking</h1>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="text-sm text-gray-dark underline hover:text-navy"
-          aria-label="Atualizar ranking"
-        >
-          Atualizar
-        </button>
+    <div className="flex flex-col gap-8">
+      <div>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Classificacao</p>
+        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Ranking</h1>
+        <div className="mt-3 h-1 w-12 bg-red" />
       </div>
 
       {prizeTotal > 0 && (
-        <Card className="bg-green/5 text-center">
-          <p className="text-sm text-gray-dark">Premio total</p>
-          <p className="font-heading text-3xl font-bold text-green">
-            {formatCurrency(prizeTotal)}
-          </p>
-        </Card>
+        <div className="border-2 border-green bg-green/5 p-5 text-center">
+          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">Premio Total</p>
+          <p className="font-display text-4xl font-black text-green">{formatCurrency(prizeTotal)}</p>
+        </div>
       )}
 
       {ranking.length === 0 ? (
-        <Card className="py-8 text-center">
-          <p className="text-gray-dark">Nenhum resultado ainda.</p>
-          <p className="text-sm text-gray">O ranking sera atualizado apos os jogos.</p>
-        </Card>
+        <div className="border-2 border-dashed border-border py-12 text-center">
+          <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">Sem resultados</p>
+          <p className="mt-1 text-xs text-gray-muted">O ranking sera atualizado apos os jogos</p>
+        </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           {ranking.map((entry) => (
             <div
               key={entry.userId}
-              className={`flex items-center gap-3 rounded-xl border p-3 ${
-                entry.isCurrentUser
-                  ? 'border-navy bg-navy/5'
-                  : 'border-navy/10 bg-white'
-              } ${entry.position === 1 ? 'ring-2 ring-green/30' : ''}`}
+              className={`flex items-center gap-4 border-b border-border py-4 ${entry.isCurrentUser ? 'bg-black/[0.03]' : ''}`}
             >
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-heading text-sm font-bold ${
-                entry.position === 1
-                  ? 'bg-green text-cream'
-                  : entry.position <= 3
-                    ? 'bg-navy/10 text-navy'
-                    : 'bg-navy/5 text-gray-dark'
+              <span className={`font-display text-3xl font-black min-w-[40px] ${
+                entry.position === 1 ? 'text-red' : entry.position <= 3 ? 'text-black' : 'text-gray-light'
               }`}>
-                {entry.position}
-              </div>
-
+                {String(entry.position).padStart(2, '0')}
+              </span>
               <div className="flex-1 min-w-0">
-                <p className={`truncate text-sm font-medium ${entry.isCurrentUser ? 'text-navy font-bold' : 'text-navy'}`}>
+                <p className={`font-display text-sm font-bold uppercase tracking-wide truncate ${entry.isCurrentUser ? 'text-red' : 'text-black'}`}>
                   {entry.name || 'Anonimo'}
                   {entry.isCurrentUser && ' (voce)'}
                 </p>
-                <p className="text-xs text-gray">
+                <p className="text-[10px] text-gray-muted">
                   {entry.exactMatches} placar{entry.exactMatches !== 1 ? 'es' : ''} exato{entry.exactMatches !== 1 ? 's' : ''}
                 </p>
               </div>
-
               <div className="text-right">
-                <p className="font-heading text-lg font-bold text-navy">
-                  {entry.totalPoints}
-                </p>
-                <p className="text-[10px] uppercase tracking-wider text-gray">pts</p>
+                <p className="font-display text-2xl font-black text-black">{entry.totalPoints}</p>
+                <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">pts</p>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={() => refetch()}
+        className="font-display text-xs font-bold uppercase tracking-wider text-gray-muted underline underline-offset-4 hover:text-black transition-colors cursor-pointer text-center"
+      >
+        Atualizar ranking
+      </button>
     </div>
   )
 }

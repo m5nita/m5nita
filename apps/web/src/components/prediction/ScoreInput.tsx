@@ -29,17 +29,14 @@ export function ScoreInput({
   const [away, setAway] = useState(initialAway?.toString() ?? '')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   const isLocked = matchStatus === 'live' || matchStatus === 'finished'
 
   const debouncedSave = useCallback(
     (h: string, a: string) => {
       if (timerRef.current) clearTimeout(timerRef.current)
-
       const homeVal = parseInt(h, 10)
       const awayVal = parseInt(a, 10)
       if (isNaN(homeVal) || isNaN(awayVal) || homeVal < 0 || awayVal < 0) return
-
       timerRef.current = setTimeout(() => {
         setStatus('saving')
         onSave(matchId, homeVal, awayVal)
@@ -50,11 +47,7 @@ export function ScoreInput({
     [matchId, onSave],
   )
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [])
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
 
   function handleHomeChange(value: string) {
     const digits = value.replace(/\D/g, '').slice(0, 2)
@@ -68,60 +61,36 @@ export function ScoreInput({
     if (home && digits) debouncedSave(home, digits)
   }
 
-  const statusBadge = matchStatus === 'live'
-    ? { text: 'AO VIVO', color: 'bg-red text-cream' }
-    : matchStatus === 'finished'
-    ? { text: 'FINALIZADO', color: 'bg-navy/10 text-navy' }
-    : status === 'saved'
-    ? { text: 'SALVO', color: 'bg-green/10 text-green' }
-    : status === 'saving'
-    ? { text: 'SALVANDO...', color: 'bg-navy/5 text-gray' }
-    : null
-
   return (
-    <div className={`rounded-xl border p-3 ${isLocked ? 'border-navy/10 bg-navy/[0.02]' : 'border-navy/10 bg-white'}`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex-1 truncate text-sm font-medium text-navy">{homeTeam}</span>
-        <div className="flex items-center gap-1">
-          <input
-            type="text"
-            inputMode="numeric"
-            value={isLocked && actualHomeScore != null ? actualHomeScore : home}
-            onChange={(e) => handleHomeChange(e.target.value)}
-            disabled={isLocked}
-            className="h-10 w-10 rounded-lg border border-navy/20 text-center font-heading text-lg font-bold text-navy focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 disabled:bg-navy/5 disabled:text-navy/50"
-            aria-label={`Gols ${homeTeam}`}
-          />
-          <span className="text-gray-dark font-bold">x</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={isLocked && actualAwayScore != null ? actualAwayScore : away}
-            onChange={(e) => handleAwayChange(e.target.value)}
-            disabled={isLocked}
-            className="h-10 w-10 rounded-lg border border-navy/20 text-center font-heading text-lg font-bold text-navy focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 disabled:bg-navy/5 disabled:text-navy/50"
-            aria-label={`Gols ${awayTeam}`}
-          />
+    <div className={`border-b border-border py-3 ${isLocked ? 'opacity-60' : ''}`}>
+      <div className="flex items-center gap-2">
+        <span className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black text-right">
+          {homeTeam}
+        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          <input type="text" inputMode="numeric" value={isLocked && actualHomeScore != null ? actualHomeScore : home}
+            onChange={(e) => handleHomeChange(e.target.value)} disabled={isLocked}
+            className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-gray-muted"
+            aria-label={`Gols ${homeTeam}`} />
+          <span className="font-display text-xs font-black text-gray-muted">x</span>
+          <input type="text" inputMode="numeric" value={isLocked && actualAwayScore != null ? actualAwayScore : away}
+            onChange={(e) => handleAwayChange(e.target.value)} disabled={isLocked}
+            className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-gray-muted"
+            aria-label={`Gols ${awayTeam}`} />
         </div>
-        <span className="flex-1 truncate text-right text-sm font-medium text-navy">{awayTeam}</span>
+        <span className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black">
+          {awayTeam}
+        </span>
       </div>
-
-      <div className="mt-2 flex items-center justify-between">
-        {statusBadge && (
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusBadge.color}`}>
-            {statusBadge.text}
+      <div className="mt-1 flex items-center justify-center gap-2">
+        {matchStatus === 'live' && (
+          <span className="flex items-center gap-1 font-display text-[9px] font-bold uppercase tracking-widest text-red">
+            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />Ao Vivo
           </span>
         )}
-        {points != null && matchStatus === 'finished' && (
-          <span className="ml-auto font-heading text-sm font-bold text-green">
-            +{points} pts
-          </span>
-        )}
-        {matchStatus === 'finished' && initialHome != null && initialAway != null && (
-          <span className="text-xs text-gray ml-2">
-            Palpite: {initialHome}x{initialAway}
-          </span>
-        )}
+        {status === 'saved' && <span className="font-display text-[9px] font-bold uppercase tracking-widest text-green">Salvo</span>}
+        {status === 'saving' && <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">Salvando...</span>}
+        {points != null && matchStatus === 'finished' && <span className="font-display text-xs font-black text-green">+{points} pts</span>}
       </div>
     </div>
   )
