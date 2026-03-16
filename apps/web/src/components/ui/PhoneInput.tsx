@@ -30,20 +30,18 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       onChange(digits.length >= 10 ? toE164(digits) : digits)
     }
 
-    const inputId = 'phone-input'
-
     return (
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor={inputId} className="text-sm font-medium text-navy">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="phone" className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
           Telefone
         </label>
-        <div className="flex items-center gap-2">
-          <span className="flex h-[46px] items-center rounded-lg border border-navy/20 bg-navy/5 px-3 text-sm text-gray-dark">
+        <div className="flex items-center gap-3">
+          <span className="border-b-2 border-border py-2.5 font-display text-sm font-bold text-gray-muted">
             +55
           </span>
           <input
             ref={ref}
-            id={inputId}
+            id="phone"
             type="tel"
             inputMode="numeric"
             autoComplete="tel-national"
@@ -52,12 +50,12 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             onChange={handleChange}
             aria-invalid={!!error}
             aria-describedby={error ? 'phone-error' : undefined}
-            className={`flex-1 rounded-lg border border-navy/20 bg-white px-4 py-2.5 text-navy placeholder:text-gray transition-colors focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 ${error ? 'border-red' : ''}`}
+            className={`flex-1 border-b-2 bg-transparent py-2.5 text-black placeholder:text-gray-muted transition-colors duration-150 focus:border-black focus:outline-none ${error ? 'border-red' : 'border-border'}`}
             {...props}
           />
         </div>
         {error && (
-          <p id="phone-error" className="text-sm text-red" role="alert">
+          <p id="phone-error" className="text-xs font-medium text-red" role="alert">
             {error}
           </p>
         )}

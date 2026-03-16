@@ -14,13 +14,9 @@ export function OtpInput({ length = 6, value, onChange, error, disabled }: OtpIn
 
   function handleInput(index: number, char: string) {
     if (!/^\d$/.test(char)) return
-
     const newValue = digits.map((d, i) => (i === index ? char : d)).join('')
     onChange(newValue)
-
-    if (index < length - 1) {
-      inputRefs.current[index + 1]?.focus()
-    }
+    if (index < length - 1) inputRefs.current[index + 1]?.focus()
   }
 
   function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
@@ -28,30 +24,25 @@ export function OtpInput({ length = 6, value, onChange, error, disabled }: OtpIn
       e.preventDefault()
       const newValue = digits.map((d, i) => (i === index ? '' : d)).join('')
       onChange(newValue)
-      if (index > 0 && !digits[index]) {
-        inputRefs.current[index - 1]?.focus()
-      }
+      if (index > 0 && !digits[index]) inputRefs.current[index - 1]?.focus()
     }
-    if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus()
-    }
-    if (e.key === 'ArrowRight' && index < length - 1) {
-      inputRefs.current[index + 1]?.focus()
-    }
+    if (e.key === 'ArrowLeft' && index > 0) inputRefs.current[index - 1]?.focus()
+    if (e.key === 'ArrowRight' && index < length - 1) inputRefs.current[index + 1]?.focus()
   }
 
   function handlePaste(e: ClipboardEvent) {
     e.preventDefault()
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, length)
     onChange(pasted)
-    const focusIndex = Math.min(pasted.length, length - 1)
-    inputRefs.current[focusIndex]?.focus()
+    inputRefs.current[Math.min(pasted.length, length - 1)]?.focus()
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-navy">Codigo de verificacao</label>
-      <div className="flex gap-2" role="group" aria-label="Codigo OTP de 6 digitos">
+    <div className="flex flex-col gap-1">
+      <label className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+        Codigo de verificacao
+      </label>
+      <div className="flex gap-2" role="group" aria-label="Codigo OTP">
         {digits.map((digit, index) => (
           <input
             key={index}
@@ -67,16 +58,14 @@ export function OtpInput({ length = 6, value, onChange, error, disabled }: OtpIn
             onPaste={handlePaste}
             aria-label={`Digito ${index + 1}`}
             aria-invalid={!!error}
-            className={`h-12 w-10 rounded-lg border text-center font-heading text-xl font-bold transition-colors focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 disabled:bg-navy/5 disabled:text-navy/50 ${
-              error ? 'border-red' : digit ? 'border-navy' : 'border-navy/20'
+            className={`h-14 w-11 border-b-2 bg-transparent text-center font-display text-2xl font-black transition-colors duration-150 focus:border-black focus:outline-none disabled:text-gray-muted ${
+              error ? 'border-red' : digit ? 'border-black' : 'border-border'
             }`}
           />
         ))}
       </div>
       {error && (
-        <p className="text-sm text-red" role="alert">
-          {error}
-        </p>
+        <p className="text-xs font-medium text-red" role="alert">{error}</p>
       )}
     </div>
   )

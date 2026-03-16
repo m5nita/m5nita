@@ -10,8 +10,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputId = id ?? label.toLowerCase().replace(/\s+/g, '-')
 
     return (
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor={inputId} className="text-sm font-medium text-navy">
+      <div className="flex flex-col gap-1">
+        <label htmlFor={inputId} className="font-display text-xs font-semibold uppercase tracking-wider text-gray-dark">
           {label}
         </label>
         <input
@@ -19,11 +19,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           aria-invalid={!!error}
           aria-describedby={error ? `${inputId}-error` : undefined}
-          className={`rounded-lg border border-navy/20 bg-white px-4 py-2.5 text-navy placeholder:text-gray transition-colors focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20 disabled:bg-navy/5 disabled:text-navy/50 ${error ? 'border-red' : ''} ${className}`}
+          className={`border-b-2 border-border bg-transparent px-0 py-2.5 text-black placeholder:text-gray-muted transition-colors duration-150 focus:border-black focus:outline-none disabled:text-gray-muted ${error ? 'border-red' : ''} ${className}`}
           {...props}
         />
         {error && (
-          <p id={`${inputId}-error`} className="text-sm text-red" role="alert">
+          <p id={`${inputId}-error`} className="text-xs font-medium text-red" role="alert">
             {error}
           </p>
         )}

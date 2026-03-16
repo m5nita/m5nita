@@ -2,7 +2,6 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
 import { Loading } from '../components/ui/Loading'
 import { PoolCard } from '../components/pool/PoolCard'
 import type { PoolListItem } from '@manita/shared'
@@ -24,11 +23,19 @@ function HomePage() {
 
   if (!session) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
-        <h1 className="font-heading text-3xl font-bold">Manita</h1>
-        <p className="text-gray-dark">Bolao da Copa do Mundo 2026</p>
-        <Link to="/login">
-          <Button size="lg">Entrar</Button>
+      <div className="flex min-h-[75vh] flex-col justify-center">
+        <div>
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Bolao</p>
+          <h1 className="mt-1 font-display text-7xl font-black leading-[0.85] text-black">
+            Copa<br />2026
+          </h1>
+          <div className="mt-4 h-1 w-16 bg-red" />
+          <p className="mt-4 text-sm text-gray-dark leading-relaxed">
+            Crie boloes, convide amigos e dispute o premio. O 1o lugar leva tudo.
+          </p>
+        </div>
+        <Link to="/login" className="mt-8">
+          <Button size="lg" className="w-full">Entrar</Button>
         </Link>
       </div>
     )
@@ -37,51 +44,56 @@ function HomePage() {
   const pools = poolsData?.pools ?? []
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-heading text-2xl font-bold">
-          Ola, {session.user.name || 'Jogador'}!
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Ola, {session.user.name || 'Jogador'}</p>
+        <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
+          Copa<br />2026
         </h1>
-        <p className="text-sm text-gray-dark">Pronto para a Copa 2026?</p>
+        <div className="mt-3 h-1 w-12 bg-red" />
       </div>
 
-      <div className="flex gap-3">
-        <Link to="/pools/create" className="flex-1">
-          <Button className="w-full" size="lg">
-            Criar bolao
-          </Button>
+      <div className="grid grid-cols-5 gap-3">
+        <Link to="/pools/create" className="col-span-3">
+          <Button size="lg" className="w-full h-full min-h-[72px]">Criar Bolao</Button>
         </Link>
-        <Button variant="secondary" className="flex-1" size="lg" disabled>
-          Entrar em bolao
-        </Button>
+        <div className="col-span-2">
+          <Button variant="secondary" size="lg" className="w-full h-full min-h-[72px]" disabled>
+            Entrar
+          </Button>
+        </div>
       </div>
 
       <section>
-        <h2 className="mb-3 font-heading text-lg font-bold">Meus boloes</h2>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Meus Boloes</h2>
+          <div className="h-px flex-1 bg-border" />
+        </div>
         {poolsPending ? (
-          <Loading size="sm" message="Carregando boloes..." />
+          <Loading message="Carregando..." />
         ) : pools.length > 0 ? (
           <div className="flex flex-col gap-3">
-            {pools.map((pool) => (
-              <PoolCard key={pool.id} pool={pool} />
+            {pools.map((pool, i) => (
+              <PoolCard key={pool.id} pool={pool} index={i + 1} />
             ))}
           </div>
         ) : (
-          <Card className="flex flex-col items-center gap-3 py-8 text-center">
-            <p className="text-gray-dark">Voce ainda nao participa de nenhum bolao.</p>
-            <p className="text-sm text-gray">
-              Crie um bolao ou entre pelo link de convite de um amigo.
-            </p>
-          </Card>
+          <div className="border-2 border-dashed border-border py-10 text-center">
+            <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">Nenhum bolao</p>
+            <p className="mt-1 text-xs text-gray-muted">Crie um ou entre pelo convite de um amigo</p>
+          </div>
         )}
       </section>
 
       <section>
-        <h2 className="mb-3 font-heading text-lg font-bold">Proximos jogos</h2>
-        <Card className="flex flex-col items-center gap-3 py-8 text-center">
-          <p className="text-gray-dark">Nenhum jogo disponivel ainda.</p>
-          <p className="text-sm text-gray">Os jogos da Copa 2026 serao carregados em breve.</p>
-        </Card>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Proximos Jogos</h2>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+        <div className="border-2 border-dashed border-border py-10 text-center">
+          <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">Em breve</p>
+          <p className="mt-1 text-xs text-gray-muted">Jogos da Copa 2026</p>
+        </div>
       </section>
     </div>
   )

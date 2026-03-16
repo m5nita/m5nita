@@ -1,33 +1,48 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-navy: #1a1a2e;
-  --color-cream: #f5f0e8;
-  --color-red: #c4362a;
-  --color-green: #2d6a4f;
-  --color-gray: #8d8677;
-  --color-gray-light: #b8b0a4;
-  --color-gray-dark: #5c564e;
+  --color-black: #111111;
+  --color-white: #FAFAF8;
+  --color-cream: #F5F0E8;
+  --color-red: #C4362A;
+  --color-green: #2D6A4F;
+  --color-gray: #8D8677;
+  --color-gray-light: #C4BDB3;
+  --color-gray-dark: #5C564E;
+  --color-gray-muted: #A39E96;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E0D8;
 
-  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
 
-  --spacing-section: 2rem;
-  --spacing-group: 1rem;
+  --spacing-section: 2.5rem;
+  --spacing-group: 1.25rem;
   --spacing-element: 0.5rem;
 }
 
 @layer base {
   html {
     font-family: var(--font-body);
-    color: var(--color-navy);
+    color: var(--color-black);
     background-color: var(--color-cream);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-size: 16px;
+    line-height: 1.5;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
+    font-family: var(--font-display);
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+    color: var(--color-black);
+  }
+
+  ::selection {
+    background-color: var(--color-red);
+    color: white;
   }
 }
