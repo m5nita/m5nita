@@ -14,10 +14,12 @@ import { syncFixtures, syncLiveScores } from './services/match'
 
 const app = new Hono()
 
+const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173'
+
 app.use(
   '/api/*',
   cors({
-    origin: ['http://localhost:5173'],
+    origin: [allowedOrigin],
     credentials: true,
   }),
 )
