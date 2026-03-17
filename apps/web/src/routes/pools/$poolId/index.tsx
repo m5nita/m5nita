@@ -5,6 +5,7 @@ import { formatCurrency } from '../../../lib/utils'
 import { Button } from '../../../components/ui/Button'
 import { Loading } from '../../../components/ui/Loading'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
+import { InviteTicket } from '../../../components/pool/InviteTicket'
 
 function PoolDetailPage() {
   const { poolId } = Route.useParams()
@@ -64,6 +65,16 @@ function PoolDetailPage() {
           </Link>
         )}
       </div>
+
+      {isOwner && pool.inviteCode && (
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Convidar Amigos</h2>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <InviteTicket poolName={pool.name} inviteCode={pool.inviteCode} />
+        </section>
+      )}
     </div>
   )
 }
