@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { formatDate } from '../../lib/utils'
 
 interface ScoreInputProps {
   matchId: string
   homeTeam: string
   awayTeam: string
+  homeFlag: string | null
+  awayFlag: string | null
+  matchDate: string
   homeScore: number | null
   awayScore: number | null
   matchStatus: string
@@ -17,6 +21,9 @@ export function ScoreInput({
   matchId,
   homeTeam,
   awayTeam,
+  homeFlag,
+  awayFlag,
+  matchDate,
   homeScore: initialHome,
   awayScore: initialAway,
   matchStatus,
@@ -63,10 +70,14 @@ export function ScoreInput({
 
   return (
     <div className={`border-b border-border py-3 ${isLocked ? 'opacity-60' : ''}`}>
+      <p className="mb-1.5 text-center font-display text-[10px] text-gray-muted">{formatDate(matchDate)}</p>
       <div className="flex items-center gap-2">
-        <span className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black text-right">
-          {homeTeam}
-        </span>
+        <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
+          <span className="truncate font-display text-xs font-bold uppercase tracking-wide text-black text-right">
+            {homeTeam}
+          </span>
+          {homeFlag && <img src={homeFlag} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />}
+        </div>
         <div className="flex items-center gap-1 shrink-0">
           <input type="text" inputMode="numeric" value={isLocked && actualHomeScore != null ? actualHomeScore : home}
             onChange={(e) => handleHomeChange(e.target.value)} disabled={isLocked}
@@ -78,9 +89,12 @@ export function ScoreInput({
             className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-gray-muted"
             aria-label={`Gols ${awayTeam}`} />
         </div>
-        <span className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black">
-          {awayTeam}
-        </span>
+        <div className="flex flex-1 items-center gap-1.5 min-w-0">
+          {awayFlag && <img src={awayFlag} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />}
+          <span className="truncate font-display text-xs font-bold uppercase tracking-wide text-black">
+            {awayTeam}
+          </span>
+        </div>
       </div>
       <div className="mt-1 flex items-center justify-center gap-2">
         {matchStatus === 'live' && (

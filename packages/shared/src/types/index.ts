@@ -64,6 +64,7 @@ export interface Match {
   awayScore: number | null
   stage: MatchStage
   group: MatchGroup | null
+  matchday: number | null
   matchDate: string
   status: MatchStatus
 }

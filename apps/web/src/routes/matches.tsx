@@ -92,8 +92,32 @@ function MatchesPage() {
         <div className="border-2 border-dashed border-border py-12 text-center">
           <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">Nenhum jogo</p>
         </div>
+      ) : activeStage === 'group' ? (
+        (() => {
+          const byMatchday = new Map<number, Match[]>()
+          for (const m of filtered) {
+            const md = m.matchday ?? 0
+            if (!byMatchday.has(md)) byMatchday.set(md, [])
+            byMatchday.get(md)!.push(m)
+          }
+          const sortedMatchdays = [...byMatchday.entries()].sort(([a], [b]) => a - b)
+          return (
+            <div className="flex flex-col gap-6">
+              {sortedMatchdays.map(([matchday, matches]) => (
+                <div key={matchday}>
+                  <p className="mb-2 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+                    {matchday > 0 ? `${matchday}a Rodada` : 'Rodada'}
+                  </p>
+                  <div className="flex flex-col">
+                    {matches.map((m) => <MatchCard key={m.id} match={m} />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })()
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
           {filtered.map((m) => <MatchCard key={m.id} match={m} />)}
         </div>
       )}

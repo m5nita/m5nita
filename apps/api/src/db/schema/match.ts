@@ -13,6 +13,7 @@ export const match = pgTable(
     awayScore: integer('away_score'),
     stage: text('stage').notNull(),
     group: text('match_group'),
+    matchday: integer('matchday'),
     matchDate: timestamp('match_date').notNull(),
     status: text('status').default('scheduled').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),

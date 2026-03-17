@@ -60,6 +60,7 @@ function PredictionsPage() {
           const pred = predictionMap.get(m.id) as any
           return (
             <ScoreInput key={m.id} matchId={m.id} homeTeam={m.homeTeam} awayTeam={m.awayTeam}
+              homeFlag={m.homeFlag} awayFlag={m.awayFlag} matchDate={m.matchDate}
               homeScore={pred?.homeScore ?? null} awayScore={pred?.awayScore ?? null}
               matchStatus={m.status} points={pred?.points ?? null}
               actualHomeScore={m.homeScore} actualAwayScore={m.awayScore}
@@ -107,7 +108,27 @@ function PredictionsPage() {
             <div className="border-2 border-dashed border-border py-10 text-center">
               <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">Nenhum jogo no Grupo {activeGroup}</p>
             </div>
-          ) : renderScoreInputs(filteredGroupMatches)}
+          ) : (() => {
+            const byMatchday = new Map<number, any[]>()
+            for (const m of filteredGroupMatches) {
+              const md = m.matchday ?? 0
+              if (!byMatchday.has(md)) byMatchday.set(md, [])
+              byMatchday.get(md)!.push(m)
+            }
+            const sorted = [...byMatchday.entries()].sort(([a], [b]) => a - b)
+            return (
+              <div className="flex flex-col gap-5">
+                {sorted.map(([matchday, matches]) => (
+                  <div key={matchday}>
+                    <p className="mb-1 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+                      {matchday > 0 ? `${matchday}a Rodada` : 'Rodada'}
+                    </p>
+                    {renderScoreInputs(matches)}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </>
       )}
 

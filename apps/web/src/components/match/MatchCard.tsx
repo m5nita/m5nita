@@ -15,10 +15,13 @@ export function MatchCard({ match }: MatchCardProps) {
       </div>
 
       <div className="flex flex-col items-center gap-0.5 shrink-0">
+        <span className="text-[10px] text-gray-muted">{formatDate(match.matchDate)}</span>
         {isFinished || isLive ? (
           <span className="font-display text-2xl font-black text-black">{match.homeScore} - {match.awayScore}</span>
         ) : (
-          <span className="text-xs text-gray-muted">{formatDate(match.matchDate)}</span>
+          match.group && (
+            <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">Grupo {match.group}</span>
+          )
         )}
         {isLive && (
           <span className="flex items-center gap-1 font-display text-[9px] font-bold uppercase tracking-widest text-red">
@@ -28,9 +31,6 @@ export function MatchCard({ match }: MatchCardProps) {
         )}
         {isFinished && (
           <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">Final</span>
-        )}
-        {!isLive && !isFinished && match.group && (
-          <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">Grupo {match.group}</span>
         )}
       </div>
 
