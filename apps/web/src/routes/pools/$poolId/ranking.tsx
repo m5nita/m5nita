@@ -48,7 +48,7 @@ function RankingPage() {
           {ranking.map((entry) => (
             <div
               key={entry.userId}
-              className={`flex items-center gap-4 border-b border-border py-4 ${entry.isCurrentUser ? 'bg-black/[0.03]' : ''}`}
+              className={`flex items-center gap-4 border-b border-border py-4 px-3 ${entry.isCurrentUser ? 'bg-black/[0.03]' : ''}`}
             >
               <span className={`font-display text-3xl font-black min-w-[40px] ${
                 entry.position === 1 ? 'text-red' : entry.position <= 3 ? 'text-black' : 'text-gray-light'

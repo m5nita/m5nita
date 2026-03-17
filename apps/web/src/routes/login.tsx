@@ -50,7 +50,7 @@ function LoginPage() {
       const pending = consumePendingRedirect()
       if (pending) {
         window.location.href = pending
-      } else if (!result.data?.user?.name) {
+      } else if (!result.data?.user?.name || result.data.user.name.startsWith('+')) {
         navigate({ to: '/complete-profile' })
       } else {
         navigate({ to: '/' })

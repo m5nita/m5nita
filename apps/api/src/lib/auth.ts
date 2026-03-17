@@ -7,6 +7,7 @@ import { AUTH } from '@manita/shared'
 export const auth = betterAuth({
   basePath: '/api/auth',
   database: drizzleAdapter(db, { provider: 'pg' }),
+  trustedOrigins: ['http://localhost:5173'],
   session: {
     expiresIn: AUTH.SESSION_EXPIRY_SECONDS,
     updateAge: AUTH.SESSION_UPDATE_AGE_SECONDS,
