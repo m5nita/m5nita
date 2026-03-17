@@ -21,7 +21,7 @@ COPY apps/api/ ./apps/api/
 COPY packages/shared/ ./packages/shared/
 ARG VITE_API_URL
 ARG VITE_STRIPE_PUBLISHABLE_KEY
-RUN pnpm --filter @manita/web build
+RUN cd apps/web && npx vite build
 
 FROM nginx:alpine AS runner
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
