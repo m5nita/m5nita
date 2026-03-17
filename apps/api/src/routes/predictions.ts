@@ -25,7 +25,7 @@ predictionsRoutes.put('/pools/:poolId/predictions/:matchId', async (c) => {
   const parsed = upsertPredictionSchema.safeParse(body)
   if (!parsed.success) {
     return c.json(
-      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados invalidos' },
+      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados inválidos' },
       400,
     )
   }

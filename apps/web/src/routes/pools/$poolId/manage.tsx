@@ -20,7 +20,7 @@ function ManagePage() {
     queryKey: ['pool', poolId],
     queryFn: async () => {
       const res = await fetch(`/api/pools/${poolId}`, { credentials: 'include' })
-      if (!res.ok) throw new Error('Bolao nao encontrado')
+      if (!res.ok) throw new Error('Bolão não encontrado')
       return res.json()
     },
   })
@@ -85,7 +85,7 @@ function ManagePage() {
       {/* Edit name */}
       <section>
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Nome do Bolao</h2>
+          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Nome do Bolão</h2>
           <div className="h-px flex-1 bg-border" />
         </div>
         <div className="flex gap-3 items-end">
@@ -130,7 +130,7 @@ function ManagePage() {
                 <div className="flex items-center gap-3">
                   <span className="font-display text-lg font-black text-gray-light">{String(i + 1).padStart(2, '0')}</span>
                   <div>
-                    <p className="font-display text-xs font-bold uppercase tracking-wide text-black">{m.name || 'Anonimo'}</p>
+                    <p className="font-display text-xs font-bold uppercase tracking-wide text-black">{m.name || 'Anônimo'}</p>
                     <p className="text-[10px] text-gray-muted">{new Date(m.joinedAt).toLocaleDateString('pt-BR')}</p>
                   </div>
                 </div>
@@ -153,11 +153,11 @@ function ManagePage() {
         </div>
         {!showCancel ? (
           <Button variant="danger" onClick={() => setShowCancel(true)} className="w-full">
-            Encerrar Bolao (Reembolso Total)
+            Encerrar Bolão (Reembolso Total)
           </Button>
         ) : (
           <div className="flex flex-col gap-3 border-l-4 border-red bg-red/5 p-4">
-            <p className="text-sm text-gray-dark">Todos os participantes serao reembolsados e o bolao sera cancelado permanentemente.</p>
+            <p className="text-sm text-gray-dark">Todos os participantes serão reembolsados e o bolão será cancelado permanentemente.</p>
             <div className="flex gap-2">
               <Button variant="danger" onClick={() => cancelMutation.mutate()} loading={cancelMutation.isPending} className="flex-1">
                 Confirmar

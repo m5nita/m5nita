@@ -29,7 +29,7 @@ function InvitePage() {
     queryKey: ['invite', inviteCode],
     queryFn: async () => {
       const res = await fetch(`/api/pools/invite/${inviteCode}`, { credentials: 'include' })
-      if (res.status === 404) throw new Error('Convite invalido')
+      if (res.status === 404) throw new Error('Convite inválido')
       if (res.status === 409) {
         const data = await res.json()
         throw new Error(data.message)
@@ -49,7 +49,7 @@ function InvitePage() {
   if (sessionPending || isPending) return <Loading message="Carregando convite..." />
 
   if (fetchError) {
-    return <ErrorMessage title="Convite indisponivel" message={fetchError.message} onRetry={() => navigate({ to: '/' })} />
+    return <ErrorMessage title="Convite indisponível" message={fetchError.message} onRetry={() => navigate({ to: '/' })} />
   }
 
   if (!poolInfo) return null
@@ -59,10 +59,10 @@ function InvitePage() {
       <div className="flex min-h-[60vh] flex-col justify-center">
         <div className="mb-8">
           <p className="font-display text-xs font-semibold uppercase tracking-widest text-green">Sucesso</p>
-          <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">Voce Entrou</h1>
+          <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">Você Entrou</h1>
           <div className="mt-3 h-1 w-12 bg-green" />
           <p className="mt-4 text-sm text-gray-dark">
-            Agora voce faz parte do bolao <strong className="text-black">{poolInfo.name}</strong>
+            Agora você faz parte do bolão <strong className="text-black">{poolInfo.name}</strong>
           </p>
         </div>
         <Button onClick={() => navigate({ to: '/' })} size="lg" className="w-full">
@@ -103,7 +103,7 @@ function InvitePage() {
       setClientSecret(data.payment.clientSecret)
       setStep('payment')
     } catch {
-      setError('Erro de conexao.')
+      setError('Erro de conexão.')
     } finally {
       setLoading(false)
     }
@@ -119,7 +119,7 @@ function InvitePage() {
 
       <div className="flex flex-col border-t-2 border-black">
         {[
-          { label: 'Criado por', value: poolInfo.owner.name || 'Anonimo' },
+          { label: 'Criado por', value: poolInfo.owner.name || 'Anônimo' },
           { label: 'Participantes', value: String(poolInfo.memberCount) },
           { label: 'Entrada', value: formatCurrency(poolInfo.entryFee) },
           { label: 'Taxa (5%)', value: formatCurrency(poolInfo.platformFee) },
@@ -130,7 +130,7 @@ function InvitePage() {
           </div>
         ))}
         <div className="flex justify-between py-4">
-          <span className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Premio Estimado</span>
+          <span className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Prêmio Estimado</span>
           <span className="font-display text-2xl font-black text-green">{formatCurrency(poolInfo.prizeTotal)}</span>
         </div>
       </div>

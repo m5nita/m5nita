@@ -16,7 +16,7 @@ function LoginPage() {
 
   async function handleSendOtp() {
     if (phone.length < 13) {
-      setError('Informe um telefone valido')
+      setError('Informe um telefone válido')
       return
     }
     setLoading(true)
@@ -25,7 +25,7 @@ function LoginPage() {
       await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
       setStep('otp')
     } catch {
-      setError('Erro ao enviar codigo. Tente novamente.')
+      setError('Erro ao enviar código. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -33,7 +33,7 @@ function LoginPage() {
 
   async function handleVerifyOtp() {
     if (otp.length !== 6) {
-      setError('Digite o codigo completo')
+      setError('Digite o código completo')
       return
     }
     setLoading(true)
@@ -44,7 +44,7 @@ function LoginPage() {
         code: otp,
       })
       if (result.error) {
-        setError('Codigo invalido ou expirado')
+        setError('Código inválido ou expirado')
         return
       }
       const pending = consumePendingRedirect()
@@ -56,7 +56,7 @@ function LoginPage() {
         navigate({ to: '/' })
       }
     } catch {
-      setError('Erro ao verificar codigo.')
+      setError('Erro ao verificar código.')
     } finally {
       setLoading(false)
     }
@@ -67,7 +67,7 @@ function LoginPage() {
       <div className="mb-8">
         <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Manita</p>
         <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">
-          {step === 'phone' ? 'Entrar' : 'Codigo'}
+          {step === 'phone' ? 'Entrar' : 'Código'}
         </h1>
         <div className="mt-3 h-1 w-12 bg-red" />
       </div>
@@ -77,13 +77,13 @@ function LoginPage() {
           <PhoneInput value={phone} onChange={setPhone} />
           {error && <p className="text-xs font-medium text-red" role="alert">{error}</p>}
           <Button onClick={handleSendOtp} loading={loading} className="w-full" size="lg">
-            Enviar codigo via WhatsApp
+            Enviar código via WhatsApp
           </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
           <p className="text-sm text-gray-dark">
-            Enviamos um codigo para <span className="font-medium text-black">{phone}</span>
+            Enviamos um código para <span className="font-medium text-black">{phone}</span>
           </p>
           <OtpInput value={otp} onChange={setOtp} error={error || undefined} disabled={loading} />
           <Button onClick={handleVerifyOtp} loading={loading} className="w-full" size="lg">
@@ -94,7 +94,7 @@ function LoginPage() {
             onClick={() => { setStep('phone'); setOtp(''); setError('') }}
             className="font-display text-xs font-bold uppercase tracking-wider text-gray-muted underline underline-offset-4 hover:text-black transition-colors cursor-pointer"
           >
-            Usar outro numero
+            Usar outro número
           </button>
         </div>
       )}

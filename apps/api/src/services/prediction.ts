@@ -26,7 +26,7 @@ export async function upsertPrediction(
     where: and(eq(poolMember.poolId, poolId), eq(poolMember.userId, userId)),
   })
   if (!member) {
-    throw new PredictionError('NOT_MEMBER', 'Voce nao e membro deste bolao')
+    throw new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão')
   }
 
   // Verify match exists and hasn't started
@@ -34,10 +34,10 @@ export async function upsertPrediction(
     where: eq(match.id, matchId),
   })
   if (!matchData) {
-    throw new PredictionError('MATCH_NOT_FOUND', 'Jogo nao encontrado')
+    throw new PredictionError('MATCH_NOT_FOUND', 'Jogo não encontrado')
   }
   if (new Date(matchData.matchDate) <= new Date()) {
-    throw new PredictionError('MATCH_STARTED', 'Nao e possivel palpitar apos o inicio do jogo')
+    throw new PredictionError('MATCH_STARTED', 'Não é possível palpitar após o início do jogo')
   }
 
   // Upsert prediction

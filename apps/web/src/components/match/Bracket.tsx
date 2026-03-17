@@ -10,7 +10,7 @@ const stageLabels: Record<string, string> = {
   'round-of-16': 'Oitavas',
   quarter: 'Quartas',
   semi: 'Semi',
-  'third-place': '3o Lugar',
+  'third-place': '3º Lugar',
   final: 'Final',
 }
 

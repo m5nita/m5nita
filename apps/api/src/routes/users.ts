@@ -26,7 +26,7 @@ usersRoutes.patch('/users/me', async (c) => {
 
   if (!parsed.success) {
     return c.json(
-      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados invalidos' },
+      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados inválidos' },
       400,
     )
   }
@@ -38,7 +38,7 @@ usersRoutes.patch('/users/me', async (c) => {
     .returning({ id: user.id, name: user.name, phoneNumber: user.phoneNumber })
 
   if (!updated) {
-    return c.json({ error: 'NOT_FOUND', message: 'Usuario nao encontrado' }, 404)
+    return c.json({ error: 'NOT_FOUND', message: 'Usuário não encontrado' }, 404)
   }
 
   return c.json(updated)

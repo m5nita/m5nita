@@ -137,7 +137,7 @@ function PredictionsPage() {
           {knockoutMatches.length === 0 ? (
             <div className="border-2 border-dashed border-border py-10 text-center">
               <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">Em breve</p>
-              <p className="mt-1 text-xs text-gray-muted">Mata-mata apos a fase de grupos</p>
+              <p className="mt-1 text-xs text-gray-muted">Mata-mata após a fase de grupos</p>
             </div>
           ) : (
             <div className="flex flex-col gap-6">

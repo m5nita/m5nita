@@ -38,7 +38,7 @@ async function seed() {
 
   // Pool
   const [pool1] = await db.insert(pool).values({
-    name: 'Bolao da Galera',
+    name: 'Bolão da Galera',
     entryFee: 5000,
     ownerId: user1!.id,
     inviteCode: 'GALERA26',

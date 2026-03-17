@@ -24,7 +24,7 @@ function CompleteProfilePage() {
       if (!res.ok) { const data = await res.json(); setError(data.message || 'Erro ao salvar'); return }
       navigate({ to: '/' })
     } catch {
-      setError('Erro de conexao.')
+      setError('Erro de conexão.')
     } finally {
       setLoading(false)
     }

@@ -39,13 +39,13 @@ function HomePage() {
     return (
       <div className="flex min-h-[75vh] flex-col justify-center">
         <div>
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Bolao</p>
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Bolão</p>
           <h1 className="mt-1 font-display text-7xl font-black leading-[0.85] text-black">
             Copa<br />2026
           </h1>
           <div className="mt-4 h-1 w-16 bg-red" />
           <p className="mt-4 text-sm text-gray-dark leading-relaxed">
-            Crie boloes, convide amigos e dispute o premio. O 1o lugar leva tudo.
+            Crie bolões, convide amigos e dispute o prêmio. O 1º lugar leva tudo.
           </p>
         </div>
         <Link to="/login" className="mt-8">
@@ -67,7 +67,7 @@ function HomePage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Ola, {session.user.name || 'Jogador'}</p>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Olá, {session.user.name || 'Jogador'}</p>
         <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
           Copa<br />2026
         </h1>
@@ -76,7 +76,7 @@ function HomePage() {
 
       <div className="flex gap-3">
         <Link to="/pools/create" className="shrink-0">
-          <Button size="lg" className="h-full min-h-[48px]">Criar Bolao</Button>
+          <Button size="lg" className="h-full min-h-[48px]">Criar Bolão</Button>
         </Link>
         <form
           className="flex flex-1 gap-2"
@@ -86,7 +86,7 @@ function HomePage() {
             type="text"
             value={inviteCode}
             onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-            placeholder="CODIGO"
+            placeholder="CÓDIGO"
             className="flex-1 min-w-0 border-2 border-border bg-transparent px-3 font-display text-xs font-bold uppercase tracking-wider text-black placeholder:text-gray-muted transition-colors focus:border-black focus:outline-none"
           />
           <Button type="submit" variant="secondary" size="lg" className="min-h-[48px] shrink-0" disabled={!inviteCode.trim()}>
@@ -118,7 +118,7 @@ function HomePage() {
 
       <section>
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Proximos Jogos</h2>
+          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Próximos Jogos</h2>
           <div className="h-px flex-1 bg-border" />
         </div>
         {upcomingMatches.length > 0 ? (

@@ -9,7 +9,7 @@ import type { Match } from '@manita/shared'
 
 const stageLabels: Record<string, string> = {
   all: 'Todos', group: 'Grupos', 'round-of-32': '32-avos', 'round-of-16': 'Oitavas',
-  quarter: 'Quartas', semi: 'Semi', 'third-place': '3o Lugar', final: 'Final',
+  quarter: 'Quartas', semi: 'Semi', 'third-place': '3º Lugar', final: 'Final',
 }
 
 function MatchesPage() {
@@ -43,7 +43,7 @@ function MatchesPage() {
       <div>
         <div className="flex items-center gap-3">
           <div>
-            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Calendario</p>
+            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Calendário</p>
             <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Jogos</h1>
           </div>
           {hasLive && (

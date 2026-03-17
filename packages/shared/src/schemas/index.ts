@@ -23,7 +23,7 @@ export const updateUserSchema = z.object({
 })
 
 // Phone schema
-export const phoneSchema = z.string().regex(/^\+55\d{10,11}$/, 'Telefone invalido')
+export const phoneSchema = z.string().regex(/^\+55\d{10,11}$/, 'Telefone inválido')
 
 // OTP schema
-export const otpSchema = z.string().length(6).regex(/^\d+$/, 'Codigo deve ter 6 digitos')
+export const otpSchema = z.string().length(6).regex(/^\d+$/, 'Código deve ter 6 dígitos')

@@ -26,14 +26,14 @@ function RankingPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Classificacao</p>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Classificação</p>
         <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Ranking</h1>
         <div className="mt-3 h-1 w-12 bg-red" />
       </div>
 
       {prizeTotal > 0 && (
         <div className="border-2 border-green bg-green/5 p-5 text-center">
-          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">Premio Total</p>
+          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">Prêmio Total</p>
           <p className="font-display text-4xl font-black text-green">{formatCurrency(prizeTotal)}</p>
         </div>
       )}
@@ -41,7 +41,7 @@ function RankingPage() {
       {ranking.length === 0 ? (
         <div className="border-2 border-dashed border-border py-12 text-center">
           <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">Sem resultados</p>
-          <p className="mt-1 text-xs text-gray-muted">O ranking sera atualizado apos os jogos</p>
+          <p className="mt-1 text-xs text-gray-muted">O ranking será atualizado após os jogos</p>
         </div>
       ) : (
         <div className="flex flex-col">
@@ -57,8 +57,8 @@ function RankingPage() {
               </span>
               <div className="flex-1 min-w-0">
                 <p className={`font-display text-sm font-bold uppercase tracking-wide truncate ${entry.isCurrentUser ? 'text-red' : 'text-black'}`}>
-                  {entry.name || 'Anonimo'}
-                  {entry.isCurrentUser && ' (voce)'}
+                  {entry.name || 'Anônimo'}
+                  {entry.isCurrentUser && ' (você)'}
                 </p>
                 <p className="text-[10px] text-gray-muted">
                   {entry.exactMatches} placar{entry.exactMatches !== 1 ? 'es' : ''} exato{entry.exactMatches !== 1 ? 's' : ''}

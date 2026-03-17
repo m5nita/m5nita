@@ -15,7 +15,7 @@ function PoolDetailPage() {
     queryKey: ['pool', poolId],
     queryFn: async () => {
       const res = await fetch(`/api/pools/${poolId}`, { credentials: 'include' })
-      if (!res.ok) throw new Error('Bolao nao encontrado')
+      if (!res.ok) throw new Error('Bolão não encontrado')
       return res.json()
     },
   })
@@ -29,11 +29,11 @@ function PoolDetailPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Bolao</p>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Bolão</p>
         <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">{pool.name}</h1>
         <div className="mt-3 h-1 w-12 bg-red" />
         <p className="mt-3 text-sm text-gray-dark">
-          Criado por {pool.owner?.name || 'Anonimo'}
+          Criado por {pool.owner?.name || 'Anônimo'}
         </p>
       </div>
 
@@ -48,7 +48,7 @@ function PoolDetailPage() {
         </div>
         <div className="bg-cream py-4 text-center">
           <p className="font-display text-2xl font-black text-green">{formatCurrency(pool.prizeTotal)}</p>
-          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">Premio</p>
+          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">Prêmio</p>
         </div>
       </div>
 

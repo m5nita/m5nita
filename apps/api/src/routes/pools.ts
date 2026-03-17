@@ -22,7 +22,7 @@ poolsRoutes.post('/pools', async (c) => {
 
   if (!parsed.success) {
     return c.json(
-      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados invalidos' },
+      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados inválidos' },
       400,
     )
   }
@@ -71,16 +71,16 @@ poolsRoutes.get('/pools/invite/:inviteCode', async (c) => {
 
   const poolInfo = await getPoolByInviteCode(inviteCode)
   if (!poolInfo) {
-    return c.json({ error: 'NOT_FOUND', message: 'Convite invalido' }, 404)
+    return c.json({ error: 'NOT_FOUND', message: 'Convite inválido' }, 404)
   }
 
   if (!poolInfo.isOpen) {
-    return c.json({ error: 'POOL_CLOSED', message: 'Este bolao nao aceita novas entradas' }, 409)
+    return c.json({ error: 'POOL_CLOSED', message: 'Este bolão não aceita novas entradas' }, 409)
   }
 
   const alreadyMember = await isPoolMember(poolInfo.id, currentUser.id)
   if (alreadyMember) {
-    return c.json({ error: 'ALREADY_MEMBER', message: 'Voce ja participa deste bolao' }, 409)
+    return c.json({ error: 'ALREADY_MEMBER', message: 'Você já participa deste bolão' }, 409)
   }
 
   return c.json(poolInfo)
@@ -93,7 +93,7 @@ poolsRoutes.get('/pools/:poolId', async (c) => {
 
   const poolData = await getPoolById(poolId, currentUser.id)
   if (!poolData) {
-    return c.json({ error: 'NOT_FOUND', message: 'Bolao nao encontrado' }, 404)
+    return c.json({ error: 'NOT_FOUND', message: 'Bolão não encontrado' }, 404)
   }
 
   return c.json(poolData)
@@ -106,16 +106,16 @@ poolsRoutes.post('/pools/:poolId/join', async (c) => {
 
   const poolData = await getPoolById(poolId, currentUser.id)
   if (!poolData) {
-    return c.json({ error: 'NOT_FOUND', message: 'Bolao nao encontrado' }, 404)
+    return c.json({ error: 'NOT_FOUND', message: 'Bolão não encontrado' }, 404)
   }
 
   if (!poolData.isOpen) {
-    return c.json({ error: 'POOL_CLOSED', message: 'Este bolao nao aceita novas entradas' }, 409)
+    return c.json({ error: 'POOL_CLOSED', message: 'Este bolão não aceita novas entradas' }, 409)
   }
 
   const alreadyMember = await isPoolMember(poolId, currentUser.id)
   if (alreadyMember) {
-    return c.json({ error: 'ALREADY_MEMBER', message: 'Voce ja participa deste bolao' }, 409)
+    return c.json({ error: 'ALREADY_MEMBER', message: 'Você já participa deste bolão' }, 409)
   }
 
   const paymentResult = await createEntryPayment(currentUser.id, poolId, poolData.entryFee)
@@ -139,11 +139,11 @@ poolsRoutes.patch('/pools/:poolId', async (c) => {
   const body = await c.req.json()
 
   const poolData = await db.query.pool.findFirst({ where: eq(pool.id, poolId) })
-  if (!poolData) return c.json({ error: 'NOT_FOUND', message: 'Bolao nao encontrado' }, 404)
+  if (!poolData) return c.json({ error: 'NOT_FOUND', message: 'Bolão não encontrado' }, 404)
   if (poolData.ownerId !== currentUser.id) return c.json({ error: 'FORBIDDEN', message: 'Apenas o criador pode editar' }, 403)
 
   const parsed = updatePoolSchema.safeParse(body)
-  if (!parsed.success) return c.json({ error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados invalidos' }, 400)
+  if (!parsed.success) return c.json({ error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados inválidos' }, 400)
 
   const [updated] = await db.update(pool).set({ ...parsed.data, updatedAt: new Date() }).where(eq(pool.id, poolId)).returning()
   return c.json(updated)
@@ -177,7 +177,7 @@ poolsRoutes.delete('/pools/:poolId/members/:memberId', async (c) => {
   if (poolData.ownerId !== currentUser.id) return c.json({ error: 'FORBIDDEN' }, 403)
 
   const member = await db.query.poolMember.findFirst({ where: eq(poolMember.id, memberId) })
-  if (!member) return c.json({ error: 'NOT_FOUND', message: 'Membro nao encontrado' }, 404)
+  if (!member) return c.json({ error: 'NOT_FOUND', message: 'Membro não encontrado' }, 404)
 
   await createRefund(member.paymentId)
   return c.json({ refund: { id: member.paymentId, amount: poolData.entryFee, status: 'pending' } })
@@ -200,7 +200,7 @@ poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
     .limit(1)
 
   if (prizePayment) {
-    return c.json({ error: 'PRIZE_ALREADY_DISTRIBUTED', message: 'Nao e possivel encerrar apos distribuicao do premio' }, 409)
+    return c.json({ error: 'PRIZE_ALREADY_DISTRIBUTED', message: 'Não é possível encerrar após distribuição do prêmio' }, 409)
   }
 
   // Refund all members

@@ -60,12 +60,12 @@ function SettingsPage() {
 
       <section>
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Preferencias</h2>
+          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">Preferências</h2>
           <div className="h-px flex-1 bg-border" />
         </div>
         <div className="flex items-center justify-between py-2">
           <div>
-            <p className="text-sm font-medium text-black">Notificacoes</p>
+            <p className="text-sm font-medium text-black">Notificações</p>
             <p className="text-xs text-gray-muted">Alertas sobre jogos e resultados</p>
           </div>
           <button type="button" role="switch" aria-checked={notifications}
@@ -82,9 +82,9 @@ function SettingsPage() {
           <div className="h-px flex-1 bg-border" />
         </div>
         <div className="flex flex-col gap-3 text-sm text-gray-dark">
-          <p><strong className="text-black">Como funciona?</strong> Crie boloes, convide amigos, facam palpites e dispute o premio!</p>
-          <p><strong className="text-black">Pontuacao:</strong> Exato = 10pts, Vencedor + diferenca = 7pts, Vencedor = 5pts, Empate = 3pts.</p>
-          <p><strong className="text-black">Premio:</strong> 1o lugar leva tudo (menos 5% taxa).</p>
+          <p><strong className="text-black">Como funciona?</strong> Crie bolões, convide amigos, façam palpites e dispute o prêmio!</p>
+          <p><strong className="text-black">Pontuação:</strong> Exato = 10pts, Vencedor + diferença = 7pts, Vencedor = 5pts, Empate = 3pts.</p>
+          <p><strong className="text-black">Prêmio:</strong> 1º lugar leva tudo (menos 5% taxa).</p>
         </div>
       </section>
 
