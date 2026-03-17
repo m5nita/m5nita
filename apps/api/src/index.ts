@@ -65,10 +65,10 @@ serve({ fetch: app.fetch, port }, () => {
     syncFixtures().catch((err) => console.error('[Cron] Fixture sync failed:', err))
   }, 6 * 60 * 60 * 1000)
 
-  // Sync live scores every minute
+  // Sync live scores every 5 minutes
   setInterval(() => {
     syncLiveScores().catch((err) => console.error('[Cron] Live sync failed:', err))
-  }, 60 * 1000)
+  }, 5 * 60 * 1000)
 })
 
 export default app
