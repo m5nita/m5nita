@@ -65,7 +65,7 @@ function LoginPage() {
   return (
     <div className="flex min-h-[75vh] flex-col justify-center">
       <div className="mb-8">
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Manita</p>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">M5nita</p>
         <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">
           {step === 'phone' ? 'Entrar' : 'Código'}
         </h1>

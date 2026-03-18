@@ -5,7 +5,7 @@ import { getPoolRanking } from '../services/ranking'
 import { db } from '../db/client'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
-import { POOL } from '@manita/shared'
+import { POOL } from '@m5nita/shared'
 
 const rankingRoutes = new Hono()
 

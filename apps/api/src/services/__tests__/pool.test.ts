@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { POOL } from '@manita/shared'
+import { POOL } from '@m5nita/shared'
 
 // Unit tests for pool business logic (pure functions)
 describe('Pool validation rules', () => {

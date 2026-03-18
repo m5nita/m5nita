@@ -16,8 +16,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Manita - Bolao Copa 2026',
-        short_name: 'Manita',
+        name: 'M5nita - Bolao Copa 2026',
+        short_name: 'M5nita',
         theme_color: '#111111',
         background_color: '#F5F0E8',
         display: 'standalone',

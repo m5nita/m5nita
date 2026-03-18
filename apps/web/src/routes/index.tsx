@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Loading } from '../components/ui/Loading'
 import { PoolCard } from '../components/pool/PoolCard'
 import { MatchCard } from '../components/match/MatchCard'
-import type { PoolListItem, Match } from '@manita/shared'
+import type { PoolListItem, Match } from '@m5nita/shared'
 
 function HomePage() {
   const { data: session, isPending: sessionPending } = useSession()

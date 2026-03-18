@@ -8,7 +8,7 @@ import { InviteTicket } from '../../components/pool/InviteTicket'
 import { stripePromise } from '../../lib/stripe'
 import { apiFetch } from '../../lib/api'
 import { formatCurrency, calculatePlatformFee } from '../../lib/utils'
-import { POOL } from '@manita/shared'
+import { POOL } from '@m5nita/shared'
 
 type Step = 'config' | 'payment' | 'invite'
 

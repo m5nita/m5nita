@@ -1,5 +1,5 @@
 {
-  "name": "@manita/shared",
+  "name": "@m5nita/shared",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

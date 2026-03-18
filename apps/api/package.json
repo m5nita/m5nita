@@ -1,5 +1,5 @@
 {
-  "name": "@manita/api",
+  "name": "@m5nita/api",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
-    "@manita/shared": "workspace:*",
+    "@m5nita/shared": "workspace:*",
     "better-auth": "^1.2.8",
     "drizzle-orm": "^0.41.0",
     "hono": "^4.7.6",

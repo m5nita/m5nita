@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import type { PoolListItem } from '@manita/shared'
+import type { PoolListItem } from '@m5nita/shared'
 import { formatCurrency } from '../../lib/utils'
 
 interface PoolCardProps {

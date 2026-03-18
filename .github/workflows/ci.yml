@@ -26,9 +26,9 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: manita_test
-          POSTGRES_PASSWORD: manita_test
-          POSTGRES_DB: manita_test
+          POSTGRES_USER: m5nita_test
+          POSTGRES_PASSWORD: m5nita_test
+          POSTGRES_DB: m5nita_test
         ports:
           - 5433:5432
         options: >-
@@ -46,7 +46,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
         env:
-          DATABASE_URL: postgresql://manita_test:manita_test@localhost:5433/manita_test
+          DATABASE_URL: postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test
 
   build:
     runs-on: ubuntu-latest

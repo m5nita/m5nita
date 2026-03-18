@@ -12,7 +12,7 @@ function SettingsPage() {
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [notifications, setNotifications] = useState(() => localStorage.getItem('manita_notifications') !== 'off')
+  const [notifications, setNotifications] = useState(() => localStorage.getItem('m5nita_notifications') !== 'off')
 
   if (isPending) return <Loading />
 
@@ -70,7 +70,7 @@ function SettingsPage() {
             <p className="text-xs text-gray-muted">Alertas sobre jogos e resultados</p>
           </div>
           <button type="button" role="switch" aria-checked={notifications}
-            onClick={() => { const next = !notifications; setNotifications(next); localStorage.setItem('manita_notifications', next ? 'on' : 'off') }}
+            onClick={() => { const next = !notifications; setNotifications(next); localStorage.setItem('m5nita_notifications', next ? 'on' : 'off') }}
             className={`relative h-6 w-11 cursor-pointer transition-colors ${notifications ? 'bg-green' : 'bg-gray-light'}`}>
             <span className={`absolute top-0.5 left-0.5 h-5 w-5 bg-white shadow transition-transform ${notifications ? 'translate-x-5' : ''}`} />
           </button>
@@ -90,7 +90,7 @@ function SettingsPage() {
       </section>
 
       <Button variant="danger" onClick={handleLogout} className="w-full">Sair</Button>
-      <p className="text-center font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">Manita v1.0.0</p>
+      <p className="text-center font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">M5nita v1.0.0</p>
     </div>
   )
 }

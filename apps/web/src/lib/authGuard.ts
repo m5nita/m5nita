@@ -1,7 +1,7 @@
 import { redirect } from '@tanstack/react-router'
 import { authClient } from './auth'
 
-const PENDING_REDIRECT_KEY = 'manita_pending_redirect'
+const PENDING_REDIRECT_KEY = 'm5nita_pending_redirect'
 
 export function savePendingRedirect(url: string) {
   sessionStorage.setItem(PENDING_REDIRECT_KEY, url)

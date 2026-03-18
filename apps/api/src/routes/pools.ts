@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { requireAuth } from '../middleware/auth'
-import { createPoolSchema, updatePoolSchema } from '@manita/shared'
+import { createPoolSchema, updatePoolSchema } from '@m5nita/shared'
 import { createPool, getUserPools, getPoolById, getPoolByInviteCode, isPoolMember, PoolError } from '../services/pool'
 import { createEntryPayment, createRefund } from '../services/payment'
 import { eq, and, sql } from 'drizzle-orm'

@@ -26,7 +26,7 @@ function RootLayout() {
               </button>
             )}
             <Link to="/" className="font-display text-lg font-bold uppercase tracking-wider cursor-pointer">
-              Manita
+              M5nita
             </Link>
           </div>
 

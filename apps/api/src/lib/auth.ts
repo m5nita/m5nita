@@ -3,7 +3,7 @@ import { phoneNumber } from 'better-auth/plugins/phone-number'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import twilio from 'twilio'
 import { db } from '../db/client'
-import { AUTH } from '@manita/shared'
+import { AUTH } from '@m5nita/shared'
 
 export const auth = betterAuth({
   basePath: '/api/auth',
@@ -24,13 +24,13 @@ export const auth = betterAuth({
         await client.messages.create({
           from: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`,
           to: `whatsapp:${phone}`,
-          body: `Seu código Manita: ${code}`,
+          body: `Seu código M5nita: ${code}`,
         })
       },
       otpLength: AUTH.OTP_LENGTH,
       expiresIn: AUTH.OTP_EXPIRY_SECONDS,
       signUpOnVerification: {
-        getTempEmail: (phoneNumber) => `${phoneNumber.replace('+', '')}@manita.app`,
+        getTempEmail: (phoneNumber) => `${phoneNumber.replace('+', '')}@m5nita.app`,
         getTempName: (phoneNumber) => phoneNumber,
       },
     }),

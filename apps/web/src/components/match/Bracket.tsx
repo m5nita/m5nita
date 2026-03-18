@@ -1,4 +1,4 @@
-import type { Match } from '@manita/shared'
+import type { Match } from '@m5nita/shared'
 
 interface BracketProps {
   matches: Match[]

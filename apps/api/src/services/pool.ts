@@ -4,7 +4,7 @@ import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { payment } from '../db/schema/payment'
 import { user } from '../db/schema/auth'
-import { POOL } from '@manita/shared'
+import { POOL } from '@m5nita/shared'
 
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'

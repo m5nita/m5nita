@@ -9,7 +9,7 @@ interface InviteTicketProps {
 export function InviteTicket({ poolName, inviteCode }: InviteTicketProps) {
   const [copied, setCopied] = useState(false)
   const inviteUrl = `${window.location.origin}/invite/${inviteCode}`
-  const whatsappMessage = encodeURIComponent(`Entra no meu bolao "${poolName}" na Manita! ${inviteUrl}`)
+  const whatsappMessage = encodeURIComponent(`Entra no meu bolao "${poolName}" na M5nita! ${inviteUrl}`)
   const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`
 
   async function handleCopy() {

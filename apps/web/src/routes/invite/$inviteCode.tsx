@@ -11,7 +11,7 @@ import { Button } from '../../components/ui/Button'
 import { Loading } from '../../components/ui/Loading'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { PaymentForm } from '../../components/pool/PaymentForm'
-import type { PoolInviteInfo } from '@manita/shared'
+import type { PoolInviteInfo } from '@m5nita/shared'
 
 function InvitePage() {
   const { inviteCode } = Route.useParams()

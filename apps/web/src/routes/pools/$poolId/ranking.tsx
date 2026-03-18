@@ -4,7 +4,7 @@ import { formatCurrency } from '../../../lib/utils'
 import { apiFetch } from '../../../lib/api'
 import { Loading } from '../../../components/ui/Loading'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
-import type { RankingEntry } from '@manita/shared'
+import type { RankingEntry } from '@m5nita/shared'
 
 function RankingPage() {
   const { poolId } = Route.useParams()

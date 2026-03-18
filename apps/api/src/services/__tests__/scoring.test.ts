@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { calculatePoints } from '../scoring'
-import { SCORING } from '@manita/shared'
+import { SCORING } from '@m5nita/shared'
 
 describe('calculatePoints', () => {
   it('exactMatch_sameScore_returns10', () => {

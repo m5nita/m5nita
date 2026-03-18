@@ -5,8 +5,8 @@ import { MatchCard } from '../components/match/MatchCard'
 import { Loading } from '../components/ui/Loading'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
 import { apiFetch } from '../lib/api'
-import { MATCH } from '@manita/shared'
-import type { Match } from '@manita/shared'
+import { MATCH } from '@m5nita/shared'
+import type { Match } from '@m5nita/shared'
 
 const stageLabels: Record<string, string> = {
   all: 'Todos', group: 'Grupos', 'round-of-32': '32-avos', 'round-of-16': 'Oitavas',

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { requireAuth } from '../middleware/auth'
-import { upsertPredictionSchema } from '@manita/shared'
+import { upsertPredictionSchema } from '@m5nita/shared'
 import { upsertPrediction, getUserPredictions, PredictionError } from '../services/prediction'
 
 const predictionsRoutes = new Hono()

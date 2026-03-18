@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { user } from '../db/schema/auth'
 import { requireAuth } from '../middleware/auth'
-import { updateUserSchema } from '@manita/shared'
+import { updateUserSchema } from '@m5nita/shared'
 
 const usersRoutes = new Hono()
 

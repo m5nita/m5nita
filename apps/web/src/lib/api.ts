@@ -1,5 +1,5 @@
 import { hc } from 'hono/client'
-import type { AppType } from '@manita/api/src/index'
+import type { AppType } from '@m5nita/api/src/index'
 
 const client = hc<AppType>(import.meta.env.VITE_API_URL || '/', {
   fetch: (input, init) =>

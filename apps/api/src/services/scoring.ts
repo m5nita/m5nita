@@ -1,4 +1,4 @@
-import { SCORING } from '@manita/shared'
+import { SCORING } from '@m5nita/shared'
 
 export function calculatePoints(
   predictedHome: number,

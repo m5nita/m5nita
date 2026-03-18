@@ -56,7 +56,7 @@ app.notFound((c) => {
 const port = Number(process.env.PORT) || 3001
 
 serve({ fetch: app.fetch, port }, () => {
-  console.log(`Manita API running on http://localhost:${port}`)
+  console.log(`M5nita API running on http://localhost:${port}`)
 
   // Run fixture sync on startup
   syncFixtures().catch((err) => console.error('[Startup] Fixture sync failed:', err))

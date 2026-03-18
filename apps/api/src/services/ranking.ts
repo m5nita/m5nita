@@ -3,7 +3,7 @@ import { db } from '../db/client'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
 import { user } from '../db/schema/auth'
-import { POOL } from '@manita/shared'
+import { POOL } from '@m5nita/shared'
 
 export async function getPoolRanking(poolId: string, currentUserId: string) {
   const results = await db

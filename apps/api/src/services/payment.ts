@@ -3,7 +3,7 @@ import { db } from '../db/client'
 import { payment } from '../db/schema/payment'
 import { poolMember } from '../db/schema/poolMember'
 import { stripe, isStripeConfigured } from '../lib/stripe'
-import { POOL } from '@manita/shared'
+import { POOL } from '@m5nita/shared'
 
 export async function createEntryPayment(
   userId: string,

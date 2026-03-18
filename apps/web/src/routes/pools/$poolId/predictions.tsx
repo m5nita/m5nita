@@ -4,7 +4,7 @@ import { ScoreInput } from '../../../components/prediction/ScoreInput'
 import { Bracket } from '../../../components/match/Bracket'
 import { Loading } from '../../../components/ui/Loading'
 import { apiFetch } from '../../../lib/api'
-import { MATCH } from '@manita/shared'
+import { MATCH } from '@m5nita/shared'
 import { useState } from 'react'
 
 type Tab = 'groups' | 'knockout'
