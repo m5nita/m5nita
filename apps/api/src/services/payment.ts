@@ -19,7 +19,7 @@ export async function createEntryPayment(
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'brl',
-      payment_method_types: ['pix', 'card'],
+      payment_method_types: ['card'],
       metadata: { userId, poolId, type: 'entry' },
     })
     stripePaymentIntentId = paymentIntent.id
