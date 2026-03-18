@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useSession } from '../lib/auth'
+import { apiFetch } from '../lib/api'
 import { Button } from '../components/ui/Button'
 import { Loading } from '../components/ui/Loading'
 import { PoolCard } from '../components/pool/PoolCard'
@@ -16,7 +17,7 @@ function HomePage() {
   const { data: poolsData, isPending: poolsPending } = useQuery({
     queryKey: ['pools'],
     queryFn: async () => {
-      const res = await fetch('/api/pools', { credentials: 'include' })
+      const res = await apiFetch('/api/pools')
       if (!res.ok) throw new Error('Failed to fetch pools')
       return res.json() as Promise<{ pools: PoolListItem[] }>
     },
@@ -26,7 +27,7 @@ function HomePage() {
   const { data: matchesData } = useQuery({
     queryKey: ['matches', 'upcoming'],
     queryFn: async () => {
-      const res = await fetch('/api/matches?status=scheduled', { credentials: 'include' })
+      const res = await apiFetch('/api/matches?status=scheduled')
       if (!res.ok) throw new Error('Failed to fetch matches')
       return res.json() as Promise<{ matches: Match[] }>
     },

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { apiFetch } from '../lib/api'
 
 function CompleteProfilePage() {
   const navigate = useNavigate()
@@ -15,10 +16,9 @@ function CompleteProfilePage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/users/me', {
+      const res = await apiFetch('/api/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ name: trimmed }),
       })
       if (!res.ok) { const data = await res.json(); setError(data.message || 'Erro ao salvar'); return }

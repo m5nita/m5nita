@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../../../lib/auth'
+import { apiFetch } from '../../../lib/api'
 import { formatCurrency } from '../../../lib/utils'
 import { Button } from '../../../components/ui/Button'
 import { Loading } from '../../../components/ui/Loading'
@@ -14,7 +15,7 @@ function PoolDetailPage() {
   const { data: pool, isPending, error } = useQuery({
     queryKey: ['pool', poolId],
     queryFn: async () => {
-      const res = await fetch(`/api/pools/${poolId}`, { credentials: 'include' })
+      const res = await apiFetch(`/api/pools/${poolId}`)
       if (!res.ok) throw new Error('Bolão não encontrado')
       return res.json()
     },

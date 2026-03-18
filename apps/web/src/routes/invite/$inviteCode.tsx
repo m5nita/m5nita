@@ -6,6 +6,7 @@ import { useSession } from '../../lib/auth'
 import { savePendingRedirect } from '../../lib/authGuard'
 import { stripePromise } from '../../lib/stripe'
 import { formatCurrency } from '../../lib/utils'
+import { apiFetch } from '../../lib/api'
 import { Button } from '../../components/ui/Button'
 import { Loading } from '../../components/ui/Loading'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
@@ -28,7 +29,7 @@ function InvitePage() {
   } = useQuery({
     queryKey: ['invite', inviteCode],
     queryFn: async () => {
-      const res = await fetch(`/api/pools/invite/${inviteCode}`, { credentials: 'include' })
+      const res = await apiFetch(`/api/pools/invite/${inviteCode}`)
       if (res.status === 404) throw new Error('Convite inválido')
       if (res.status === 409) {
         const data = await res.json()
@@ -97,7 +98,7 @@ function InvitePage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/pools/${poolInfo!.id}/join`, { method: 'POST', credentials: 'include' })
+      const res = await apiFetch(`/api/pools/${poolInfo!.id}/join`, { method: 'POST' })
       if (!res.ok) { const data = await res.json(); setError(data.message || 'Erro'); return }
       const data = await res.json()
       setClientSecret(data.payment.clientSecret)

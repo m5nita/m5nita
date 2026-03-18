@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { formatCurrency } from '../../../lib/utils'
+import { apiFetch } from '../../../lib/api'
 import { Loading } from '../../../components/ui/Loading'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import type { RankingEntry } from '@manita/shared'
@@ -11,7 +12,7 @@ function RankingPage() {
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['ranking', poolId],
     queryFn: async () => {
-      const res = await fetch(`/api/pools/${poolId}/ranking`, { credentials: 'include' })
+      const res = await apiFetch(`/api/pools/${poolId}/ranking`)
       if (!res.ok) throw new Error('Erro ao carregar ranking')
       return res.json() as Promise<{ ranking: RankingEntry[]; prizeTotal: number }>
     },

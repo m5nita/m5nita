@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MatchCard } from '../components/match/MatchCard'
 import { Loading } from '../components/ui/Loading'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
+import { apiFetch } from '../lib/api'
 import { MATCH } from '@manita/shared'
 import type { Match } from '@manita/shared'
 
@@ -19,7 +20,7 @@ function MatchesPage() {
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['matches'],
     queryFn: async () => {
-      const res = await fetch('/api/matches', { credentials: 'include' })
+      const res = await apiFetch('/api/matches')
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json() as Promise<{ matches: Match[] }>
     },

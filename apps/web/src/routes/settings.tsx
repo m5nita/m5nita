@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useSession, signOut } from '../lib/auth'
+import { apiFetch } from '../lib/api'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Loading } from '../components/ui/Loading'
@@ -19,9 +20,9 @@ function SettingsPage() {
     if (name.trim().length < 1) return
     setSaving(true)
     try {
-      const res = await fetch('/api/users/me', {
+      const res = await apiFetch('/api/users/me', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: name.trim() }),
       })
       if (res.ok) { setSaved(true); setName(''); setTimeout(() => setSaved(false), 2000) }
     } finally { setSaving(false) }

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useSession } from '../../../lib/auth'
+import { apiFetch } from '../../../lib/api'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { Loading } from '../../../components/ui/Loading'
@@ -18,7 +19,7 @@ function ManagePage() {
   const { data: pool, isPending, error } = useQuery({
     queryKey: ['pool', poolId],
     queryFn: async () => {
-      const res = await fetch(`/api/pools/${poolId}`, { credentials: 'include' })
+      const res = await apiFetch(`/api/pools/${poolId}`)
       if (!res.ok) throw new Error('Bolão não encontrado')
       return res.json()
     },
@@ -27,7 +28,7 @@ function ManagePage() {
   const { data: membersData } = useQuery({
     queryKey: ['pool-members', poolId],
     queryFn: async () => {
-      const res = await fetch(`/api/pools/${poolId}/members`, { credentials: 'include' })
+      const res = await apiFetch(`/api/pools/${poolId}/members`)
       if (!res.ok) return { members: [] }
       return res.json()
     },
@@ -35,9 +36,9 @@ function ManagePage() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: { name?: string; isOpen?: boolean }) => {
-      const res = await fetch(`/api/pools/${poolId}`, {
+      const res = await apiFetch(`/api/pools/${poolId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', body: JSON.stringify(data),
+        body: JSON.stringify(data),
       })
       if (!res.ok) throw new Error('Erro ao atualizar')
       return res.json()
@@ -47,7 +48,7 @@ function ManagePage() {
 
   const removeMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      const res = await fetch(`/api/pools/${poolId}/members/${memberId}`, { method: 'DELETE', credentials: 'include' })
+      const res = await apiFetch(`/api/pools/${poolId}/members/${memberId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Erro ao remover')
       return res.json()
     },
@@ -59,7 +60,7 @@ function ManagePage() {
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/pools/${poolId}/cancel`, { method: 'POST', credentials: 'include' })
+      const res = await apiFetch(`/api/pools/${poolId}/cancel`, { method: 'POST' })
       if (!res.ok) { const data = await res.json(); throw new Error(data.message || 'Erro ao encerrar') }
       return res.json()
     },

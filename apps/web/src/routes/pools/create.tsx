@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button'
 import { PaymentForm } from '../../components/pool/PaymentForm'
 import { InviteTicket } from '../../components/pool/InviteTicket'
 import { stripePromise } from '../../lib/stripe'
+import { apiFetch } from '../../lib/api'
 import { formatCurrency, calculatePlatformFee } from '../../lib/utils'
 import { POOL } from '@manita/shared'
 
@@ -31,9 +32,9 @@ function CreatePoolPage() {
     if (!isValidFee) { setError('Valor deve ser entre R$ 10 e R$ 1.000'); return }
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/pools', {
+      const res = await apiFetch('/api/pools', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', body: JSON.stringify({ name: name.trim(), entryFee: currentFee }),
+        body: JSON.stringify({ name: name.trim(), entryFee: currentFee }),
       })
       if (!res.ok) { const data = await res.json(); setError(data.message || 'Erro ao criar bolão'); return }
       const data = await res.json()

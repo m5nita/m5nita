@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ScoreInput } from '../../../components/prediction/ScoreInput'
 import { Bracket } from '../../../components/match/Bracket'
 import { Loading } from '../../../components/ui/Loading'
+import { apiFetch } from '../../../lib/api'
 import { MATCH } from '@manita/shared'
 import { useState } from 'react'
 
@@ -17,7 +18,7 @@ function PredictionsPage() {
   const { data: matchesData, isPending: matchesPending } = useQuery({
     queryKey: ['matches'],
     queryFn: async () => {
-      const res = await fetch('/api/matches', { credentials: 'include' })
+      const res = await apiFetch('/api/matches')
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json()
     },
@@ -26,7 +27,7 @@ function PredictionsPage() {
   const { data: predictionsData, isPending: predictionsPending } = useQuery({
     queryKey: ['predictions', poolId],
     queryFn: async () => {
-      const res = await fetch(`/api/pools/${poolId}/predictions`, { credentials: 'include' })
+      const res = await apiFetch(`/api/pools/${poolId}/predictions`)
       if (!res.ok) throw new Error('Erro ao carregar palpites')
       return res.json()
     },
@@ -34,9 +35,9 @@ function PredictionsPage() {
 
   const saveMutation = useMutation({
     mutationFn: async ({ matchId, homeScore, awayScore }: { matchId: string; homeScore: number; awayScore: number }) => {
-      const res = await fetch(`/api/pools/${poolId}/predictions/${matchId}`, {
+      const res = await apiFetch(`/api/pools/${poolId}/predictions/${matchId}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', body: JSON.stringify({ homeScore, awayScore }),
+        body: JSON.stringify({ homeScore, awayScore }),
       })
       if (!res.ok) { const data = await res.json(); throw new Error(data.message || 'Erro') }
       return res.json()
