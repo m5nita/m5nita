@@ -1,9 +1,11 @@
 import { createRootRoute, Link, Outlet, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useSession } from '../lib/auth'
 
 function RootLayout() {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const { data: session } = useSession()
   const isHome = router.state.location.pathname === '/'
 
   return (
@@ -28,23 +30,25 @@ function RootLayout() {
             </Link>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/5 cursor-pointer"
-            aria-label="Menu"
-            aria-expanded={menuOpen}
-          >
-            {menuOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
-              </svg>
-            )}
-          </button>
+          {session?.user && (
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/5 cursor-pointer"
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
       </header>
 
