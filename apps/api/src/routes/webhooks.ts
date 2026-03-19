@@ -39,6 +39,16 @@ webhooksRoutes.post('/webhooks/stripe', async (c) => {
       await handleCheckoutExpired(session.id)
       break
     }
+    case 'payment_intent.succeeded': {
+      // Fallback: find the checkout session from the payment intent
+      const paymentIntent = event.data.object
+      const orderRef = (paymentIntent as any).payment_details?.customer_reference
+        ?? (paymentIntent as any).payment_details?.order_reference
+      if (orderRef) {
+        await handleCheckoutCompleted(orderRef)
+      }
+      break
+    }
     default:
       break
   }
