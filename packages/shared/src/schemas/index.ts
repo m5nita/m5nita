@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Pool schemas
 export const createPoolSchema = z.object({
   name: z.string().min(3).max(50),
-  entryFee: z.number().int().min(1000).max(100000),
+  entryFee: z.number().int().min(100).max(100000),
 })
 
 export const updatePoolSchema = z.object({
