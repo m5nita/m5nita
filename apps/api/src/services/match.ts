@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm'
+import { eq, and, ne } from 'drizzle-orm'
 import { db } from '../db/client'
 import { match } from '../db/schema/match'
+import { calcPointsForMatch } from '../jobs/calcPoints'
 
 const FOOTBALL_DATA_BASE = 'https://api.football-data.org/v4'
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY || ''
@@ -79,6 +80,7 @@ async function upsertMatches(matches: FootballDataMatch[]) {
       where: eq(match.externalId, m.id),
     })
 
+    const newStatus = mapStatus(m.status)
     const values = {
       externalId: m.id,
       homeTeam: m.homeTeam.name || 'TBD',
@@ -91,12 +93,20 @@ async function upsertMatches(matches: FootballDataMatch[]) {
       group: extractGroup(m.group),
       matchday: m.matchday,
       matchDate: new Date(m.utcDate),
-      status: mapStatus(m.status),
+      status: newStatus,
       updatedAt: new Date(),
     }
 
     if (existing) {
+      const wasNotFinished = existing.status !== 'finished'
+      const isNowFinished = newStatus === 'finished'
+
       await db.update(match).set(values).where(eq(match.id, existing.id))
+
+      if (wasNotFinished && isNowFinished) {
+        console.log(`[Fixture Sync] Match ${existing.id} finished, calculating points...`)
+        await calcPointsForMatch(existing.id)
+      }
     } else {
       await db.insert(match).values(values)
     }
@@ -122,20 +132,44 @@ export async function syncLiveScores() {
   if (!FOOTBALL_DATA_API_KEY) return
 
   try {
-    const matches = await fetchMatches('/competitions/WC/matches?status=LIVE')
+    // Fetch both live and recently finished matches
+    const liveMatches = await fetchMatches('/competitions/WC/matches?status=LIVE')
+    const finishedMatches = await fetchMatches('/competitions/WC/matches?status=FINISHED&dateFrom=' + getTodayDate() + '&dateTo=' + getTodayDate())
 
-    for (const m of matches) {
+    const allMatches = [...liveMatches, ...finishedMatches]
+
+    for (const m of allMatches) {
+      const existing = await db.query.match.findFirst({
+        where: eq(match.externalId, m.id),
+      })
+
+      if (!existing) continue
+
+      const newStatus = mapStatus(m.status)
+      const wasNotFinished = existing.status !== 'finished'
+      const isNowFinished = newStatus === 'finished'
+
       await db
         .update(match)
         .set({
           homeScore: m.score.fullTime.home,
           awayScore: m.score.fullTime.away,
-          status: mapStatus(m.status),
+          status: newStatus,
           updatedAt: new Date(),
         })
-        .where(eq(match.externalId, m.id))
+        .where(eq(match.id, existing.id))
+
+      // Calculate points when a match just finished
+      if (wasNotFinished && isNowFinished) {
+        console.log(`[Live Sync] Match ${existing.id} finished, calculating points...`)
+        await calcPointsForMatch(existing.id)
+      }
     }
   } catch (err) {
     console.error('[Live Sync] Error:', err)
   }
+}
+
+function getTodayDate(): string {
+  return new Date().toISOString().split('T')[0]!
 }
