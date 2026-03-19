@@ -39,7 +39,7 @@ function RootLayout() {
               to="/"
               className="font-display text-lg font-bold uppercase tracking-wider cursor-pointer"
             >
-              M5nita
+              m5nita
             </Link>
           </div>
 
