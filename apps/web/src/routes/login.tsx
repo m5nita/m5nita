@@ -6,6 +6,8 @@ import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
 import { consumePendingRedirect } from '../lib/authGuard'
 
+const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'm5nita_bot'
+
 function LoginPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
@@ -13,6 +15,7 @@ function LoginPage() {
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showTelegramHelp, setShowTelegramHelp] = useState(false)
 
   async function handleSendOtp() {
     if (phone.length < 13) {
@@ -21,8 +24,14 @@ function LoginPage() {
     }
     setLoading(true)
     setError('')
+    setShowTelegramHelp(false)
     try {
-      await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
+      const result = await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
+      if (result.error?.message?.includes('TELEGRAM_NOT_CONNECTED')) {
+        setShowTelegramHelp(true)
+        setError('Telefone não conectado ao Telegram')
+        return
+      }
       setStep('otp')
     } catch {
       setError('Erro ao enviar código. Tente novamente.')
@@ -82,14 +91,36 @@ function LoginPage() {
               {error}
             </p>
           )}
+          {showTelegramHelp && (
+            <div className="rounded-lg border border-gray-light bg-gray-lightest p-4">
+              <p className="text-sm font-medium text-black">Conecte seu Telegram primeiro:</p>
+              <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-gray-dark">
+                <li>
+                  Abra o bot{' '}
+                  <a
+                    href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=login`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-black underline underline-offset-2"
+                  >
+                    @{TELEGRAM_BOT_USERNAME}
+                  </a>
+                </li>
+                <li>Toque em "Start"</li>
+                <li>Compartilhe seu número de telefone</li>
+                <li>Volte aqui e tente novamente</li>
+              </ol>
+            </div>
+          )}
           <Button onClick={handleSendOtp} loading={loading} className="w-full" size="lg">
-            Enviar código via WhatsApp
+            Enviar código
           </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
           <p className="text-sm text-gray-dark">
-            Enviamos um código para <span className="font-medium text-black">{phone}</span>
+            Enviamos um código pelo Telegram para{' '}
+            <span className="font-medium text-black">{phone}</span>
           </p>
           <OtpInput value={otp} onChange={setOtp} error={error || undefined} disabled={loading} />
           <Button onClick={handleVerifyOtp} loading={loading} className="w-full" size="lg">

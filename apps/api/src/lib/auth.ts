@@ -2,8 +2,8 @@ import { AUTH } from '@m5nita/shared'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { phoneNumber } from 'better-auth/plugins/phone-number'
-import twilio from 'twilio'
 import { db } from '../db/client'
+import { findChatIdByPhone, sendOtpViaTelegram } from './telegram'
 
 export const auth = betterAuth({
   basePath: '/api/auth',
@@ -20,12 +20,11 @@ export const auth = betterAuth({
           console.log(`[DEV] OTP for ${phone}: ${code}`)
           return
         }
-        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-        await client.messages.create({
-          from: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`,
-          to: `whatsapp:${phone}`,
-          body: `Seu código M5nita: ${code}`,
-        })
+        const chatId = await findChatIdByPhone(phone)
+        if (!chatId) {
+          throw new Error('TELEGRAM_NOT_CONNECTED')
+        }
+        await sendOtpViaTelegram(chatId, code)
       },
       otpLength: AUTH.OTP_LENGTH,
       expiresIn: AUTH.OTP_EXPIRY_SECONDS,
