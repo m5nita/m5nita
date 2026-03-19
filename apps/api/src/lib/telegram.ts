@@ -6,7 +6,7 @@ import { telegramChat } from '../db/schema/telegram'
 export const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '')
 
 bot.command('start', async (ctx) => {
-  await ctx.reply('Bem-vindo ao M5nita! Compartilhe seu número para receber códigos de login.', {
+  await ctx.reply('Bem-vindo ao m5nita! Compartilhe seu número para receber códigos de acesso.', {
     reply_markup: {
       keyboard: [[{ text: 'Compartilhar telefone', request_contact: true }]],
       resize_keyboard: true,
@@ -38,14 +38,27 @@ bot.on('message:contact', async (ctx) => {
       },
     })
 
-  await ctx.reply('Pronto! Agora você pode fazer login no M5nita.', {
+  await ctx.reply('Pronto! Agora você pode fazer login no m5nita.', {
     reply_markup: { remove_keyboard: true },
   })
 })
 
+bot.on('callback_query:data', async (ctx) => {
+  const data = ctx.callbackQuery.data
+  if (data.startsWith('copy_otp:')) {
+    const code = data.replace('copy_otp:', '')
+    await ctx.answerCallbackQuery({ text: code, show_alert: true })
+  }
+})
+
 export async function sendOtpViaTelegram(chatId: bigint, code: string): Promise<void> {
   try {
-    await bot.api.sendMessage(Number(chatId), `Seu código M5nita: ${code}`)
+    await bot.api.sendMessage(Number(chatId), `Seu código m5nita: *${code}*`, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [[{ text: '📋 Copiar código', callback_data: `copy_otp:${code}` }]],
+      },
+    })
   } catch (error) {
     console.error('[Telegram] Failed to send OTP:', error)
     throw new Error('Falha ao enviar código. Tente novamente.')
