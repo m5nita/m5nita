@@ -26,12 +26,19 @@ function LoginPage() {
     setError('')
     setShowTelegramHelp(false)
     try {
-      const result = await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
-      if (result.error?.message?.includes('TELEGRAM_NOT_CONNECTED')) {
+      const apiUrl = import.meta.env.VITE_API_URL || ''
+      const checkRes = await fetch(`${apiUrl}/api/telegram/check-phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone }),
+      })
+      const { connected } = await checkRes.json()
+      if (!connected) {
         setShowTelegramHelp(true)
         setError('Telefone não conectado ao Telegram')
         return
       }
+      await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
       setStep('otp')
     } catch {
       setError('Erro ao enviar código. Tente novamente.')
