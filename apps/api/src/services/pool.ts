@@ -32,6 +32,7 @@ export async function createPool(userId: string, name: string, entryFee: number)
     entryFee,
     ownerId: userId,
     inviteCode,
+    status: 'pending',
   }).returning()
 
   return { pool: newPool!, platformFee }
@@ -45,15 +46,17 @@ export async function getUserPools(userId: string) {
     },
   })
 
-  return members.map((m) => ({
-    id: m.pool.id,
-    name: m.pool.name,
-    entryFee: m.pool.entryFee,
-    status: m.pool.status,
-    memberCount: 0, // Will be enriched later
-    userPosition: null,
-    userPoints: 0,
-  }))
+  return members
+    .filter((m) => m.pool.status === 'active')
+    .map((m) => ({
+      id: m.pool.id,
+      name: m.pool.name,
+      entryFee: m.pool.entryFee,
+      status: m.pool.status,
+      memberCount: 0,
+      userPosition: null,
+      userPoints: 0,
+    }))
 }
 
 export async function getPoolById(poolId: string, userId: string) {
@@ -90,7 +93,7 @@ export async function getPoolByInviteCode(inviteCode: string) {
     },
   })
 
-  if (!poolData) return null
+  if (!poolData || poolData.status !== 'active') return null
 
   const [memberCount] = await db
     .select({ count: sql<number>`count(*)::int` })

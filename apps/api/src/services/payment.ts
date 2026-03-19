@@ -1,6 +1,7 @@
 import { eq, and } from 'drizzle-orm'
 import { db } from '../db/client'
 import { payment } from '../db/schema/payment'
+import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { stripe, isStripeConfigured } from '../lib/stripe'
 import { POOL } from '@m5nita/shared'
@@ -54,8 +55,10 @@ export async function createEntryPayment(
     type: 'entry',
   }).returning()
 
-  // In mock mode, auto-create pool member
+  // In mock mode, auto-activate pool and create member
   if (!isStripeConfigured()) {
+    await db.update(pool).set({ status: 'active', updatedAt: new Date() }).where(eq(pool.id, poolId))
+
     const existing = await db.query.poolMember.findFirst({
       where: and(eq(poolMember.poolId, poolId), eq(poolMember.userId, userId)),
     })
@@ -92,6 +95,14 @@ export async function handleCheckoutCompleted(sessionId: string) {
     .where(eq(payment.id, paymentRecord.id))
 
   if (paymentRecord.type === 'entry') {
+    // Activate pool if still pending (owner's first payment)
+    const poolData = await db.query.pool.findFirst({
+      where: eq(pool.id, paymentRecord.poolId),
+    })
+    if (poolData?.status === 'pending') {
+      await db.update(pool).set({ status: 'active', updatedAt: new Date() }).where(eq(pool.id, paymentRecord.poolId))
+    }
+
     const existing = await db.query.poolMember.findFirst({
       where: and(
         eq(poolMember.poolId, paymentRecord.poolId),
