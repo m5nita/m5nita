@@ -43,20 +43,12 @@ bot.on('message:contact', async (ctx) => {
   })
 })
 
-bot.on('callback_query:data', async (ctx) => {
-  const data = ctx.callbackQuery.data
-  if (data.startsWith('copy_otp:')) {
-    const code = data.replace('copy_otp:', '')
-    await ctx.answerCallbackQuery({ text: code, show_alert: true })
-  }
-})
-
 export async function sendOtpViaTelegram(chatId: bigint, code: string): Promise<void> {
   try {
     await bot.api.sendMessage(Number(chatId), `Seu código m5nita: *${code}*`, {
       parse_mode: 'Markdown',
       reply_markup: {
-        inline_keyboard: [[{ text: '📋 Copiar código', callback_data: `copy_otp:${code}` }]],
+        inline_keyboard: [[{ text: '📋 Copiar código', copy_text: { text: code } }]],
       },
     })
   } catch (error) {
