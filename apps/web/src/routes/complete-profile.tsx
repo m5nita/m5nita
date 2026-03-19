@@ -47,7 +47,7 @@ function CompleteProfilePage() {
           Seu Nome
         </h1>
         <div className="mt-3 h-1 w-12 bg-red" />
-        <p className="mt-4 text-sm text-gray-dark">Como quer ser chamado no M5nita?</p>
+        <p className="mt-4 text-sm text-gray-dark">Como quer ser chamado no m5nita?</p>
       </div>
 
       <div className="flex flex-col gap-6">

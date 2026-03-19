@@ -112,7 +112,7 @@ function SettingsPage() {
         Sair
       </Button>
       <p className="text-center font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-        M5nita v1.0.0
+        m5nita v1.0.0
       </p>
     </div>
   )

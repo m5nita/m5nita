@@ -22,7 +22,7 @@ Replace Twilio WhatsApp OTP delivery with a Telegram Bot that:
 3. User sends `/start` to the bot
 4. Bot requests phone number via special keyboard button (`request_contact`)
 5. User shares their phone number with the bot
-6. Bot confirms registration: "Pronto! Agora você pode fazer login no M5nita."
+6. Bot confirms registration: "Pronto! Agora você pode fazer login no m5nita."
 7. Bot stores `phone_number → chat_id` in the database
 
 ### Login (recurring)
