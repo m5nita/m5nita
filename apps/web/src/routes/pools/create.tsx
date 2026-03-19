@@ -81,7 +81,7 @@ function CreatePoolPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 min-h-full">
       <div>
         <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
           Novo
@@ -134,7 +134,7 @@ function CreatePoolPage() {
         />
       </div>
 
-      <div className="border-t-2 border-black pt-4 flex flex-col gap-2 text-sm">
+      <div className="mt-auto flex flex-col gap-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-dark">Entrada</span>
           <span className="font-medium text-black">{formatCurrency(currentFee)}</span>
