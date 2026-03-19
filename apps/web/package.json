@@ -12,8 +12,6 @@
   },
   "dependencies": {
     "@m5nita/shared": "workspace:*",
-    "@stripe/react-stripe-js": "^3.5.0",
-    "@stripe/stripe-js": "^5.5.0",
     "@tanstack/react-query": "^5.68.0",
     "@tanstack/react-router": "^1.114.3",
     "better-auth": "^1.2.8",

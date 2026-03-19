@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { stripe } from '../lib/stripe'
-import { handlePaymentSucceeded, handlePaymentFailed } from '../services/payment'
+import { handleCheckoutCompleted, handleCheckoutExpired } from '../services/payment'
 
 const webhooksRoutes = new Hono()
 
@@ -29,18 +29,17 @@ webhooksRoutes.post('/webhooks/stripe', async (c) => {
   }
 
   switch (event.type) {
-    case 'payment_intent.succeeded': {
-      const paymentIntent = event.data.object
-      await handlePaymentSucceeded(paymentIntent.id)
+    case 'checkout.session.completed': {
+      const session = event.data.object
+      await handleCheckoutCompleted(session.id)
       break
     }
-    case 'payment_intent.payment_failed': {
-      const paymentIntent = event.data.object
-      await handlePaymentFailed(paymentIntent.id)
+    case 'checkout.session.expired': {
+      const session = event.data.object
+      await handleCheckoutExpired(session.id)
       break
     }
     default:
-      // Unhandled event type — acknowledge but ignore
       break
   }
 

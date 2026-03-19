@@ -43,7 +43,7 @@ poolsRoutes.post('/pools', async (c) => {
         },
         payment: {
           id: paymentResult.payment.id,
-          clientSecret: paymentResult.clientSecret,
+          checkoutUrl: paymentResult.checkoutUrl,
           amount: parsed.data.entryFee,
         },
       },
@@ -124,7 +124,7 @@ poolsRoutes.post('/pools/:poolId/join', async (c) => {
     {
       payment: {
         id: paymentResult.payment.id,
-        clientSecret: paymentResult.clientSecret,
+        checkoutUrl: paymentResult.checkoutUrl,
         amount: poolData.entryFee,
       },
     },

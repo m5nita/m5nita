@@ -13,21 +13,34 @@ export async function createEntryPayment(
   const platformFee = Math.floor(amount * POOL.PLATFORM_FEE_RATE)
 
   let stripePaymentIntentId: string | null = null
-  let clientSecret: string | null = null
+  let checkoutUrl: string | null = null
 
   if (isStripeConfigured() && stripe) {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: 'brl',
-      payment_method_types: ['card'],
+    const successUrl = `${process.env.ALLOWED_ORIGIN || 'http://localhost:5173'}/pools/payment-success?session_id={CHECKOUT_SESSION_ID}`
+    const cancelUrl = `${process.env.ALLOWED_ORIGIN || 'http://localhost:5173'}/`
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            currency: 'brl',
+            product_data: { name: 'Entrada no Bolão' },
+            unit_amount: amount,
+          },
+          quantity: 1,
+        },
+      ],
       metadata: { userId, poolId, type: 'entry' },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     })
-    stripePaymentIntentId = paymentIntent.id
-    clientSecret = paymentIntent.client_secret!
+
+    stripePaymentIntentId = session.id
+    checkoutUrl = session.url
   } else {
-    // Mock mode: auto-complete payment
     stripePaymentIntentId = `mock_pi_${crypto.randomUUID()}`
-    clientSecret = `mock_secret_${crypto.randomUUID()}`
+    checkoutUrl = null
     console.log(`[DEV] Mock payment: ${amount / 100} BRL for pool ${poolId}`)
   }
 
@@ -57,17 +70,17 @@ export async function createEntryPayment(
 
   return {
     payment: paymentRecord!,
-    clientSecret,
+    checkoutUrl,
   }
 }
 
-export async function handlePaymentSucceeded(stripePaymentIntentId: string) {
+export async function handleCheckoutCompleted(sessionId: string) {
   const paymentRecord = await db.query.payment.findFirst({
-    where: eq(payment.stripePaymentIntentId, stripePaymentIntentId),
+    where: eq(payment.stripePaymentIntentId, sessionId),
   })
 
   if (!paymentRecord) {
-    console.error(`Payment not found for intent: ${stripePaymentIntentId}`)
+    console.error(`Payment not found for session: ${sessionId}`)
     return
   }
 
@@ -96,11 +109,11 @@ export async function handlePaymentSucceeded(stripePaymentIntentId: string) {
   }
 }
 
-export async function handlePaymentFailed(stripePaymentIntentId: string) {
+export async function handleCheckoutExpired(sessionId: string) {
   await db
     .update(payment)
     .set({ status: 'expired', updatedAt: new Date() })
-    .where(eq(payment.stripePaymentIntentId, stripePaymentIntentId))
+    .where(eq(payment.stripePaymentIntentId, sessionId))
 }
 
 export async function createRefund(paymentId: string) {
@@ -113,9 +126,13 @@ export async function createRefund(paymentId: string) {
   }
 
   if (isStripeConfigured() && stripe && paymentRecord.stripePaymentIntentId) {
-    await stripe.refunds.create({
-      payment_intent: paymentRecord.stripePaymentIntentId,
-    })
+    // Retrieve the checkout session to get the payment intent
+    const session = await stripe.checkout.sessions.retrieve(paymentRecord.stripePaymentIntentId)
+    if (session.payment_intent) {
+      await stripe.refunds.create({
+        payment_intent: session.payment_intent as string,
+      })
+    }
   }
 
   await db

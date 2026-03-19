@@ -1,24 +1,19 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Elements } from '@stripe/react-stripe-js'
 import { useSession } from '../../lib/auth'
 import { savePendingRedirect } from '../../lib/authGuard'
-import { stripePromise } from '../../lib/stripe'
 import { formatCurrency } from '../../lib/utils'
 import { apiFetch } from '../../lib/api'
 import { Button } from '../../components/ui/Button'
 import { Loading } from '../../components/ui/Loading'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
-import { PaymentForm } from '../../components/pool/PaymentForm'
 import type { PoolInviteInfo } from '@m5nita/shared'
 
 function InvitePage() {
   const { inviteCode } = Route.useParams()
   const navigate = useNavigate()
   const { data: session, isPending: sessionPending } = useSession()
-  const [step, setStep] = useState<'info' | 'payment' | 'success'>('info')
-  const [clientSecret, setClientSecret] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -55,45 +50,6 @@ function InvitePage() {
 
   if (!poolInfo) return null
 
-  if (step === 'success') {
-    return (
-      <div className="flex min-h-[60vh] flex-col justify-center">
-        <div className="mb-8">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-green">Sucesso</p>
-          <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">Você Entrou</h1>
-          <div className="mt-3 h-1 w-12 bg-green" />
-          <p className="mt-4 text-sm text-gray-dark">
-            Agora você faz parte do bolão <strong className="text-black">{poolInfo.name}</strong>
-          </p>
-        </div>
-        <Button onClick={() => navigate({ to: '/' })} size="lg" className="w-full">
-          Ir para Home
-        </Button>
-      </div>
-    )
-  }
-
-  if (step === 'payment' && clientSecret?.startsWith('mock_')) {
-    setStep('success')
-    return null
-  }
-
-  if (step === 'payment' && clientSecret && stripePromise) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Pagamento</p>
-          <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Pagar</h1>
-          <div className="mt-3 h-1 w-12 bg-red" />
-        </div>
-        <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
-          <PaymentForm amount={poolInfo.entryFee} onSuccess={() => setStep('success')} onError={(msg) => setError(msg)} />
-        </Elements>
-        {error && <p className="text-xs font-medium text-red" role="alert">{error}</p>}
-      </div>
-    )
-  }
-
   async function handleJoin() {
     setLoading(true)
     setError('')
@@ -101,8 +57,12 @@ function InvitePage() {
       const res = await apiFetch(`/api/pools/${poolInfo!.id}/join`, { method: 'POST' })
       if (!res.ok) { const data = await res.json(); setError(data.message || 'Erro'); return }
       const data = await res.json()
-      setClientSecret(data.payment.clientSecret)
-      setStep('payment')
+
+      if (data.payment.checkoutUrl) {
+        window.location.href = data.payment.checkoutUrl
+      } else {
+        navigate({ to: '/' })
+      }
     } catch {
       setError('Erro de conexão.')
     } finally {

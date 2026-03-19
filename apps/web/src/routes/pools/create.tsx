@@ -1,16 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Elements } from '@stripe/react-stripe-js'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
-import { PaymentForm } from '../../components/pool/PaymentForm'
 import { InviteTicket } from '../../components/pool/InviteTicket'
-import { stripePromise } from '../../lib/stripe'
 import { apiFetch } from '../../lib/api'
 import { formatCurrency, calculatePlatformFee } from '../../lib/utils'
 import { POOL } from '@m5nita/shared'
 
-type Step = 'config' | 'payment' | 'invite'
+type Step = 'config' | 'invite'
 
 function CreatePoolPage() {
   const navigate = useNavigate()
@@ -20,7 +17,6 @@ function CreatePoolPage() {
   const [customFee, setCustomFee] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [clientSecret, setClientSecret] = useState('')
   const [createdPool, setCreatedPool] = useState<{ name: string; inviteCode: string } | null>(null)
 
   const currentFee = customFee ? Number(customFee) * 100 : entryFee
@@ -38,9 +34,13 @@ function CreatePoolPage() {
       })
       if (!res.ok) { const data = await res.json(); setError(data.message || 'Erro ao criar bolão'); return }
       const data = await res.json()
-      setClientSecret(data.payment.clientSecret)
       setCreatedPool({ name: data.pool.name, inviteCode: data.pool.inviteCode })
-      setStep('payment')
+
+      if (data.payment.checkoutUrl) {
+        window.location.href = data.payment.checkoutUrl
+      } else {
+        setStep('invite')
+      }
     } catch { setError('Erro de conexão.') } finally { setLoading(false) }
   }
 
@@ -54,24 +54,6 @@ function CreatePoolPage() {
         </div>
         <InviteTicket poolName={createdPool.name} inviteCode={createdPool.inviteCode} />
         <Button variant="secondary" onClick={() => navigate({ to: '/' })} className="w-full">Ir para Home</Button>
-      </div>
-    )
-  }
-
-  if (step === 'payment' && clientSecret?.startsWith('mock_')) { setStep('invite'); return null }
-
-  if (step === 'payment' && clientSecret && stripePromise) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Pagamento</p>
-          <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Pagar</h1>
-          <div className="mt-3 h-1 w-12 bg-red" />
-        </div>
-        <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
-          <PaymentForm amount={currentFee} onSuccess={() => setStep('invite')} onError={(msg) => setError(msg)} />
-        </Elements>
-        {error && <p className="text-xs font-medium text-red" role="alert">{error}</p>}
       </div>
     )
   }
