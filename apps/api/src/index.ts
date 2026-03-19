@@ -8,6 +8,7 @@ import { matchesRoutes } from './routes/matches'
 import { poolsRoutes } from './routes/pools'
 import { predictionsRoutes } from './routes/predictions'
 import { rankingRoutes } from './routes/ranking'
+import { telegramRoutes } from './routes/telegram'
 import { usersRoutes } from './routes/users'
 import { webhooksRoutes } from './routes/webhooks'
 import { syncFixtures, syncLiveScores } from './services/match'
@@ -29,8 +30,9 @@ app.use('/api/*', globalRateLimit)
 // Better Auth — mounted directly, no auth middleware
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
 
-// Webhooks — no auth middleware (uses Stripe signature)
+// Webhooks — no auth middleware (uses Stripe/Telegram signatures)
 app.route('/api', webhooksRoutes)
+app.route('/api', telegramRoutes)
 
 // Protected routes
 app.route('/api', usersRoutes)
