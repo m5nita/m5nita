@@ -12,9 +12,6 @@ function SettingsPage() {
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [notifications, setNotifications] = useState(
-    () => localStorage.getItem('m5nita_notifications') !== 'off',
-  )
 
   if (isPending) return <Loading />
 
@@ -86,36 +83,6 @@ function SettingsPage() {
               {saved ? 'Salvo!' : 'Salvar'}
             </Button>
           </div>
-        </div>
-      </section>
-
-      <section>
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-            Preferências
-          </h2>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-        <div className="flex items-center justify-between py-2">
-          <div>
-            <p className="text-sm font-medium text-black">Notificações</p>
-            <p className="text-xs text-gray-muted">Alertas sobre jogos e resultados</p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={notifications}
-            onClick={() => {
-              const next = !notifications
-              setNotifications(next)
-              localStorage.setItem('m5nita_notifications', next ? 'on' : 'off')
-            }}
-            className={`relative h-6 w-11 cursor-pointer transition-colors ${notifications ? 'bg-green' : 'bg-gray-light'}`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 h-5 w-5 bg-white shadow transition-transform ${notifications ? 'translate-x-5' : ''}`}
-            />
-          </button>
         </div>
       </section>
 
