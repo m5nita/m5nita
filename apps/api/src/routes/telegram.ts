@@ -1,8 +1,14 @@
 import { webhookCallback } from 'grammy'
 import { Hono } from 'hono'
-import { bot } from '../lib/telegram'
+import { bot, findChatIdByPhone } from '../lib/telegram'
 
 export const telegramRoutes = new Hono()
+
+telegramRoutes.post('/telegram/check-phone', async (c) => {
+  const { phoneNumber } = await c.req.json<{ phoneNumber: string }>()
+  const chatId = await findChatIdByPhone(phoneNumber)
+  return c.json({ connected: chatId !== null })
+})
 
 telegramRoutes.post(
   '/telegram/webhook',
