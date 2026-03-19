@@ -1,13 +1,14 @@
-import { Hono } from 'hono'
+import { POOL } from '@m5nita/shared'
 import { eq, sql } from 'drizzle-orm'
-import { requireAuth } from '../middleware/auth'
-import { getPoolRanking } from '../services/ranking'
+import { Hono } from 'hono'
 import { db } from '../db/client'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
-import { POOL } from '@m5nita/shared'
+import { requireAuth } from '../middleware/auth'
+import { getPoolRanking } from '../services/ranking'
+import type { AppEnv } from '../types/hono'
 
-const rankingRoutes = new Hono()
+const rankingRoutes = new Hono<AppEnv>()
 
 rankingRoutes.use('/*', requireAuth)
 

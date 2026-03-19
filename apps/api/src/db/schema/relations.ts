@@ -1,9 +1,9 @@
 import { relations } from 'drizzle-orm'
-import { user, session, account } from './auth'
+import { account, session, user } from './auth'
+import { match } from './match'
+import { payment } from './payment'
 import { pool } from './pool'
 import { poolMember } from './poolMember'
-import { payment } from './payment'
-import { match } from './match'
 import { prediction } from './prediction'
 
 export const userRelations = relations(user, ({ many }) => ({

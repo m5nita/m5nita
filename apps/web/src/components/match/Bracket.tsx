@@ -4,7 +4,14 @@ interface BracketProps {
   matches: Match[]
 }
 
-const stageOrder = ['round-of-32', 'round-of-16', 'quarter', 'semi', 'third-place', 'final'] as const
+const stageOrder = [
+  'round-of-32',
+  'round-of-16',
+  'quarter',
+  'semi',
+  'third-place',
+  'final',
+] as const
 const stageLabels: Record<string, string> = {
   'round-of-32': '32-avos',
   'round-of-16': 'Oitavas',
@@ -16,25 +23,45 @@ const stageLabels: Record<string, string> = {
 
 function BracketMatch({ match }: { match: Match }) {
   const hasTeams = match.homeTeam && match.awayTeam
-  const homeWon = match.status === 'finished' && match.homeScore != null && match.awayScore != null && match.homeScore > match.awayScore
-  const awayWon = match.status === 'finished' && match.homeScore != null && match.awayScore != null && match.awayScore > match.homeScore
+  const homeWon =
+    match.status === 'finished' &&
+    match.homeScore != null &&
+    match.awayScore != null &&
+    match.homeScore > match.awayScore
+  const awayWon =
+    match.status === 'finished' &&
+    match.homeScore != null &&
+    match.awayScore != null &&
+    match.awayScore > match.homeScore
 
   return (
     <div className="border-2 border-border overflow-hidden">
       <div className={`flex items-center gap-2 px-3 py-2 ${homeWon ? 'bg-green/5' : ''}`}>
-        {match.homeFlag && <img src={match.homeFlag} alt="" className="h-4 w-4 rounded-full" aria-hidden="true" />}
-        <span className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${homeWon ? 'font-black text-black' : hasTeams ? 'font-bold text-gray-dark' : 'font-bold text-gray-muted'}`}>
+        {match.homeFlag && (
+          <img src={match.homeFlag} alt="" className="h-4 w-4 rounded-full" aria-hidden="true" />
+        )}
+        <span
+          className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${homeWon ? 'font-black text-black' : hasTeams ? 'font-bold text-gray-dark' : 'font-bold text-gray-muted'}`}
+        >
           {hasTeams ? match.homeTeam : 'A definir'}
         </span>
-        {match.homeScore != null && <span className="font-display text-sm font-black text-black">{match.homeScore}</span>}
+        {match.homeScore != null && (
+          <span className="font-display text-sm font-black text-black">{match.homeScore}</span>
+        )}
       </div>
       <div className="h-px bg-border" />
       <div className={`flex items-center gap-2 px-3 py-2 ${awayWon ? 'bg-green/5' : ''}`}>
-        {match.awayFlag && <img src={match.awayFlag} alt="" className="h-4 w-4 rounded-full" aria-hidden="true" />}
-        <span className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${awayWon ? 'font-black text-black' : hasTeams ? 'font-bold text-gray-dark' : 'font-bold text-gray-muted'}`}>
+        {match.awayFlag && (
+          <img src={match.awayFlag} alt="" className="h-4 w-4 rounded-full" aria-hidden="true" />
+        )}
+        <span
+          className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${awayWon ? 'font-black text-black' : hasTeams ? 'font-bold text-gray-dark' : 'font-bold text-gray-muted'}`}
+        >
           {hasTeams ? match.awayTeam : 'A definir'}
         </span>
-        {match.awayScore != null && <span className="font-display text-sm font-black text-black">{match.awayScore}</span>}
+        {match.awayScore != null && (
+          <span className="font-display text-sm font-black text-black">{match.awayScore}</span>
+        )}
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 import { apiFetch } from '../lib/api'
 
 function CompleteProfilePage() {
@@ -12,7 +12,10 @@ function CompleteProfilePage() {
 
   async function handleSubmit() {
     const trimmed = name.trim()
-    if (trimmed.length < 1) { setError('Informe seu nome'); return }
+    if (trimmed.length < 1) {
+      setError('Informe seu nome')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -21,7 +24,11 @@ function CompleteProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmed }),
       })
-      if (!res.ok) { const data = await res.json(); setError(data.message || 'Erro ao salvar'); return }
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.message || 'Erro ao salvar')
+        return
+      }
       navigate({ to: '/' })
     } catch {
       setError('Erro de conexão.')
@@ -33,7 +40,9 @@ function CompleteProfilePage() {
   return (
     <div className="flex min-h-[75vh] flex-col justify-center">
       <div className="mb-8">
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">Primeiro acesso</p>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+          Primeiro acesso
+        </p>
         <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
           Seu Nome
         </h1>

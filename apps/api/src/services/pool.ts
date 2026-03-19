@@ -1,10 +1,8 @@
-import { eq, and, sql } from 'drizzle-orm'
+import { POOL } from '@m5nita/shared'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
-import { payment } from '../db/schema/payment'
-import { user } from '../db/schema/auth'
-import { POOL } from '@m5nita/shared'
 
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -27,15 +25,18 @@ export async function createPool(userId: string, name: string, entryFee: number)
   const inviteCode = generateInviteCode()
   const platformFee = Math.floor(entryFee * POOL.PLATFORM_FEE_RATE)
 
-  const [newPool] = await db.insert(pool).values({
-    name,
-    entryFee,
-    ownerId: userId,
-    inviteCode,
-    status: 'pending',
-  }).returning()
+  const [newPool] = await db
+    .insert(pool)
+    .values({
+      name,
+      entryFee,
+      ownerId: userId,
+      inviteCode,
+      status: 'pending',
+    })
+    .returning()
 
-  return { pool: newPool!, platformFee }
+  return { pool: newPool as NonNullable<typeof newPool>, platformFee }
 }
 
 export async function getUserPools(userId: string) {
@@ -59,7 +60,7 @@ export async function getUserPools(userId: string) {
     }))
 }
 
-export async function getPoolById(poolId: string, userId: string) {
+export async function getPoolById(poolId: string, _userId: string) {
   const poolData = await db.query.pool.findFirst({
     where: eq(pool.id, poolId),
     with: {
@@ -75,7 +76,9 @@ export async function getPoolById(poolId: string, userId: string) {
     .from(poolMember)
     .where(eq(poolMember.poolId, poolId))
 
-  const prizeTotal = Math.floor(poolData.entryFee * (memberCount?.count ?? 0) * (1 - POOL.PLATFORM_FEE_RATE))
+  const prizeTotal = Math.floor(
+    poolData.entryFee * (memberCount?.count ?? 0) * (1 - POOL.PLATFORM_FEE_RATE),
+  )
 
   return {
     ...poolData,

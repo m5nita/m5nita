@@ -1,4 +1,4 @@
-import { createRootRoute, Link, Outlet, useRouter } from '@tanstack/react-router'
+import { Link, Outlet, createRootRoute, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useSession } from '../lib/auth'
 
@@ -20,12 +20,25 @@ function RootLayout() {
                 className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/5 cursor-pointer"
                 aria-label="Voltar"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="m15 18-6-6 6-6" />
                 </svg>
               </button>
             )}
-            <Link to="/" className="font-display text-lg font-bold uppercase tracking-wider cursor-pointer">
+            <Link
+              to="/"
+              className="font-display text-lg font-bold uppercase tracking-wider cursor-pointer"
+            >
               M5nita
             </Link>
           </div>
@@ -39,12 +52,35 @@ function RootLayout() {
               aria-expanded={menuOpen}
             >
               {menuOpen ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
                 </svg>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="4" x2="20" y1="12" y2="12" />
+                  <line x1="4" x2="20" y1="6" y2="6" />
+                  <line x1="4" x2="20" y1="18" y2="18" />
                 </svg>
               )}
             </button>

@@ -1,4 +1,4 @@
-import { forwardRef, type ChangeEvent, type InputHTMLAttributes } from 'react'
+import { type ChangeEvent, type InputHTMLAttributes, forwardRef } from 'react'
 
 interface PhoneInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value: string
@@ -10,8 +10,7 @@ function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
   if (digits.length <= 2) return digits
   if (digits.length <= 4) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  if (digits.length <= 9)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  if (digits.length <= 9) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
 }
 
@@ -32,7 +31,10 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
 
     return (
       <div className="flex flex-col gap-1">
-        <label htmlFor="phone" className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+        <label
+          htmlFor="phone"
+          className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark"
+        >
           Telefone
         </label>
         <div className="flex items-center gap-3">

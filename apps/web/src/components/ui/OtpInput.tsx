@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent, type ClipboardEvent } from 'react'
+import { type ClipboardEvent, type KeyboardEvent, useRef } from 'react'
 
 interface OtpInputProps {
   length?: number
@@ -46,7 +46,9 @@ export function OtpInput({ length = 6, value, onChange, error, disabled }: OtpIn
         {digits.map((digit, index) => (
           <input
             key={index}
-            ref={(el) => { inputRefs.current[index] = el }}
+            ref={(el) => {
+              inputRefs.current[index] = el
+            }}
             type="text"
             inputMode="numeric"
             autoComplete={index === 0 ? 'one-time-code' : 'off'}
@@ -65,7 +67,9 @@ export function OtpInput({ length = 6, value, onChange, error, disabled }: OtpIn
         ))}
       </div>
       {error && (
-        <p className="text-xs font-medium text-red" role="alert">{error}</p>
+        <p className="text-xs font-medium text-red" role="alert">
+          {error}
+        </p>
       )}
     </div>
   )

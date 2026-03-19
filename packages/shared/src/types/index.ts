@@ -1,7 +1,14 @@
 export type PoolStatus = 'active' | 'closed' | 'cancelled'
 export type PaymentStatus = 'pending' | 'completed' | 'refunded' | 'expired'
 export type PaymentType = 'entry' | 'refund' | 'prize'
-export type MatchStage = 'group' | 'round-of-32' | 'round-of-16' | 'quarter' | 'semi' | 'third-place' | 'final'
+export type MatchStage =
+  | 'group'
+  | 'round-of-32'
+  | 'round-of-16'
+  | 'quarter'
+  | 'semi'
+  | 'third-place'
+  | 'final'
 export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled'
 export type MatchGroup = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L'
 

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Hono } from 'hono'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { rankingRoutes } from '../ranking'
 
 vi.mock('../../middleware/auth', () => ({
@@ -54,9 +54,30 @@ describe('GET /api/pools/:poolId/ranking', () => {
 
   it('returns_poolRanking_orderedByPoints', async () => {
     mockGetPoolRanking.mockResolvedValue([
-      { position: 1, userId: 'user-2', name: 'Alice', totalPoints: 50, exactMatches: 3, isCurrentUser: false },
-      { position: 2, userId: 'user-1', name: 'Test', totalPoints: 40, exactMatches: 2, isCurrentUser: true },
-      { position: 3, userId: 'user-3', name: 'Bob', totalPoints: 30, exactMatches: 1, isCurrentUser: false },
+      {
+        position: 1,
+        userId: 'user-2',
+        name: 'Alice',
+        totalPoints: 50,
+        exactMatches: 3,
+        isCurrentUser: false,
+      },
+      {
+        position: 2,
+        userId: 'user-1',
+        name: 'Test',
+        totalPoints: 40,
+        exactMatches: 2,
+        isCurrentUser: true,
+      },
+      {
+        position: 3,
+        userId: 'user-3',
+        name: 'Bob',
+        totalPoints: 30,
+        exactMatches: 1,
+        isCurrentUser: false,
+      },
     ])
 
     const res = await app.request('/api/pools/pool-1/ranking', { headers })
@@ -71,8 +92,22 @@ describe('GET /api/pools/:poolId/ranking', () => {
 
   it('returns_tiebreakerByExactMatches', async () => {
     mockGetPoolRanking.mockResolvedValue([
-      { position: 1, userId: 'user-2', name: 'Alice', totalPoints: 40, exactMatches: 3, isCurrentUser: false },
-      { position: 2, userId: 'user-1', name: 'Test', totalPoints: 40, exactMatches: 2, isCurrentUser: true },
+      {
+        position: 1,
+        userId: 'user-2',
+        name: 'Alice',
+        totalPoints: 40,
+        exactMatches: 3,
+        isCurrentUser: false,
+      },
+      {
+        position: 2,
+        userId: 'user-1',
+        name: 'Test',
+        totalPoints: 40,
+        exactMatches: 2,
+        isCurrentUser: true,
+      },
     ])
 
     const res = await app.request('/api/pools/pool-1/ranking', { headers })

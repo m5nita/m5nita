@@ -1,20 +1,20 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @theme {
   --color-black: #111111;
-  --color-white: #FAFAF8;
-  --color-cream: #F5F0E8;
-  --color-red: #C4362A;
-  --color-green: #2D6A4F;
-  --color-gray: #8D8677;
-  --color-gray-light: #C4BDB3;
-  --color-gray-dark: #5C564E;
-  --color-gray-muted: #A39E96;
-  --color-surface: #FFFFFF;
-  --color-border: #E5E0D8;
+  --color-white: #fafaf8;
+  --color-cream: #f5f0e8;
+  --color-red: #c4362a;
+  --color-green: #2d6a4f;
+  --color-gray: #8d8677;
+  --color-gray-light: #c4bdb3;
+  --color-gray-dark: #5c564e;
+  --color-gray-muted: #a39e96;
+  --color-surface: #ffffff;
+  --color-border: #e5e0d8;
 
-  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
 
   --spacing-section: 2.5rem;
   --spacing-group: 1.25rem;
@@ -32,7 +32,12 @@
     line-height: 1.5;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     font-weight: 700;
     text-transform: uppercase;

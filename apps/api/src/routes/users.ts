@@ -1,11 +1,12 @@
-import { Hono } from 'hono'
+import { updateUserSchema } from '@m5nita/shared'
 import { eq } from 'drizzle-orm'
+import { Hono } from 'hono'
 import { db } from '../db/client'
 import { user } from '../db/schema/auth'
 import { requireAuth } from '../middleware/auth'
-import { updateUserSchema } from '@m5nita/shared'
+import type { AppEnv } from '../types/hono'
 
-const usersRoutes = new Hono()
+const usersRoutes = new Hono<AppEnv>()
 
 usersRoutes.use('/*', requireAuth)
 

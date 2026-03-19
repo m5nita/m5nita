@@ -1,12 +1,14 @@
-import { pgTable, text, uuid, integer, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core'
+import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
-import { pool } from './pool'
 import { match } from './match'
+import { pool } from './pool'
 
 export const prediction = pgTable(
   'prediction',
   {
-    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text('user_id')
       .notNull()
       .references(() => user.id),
@@ -23,8 +25,12 @@ export const prediction = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('prediction_user_id_pool_id_match_id_idx').on(table.userId, table.poolId, table.matchId),
+    uniqueIndex('prediction_user_id_pool_id_match_id_idx').on(
+      table.userId,
+      table.poolId,
+      table.matchId,
+    ),
     index('prediction_pool_id_user_id_idx').on(table.poolId, table.userId),
     index('prediction_match_id_idx').on(table.matchId),
-  ]
+  ],
 )

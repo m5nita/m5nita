@@ -1,65 +1,85 @@
 import { db } from './client'
 import { user } from './schema/auth'
+import { match } from './schema/match'
+import { payment } from './schema/payment'
 import { pool } from './schema/pool'
 import { poolMember } from './schema/poolMember'
-import { payment } from './schema/payment'
-import { match } from './schema/match'
 import { prediction } from './schema/prediction'
 
 async function seed() {
   console.log('Seeding database...')
 
   // Users
-  const [user1] = await db.insert(user).values({
-    id: 'user-1',
-    name: 'Igor',
-    phoneNumber: '+5511999999999',
-    phoneNumberVerified: true,
-    emailVerified: false,
-  }).returning()
+  const [user1] = await db
+    .insert(user)
+    .values({
+      id: 'user-1',
+      name: 'Igor',
+      phoneNumber: '+5511999999999',
+      phoneNumberVerified: true,
+      emailVerified: false,
+    })
+    .returning()
 
-  const [user2] = await db.insert(user).values({
-    id: 'user-2',
-    name: 'Maria',
-    phoneNumber: '+5511888888888',
-    phoneNumberVerified: true,
-    emailVerified: false,
-  }).returning()
+  const [user2] = await db
+    .insert(user)
+    .values({
+      id: 'user-2',
+      name: 'Maria',
+      phoneNumber: '+5511888888888',
+      phoneNumberVerified: true,
+      emailVerified: false,
+    })
+    .returning()
 
-  const [user3] = await db.insert(user).values({
-    id: 'user-3',
-    name: 'Pedro',
-    phoneNumber: '+5511777777777',
-    phoneNumberVerified: true,
-    emailVerified: false,
-  }).returning()
+  const [user3] = await db
+    .insert(user)
+    .values({
+      id: 'user-3',
+      name: 'Pedro',
+      phoneNumber: '+5511777777777',
+      phoneNumberVerified: true,
+      emailVerified: false,
+    })
+    .returning()
 
-  console.log('Users created:', user1!.id, user2!.id, user3!.id)
+  console.log('Users created:', user1?.id, user2?.id, user3?.id)
 
   // Pool
-  const [pool1] = await db.insert(pool).values({
-    name: 'Bolão da Galera',
-    entryFee: 5000,
-    ownerId: user1!.id,
-    inviteCode: 'GALERA26',
-  }).returning()
+  const [pool1] = await db
+    .insert(pool)
+    .values({
+      name: 'Bolão da Galera',
+      entryFee: 5000,
+      // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
+      ownerId: user1!.id,
+      inviteCode: 'GALERA26',
+    })
+    .returning()
 
-  console.log('Pool created:', pool1!.id)
+  console.log('Pool created:', pool1?.id)
 
   // Payments
+  // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
   for (const u of [user1!, user2!, user3!]) {
-    const [pay] = await db.insert(payment).values({
-      userId: u.id,
-      poolId: pool1!.id,
-      amount: 5000,
-      platformFee: 250,
-      status: 'completed',
-      type: 'entry',
-    }).returning()
+    const [pay] = await db
+      .insert(payment)
+      .values({
+        userId: u.id,
+        // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
+        poolId: pool1!.id,
+        amount: 5000,
+        platformFee: 250,
+        status: 'completed',
+        type: 'entry',
+      })
+      .returning()
 
     await db.insert(poolMember).values({
+      // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
       poolId: pool1!.id,
       userId: u.id,
+      // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
       paymentId: pay!.id,
     })
   }
@@ -68,10 +88,46 @@ async function seed() {
 
   // Sample matches (Group A)
   const sampleMatches = [
-    { homeTeam: 'Brasil', awayTeam: 'Alemanha', stage: 'group', group: 'A', matchDate: new Date('2026-06-11T18:00:00Z'), status: 'scheduled', externalId: 1001 },
-    { homeTeam: 'Argentina', awayTeam: 'Franca', stage: 'group', group: 'A', matchDate: new Date('2026-06-11T21:00:00Z'), status: 'scheduled', externalId: 1002 },
-    { homeTeam: 'Brasil', awayTeam: 'Franca', stage: 'group', group: 'A', matchDate: new Date('2026-06-15T18:00:00Z'), status: 'finished', homeScore: 2, awayScore: 1, externalId: 1003 },
-    { homeTeam: 'Alemanha', awayTeam: 'Argentina', stage: 'group', group: 'A', matchDate: new Date('2026-06-15T21:00:00Z'), status: 'finished', homeScore: 1, awayScore: 1, externalId: 1004 },
+    {
+      homeTeam: 'Brasil',
+      awayTeam: 'Alemanha',
+      stage: 'group',
+      group: 'A',
+      matchDate: new Date('2026-06-11T18:00:00Z'),
+      status: 'scheduled',
+      externalId: 1001,
+    },
+    {
+      homeTeam: 'Argentina',
+      awayTeam: 'Franca',
+      stage: 'group',
+      group: 'A',
+      matchDate: new Date('2026-06-11T21:00:00Z'),
+      status: 'scheduled',
+      externalId: 1002,
+    },
+    {
+      homeTeam: 'Brasil',
+      awayTeam: 'Franca',
+      stage: 'group',
+      group: 'A',
+      matchDate: new Date('2026-06-15T18:00:00Z'),
+      status: 'finished',
+      homeScore: 2,
+      awayScore: 1,
+      externalId: 1003,
+    },
+    {
+      homeTeam: 'Alemanha',
+      awayTeam: 'Argentina',
+      stage: 'group',
+      group: 'A',
+      matchDate: new Date('2026-06-15T21:00:00Z'),
+      status: 'finished',
+      homeScore: 1,
+      awayScore: 1,
+      externalId: 1004,
+    },
   ]
 
   for (const m of sampleMatches) {
@@ -87,7 +143,9 @@ async function seed() {
 
   for (const m of finishedMatches) {
     await db.insert(prediction).values({
+      // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
       userId: user1!.id,
+      // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
       poolId: pool1!.id,
       matchId: m.id,
       homeScore: m.homeScore ?? 0,
@@ -96,7 +154,9 @@ async function seed() {
     })
 
     await db.insert(prediction).values({
+      // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
       userId: user2!.id,
+      // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
       poolId: pool1!.id,
       matchId: m.id,
       homeScore: (m.homeScore ?? 0) + 1,

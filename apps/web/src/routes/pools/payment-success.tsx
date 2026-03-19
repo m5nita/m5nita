@@ -7,8 +7,12 @@ function PaymentSuccessPage() {
   return (
     <div className="flex min-h-[60vh] flex-col justify-center">
       <div className="mb-8">
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-green">Sucesso</p>
-        <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">Pagamento Confirmado</h1>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-green">
+          Sucesso
+        </p>
+        <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
+          Pagamento Confirmado
+        </h1>
         <div className="mt-3 h-1 w-12 bg-green" />
         <p className="mt-4 text-sm text-gray-dark">
           Seu pagamento foi processado. Você já faz parte do bolão!

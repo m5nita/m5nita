@@ -1,10 +1,12 @@
-import { pgTable, text, uuid, integer, boolean, timestamp, index } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
 
 export const pool = pgTable(
   'pool',
   {
-    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     name: text('name').notNull(),
     entryFee: integer('entry_fee').notNull(),
     ownerId: text('owner_id')
@@ -16,7 +18,5 @@ export const pool = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [
-    index('pool_owner_id_idx').on(table.ownerId),
-  ]
+  (table) => [index('pool_owner_id_idx').on(table.ownerId)],
 )

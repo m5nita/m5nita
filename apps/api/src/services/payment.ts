@@ -1,16 +1,12 @@
-import { eq, and } from 'drizzle-orm'
+import { POOL } from '@m5nita/shared'
+import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { payment } from '../db/schema/payment'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
-import { stripe, isStripeConfigured } from '../lib/stripe'
-import { POOL } from '@m5nita/shared'
+import { isStripeConfigured, stripe } from '../lib/stripe'
 
-export async function createEntryPayment(
-  userId: string,
-  poolId: string,
-  amount: number,
-) {
+export async function createEntryPayment(userId: string, poolId: string, amount: number) {
   const platformFee = Math.floor(amount * POOL.PLATFORM_FEE_RATE)
 
   let stripePaymentIntentId: string | null = null
@@ -45,34 +41,40 @@ export async function createEntryPayment(
     console.log(`[DEV] Mock payment: ${amount / 100} BRL for pool ${poolId}`)
   }
 
-  const [paymentRecord] = await db.insert(payment).values({
-    userId,
-    poolId,
-    amount,
-    platformFee,
-    stripePaymentIntentId,
-    status: isStripeConfigured() ? 'pending' : 'completed',
-    type: 'entry',
-  }).returning()
+  const [paymentRecord] = await db
+    .insert(payment)
+    .values({
+      userId,
+      poolId,
+      amount,
+      platformFee,
+      stripePaymentIntentId,
+      status: isStripeConfigured() ? 'pending' : 'completed',
+      type: 'entry',
+    })
+    .returning()
 
   // In mock mode, auto-activate pool and create member
   if (!isStripeConfigured()) {
-    await db.update(pool).set({ status: 'active', updatedAt: new Date() }).where(eq(pool.id, poolId))
+    await db
+      .update(pool)
+      .set({ status: 'active', updatedAt: new Date() })
+      .where(eq(pool.id, poolId))
 
     const existing = await db.query.poolMember.findFirst({
       where: and(eq(poolMember.poolId, poolId), eq(poolMember.userId, userId)),
     })
-    if (!existing) {
+    if (!existing && paymentRecord) {
       await db.insert(poolMember).values({
         poolId,
         userId,
-        paymentId: paymentRecord!.id,
+        paymentId: paymentRecord.id,
       })
     }
   }
 
   return {
-    payment: paymentRecord!,
+    payment: paymentRecord as NonNullable<typeof paymentRecord>,
     checkoutUrl,
   }
 }
@@ -100,7 +102,10 @@ export async function handleCheckoutCompleted(sessionId: string) {
       where: eq(pool.id, paymentRecord.poolId),
     })
     if (poolData?.status === 'pending') {
-      await db.update(pool).set({ status: 'active', updatedAt: new Date() }).where(eq(pool.id, paymentRecord.poolId))
+      await db
+        .update(pool)
+        .set({ status: 'active', updatedAt: new Date() })
+        .where(eq(pool.id, paymentRecord.poolId))
     }
 
     const existing = await db.query.poolMember.findFirst({
@@ -154,9 +159,6 @@ export async function createRefund(paymentId: string) {
   await db
     .delete(poolMember)
     .where(
-      and(
-        eq(poolMember.poolId, paymentRecord.poolId),
-        eq(poolMember.userId, paymentRecord.userId),
-      ),
+      and(eq(poolMember.poolId, paymentRecord.poolId), eq(poolMember.userId, paymentRecord.userId)),
     )
 }

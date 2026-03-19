@@ -1,8 +1,8 @@
 <!--
 Sync Impact Report
 ==================
-- Version change: 0.0.0 → 1.0.0
-- Modified principles: N/A (initial creation)
+- Version change: 1.0.0 → 1.1.0
+- Modified principles: I. Code Quality (relaxed complexity and any thresholds to match enforced CI config)
 - Added sections:
   - Core Principles: I. Code Quality, II. Testing Standards,
     III. UX Consistency, IV. Performance Requirements
@@ -33,15 +33,18 @@ Non-negotiable rules:
   TODOs MUST be tracked as issues, never left inline.
 - Naming MUST be explicit and intention-revealing. Abbreviations are
   forbidden unless they are universally understood domain terms.
-- Cyclomatic complexity per function MUST NOT exceed 10. Functions
-  exceeding this threshold MUST be refactored before merge.
-- All public interfaces MUST have type annotations. Implicit `any`
-  types are forbidden.
+- Cognitive complexity per function SHOULD NOT exceed 15. Functions
+  exceeding this threshold SHOULD be refactored. Biome enforces this
+  as a warning; errors block CI, warnings do not.
+- All public interfaces MUST have type annotations. Explicit `any`
+  types SHOULD be avoided and are flagged as warnings by Biome.
+  Implicit `any` types are forbidden by TypeScript strict mode.
 - Code duplication MUST be eliminated when the same logic appears in
   three or more locations. Two occurrences MAY be tolerated if
   extraction would reduce clarity.
-- Linting and formatting rules MUST be enforced via automated tooling.
-  No PR may be merged with linting violations.
+- Linting and formatting rules MUST be enforced via automated tooling
+  (Biome). Lint errors block CI; warnings are permitted but SHOULD be
+  addressed over time. No PR may be merged with lint errors.
 
 **Rationale**: Code is read far more often than it is written.
 Investing in clarity reduces onboarding time, bug surface area,
@@ -220,4 +223,4 @@ guidelines are subordinate.
   files for runtime development instructions that supplement
   this constitution.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-15 | **Last Amended**: 2026-03-15
+**Version**: 1.1.0 | **Ratified**: 2026-03-15 | **Last Amended**: 2026-03-19

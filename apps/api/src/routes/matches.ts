@@ -1,10 +1,11 @@
+import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { eq, and, sql } from 'drizzle-orm'
 import { db } from '../db/client'
 import { match } from '../db/schema/match'
 import { requireAuth } from '../middleware/auth'
+import type { AppEnv } from '../types/hono'
 
-const matchesRoutes = new Hono()
+const matchesRoutes = new Hono<AppEnv>()
 
 matchesRoutes.use('/*', requireAuth)
 

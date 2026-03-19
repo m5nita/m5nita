@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
 import { POOL } from '@m5nita/shared'
+import { describe, expect, it } from 'vitest'
 
 // Unit tests for pool business logic (pure functions)
 describe('Pool validation rules', () => {
@@ -13,9 +13,9 @@ describe('Pool validation rules', () => {
     expect('A'.repeat(51).length <= POOL.MAX_NAME_LENGTH).toBe(false)
   })
 
-  it('validates_minEntryFee_1000centavos', () => {
-    expect(999 >= POOL.MIN_ENTRY_FEE).toBe(false)
-    expect(1000 >= POOL.MIN_ENTRY_FEE).toBe(true)
+  it('validates_minEntryFee_100centavos', () => {
+    expect(99 >= POOL.MIN_ENTRY_FEE).toBe(false)
+    expect(100 >= POOL.MIN_ENTRY_FEE).toBe(true)
   })
 
   it('validates_maxEntryFee_100000centavos', () => {

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { calculatePoints } from '../scoring'
 import { SCORING } from '@m5nita/shared'
+import { describe, expect, it } from 'vitest'
+import { calculatePoints } from '../scoring'
 
 describe('calculatePoints', () => {
   it('exactMatch_sameScore_returns10', () => {
@@ -23,11 +23,11 @@ describe('calculatePoints', () => {
     expect(calculatePoints(0, 1, 0, 3)).toBe(SCORING.WINNER_CORRECT)
   })
 
-  it('drawCorrect_wrongScore_returns3', () => {
-    // Predicted 1-1, Actual 0-0
-    expect(calculatePoints(1, 1, 0, 0)).toBe(SCORING.DRAW_CORRECT)
-    // Predicted 2-2, Actual 3-3
-    expect(calculatePoints(2, 2, 3, 3)).toBe(SCORING.DRAW_CORRECT)
+  it('drawCorrect_wrongScore_returnsWinnerAndDiff', () => {
+    // Predicted 1-1, Actual 0-0 — both draws, diff=0 matches
+    expect(calculatePoints(1, 1, 0, 0)).toBe(SCORING.WINNER_AND_DIFF)
+    // Predicted 2-2, Actual 3-3 — both draws, diff=0 matches
+    expect(calculatePoints(2, 2, 3, 3)).toBe(SCORING.WINNER_AND_DIFF)
   })
 
   it('miss_wrongEverything_returns0', () => {
@@ -42,7 +42,7 @@ describe('calculatePoints', () => {
   it('edgeCase_highScores_calculatesCorrectly', () => {
     expect(calculatePoints(5, 5, 5, 5)).toBe(SCORING.EXACT_MATCH)
     expect(calculatePoints(7, 1, 7, 1)).toBe(SCORING.EXACT_MATCH)
-    expect(calculatePoints(0, 0, 1, 1)).toBe(SCORING.DRAW_CORRECT)
+    expect(calculatePoints(0, 0, 1, 1)).toBe(SCORING.WINNER_AND_DIFF)
   })
 
   it('edgeCase_zeroZero_exactMatch', () => {

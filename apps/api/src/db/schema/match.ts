@@ -1,9 +1,11 @@
-import { pgTable, text, uuid, integer, timestamp, index } from 'drizzle-orm/pg-core'
+import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 export const match = pgTable(
   'match',
   {
-    id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: uuid('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     externalId: integer('external_id').unique().notNull(),
     homeTeam: text('home_team').notNull(),
     awayTeam: text('away_team').notNull(),
@@ -22,5 +24,5 @@ export const match = pgTable(
   (table) => [
     index('match_status_idx').on(table.status),
     index('match_match_date_idx').on(table.matchDate),
-  ]
+  ],
 )

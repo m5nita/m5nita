@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../db/client'
-import { prediction } from '../db/schema/prediction'
 import { match } from '../db/schema/match'
+import { prediction } from '../db/schema/prediction'
 import { calculatePoints } from '../services/scoring'
 
 export async function calcPointsForMatch(matchId: string) {

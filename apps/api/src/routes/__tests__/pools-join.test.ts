@@ -1,5 +1,38 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Hono } from 'hono'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('../../db/client', () => ({
+  db: {
+    query: {
+      pool: { findFirst: vi.fn() },
+      poolMember: { findFirst: vi.fn() },
+      payment: { findMany: vi.fn(() => []) },
+    },
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => []),
+        })),
+        innerJoin: vi.fn(() => ({
+          where: vi.fn(() => []),
+        })),
+      })),
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        returning: vi.fn(() => []),
+      })),
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => ({
+          returning: vi.fn(() => []),
+        })),
+      })),
+    })),
+  },
+}))
+
 import { poolsRoutes } from '../pools'
 
 vi.mock('../../middleware/auth', () => ({
@@ -127,7 +160,7 @@ describe('POST /api/pools/:poolId/join', () => {
     mockIsPoolMember.mockResolvedValue(false)
     mockCreateEntryPayment.mockResolvedValue({
       payment: { id: 'pay-1' },
-      clientSecret: 'pi_join_secret',
+      checkoutUrl: 'https://checkout.stripe.com/join',
     })
 
     const res = await app.request('/api/pools/pool-1/join', {
@@ -137,7 +170,7 @@ describe('POST /api/pools/:poolId/join', () => {
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.payment.clientSecret).toBe('pi_join_secret')
+    expect(body.payment.checkoutUrl).toBe('https://checkout.stripe.com/join')
   })
 
   it('rejects_closedPool_409', async () => {

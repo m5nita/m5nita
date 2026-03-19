@@ -1,9 +1,9 @@
+import { AUTH } from '@m5nita/shared'
 import { betterAuth } from 'better-auth'
-import { phoneNumber } from 'better-auth/plugins/phone-number'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { phoneNumber } from 'better-auth/plugins/phone-number'
 import twilio from 'twilio'
 import { db } from '../db/client'
-import { AUTH } from '@m5nita/shared'
 
 export const auth = betterAuth({
   basePath: '/api/auth',

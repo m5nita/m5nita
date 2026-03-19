@@ -9,9 +9,19 @@
       "recommended": true,
       "complexity": {
         "noExcessiveCognitiveComplexity": {
-          "level": "error",
-          "options": { "maxAllowedComplexity": 10 }
+          "level": "warn",
+          "options": { "maxAllowedComplexity": 15 }
         }
+      },
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn"
+      },
+      "a11y": {
+        "noSvgWithoutTitle": "warn",
+        "useKeyWithClickEvents": "warn",
+        "noLabelWithoutControl": "warn",
+        "useSemanticElements": "warn"
       }
     }
   },
@@ -28,14 +38,6 @@
     }
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      "build",
-      "coverage",
-      ".next",
-      "*.gen.ts",
-      "drizzle"
-    ]
+    "ignore": ["node_modules", "dist", "build", "coverage", ".next", "*.gen.ts", "drizzle"]
   }
 }

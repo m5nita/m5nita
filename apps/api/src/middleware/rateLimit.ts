@@ -1,5 +1,5 @@
-import { rateLimiter } from 'hono-rate-limiter'
 import type { Context } from 'hono'
+import { rateLimiter } from 'hono-rate-limiter'
 
 export const globalRateLimit = rateLimiter({
   windowMs: 60_000,

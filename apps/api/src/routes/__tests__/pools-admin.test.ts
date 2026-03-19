@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Hono } from 'hono'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { poolsRoutes } from '../pools'
 
 vi.mock('../../middleware/auth', () => ({
@@ -19,7 +19,13 @@ vi.mock('../../services/pool', () => ({
   getPoolById: vi.fn(),
   getPoolByInviteCode: vi.fn(),
   isPoolMember: vi.fn(() => false),
-  PoolError: class extends Error { code: string; constructor(c: string, m: string) { super(m); this.code = c } },
+  PoolError: class extends Error {
+    code: string
+    constructor(c: string, m: string) {
+      super(m)
+      this.code = c
+    }
+  },
 }))
 
 vi.mock('../../services/payment', () => ({
@@ -27,19 +33,34 @@ vi.mock('../../services/payment', () => ({
   createRefund: vi.fn(),
 }))
 
-const mockPool = { id: 'pool-1', name: 'Test', entryFee: 5000, ownerId: 'owner-1', isOpen: true, status: 'active' }
+const mockPool = {
+  id: 'pool-1',
+  name: 'Test',
+  entryFee: 5000,
+  ownerId: 'owner-1',
+  isOpen: true,
+  status: 'active',
+}
 
 vi.mock('../../db/client', () => ({
   db: {
     query: {
       pool: { findFirst: vi.fn(() => mockPool) },
-      poolMember: { findFirst: vi.fn(() => ({ id: 'member-1', paymentId: 'pay-1', userId: 'user-2' })) },
-      payment: { findMany: vi.fn(() => [{ id: 'pay-1', userId: 'user-2', amount: 5000, type: 'entry', status: 'completed' }]) },
+      poolMember: {
+        findFirst: vi.fn(() => ({ id: 'member-1', paymentId: 'pay-1', userId: 'user-2' })),
+      },
+      payment: {
+        findMany: vi.fn(() => [
+          { id: 'pay-1', userId: 'user-2', amount: 5000, type: 'entry', status: 'completed' },
+        ]),
+      },
     },
     select: vi.fn(() => ({
       from: vi.fn(() => ({
         innerJoin: vi.fn(() => ({
-          where: vi.fn(() => [{ id: 'member-1', userId: 'user-2', name: 'Bob', joinedAt: new Date() }]),
+          where: vi.fn(() => [
+            { id: 'member-1', userId: 'user-2', name: 'Bob', joinedAt: new Date() },
+          ]),
         })),
         where: vi.fn(() => ({
           limit: vi.fn(() => []),

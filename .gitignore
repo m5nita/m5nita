@@ -13,4 +13,5 @@ Thumbs.db
 .idea/
 coverage/
 *.tsbuildinfo
+apps/web/src/**/*.js
 .turbo/

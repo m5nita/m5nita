@@ -1,5 +1,38 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Hono } from 'hono'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('../../db/client', () => ({
+  db: {
+    query: {
+      pool: { findFirst: vi.fn() },
+      poolMember: { findFirst: vi.fn() },
+      payment: { findMany: vi.fn(() => []) },
+    },
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => []),
+        })),
+        innerJoin: vi.fn(() => ({
+          where: vi.fn(() => []),
+        })),
+      })),
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        returning: vi.fn(() => []),
+      })),
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => ({
+          returning: vi.fn(() => []),
+        })),
+      })),
+    })),
+  },
+}))
+
 import { poolsRoutes } from '../pools'
 
 vi.mock('../../middleware/auth', () => ({
@@ -62,7 +95,7 @@ describe('POST /api/pools', () => {
     })
     mockCreateEntryPayment.mockResolvedValue({
       payment: { id: 'pay-1' },
-      clientSecret: 'pi_secret',
+      checkoutUrl: 'https://checkout.stripe.com/test',
     })
 
     const res = await app.request('/api/pools', {
@@ -77,7 +110,7 @@ describe('POST /api/pools', () => {
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.pool.name).toBe('Test Pool')
-    expect(body.payment.clientSecret).toBe('pi_secret')
+    expect(body.payment.checkoutUrl).toBe('https://checkout.stripe.com/test')
     expect(mockCreatePool).toHaveBeenCalledWith('user-1', 'Test Pool', 5000)
   })
 
@@ -101,7 +134,7 @@ describe('POST /api/pools', () => {
         'Content-Type': 'application/json',
         'x-test-user': JSON.stringify(testUser),
       },
-      body: JSON.stringify({ name: 'Test Pool', entryFee: 500 }),
+      body: JSON.stringify({ name: 'Test Pool', entryFee: 50 }),
     })
 
     expect(res.status).toBe(400)

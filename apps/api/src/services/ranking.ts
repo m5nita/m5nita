@@ -1,9 +1,8 @@
-import { eq, sql, desc } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client'
+import { user } from '../db/schema/auth'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
-import { user } from '../db/schema/auth'
-import { POOL } from '@m5nita/shared'
 
 export async function getPoolRanking(poolId: string, currentUserId: string) {
   const results = await db
@@ -11,7 +10,9 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
       userId: poolMember.userId,
       name: user.name,
       totalPoints: sql<number>`coalesce(sum(${prediction.points}), 0)::int`.as('total_points'),
-      exactMatches: sql<number>`count(case when ${prediction.points} = 10 then 1 end)::int`.as('exact_matches'),
+      exactMatches: sql<number>`count(case when ${prediction.points} = 10 then 1 end)::int`.as(
+        'exact_matches',
+      ),
     })
     .from(poolMember)
     .innerJoin(user, eq(user.id, poolMember.userId))
@@ -57,12 +58,6 @@ export async function getPoolPrizeTotal(poolId: string) {
     .from(poolMember)
     .where(eq(poolMember.poolId, poolId))
 
-  // Need pool entry fee - get from first payment
-  const pool = await db.query.pool.findFirst({
-    where: eq(poolMember.poolId, poolId),
-  })
-
-  // Fallback calculation
   const memberCount = result?.count ?? 0
   return { memberCount }
 }

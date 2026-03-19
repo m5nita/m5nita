@@ -1,16 +1,24 @@
-import { Hono } from 'hono'
-import { requireAuth } from '../middleware/auth'
 import { createPoolSchema, updatePoolSchema } from '@m5nita/shared'
-import { createPool, getUserPools, getPoolById, getPoolByInviteCode, isPoolMember, PoolError } from '../services/pool'
-import { createEntryPayment, createRefund } from '../services/payment'
-import { eq, and, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
+import { Hono } from 'hono'
 import { db } from '../db/client'
+import { user } from '../db/schema/auth'
+import { payment } from '../db/schema/payment'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
-import { payment } from '../db/schema/payment'
-import { user } from '../db/schema/auth'
+import { requireAuth } from '../middleware/auth'
+import { createEntryPayment, createRefund } from '../services/payment'
+import {
+  PoolError,
+  createPool,
+  getPoolById,
+  getPoolByInviteCode,
+  getUserPools,
+  isPoolMember,
+} from '../services/pool'
+import type { AppEnv } from '../types/hono'
 
-const poolsRoutes = new Hono()
+const poolsRoutes = new Hono<AppEnv>()
 
 poolsRoutes.use('/*', requireAuth)
 
@@ -140,12 +148,21 @@ poolsRoutes.patch('/pools/:poolId', async (c) => {
 
   const poolData = await db.query.pool.findFirst({ where: eq(pool.id, poolId) })
   if (!poolData) return c.json({ error: 'NOT_FOUND', message: 'Bolão não encontrado' }, 404)
-  if (poolData.ownerId !== currentUser.id) return c.json({ error: 'FORBIDDEN', message: 'Apenas o criador pode editar' }, 403)
+  if (poolData.ownerId !== currentUser.id)
+    return c.json({ error: 'FORBIDDEN', message: 'Apenas o criador pode editar' }, 403)
 
   const parsed = updatePoolSchema.safeParse(body)
-  if (!parsed.success) return c.json({ error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados inválidos' }, 400)
+  if (!parsed.success)
+    return c.json(
+      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados inválidos' },
+      400,
+    )
 
-  const [updated] = await db.update(pool).set({ ...parsed.data, updatedAt: new Date() }).where(eq(pool.id, poolId)).returning()
+  const [updated] = await db
+    .update(pool)
+    .set({ ...parsed.data, updatedAt: new Date() })
+    .where(eq(pool.id, poolId))
+    .returning()
   return c.json(updated)
 })
 
@@ -159,7 +176,12 @@ poolsRoutes.get('/pools/:poolId/members', async (c) => {
   if (poolData.ownerId !== currentUser.id) return c.json({ error: 'FORBIDDEN' }, 403)
 
   const members = await db
-    .select({ id: poolMember.id, userId: poolMember.userId, name: user.name, joinedAt: poolMember.joinedAt })
+    .select({
+      id: poolMember.id,
+      userId: poolMember.userId,
+      name: user.name,
+      joinedAt: poolMember.joinedAt,
+    })
     .from(poolMember)
     .innerJoin(user, eq(user.id, poolMember.userId))
     .where(eq(poolMember.poolId, poolId))
@@ -196,16 +218,28 @@ poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
   const [prizePayment] = await db
     .select()
     .from(payment)
-    .where(and(eq(payment.poolId, poolId), eq(payment.type, 'prize'), eq(payment.status, 'completed')))
+    .where(
+      and(eq(payment.poolId, poolId), eq(payment.type, 'prize'), eq(payment.status, 'completed')),
+    )
     .limit(1)
 
   if (prizePayment) {
-    return c.json({ error: 'PRIZE_ALREADY_DISTRIBUTED', message: 'Não é possível encerrar após distribuição do prêmio' }, 409)
+    return c.json(
+      {
+        error: 'PRIZE_ALREADY_DISTRIBUTED',
+        message: 'Não é possível encerrar após distribuição do prêmio',
+      },
+      409,
+    )
   }
 
   // Refund all members
   const payments = await db.query.payment.findMany({
-    where: and(eq(payment.poolId, poolId), eq(payment.type, 'entry'), eq(payment.status, 'completed')),
+    where: and(
+      eq(payment.poolId, poolId),
+      eq(payment.type, 'entry'),
+      eq(payment.status, 'completed'),
+    ),
   })
 
   const refunds = []
@@ -218,7 +252,10 @@ poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
     }
   }
 
-  await db.update(pool).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(pool.id, poolId))
+  await db
+    .update(pool)
+    .set({ status: 'cancelled', updatedAt: new Date() })
+    .where(eq(pool.id, poolId))
 
   return c.json({ pool: { status: 'cancelled' }, refunds })
 })

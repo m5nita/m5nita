@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import type Stripe from 'stripe'
 import { stripe } from '../lib/stripe'
 import { handleCheckoutCompleted, handleCheckoutExpired } from '../services/payment'
 
@@ -20,7 +21,11 @@ webhooksRoutes.post('/webhooks/stripe', async (c) => {
     return c.json({ error: 'CONFIG_ERROR', message: 'Webhook not configured' }, 500)
   }
 
-  let event
+  if (!stripe) {
+    return c.json({ error: 'CONFIG_ERROR', message: 'Stripe not configured' }, 500)
+  }
+
+  let event: Stripe.Event
   try {
     event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret)
   } catch (err) {

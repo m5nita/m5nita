@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Hono } from 'hono'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { webhooksRoutes } from '../webhooks'
 
-const mockHandleSucceeded = vi.fn()
-const mockHandleFailed = vi.fn()
+const mockHandleCheckoutCompleted = vi.fn()
+const mockHandleCheckoutExpired = vi.fn()
 
 vi.mock('../../services/payment', () => ({
-  handlePaymentSucceeded: (...args: unknown[]) => mockHandleSucceeded(...args),
-  handlePaymentFailed: (...args: unknown[]) => mockHandleFailed(...args),
+  handleCheckoutCompleted: (...args: unknown[]) => mockHandleCheckoutCompleted(...args),
+  handleCheckoutExpired: (...args: unknown[]) => mockHandleCheckoutExpired(...args),
 }))
 
 vi.mock('../../lib/stripe', () => ({
@@ -36,10 +36,10 @@ describe('POST /api/webhooks/stripe', () => {
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test'
   })
 
-  it('handles_paymentSucceeded_callsHandler', async () => {
+  it('handles_checkoutCompleted_callsHandler', async () => {
     const event = {
-      type: 'payment_intent.succeeded',
-      data: { object: { id: 'pi_123' } },
+      type: 'checkout.session.completed',
+      data: { object: { id: 'cs_123' } },
     }
 
     const res = await app.request('/api/webhooks/stripe', {
@@ -52,13 +52,13 @@ describe('POST /api/webhooks/stripe', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(mockHandleSucceeded).toHaveBeenCalledWith('pi_123')
+    expect(mockHandleCheckoutCompleted).toHaveBeenCalledWith('cs_123')
   })
 
-  it('handles_paymentFailed_callsHandler', async () => {
+  it('handles_checkoutExpired_callsHandler', async () => {
     const event = {
-      type: 'payment_intent.payment_failed',
-      data: { object: { id: 'pi_456' } },
+      type: 'checkout.session.expired',
+      data: { object: { id: 'cs_456' } },
     }
 
     const res = await app.request('/api/webhooks/stripe', {
@@ -71,7 +71,7 @@ describe('POST /api/webhooks/stripe', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(mockHandleFailed).toHaveBeenCalledWith('pi_456')
+    expect(mockHandleCheckoutExpired).toHaveBeenCalledWith('cs_456')
   })
 
   it('rejects_missingSignature_400', async () => {

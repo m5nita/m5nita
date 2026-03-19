@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { Button } from '../components/ui/Button'
+import { OtpInput } from '../components/ui/OtpInput'
+import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
 import { consumePendingRedirect } from '../lib/authGuard'
-import { PhoneInput } from '../components/ui/PhoneInput'
-import { OtpInput } from '../components/ui/OtpInput'
-import { Button } from '../components/ui/Button'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -65,7 +65,9 @@ function LoginPage() {
   return (
     <div className="flex min-h-[75vh] flex-col justify-center">
       <div className="mb-8">
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">M5nita</p>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+          M5nita
+        </p>
         <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">
           {step === 'phone' ? 'Entrar' : 'Código'}
         </h1>
@@ -75,7 +77,11 @@ function LoginPage() {
       {step === 'phone' ? (
         <div className="flex flex-col gap-6">
           <PhoneInput value={phone} onChange={setPhone} />
-          {error && <p className="text-xs font-medium text-red" role="alert">{error}</p>}
+          {error && (
+            <p className="text-xs font-medium text-red" role="alert">
+              {error}
+            </p>
+          )}
           <Button onClick={handleSendOtp} loading={loading} className="w-full" size="lg">
             Enviar código via WhatsApp
           </Button>
@@ -91,7 +97,11 @@ function LoginPage() {
           </Button>
           <button
             type="button"
-            onClick={() => { setStep('phone'); setOtp(''); setError('') }}
+            onClick={() => {
+              setStep('phone')
+              setOtp('')
+              setError('')
+            }}
             className="font-display text-xs font-bold uppercase tracking-wider text-gray-muted underline underline-offset-4 hover:text-black transition-colors cursor-pointer"
           >
             Usar outro número

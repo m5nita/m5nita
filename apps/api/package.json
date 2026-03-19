@@ -2,6 +2,9 @@
   "name": "@m5nita/api",
   "private": true,
   "type": "module",
+  "exports": {
+    "./src/*": "./src/*"
+  },
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",

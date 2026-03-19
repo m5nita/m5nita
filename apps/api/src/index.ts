@@ -3,13 +3,13 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { auth } from './lib/auth'
-import { usersRoutes } from './routes/users'
-import { poolsRoutes } from './routes/pools'
-import { webhooksRoutes } from './routes/webhooks'
+import { globalRateLimit } from './middleware/rateLimit'
 import { matchesRoutes } from './routes/matches'
+import { poolsRoutes } from './routes/pools'
 import { predictionsRoutes } from './routes/predictions'
 import { rankingRoutes } from './routes/ranking'
-import { globalRateLimit } from './middleware/rateLimit'
+import { usersRoutes } from './routes/users'
+import { webhooksRoutes } from './routes/webhooks'
 import { syncFixtures, syncLiveScores } from './services/match'
 
 const app = new Hono()
@@ -63,14 +63,20 @@ serve({ fetch: app.fetch, port }, () => {
 
   // Schedule cron jobs
   // Sync fixtures every 6 hours
-  setInterval(() => {
-    syncFixtures().catch((err) => console.error('[Cron] Fixture sync failed:', err))
-  }, 6 * 60 * 60 * 1000)
+  setInterval(
+    () => {
+      syncFixtures().catch((err) => console.error('[Cron] Fixture sync failed:', err))
+    },
+    6 * 60 * 60 * 1000,
+  )
 
   // Sync live scores every 5 minutes
-  setInterval(() => {
-    syncLiveScores().catch((err) => console.error('[Cron] Live sync failed:', err))
-  }, 5 * 60 * 1000)
+  setInterval(
+    () => {
+      syncLiveScores().catch((err) => console.error('[Cron] Live sync failed:', err))
+    },
+    5 * 60 * 1000,
+  )
 })
 
 export default app

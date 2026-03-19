@@ -1,4 +1,4 @@
-import { eq, and, ne } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { match } from '../db/schema/match'
 import { calcPointsForMatch } from '../jobs/calcPoints'
@@ -57,7 +57,7 @@ function mapStage(stage: string): string {
 function extractGroup(group: string | null): string | null {
   if (!group) return null
   const groupMatch = group.match(/GROUP_([A-L])/i)
-  return groupMatch ? groupMatch[1]!.toUpperCase() : null
+  return groupMatch ? (groupMatch[1]?.toUpperCase() ?? null) : null
 }
 
 async function fetchMatches(endpoint: string): Promise<FootballDataMatch[]> {
@@ -134,7 +134,9 @@ export async function syncLiveScores() {
   try {
     // Fetch both live and recently finished matches
     const liveMatches = await fetchMatches('/competitions/WC/matches?status=LIVE')
-    const finishedMatches = await fetchMatches('/competitions/WC/matches?status=FINISHED&dateFrom=' + getTodayDate() + '&dateTo=' + getTodayDate())
+    const finishedMatches = await fetchMatches(
+      `/competitions/WC/matches?status=FINISHED&dateFrom=${getTodayDate()}&dateTo=${getTodayDate()}`,
+    )
 
     const allMatches = [...liveMatches, ...finishedMatches]
 
@@ -171,5 +173,5 @@ export async function syncLiveScores() {
 }
 
 function getTodayDate(): string {
-  return new Date().toISOString().split('T')[0]!
+  return new Date().toISOString().split('T')[0] as string
 }

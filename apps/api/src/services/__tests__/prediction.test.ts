@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 describe('Prediction validation rules', () => {
   it('validates_scoreMinimum_zeroAllowed', () => {
-    expect(0 >= 0).toBe(true)
+    const minScore = 0
+    expect(minScore >= 0).toBe(true)
     expect(-1 >= 0).toBe(false)
   })
 
