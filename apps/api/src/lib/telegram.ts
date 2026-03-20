@@ -7,29 +7,6 @@ import { isAdmin } from './admin'
 
 export const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '')
 
-async function setupCommands() {
-  await bot.api.setMyCommands([{ command: 'start', description: 'Iniciar o bot' }], {
-    scope: { type: 'all_private_chats' },
-  })
-
-  const adminIds = (process.env.ADMIN_USER_IDS ?? '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean)
-  for (const id of adminIds) {
-    await bot.api.setMyCommands(
-      [
-        { command: 'start', description: 'Iniciar o bot' },
-        { command: 'cupom_criar', description: 'Criar cupom: CODIGO_DESCONTO [DIAS] [MAX_USOS]' },
-        { command: 'cupom_listar', description: 'Listar cupons' },
-        { command: 'cupom_desativar', description: 'Desativar cupom: CODIGO' },
-      ],
-      { scope: { type: 'chat', chat_id: Number(id) } },
-    )
-  }
-}
-
-setupCommands().catch((err) => console.error('[Telegram] Failed to setup commands:', err))
 
 bot.command('start', async (ctx) => {
   await ctx.reply(
