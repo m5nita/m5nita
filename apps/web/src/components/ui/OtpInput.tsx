@@ -19,13 +19,21 @@ export function OtpInput({
 }: OtpInputProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   const hiddenRef = useRef<HTMLInputElement | null>(null)
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
+  const completedRef = useRef(false)
   const digits = value.split('').concat(Array(length).fill('')).slice(0, length)
 
   useEffect(() => {
-    if (value.replace(/\s/g, '').length === length && onComplete) {
-      onComplete(value)
+    const isComplete = value.replace(/\s/g, '').length === length
+    if (isComplete && !completedRef.current && onCompleteRef.current) {
+      completedRef.current = true
+      onCompleteRef.current(value)
     }
-  }, [value, length, onComplete])
+    if (!isComplete) {
+      completedRef.current = false
+    }
+  }, [value, length])
 
   function handleInput(index: number, char: string) {
     if (!/^\d$/.test(char)) return

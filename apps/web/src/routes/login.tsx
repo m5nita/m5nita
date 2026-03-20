@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '../components/ui/Button'
 import { OtpInput } from '../components/ui/OtpInput'
 import { PhoneInput } from '../components/ui/PhoneInput'
@@ -16,6 +16,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showTelegramHelp, setShowTelegramHelp] = useState(false)
+  const verifyingRef = useRef(false)
 
   async function handleSendOtp() {
     if (phone.length < 13) {
@@ -53,6 +54,8 @@ function LoginPage() {
       setError('Digite o código completo')
       return
     }
+    if (verifyingRef.current) return
+    verifyingRef.current = true
     setLoading(true)
     setError('')
     try {
@@ -76,6 +79,7 @@ function LoginPage() {
       setError('Erro ao verificar código.')
     } finally {
       setLoading(false)
+      verifyingRef.current = false
     }
   }
 
