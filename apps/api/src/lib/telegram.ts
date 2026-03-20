@@ -72,6 +72,66 @@ bot.on('message:contact', async (ctx) => {
   })
 })
 
+function parseCouponArgs(args: string[]): {
+  error?: string
+  code: string
+  discountPercent: number
+  expiresAt: Date | null
+  maxUses: number | null
+} {
+  if (args.length < 2) {
+    return {
+      error: 'Uso: /cupom_criar CODIGO_DESCONTO [DIAS] [MAX_USOS]',
+      code: '',
+      discountPercent: 0,
+      expiresAt: null,
+      maxUses: null,
+    }
+  }
+
+  const code = args[0] as string
+  const discountPercent = Number.parseInt(args[1] as string, 10)
+
+  if (Number.isNaN(discountPercent) || discountPercent < 1 || discountPercent > 100) {
+    return {
+      error: 'Desconto deve ser entre 1 e 100.',
+      code,
+      discountPercent,
+      expiresAt: null,
+      maxUses: null,
+    }
+  }
+
+  let expiresAt: Date | null = null
+  if (args[2]) {
+    const daysMatch = args[2].match(/^(\d+)d$/)
+    if (!daysMatch) {
+      return {
+        error: 'Formato de duracao invalido. Use Nd (ex: 30d).',
+        code,
+        discountPercent,
+        expiresAt: null,
+        maxUses: null,
+      }
+    }
+    expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + Number.parseInt(daysMatch[1] as string, 10))
+  }
+
+  const maxUses = args[3] ? Number.parseInt(args[3], 10) : null
+  if (maxUses !== null && (Number.isNaN(maxUses) || maxUses < 1)) {
+    return {
+      error: 'Limite de usos deve ser um numero positivo.',
+      code,
+      discountPercent,
+      expiresAt,
+      maxUses: null,
+    }
+  }
+
+  return { code, discountPercent, expiresAt, maxUses }
+}
+
 bot.command('cupom_criar', async (ctx) => {
   if (!ctx.from || !isAdmin(ctx.from.id)) {
     await ctx.reply('Voce nao tem permissao para este comando.')
@@ -79,42 +139,19 @@ bot.command('cupom_criar', async (ctx) => {
   }
 
   const args = ctx.match.split(/\s+/).filter(Boolean)
-  if (args.length < 2) {
-    await ctx.reply('Uso: /cupom_criar CODIGO_DESCONTO [DIAS] [MAX_USOS]')
-    return
-  }
+  const parsed = parseCouponArgs(args)
 
-  const code = args[0] as string
-  const discountPercent = Number.parseInt(args[1] as string, 10)
-
-  if (Number.isNaN(discountPercent) || discountPercent < 1 || discountPercent > 100) {
-    await ctx.reply('Desconto deve ser entre 1 e 100.')
-    return
-  }
-
-  let expiresAt: Date | null = null
-  if (args[2]) {
-    const daysMatch = args[2].match(/^(\d+)d$/)
-    if (!daysMatch) {
-      await ctx.reply('Formato de duracao invalido. Use Nd (ex: 30d).')
-      return
-    }
-    expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + Number.parseInt(daysMatch[1] as string, 10))
-  }
-
-  const maxUses = args[3] ? Number.parseInt(args[3], 10) : null
-  if (args[3] && (Number.isNaN(maxUses) || (maxUses !== null && maxUses < 1))) {
-    await ctx.reply('Limite de usos deve ser um numero positivo.')
+  if (parsed.error) {
+    await ctx.reply(parsed.error)
     return
   }
 
   try {
     const created = await createCoupon({
-      code,
-      discountPercent,
-      expiresAt,
-      maxUses,
+      code: parsed.code,
+      discountPercent: parsed.discountPercent,
+      expiresAt: parsed.expiresAt,
+      maxUses: parsed.maxUses,
       createdByTelegramId: ctx.from.id,
     })
 

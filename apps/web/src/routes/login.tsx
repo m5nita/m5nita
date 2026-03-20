@@ -6,8 +6,7 @@ import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
 import { consumePendingRedirect } from '../lib/authGuard'
 
-const TELEGRAM_BOT_USERNAME =
-  import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'm5nita_bot'
+const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'm5nita_bot'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -97,7 +96,13 @@ function LoginPage() {
       </div>
 
       {step === 'phone' ? (
-        <form className="flex flex-col gap-6" onSubmit={(e) => { e.preventDefault(); handleSendOtp() }}>
+        <form
+          className="flex flex-col gap-6"
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleSendOtp()
+          }}
+        >
           <PhoneInput value={phone} onChange={setPhone} />
           {error && (
             <p className="text-xs font-medium text-red" role="alert">

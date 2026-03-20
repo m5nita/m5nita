@@ -32,6 +32,7 @@ function RootLayout() {
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <path d="m15 18-6-6 6-6" />
                 </svg>
@@ -64,6 +65,7 @@ function RootLayout() {
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <path d="M18 6 6 18" />
                   <path d="m6 6 12 12" />
@@ -79,6 +81,7 @@ function RootLayout() {
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <line x1="4" x2="20" y1="12" y2="12" />
                   <line x1="4" x2="20" y1="6" y2="6" />
@@ -95,7 +98,10 @@ function RootLayout() {
           <div
             className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm"
             onClick={() => setMenuOpen(false)}
-            aria-hidden="true"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setMenuOpen(false)
+            }}
+            role="presentation"
           />
           <nav className="fixed inset-x-0 top-[53px] z-40 border-b border-border bg-cream shadow-lg">
             <div className="mx-auto max-w-[430px] p-5">

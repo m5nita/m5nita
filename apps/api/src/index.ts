@@ -11,7 +11,6 @@ import { rankingRoutes } from './routes/ranking'
 import { telegramRoutes } from './routes/telegram'
 import { usersRoutes } from './routes/users'
 import { webhooksRoutes } from './routes/webhooks'
-import { bot } from './lib/telegram'
 import { syncFixtures, syncLiveScores } from './services/match'
 
 const app = new Hono()
@@ -60,11 +59,6 @@ const port = Number(process.env.PORT) || 3001
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`m5nita API running on http://localhost:${port}`)
-
-  // Start Telegram bot polling in development
-  if (process.env.NODE_ENV !== 'production') {
-    bot.start({ onStart: () => console.log('Telegram bot polling started') })
-  }
 
   // Run fixture sync on startup
   syncFixtures().catch((err) => console.error('[Startup] Fixture sync failed:', err))
