@@ -80,8 +80,12 @@ export function ScoreInput({
       </p>
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
-          <span className="truncate font-display text-xs font-bold uppercase tracking-wide text-black text-right">
-            {homeTeam}
+          <span
+            className={`truncate font-display text-xs uppercase tracking-wide text-right ${
+              homeTeam === 'TBD' ? 'font-medium italic text-gray-muted' : 'font-bold text-black'
+            }`}
+          >
+            {homeTeam === 'TBD' ? 'A definir' : homeTeam}
           </span>
           {homeFlag && (
             <img src={homeFlag} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
@@ -112,8 +116,12 @@ export function ScoreInput({
           {awayFlag && (
             <img src={awayFlag} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
           )}
-          <span className="truncate font-display text-xs font-bold uppercase tracking-wide text-black">
-            {awayTeam}
+          <span
+            className={`truncate font-display text-xs uppercase tracking-wide ${
+              awayTeam === 'TBD' ? 'font-medium italic text-gray-muted' : 'font-bold text-black'
+            }`}
+          >
+            {awayTeam === 'TBD' ? 'A definir' : awayTeam}
           </span>
         </div>
       </div>
