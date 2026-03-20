@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm'
 import { account, session, user } from './auth'
+import { coupon } from './coupon'
 import { match } from './match'
 import { payment } from './payment'
 import { pool } from './pool'
@@ -29,10 +30,18 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }))
 
+export const couponRelations = relations(coupon, ({ many }) => ({
+  pools: many(pool),
+}))
+
 export const poolRelations = relations(pool, ({ one, many }) => ({
   owner: one(user, {
     fields: [pool.ownerId],
     references: [user.id],
+  }),
+  coupon: one(coupon, {
+    fields: [pool.couponId],
+    references: [coupon.id],
   }),
   poolMembers: many(poolMember),
   payments: many(payment),

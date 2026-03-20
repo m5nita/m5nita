@@ -46,6 +46,14 @@ export const PAYMENT = {
   TYPES: ['entry', 'refund', 'prize'] as const,
 } as const
 
+export const COUPON = {
+  MIN_CODE_LENGTH: 2,
+  MAX_CODE_LENGTH: 20,
+  CODE_REGEX: /^[A-Z0-9]+$/,
+  MIN_DISCOUNT: 1,
+  MAX_DISCOUNT: 100,
+} as const
+
 export const PREDICTION = {
   DEBOUNCE_MS: 500,
   MIN_SCORE: 0,

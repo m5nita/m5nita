@@ -1,4 +1,5 @@
 export * from './auth'
+export * from './coupon'
 export * from './pool'
 export * from './poolMember'
 export * from './payment'
