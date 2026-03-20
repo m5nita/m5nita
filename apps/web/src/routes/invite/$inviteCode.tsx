@@ -94,16 +94,36 @@ function InvitePage() {
 
       <div className="flex flex-col border-t-2 border-black">
         {[
-          { label: 'Criado por', value: poolInfo.owner.name || 'Anônimo' },
+          { label: 'Criado por', value: poolInfo.owner.name || 'Anonimo' },
           { label: 'Participantes', value: String(poolInfo.memberCount) },
           { label: 'Entrada', value: formatCurrency(poolInfo.entryFee) },
-          { label: 'Taxa (5%)', value: formatCurrency(poolInfo.platformFee) },
         ].map(({ label, value }) => (
           <div key={label} className="flex justify-between border-b border-border py-3 text-sm">
             <span className="text-gray-dark">{label}</span>
             <span className="font-medium text-black">{value}</span>
           </div>
         ))}
+        {poolInfo.discountPercent > 0 ? (
+          <>
+            <div className="flex justify-between border-b border-border py-3 text-sm">
+              <span className="text-gray-muted line-through">Taxa (5%)</span>
+              <span className="text-gray-muted line-through">
+                {formatCurrency(poolInfo.originalPlatformFee)}
+              </span>
+            </div>
+            <div className="flex justify-between border-b border-border py-3 text-sm">
+              <span className="text-green font-medium">
+                Taxa com desconto ({(5 * (1 - poolInfo.discountPercent / 100)).toFixed(1)}%)
+              </span>
+              <span className="text-green font-medium">{formatCurrency(poolInfo.platformFee)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex justify-between border-b border-border py-3 text-sm">
+            <span className="text-gray-dark">Taxa (5%)</span>
+            <span className="font-medium text-black">{formatCurrency(poolInfo.platformFee)}</span>
+          </div>
+        )}
         <div className="flex justify-between py-4">
           <span className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
             Prêmio Estimado
