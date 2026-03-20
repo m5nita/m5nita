@@ -65,7 +65,7 @@ export function OtpInput({
       <label className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
         Codigo de verificacao
       </label>
-      <div className="relative flex gap-2" role="group" aria-label="Codigo OTP">
+      <div className="relative flex gap-2 w-full" role="group" aria-label="Codigo OTP">
         <input
           ref={hiddenRef}
           type="text"
@@ -92,7 +92,7 @@ export function OtpInput({
             onPaste={handlePaste}
             aria-label={`Digito ${index + 1}`}
             aria-invalid={!!error}
-            className={`h-14 flex-1 border-b-2 bg-transparent text-center font-display text-2xl font-black transition-colors duration-150 focus:border-black focus:outline-none disabled:text-gray-muted ${
+            className={`h-14 w-0 flex-1 min-w-0 border-b-2 bg-transparent text-center font-display text-2xl font-black transition-colors duration-150 focus:border-black focus:outline-none disabled:text-gray-muted ${
               error ? 'border-red' : digit ? 'border-black' : 'border-border'
             }`}
           />
