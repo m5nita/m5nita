@@ -55,6 +55,8 @@ export interface PoolInviteInfo {
   name: string
   entryFee: number
   platformFee: number
+  originalPlatformFee: number
+  discountPercent: number
   owner: { name: string | null }
   memberCount: number
   prizeTotal: number
