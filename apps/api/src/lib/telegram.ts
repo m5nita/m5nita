@@ -7,14 +7,41 @@ import { isAdmin } from './admin'
 
 export const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '')
 
-bot.command('start', async (ctx) => {
-  await ctx.reply('Bem-vindo ao m5nita! Compartilhe seu número para receber códigos de acesso.', {
-    reply_markup: {
-      keyboard: [[{ text: 'Compartilhar telefone', request_contact: true }]],
-      resize_keyboard: true,
-      one_time_keyboard: true,
-    },
+async function setupCommands() {
+  await bot.api.setMyCommands([{ command: 'start', description: 'Iniciar o bot' }], {
+    scope: { type: 'all_private_chats' },
   })
+
+  const adminIds = (process.env.ADMIN_USER_IDS ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean)
+  for (const id of adminIds) {
+    await bot.api.setMyCommands(
+      [
+        { command: 'start', description: 'Iniciar o bot' },
+        { command: 'cupom_criar', description: 'Criar cupom: CODIGO_DESCONTO [DIAS] [MAX_USOS]' },
+        { command: 'cupom_listar', description: 'Listar cupons' },
+        { command: 'cupom_desativar', description: 'Desativar cupom: CODIGO' },
+      ],
+      { scope: { type: 'chat', chat_id: Number(id) } },
+    )
+  }
+}
+
+setupCommands().catch((err) => console.error('[Telegram] Failed to setup commands:', err))
+
+bot.command('start', async (ctx) => {
+  await ctx.reply(
+    'Bem-vindo ao m5nita!\n\nToque no botão abaixo para compartilhar seu número. Não digite — use o botão.',
+    {
+      reply_markup: {
+        keyboard: [[{ text: '📱 Compartilhar telefone', request_contact: true }]],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    },
+  )
 })
 
 bot.on('message:contact', async (ctx) => {
@@ -53,7 +80,7 @@ bot.command('cupom_criar', async (ctx) => {
 
   const args = ctx.match.split(/\s+/).filter(Boolean)
   if (args.length < 2) {
-    await ctx.reply('Uso: /cupom_criar CODIGO DESCONTO% [DIAS] [MAX_USOS]')
+    await ctx.reply('Uso: /cupom_criar CODIGO_DESCONTO [DIAS] [MAX_USOS]')
     return
   }
 
@@ -155,6 +182,21 @@ bot.command('cupom_desativar', async (ctx) => {
     }
     throw error
   }
+})
+
+bot.on('message:text', async (ctx) => {
+  if (ctx.message.text.startsWith('/')) return
+
+  await ctx.reply(
+    'Não digite seu número aqui. Toque no botão "Compartilhar telefone" abaixo para continuar.',
+    {
+      reply_markup: {
+        keyboard: [[{ text: 'Compartilhar telefone', request_contact: true }]],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    },
+  )
 })
 
 export async function sendOtpViaTelegram(chatId: number, code: string): Promise<void> {
