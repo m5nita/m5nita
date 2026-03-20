@@ -17,6 +17,14 @@ interface ScoreInputProps {
   onSave: (matchId: string, homeScore: number, awayScore: number) => void
 }
 
+function teamNameStyle(name: string): string {
+  return name === 'TBD' ? 'font-medium italic text-gray-muted' : 'font-bold text-black'
+}
+
+function displayTeamName(name: string): string {
+  return name === 'TBD' ? 'A definir' : name
+}
+
 export function ScoreInput({
   matchId,
   homeTeam,
@@ -81,11 +89,9 @@ export function ScoreInput({
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
           <span
-            className={`truncate font-display text-xs uppercase tracking-wide text-right ${
-              homeTeam === 'TBD' ? 'font-medium italic text-gray-muted' : 'font-bold text-black'
-            }`}
+            className={`truncate font-display text-xs uppercase tracking-wide text-right ${teamNameStyle(homeTeam)}`}
           >
-            {homeTeam === 'TBD' ? 'A definir' : homeTeam}
+            {displayTeamName(homeTeam)}
           </span>
           {homeFlag && (
             <img src={homeFlag} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
@@ -117,11 +123,9 @@ export function ScoreInput({
             <img src={awayFlag} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
           )}
           <span
-            className={`truncate font-display text-xs uppercase tracking-wide ${
-              awayTeam === 'TBD' ? 'font-medium italic text-gray-muted' : 'font-bold text-black'
-            }`}
+            className={`truncate font-display text-xs uppercase tracking-wide ${teamNameStyle(awayTeam)}`}
           >
-            {awayTeam === 'TBD' ? 'A definir' : awayTeam}
+            {displayTeamName(awayTeam)}
           </span>
         </div>
       </div>

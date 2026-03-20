@@ -87,11 +87,11 @@ export function OtpInput({
           tabIndex={-1}
           onChange={(e) => handleHiddenInput(e.target.value)}
         />
-        {digits.map((digit, index) => (
+        {digits.map((digit, pos) => (
           <input
-            key={`otp-${index}`}
+            key={`otp-digit-${pos}`}
             ref={(el) => {
-              inputRefs.current[index] = el
+              inputRefs.current[pos] = el
             }}
             type="text"
             inputMode="numeric"
@@ -99,10 +99,10 @@ export function OtpInput({
             maxLength={1}
             value={digit}
             disabled={disabled}
-            onChange={(e) => handleInput(index, e.target.value.slice(-1))}
-            onKeyDown={(e) => handleKeyDown(index, e)}
+            onChange={(e) => handleInput(pos, e.target.value.slice(-1))}
+            onKeyDown={(e) => handleKeyDown(pos, e)}
             onPaste={handlePaste}
-            aria-label={`Digito ${index + 1}`}
+            aria-label={`Digito ${pos + 1}`}
             aria-invalid={!!error}
             className={`h-14 w-0 flex-1 min-w-0 border-b-2 bg-transparent text-center font-display text-2xl font-black transition-colors duration-150 focus:border-black focus:outline-none disabled:text-gray-muted ${
               error ? 'border-red' : digit ? 'border-black' : 'border-border'

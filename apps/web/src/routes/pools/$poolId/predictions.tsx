@@ -1,4 +1,4 @@
-import { MATCH } from '@m5nita/shared'
+import { MATCH, type Match, type Prediction } from '@m5nita/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -17,7 +17,7 @@ function PredictionsPage() {
 
   const { data: matchesData, isPending: matchesPending } = useQuery({
     queryKey: ['matches'],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ matches: Match[] }> => {
       const res = await apiFetch('/api/matches')
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json()
@@ -26,7 +26,7 @@ function PredictionsPage() {
 
   const { data: predictionsData, isPending: predictionsPending } = useQuery({
     queryKey: ['predictions', poolId],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ predictions: Prediction[] }> => {
       const res = await apiFetch(`/api/pools/${poolId}/predictions`)
       if (!res.ok) throw new Error('Erro ao carregar palpites')
       return res.json()
@@ -57,16 +57,16 @@ function PredictionsPage() {
 
   const allMatches = matchesData?.matches ?? []
   const predictions = predictionsData?.predictions ?? []
-  const predictionMap = new Map(predictions.map((p: any) => [p.matchId, p]))
-  const groupMatches = allMatches.filter((m: any) => m.stage === 'group')
-  const knockoutMatches = allMatches.filter((m: any) => m.stage !== 'group')
-  const filteredGroupMatches = groupMatches.filter((m: any) => m.group === activeGroup)
+  const predictionMap = new Map(predictions.map((p) => [p.matchId, p]))
+  const groupMatches = allMatches.filter((m) => m.stage === 'group')
+  const knockoutMatches = allMatches.filter((m) => m.stage !== 'group')
+  const filteredGroupMatches = groupMatches.filter((m) => m.group === activeGroup)
 
-  function renderScoreInputs(matches: any[]) {
+  function renderScoreInputs(matches: Match[]) {
     return (
       <div className="flex flex-col">
-        {matches.map((m: any) => {
-          const pred = predictionMap.get(m.id) as any
+        {matches.map((m) => {
+          const pred = predictionMap.get(m.id)
           return (
             <ScoreInput
               key={m.id}
@@ -155,7 +155,7 @@ function PredictionsPage() {
             </div>
           ) : (
             (() => {
-              const byMatchday = new Map<number, any[]>()
+              const byMatchday = new Map<number, Match[]>()
               for (const m of filteredGroupMatches) {
                 const md = m.matchday ?? 0
                 if (!byMatchday.has(md)) byMatchday.set(md, [])
@@ -196,7 +196,7 @@ function PredictionsPage() {
               </h3>
               <div className="h-px flex-1 bg-border" />
             </div>
-            {renderScoreInputs(knockoutMatches.filter((m: any) => m.homeTeam && m.awayTeam))}
+            {renderScoreInputs(knockoutMatches.filter((m) => m.homeTeam && m.awayTeam))}
           </div>
         ))}
     </div>

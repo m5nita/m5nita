@@ -31,7 +31,9 @@ function ManagePage() {
 
   const { data: membersData } = useQuery({
     queryKey: ['pool-members', poolId],
-    queryFn: async () => {
+    queryFn: async (): Promise<{
+      members: { id: string; userId: string; name: string | null; joinedAt: string }[]
+    }> => {
       const res = await apiFetch(`/api/pools/${poolId}/members`)
       if (!res.ok) return { members: [] }
       return res.json()
@@ -167,7 +169,7 @@ function ManagePage() {
           <p className="text-sm text-gray-muted py-4">Nenhum participante</p>
         ) : (
           <div className="flex flex-col">
-            {members.map((m: any, i: number) => (
+            {members.map((m, i) => (
               <div
                 key={m.id}
                 className="flex items-center justify-between border-b border-border py-3"
