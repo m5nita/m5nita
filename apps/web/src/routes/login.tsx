@@ -47,8 +47,9 @@ function LoginPage() {
     }
   }
 
-  async function handleVerifyOtp() {
-    if (otp.length !== 6) {
+  async function handleVerifyOtp(code?: string) {
+    const otpCode = code || otp
+    if (otpCode.length !== 6) {
       setError('Digite o código completo')
       return
     }
@@ -57,7 +58,7 @@ function LoginPage() {
     try {
       const result = await authClient.phoneNumber.verify({
         phoneNumber: phone,
-        code: otp,
+        code: otpCode,
       })
       if (result.error) {
         setError('Código inválido ou expirado')
@@ -129,8 +130,14 @@ function LoginPage() {
             Enviamos um código pelo Telegram para{' '}
             <span className="font-medium text-black">{phone}</span>
           </p>
-          <OtpInput value={otp} onChange={setOtp} error={error || undefined} disabled={loading} />
-          <Button onClick={handleVerifyOtp} loading={loading} className="w-full" size="lg">
+          <OtpInput
+            value={otp}
+            onChange={setOtp}
+            onComplete={handleVerifyOtp}
+            error={error || undefined}
+            disabled={loading}
+          />
+          <Button onClick={() => handleVerifyOtp()} loading={loading} className="w-full" size="lg">
             Verificar
           </Button>
           <button
