@@ -6,14 +6,16 @@ function RootLayout() {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const { data: session } = useSession()
-  const isHome = router.state.location.pathname === '/'
+  const pathname = router.state.location.pathname
+  const isHome = pathname === '/'
+  const isLogin = pathname === '/login'
 
   return (
     <div className="min-h-screen bg-cream font-body text-black">
       <header className="sticky top-0 z-50 border-b border-border bg-cream/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-[430px] items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
-            {!isHome && (
+            {!isHome && !isLogin && (
               <button
                 type="button"
                 onClick={() => router.history.back()}

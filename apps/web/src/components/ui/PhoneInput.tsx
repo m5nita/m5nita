@@ -42,6 +42,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             +55
           </span>
           <input
+            {...props}
             ref={ref}
             id="phone"
             type="tel"
@@ -53,7 +54,6 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
             aria-invalid={!!error}
             aria-describedby={error ? 'phone-error' : undefined}
             className={`flex-1 border-b-2 bg-transparent py-2.5 text-black placeholder:text-gray-muted transition-colors duration-150 focus:border-black focus:outline-none ${error ? 'border-red' : 'border-border'}`}
-            {...props}
           />
         </div>
         {error && (

@@ -6,7 +6,8 @@ import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
 import { consumePendingRedirect } from '../lib/authGuard'
 
-const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'm5nita_bot'
+const TELEGRAM_BOT_USERNAME =
+  import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'm5nita_bot'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -96,7 +97,7 @@ function LoginPage() {
       </div>
 
       {step === 'phone' ? (
-        <div className="flex flex-col gap-6">
+        <form className="flex flex-col gap-6" onSubmit={(e) => { e.preventDefault(); handleSendOtp() }}>
           <PhoneInput value={phone} onChange={setPhone} />
           {error && (
             <p className="text-xs font-medium text-red" role="alert">
@@ -119,15 +120,15 @@ function LoginPage() {
                   </a>
                 </li>
                 <li>Toque em "Start"</li>
-                <li>Compartilhe seu número de telefone</li>
+                <li>Toque no botão "Compartilhar telefone"</li>
                 <li>Volte aqui e tente novamente</li>
               </ol>
             </div>
           )}
-          <Button onClick={handleSendOtp} loading={loading} className="w-full" size="lg">
+          <Button type="submit" loading={loading} className="w-full" size="lg">
             Enviar código
           </Button>
-        </div>
+        </form>
       ) : (
         <div className="flex flex-col gap-6">
           <p className="text-sm text-gray-dark">
