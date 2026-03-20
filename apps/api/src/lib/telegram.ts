@@ -28,14 +28,14 @@ bot.on('message:contact', async (ctx) => {
     .insert(telegramChat)
     .values({
       phoneNumber: phone,
-      chatId: BigInt(chatId),
+      chatId: chatId,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: telegramChat.phoneNumber,
       set: {
-        chatId: BigInt(chatId),
+        chatId: chatId,
         updatedAt: new Date(),
       },
     })
@@ -88,7 +88,7 @@ bot.command('cupom_criar', async (ctx) => {
       discountPercent,
       expiresAt,
       maxUses,
-      createdByTelegramId: BigInt(ctx.from.id),
+      createdByTelegramId: ctx.from.id,
     })
 
     const expiryText = created.expiresAt ? created.expiresAt.toLocaleDateString('pt-BR') : 'Nunca'
@@ -157,9 +157,9 @@ bot.command('cupom_desativar', async (ctx) => {
   }
 })
 
-export async function sendOtpViaTelegram(chatId: bigint, code: string): Promise<void> {
+export async function sendOtpViaTelegram(chatId: number, code: string): Promise<void> {
   try {
-    await bot.api.sendMessage(Number(chatId), `Seu código m5nita: *${code}*`, {
+    await bot.api.sendMessage(chatId, `Seu código m5nita: *${code}*`, {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [[{ text: '📋 Copiar código', copy_text: { text: code } }]],
@@ -171,7 +171,7 @@ export async function sendOtpViaTelegram(chatId: bigint, code: string): Promise<
   }
 }
 
-export async function findChatIdByPhone(phone: string): Promise<bigint | null> {
+export async function findChatIdByPhone(phone: string): Promise<number | null> {
   const result = await db
     .select({ chatId: telegramChat.chatId })
     .from(telegramChat)
