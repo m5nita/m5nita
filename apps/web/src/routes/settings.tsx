@@ -8,7 +8,7 @@ import { signOut, useSession } from '../lib/auth'
 
 function SettingsPage() {
   const navigate = useNavigate()
-  const { data: session, isPending } = useSession()
+  const { data: session, isPending, refetch } = useSession()
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -25,6 +25,7 @@ function SettingsPage() {
         body: JSON.stringify({ name: name.trim() }),
       })
       if (res.ok) {
+        await refetch()
         setSaved(true)
         setName('')
         setTimeout(() => setSaved(false), 2000)
@@ -86,33 +87,11 @@ function SettingsPage() {
         </div>
       </section>
 
-      <section>
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-            Ajuda
-          </h2>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-        <div className="flex flex-col gap-3 text-sm text-gray-dark">
-          <p>
-            <strong className="text-black">Como funciona?</strong> Crie bolões, convide amigos,
-            façam palpites e dispute o prêmio!
-          </p>
-          <p>
-            <strong className="text-black">Pontuação:</strong> Exato = 10pts, Vencedor + diferença =
-            7pts, Vencedor = 5pts, Empate = 3pts.
-          </p>
-          <p>
-            <strong className="text-black">Prêmio:</strong> 1º lugar leva tudo (menos 5% taxa).
-          </p>
-        </div>
-      </section>
-
       <Button variant="danger" onClick={handleLogout} className="w-full">
         Sair
       </Button>
       <p className="text-center font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-        m5nita v1.0.0
+        m5nita {__APP_VERSION__}
       </p>
     </div>
   )
