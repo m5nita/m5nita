@@ -5,9 +5,17 @@ import { payment } from '../db/schema/payment'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { isStripeConfigured, stripe } from '../lib/stripe'
+import { getEffectiveFeeRate } from './coupon'
 
 export async function createEntryPayment(userId: string, poolId: string, amount: number) {
-  const platformFee = Math.floor(amount * POOL.PLATFORM_FEE_RATE)
+  const poolData = await db.query.pool.findFirst({
+    where: eq(pool.id, poolId),
+    with: { coupon: true },
+  })
+
+  const discountPercent = poolData?.coupon?.discountPercent ?? 0
+  const effectiveRate = getEffectiveFeeRate(discountPercent)
+  const platformFee = Math.floor(amount * effectiveRate)
 
   let stripePaymentIntentId: string | null = null
   let checkoutUrl: string | null = null

@@ -1,4 +1,4 @@
-import { createPoolSchema, updatePoolSchema } from '@m5nita/shared'
+import { POOL, createPoolSchema, updatePoolSchema, validateCouponSchema } from '@m5nita/shared'
 import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../db/client'
@@ -7,6 +7,7 @@ import { payment } from '../db/schema/payment'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { requireAuth } from '../middleware/auth'
+import { getEffectiveFeeRate, validateCoupon } from '../services/coupon'
 import { createEntryPayment, createRefund } from '../services/payment'
 import {
   PoolError,
@@ -22,6 +23,33 @@ const poolsRoutes = new Hono<AppEnv>()
 
 poolsRoutes.use('/*', requireAuth)
 
+// POST /api/pools/validate-coupon — Validate coupon in real-time
+poolsRoutes.post('/pools/validate-coupon', async (c) => {
+  const body = await c.req.json()
+  const parsed = validateCouponSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return c.json({ valid: false, reason: 'not_found' })
+  }
+
+  const result = await validateCoupon(parsed.data.couponCode)
+
+  if (!result.valid) {
+    return c.json({ valid: false, reason: result.reason })
+  }
+
+  const originalFee = Math.floor(parsed.data.entryFee * POOL.PLATFORM_FEE_RATE)
+  const effectiveRate = getEffectiveFeeRate(result.discountPercent)
+  const discountedFee = Math.floor(parsed.data.entryFee * effectiveRate)
+
+  return c.json({
+    valid: true,
+    discountPercent: result.discountPercent,
+    originalFee,
+    discountedFee,
+  })
+})
+
 // POST /api/pools — Create pool
 poolsRoutes.post('/pools', async (c) => {
   const currentUser = c.get('user')
@@ -36,7 +64,12 @@ poolsRoutes.post('/pools', async (c) => {
   }
 
   try {
-    const result = await createPool(currentUser.id, parsed.data.name, parsed.data.entryFee)
+    const result = await createPool(
+      currentUser.id,
+      parsed.data.name,
+      parsed.data.entryFee,
+      parsed.data.couponCode,
+    )
     const paymentResult = await createEntryPayment(
       currentUser.id,
       result.pool.id,
@@ -48,6 +81,9 @@ poolsRoutes.post('/pools', async (c) => {
         pool: {
           ...result.pool,
           platformFee: result.platformFee,
+          originalPlatformFee: result.originalPlatformFee,
+          discountPercent: result.discountPercent,
+          couponCode: result.couponCode,
         },
         payment: {
           id: paymentResult.payment.id,

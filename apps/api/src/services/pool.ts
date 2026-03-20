@@ -3,6 +3,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
+import { CouponError, getEffectiveFeeRate, incrementUsage, validateCoupon } from './coupon'
 
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -13,8 +14,12 @@ function generateInviteCode(): string {
   return code
 }
 
-export async function createPool(userId: string, name: string, entryFee: number) {
-  // Validate
+export async function createPool(
+  userId: string,
+  name: string,
+  entryFee: number,
+  couponCode?: string,
+) {
   if (name.length < POOL.MIN_NAME_LENGTH || name.length > POOL.MAX_NAME_LENGTH) {
     throw new PoolError('VALIDATION_ERROR', 'Nome deve ter entre 3 e 50 caracteres')
   }
@@ -22,8 +27,32 @@ export async function createPool(userId: string, name: string, entryFee: number)
     throw new PoolError('VALIDATION_ERROR', 'Valor deve ser entre R$ 10 e R$ 1.000')
   }
 
+  let couponId: string | null = null
+  let discountPercent = 0
+
+  if (couponCode) {
+    const result = await validateCoupon(couponCode)
+    if (!result.valid) {
+      const messages: Record<string, string> = {
+        not_found: 'Cupom invalido ou expirado',
+        expired: 'Cupom invalido ou expirado',
+        exhausted: 'Cupom atingiu o limite de utilizacoes',
+        inactive: 'Cupom invalido ou expirado',
+      }
+      throw new PoolError('INVALID_COUPON', messages[result.reason])
+    }
+    const incremented = await incrementUsage(result.couponId)
+    if (!incremented) {
+      throw new PoolError('COUPON_EXHAUSTED', 'Cupom atingiu o limite de utilizacoes')
+    }
+    couponId = result.couponId
+    discountPercent = result.discountPercent
+  }
+
+  const effectiveRate = getEffectiveFeeRate(discountPercent)
+  const platformFee = Math.floor(entryFee * effectiveRate)
+  const originalPlatformFee = Math.floor(entryFee * POOL.PLATFORM_FEE_RATE)
   const inviteCode = generateInviteCode()
-  const platformFee = Math.floor(entryFee * POOL.PLATFORM_FEE_RATE)
 
   const [newPool] = await db
     .insert(pool)
@@ -32,11 +61,18 @@ export async function createPool(userId: string, name: string, entryFee: number)
       entryFee,
       ownerId: userId,
       inviteCode,
+      couponId,
       status: 'pending',
     })
     .returning()
 
-  return { pool: newPool as NonNullable<typeof newPool>, platformFee }
+  return {
+    pool: newPool as NonNullable<typeof newPool>,
+    platformFee,
+    originalPlatformFee,
+    discountPercent,
+    couponCode: couponCode?.trim().toUpperCase() ?? null,
+  }
 }
 
 export async function getUserPools(userId: string) {
@@ -65,26 +101,29 @@ export async function getPoolById(poolId: string, _userId: string) {
     where: eq(pool.id, poolId),
     with: {
       owner: true,
+      coupon: true,
     },
   })
 
   if (!poolData) return null
 
-  // Count members
   const [memberCount] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(poolMember)
     .where(eq(poolMember.poolId, poolId))
 
-  const prizeTotal = Math.floor(
-    poolData.entryFee * (memberCount?.count ?? 0) * (1 - POOL.PLATFORM_FEE_RATE),
-  )
+  const discountPercent = poolData.coupon?.discountPercent ?? 0
+  const effectiveRate = getEffectiveFeeRate(discountPercent)
+  const prizeTotal = Math.floor(poolData.entryFee * (memberCount?.count ?? 0) * (1 - effectiveRate))
 
   return {
     ...poolData,
     owner: { id: poolData.owner.id, name: poolData.owner.name },
     memberCount: memberCount?.count ?? 0,
     prizeTotal,
+    discountPercent,
+    originalPlatformFee: Math.floor(poolData.entryFee * POOL.PLATFORM_FEE_RATE),
+    platformFee: Math.floor(poolData.entryFee * effectiveRate),
   }
 }
 
@@ -93,6 +132,7 @@ export async function getPoolByInviteCode(inviteCode: string) {
     where: eq(pool.inviteCode, inviteCode),
     with: {
       owner: true,
+      coupon: true,
     },
   })
 
@@ -104,14 +144,19 @@ export async function getPoolByInviteCode(inviteCode: string) {
     .where(eq(poolMember.poolId, poolData.id))
 
   const count = memberCount?.count ?? 0
-  const platformFee = Math.floor(poolData.entryFee * POOL.PLATFORM_FEE_RATE)
-  const prizeTotal = Math.floor(poolData.entryFee * count * (1 - POOL.PLATFORM_FEE_RATE))
+  const discountPercent = poolData.coupon?.discountPercent ?? 0
+  const effectiveRate = getEffectiveFeeRate(discountPercent)
+  const originalPlatformFee = Math.floor(poolData.entryFee * POOL.PLATFORM_FEE_RATE)
+  const platformFee = Math.floor(poolData.entryFee * effectiveRate)
+  const prizeTotal = Math.floor(poolData.entryFee * count * (1 - effectiveRate))
 
   return {
     id: poolData.id,
     name: poolData.name,
     entryFee: poolData.entryFee,
     platformFee,
+    originalPlatformFee,
+    discountPercent,
     owner: { name: poolData.owner.name },
     memberCount: count,
     prizeTotal,
