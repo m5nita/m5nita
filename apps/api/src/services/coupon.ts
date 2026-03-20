@@ -96,13 +96,13 @@ export async function incrementUsage(couponId: string): Promise<boolean> {
   const result = await db
     .update(coupon)
     .set({
-      useCount: sql`${coupon.useCount} + 1`,
+      useCount: sql`"use_count" + 1`,
       updatedAt: new Date(),
     })
     .where(
       and(
         eq(coupon.id, couponId),
-        sql`${coupon.maxUses} IS NULL OR ${coupon.useCount} < ${coupon.maxUses}`,
+        sql`("max_uses" IS NULL OR "use_count" < "max_uses")`,
       ),
     )
 
