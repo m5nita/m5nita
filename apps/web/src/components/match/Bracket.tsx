@@ -25,18 +25,22 @@ function isTbd(name: string) {
   return !name || name === 'TBD'
 }
 
+function isWinner(match: Match, side: 'home' | 'away'): boolean {
+  if (match.status !== 'finished' || match.homeScore == null || match.awayScore == null)
+    return false
+  return side === 'home' ? match.homeScore > match.awayScore : match.awayScore > match.homeScore
+}
+
+function teamStyle(won: boolean, hasTeams: boolean): string {
+  if (won) return 'font-black text-black'
+  if (hasTeams) return 'font-bold text-gray-dark'
+  return 'font-bold text-gray-muted'
+}
+
 function BracketMatch({ match }: { match: Match }) {
   const hasTeams = !isTbd(match.homeTeam) && !isTbd(match.awayTeam)
-  const homeWon =
-    match.status === 'finished' &&
-    match.homeScore != null &&
-    match.awayScore != null &&
-    match.homeScore > match.awayScore
-  const awayWon =
-    match.status === 'finished' &&
-    match.homeScore != null &&
-    match.awayScore != null &&
-    match.awayScore > match.homeScore
+  const homeWon = isWinner(match, 'home')
+  const awayWon = isWinner(match, 'away')
 
   return (
     <div className="border-2 border-border overflow-hidden">
@@ -45,7 +49,7 @@ function BracketMatch({ match }: { match: Match }) {
           <img src={match.homeFlag} alt="" className="h-4 w-4 rounded-full" aria-hidden="true" />
         )}
         <span
-          className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${homeWon ? 'font-black text-black' : hasTeams ? 'font-bold text-gray-dark' : 'font-bold text-gray-muted'}`}
+          className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${teamStyle(homeWon, hasTeams)}`}
         >
           {hasTeams ? match.homeTeam : 'A definir'}
         </span>
@@ -59,7 +63,7 @@ function BracketMatch({ match }: { match: Match }) {
           <img src={match.awayFlag} alt="" className="h-4 w-4 rounded-full" aria-hidden="true" />
         )}
         <span
-          className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${awayWon ? 'font-black text-black' : hasTeams ? 'font-bold text-gray-dark' : 'font-bold text-gray-muted'}`}
+          className={`flex-1 truncate font-display text-[11px] uppercase tracking-wide ${teamStyle(awayWon, hasTeams)}`}
         >
           {hasTeams ? match.awayTeam : 'A definir'}
         </span>

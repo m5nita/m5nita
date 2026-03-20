@@ -6,6 +6,12 @@ import { Loading } from '../../../components/ui/Loading'
 import { apiFetch } from '../../../lib/api'
 import { formatCurrency } from '../../../lib/utils'
 
+function positionColor(position: number): string {
+  if (position === 1) return 'text-red'
+  if (position <= 3) return 'text-black'
+  return 'text-gray-light'
+}
+
 function RankingPage() {
   const { poolId } = Route.useParams()
 
@@ -60,13 +66,7 @@ function RankingPage() {
               className={`flex items-center gap-4 border-b border-border py-4 px-3 ${entry.isCurrentUser ? 'bg-black/[0.03]' : ''}`}
             >
               <span
-                className={`font-display text-3xl font-black min-w-[40px] ${
-                  entry.position === 1
-                    ? 'text-red'
-                    : entry.position <= 3
-                      ? 'text-black'
-                      : 'text-gray-light'
-                }`}
+                className={`font-display text-3xl font-black min-w-[40px] ${positionColor(entry.position)}`}
               >
                 {String(entry.position).padStart(2, '0')}
               </span>
