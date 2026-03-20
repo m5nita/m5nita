@@ -101,7 +101,8 @@ export async function incrementUsage(couponId: string): Promise<boolean> {
     })
     .where(and(eq(coupon.id, couponId), sql`("max_uses" IS NULL OR "use_count" < "max_uses")`))
 
-  return ((result as unknown as { rowCount: number }).rowCount ?? 0) > 0
+  const { count, rowCount } = result as unknown as { count: number; rowCount: number }
+  return (count ?? rowCount ?? 0) > 0
 }
 
 export async function deactivateCoupon(code: string) {
