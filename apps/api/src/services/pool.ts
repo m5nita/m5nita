@@ -3,7 +3,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
-import { CouponError, getEffectiveFeeRate, incrementUsage, validateCoupon } from './coupon'
+import { getEffectiveFeeRate, incrementUsage, validateCoupon } from './coupon'
 
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -39,7 +39,7 @@ export async function createPool(
         exhausted: 'Cupom atingiu o limite de utilizacoes',
         inactive: 'Cupom invalido ou expirado',
       }
-      throw new PoolError('INVALID_COUPON', messages[result.reason])
+      throw new PoolError('INVALID_COUPON', messages[result.reason] ?? 'Cupom invalido')
     }
     const incremented = await incrementUsage(result.couponId)
     if (!incremented) {

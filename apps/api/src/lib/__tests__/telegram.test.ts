@@ -23,7 +23,7 @@ describe('isAdmin', () => {
   })
 
   it('returns_false_whenEnvUndefined', () => {
-    delete process.env.ADMIN_USER_IDS
+    vi.stubEnv('ADMIN_USER_IDS', undefined as unknown as string)
     expect(isAdmin(123456789)).toBe(false)
   })
 

@@ -1,4 +1,3 @@
-import { POOL } from '@m5nita/shared'
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { payment } from '../db/schema/payment'
