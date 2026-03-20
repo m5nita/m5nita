@@ -1,10 +1,10 @@
-import { POOL } from '@m5nita/shared'
 import { eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../db/client'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { requireAuth } from '../middleware/auth'
+import { getEffectiveFeeRate } from '../services/coupon'
 import { getPoolRanking } from '../services/ranking'
 import type { AppEnv } from '../types/hono'
 
@@ -22,6 +22,7 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
   // Calculate prize total
   const poolData = await db.query.pool.findFirst({
     where: eq(pool.id, poolId),
+    with: { coupon: true },
   })
   const [memberCount] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -29,9 +30,9 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
     .where(eq(poolMember.poolId, poolId))
 
   const count = memberCount?.count ?? 0
-  const prizeTotal = poolData
-    ? Math.floor(poolData.entryFee * count * (1 - POOL.PLATFORM_FEE_RATE))
-    : 0
+  const discountPercent = poolData?.coupon?.discountPercent ?? 0
+  const effectiveRate = getEffectiveFeeRate(discountPercent)
+  const prizeTotal = poolData ? Math.floor(poolData.entryFee * count * (1 - effectiveRate)) : 0
 
   return c.json({ ranking, prizeTotal })
 })
