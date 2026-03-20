@@ -101,6 +101,7 @@ function RootLayout() {
                 {[
                   { to: '/' as const, label: 'Home' },
                   { to: '/matches' as const, label: 'Jogos' },
+                  { to: '/how-it-works' as const, label: 'Como funciona?' },
                   { to: '/settings' as const, label: 'Configuracoes' },
                 ].map(({ to, label }) => (
                   <li key={to}>
