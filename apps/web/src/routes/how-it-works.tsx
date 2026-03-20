@@ -10,8 +10,7 @@ const steps = [
   {
     number: '02',
     title: 'Convide seus amigos',
-    description:
-      'Envie o código de convite. Cada participante paga para entrar no bolão.',
+    description: 'Envie o código de convite. Cada participante paga para entrar no bolão.',
   },
   {
     number: '03',

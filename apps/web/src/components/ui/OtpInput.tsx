@@ -70,11 +70,15 @@ export function OtpInput({
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+      <label
+        htmlFor="otp-hidden"
+        className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark"
+      >
         Codigo de verificacao
       </label>
-      <div className="relative flex gap-2 w-full" role="group" aria-label="Codigo OTP">
+      <fieldset className="relative flex gap-2 w-full border-0 p-0 m-0" aria-label="Codigo OTP">
         <input
+          id="otp-hidden"
           ref={hiddenRef}
           type="text"
           inputMode="numeric"
@@ -85,7 +89,7 @@ export function OtpInput({
         />
         {digits.map((digit, index) => (
           <input
-            key={index}
+            key={`otp-${index}`}
             ref={(el) => {
               inputRefs.current[index] = el
             }}
@@ -105,7 +109,7 @@ export function OtpInput({
             }`}
           />
         ))}
-      </div>
+      </fieldset>
       {error && (
         <p className="text-xs font-medium text-red" role="alert">
           {error}

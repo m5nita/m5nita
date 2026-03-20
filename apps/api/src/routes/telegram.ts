@@ -13,11 +13,9 @@ telegramRoutes.post('/telegram/check-phone', async (c) => {
   return c.json({ connected: chatId !== null })
 })
 
-if (process.env.NODE_ENV === 'production') {
-  telegramRoutes.post(
-    '/telegram/webhook',
-    webhookCallback(bot, 'hono', {
-      secretToken: process.env.TELEGRAM_WEBHOOK_SECRET,
-    }),
-  )
-}
+telegramRoutes.post(
+  '/telegram/webhook',
+  webhookCallback(bot, 'hono', {
+    secretToken: process.env.TELEGRAM_WEBHOOK_SECRET,
+  }),
+)
