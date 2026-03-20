@@ -21,8 +21,12 @@ const stageLabels: Record<string, string> = {
   final: 'Final',
 }
 
+function isTbd(name: string) {
+  return !name || name === 'TBD'
+}
+
 function BracketMatch({ match }: { match: Match }) {
-  const hasTeams = match.homeTeam && match.awayTeam
+  const hasTeams = !isTbd(match.homeTeam) && !isTbd(match.awayTeam)
   const homeWon =
     match.status === 'finished' &&
     match.homeScore != null &&

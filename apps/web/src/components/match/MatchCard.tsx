@@ -5,6 +5,21 @@ interface MatchCardProps {
   match: Match
 }
 
+const TBD_LABEL = 'A definir'
+
+function TeamName({ name }: { name: string }) {
+  const isTbd = name === TBD_LABEL || name === 'TBD'
+  return (
+    <span
+      className={`text-center font-display text-[11px] uppercase tracking-wide truncate w-full ${
+        isTbd ? 'font-medium italic text-gray-muted' : 'font-bold text-black'
+      }`}
+    >
+      {isTbd ? TBD_LABEL : name}
+    </span>
+  )
+}
+
 export function MatchCard({ match }: MatchCardProps) {
   const isLive = match.status === 'live'
   const isFinished = match.status === 'finished'
@@ -22,9 +37,7 @@ export function MatchCard({ match }: MatchCardProps) {
             aria-hidden="true"
           />
         )}
-        <span className="text-center font-display text-[11px] font-bold uppercase tracking-wide text-black truncate w-full">
-          {match.homeTeam}
-        </span>
+        <TeamName name={match.homeTeam} />
       </div>
 
       <div className="flex flex-col items-center gap-0.5 shrink-0">
@@ -62,9 +75,7 @@ export function MatchCard({ match }: MatchCardProps) {
             aria-hidden="true"
           />
         )}
-        <span className="text-center font-display text-[11px] font-bold uppercase tracking-wide text-black truncate w-full">
-          {match.awayTeam}
-        </span>
+        <TeamName name={match.awayTeam} />
       </div>
     </div>
   )
