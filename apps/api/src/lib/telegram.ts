@@ -57,8 +57,8 @@ bot.command('cupom_criar', async (ctx) => {
     return
   }
 
-  const code = args[0]
-  const discountPercent = Number.parseInt(args[1], 10)
+  const code = args[0] as string
+  const discountPercent = Number.parseInt(args[1] as string, 10)
 
   if (Number.isNaN(discountPercent) || discountPercent < 1 || discountPercent > 100) {
     await ctx.reply('Desconto deve ser entre 1 e 100.')
@@ -73,7 +73,7 @@ bot.command('cupom_criar', async (ctx) => {
       return
     }
     expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + Number.parseInt(daysMatch[1], 10))
+    expiresAt.setDate(expiresAt.getDate() + Number.parseInt(daysMatch[1] as string, 10))
   }
 
   const maxUses = args[3] ? Number.parseInt(args[3], 10) : null
