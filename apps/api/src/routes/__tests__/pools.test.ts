@@ -72,6 +72,11 @@ vi.mock('../../services/payment', () => ({
   createEntryPayment: (...args: unknown[]) => mockCreateEntryPayment(...args),
 }))
 
+vi.mock('../../services/coupon', () => ({
+  validateCoupon: vi.fn(() => ({ valid: false, reason: 'not_found' })),
+  getEffectiveFeeRate: vi.fn((d: number) => 0.05 * (1 - d / 100)),
+}))
+
 const testUser = { id: 'user-1', name: 'Test', phoneNumber: '+5511999999999' }
 
 function createTestApp() {
@@ -92,6 +97,9 @@ describe('POST /api/pools', () => {
     mockCreatePool.mockResolvedValue({
       pool: { id: 'pool-1', name: 'Test Pool', inviteCode: 'ABC123', entryFee: 5000 },
       platformFee: 250,
+      originalPlatformFee: 250,
+      discountPercent: 0,
+      couponCode: null,
     })
     mockCreateEntryPayment.mockResolvedValue({
       payment: { id: 'pay-1' },
@@ -111,7 +119,7 @@ describe('POST /api/pools', () => {
     const body = await res.json()
     expect(body.pool.name).toBe('Test Pool')
     expect(body.payment.checkoutUrl).toBe('https://checkout.stripe.com/test')
-    expect(mockCreatePool).toHaveBeenCalledWith('user-1', 'Test Pool', 5000)
+    expect(mockCreatePool).toHaveBeenCalledWith('user-1', 'Test Pool', 5000, undefined)
   })
 
   it('rejects_shortName_400validation', async () => {
