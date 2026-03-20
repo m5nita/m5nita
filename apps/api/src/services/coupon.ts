@@ -10,7 +10,7 @@ interface CreateCouponParams {
   discountPercent: number
   expiresAt?: Date | null
   maxUses?: number | null
-  createdByTelegramId: bigint
+  createdByTelegramId: number
 }
 
 function normalizeCode(code: string): string {

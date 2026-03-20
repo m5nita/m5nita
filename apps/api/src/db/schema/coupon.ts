@@ -12,7 +12,7 @@ export const coupon = pgTable(
     maxUses: integer('max_uses'),
     useCount: integer('use_count').default(0).notNull(),
     expiresAt: timestamp('expires_at'),
-    createdByTelegramId: bigint('created_by_telegram_id', { mode: 'bigint' }).notNull(),
+    createdByTelegramId: bigint('created_by_telegram_id', { mode: 'number' }).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
