@@ -83,17 +83,27 @@ export async function getUserPools(userId: string) {
     },
   })
 
-  return members
-    .filter((m) => m.pool.status === 'active')
-    .map((m) => ({
-      id: m.pool.id,
-      name: m.pool.name,
-      entryFee: m.pool.entryFee,
-      status: m.pool.status,
-      memberCount: 0,
-      userPosition: null,
-      userPoints: 0,
-    }))
+  const activePools = members.filter((m) => m.pool.status === 'active')
+
+  const counts = await Promise.all(
+    activePools.map(async (m) => {
+      const [result] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(poolMember)
+        .where(eq(poolMember.poolId, m.pool.id))
+      return result?.count ?? 0
+    }),
+  )
+
+  return activePools.map((m, i) => ({
+    id: m.pool.id,
+    name: m.pool.name,
+    entryFee: m.pool.entryFee,
+    status: m.pool.status,
+    memberCount: counts[i] ?? 0,
+    userPosition: null,
+    userPoints: 0,
+  }))
 }
 
 export async function getPoolById(poolId: string, _userId: string) {
