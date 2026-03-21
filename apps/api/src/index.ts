@@ -2,8 +2,9 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
+import { sendPredictionReminders } from './jobs/reminderJob'
 import { auth } from './lib/auth'
-import { globalRateLimit } from './middleware/rateLimit'
+import { globalRateLimit, otpRateLimit } from './middleware/rateLimit'
 import { matchesRoutes } from './routes/matches'
 import { poolsRoutes } from './routes/pools'
 import { predictionsRoutes } from './routes/predictions'
@@ -13,7 +14,9 @@ import { usersRoutes } from './routes/users'
 import { webhooksRoutes } from './routes/webhooks'
 import { syncFixtures, syncLiveScores } from './services/match'
 
-const app = new Hono()
+import type { AppEnv } from './types/hono'
+
+const app = new Hono<AppEnv>()
 
 const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173'
 
@@ -26,6 +29,18 @@ app.use(
 )
 
 app.use('/api/*', globalRateLimit)
+
+// OTP rate limit — parse body to extract phone number for per-phone limiting
+app.post('/api/auth/phone-number/send-otp', async (c, next) => {
+  try {
+    const body = await c.req.raw.clone().json()
+    c.set('parsedBody', body)
+  } catch {
+    // Falls back to IP-based rate limiting
+  }
+  await next()
+})
+app.post('/api/auth/phone-number/send-otp', otpRateLimit)
 
 // Better Auth — mounted directly, no auth middleware
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
@@ -78,6 +93,14 @@ serve({ fetch: app.fetch, port }, () => {
       syncLiveScores().catch((err) => console.error('[Cron] Live sync failed:', err))
     },
     5 * 60 * 1000,
+  )
+
+  // Send prediction reminders every 15 minutes
+  setInterval(
+    () => {
+      sendPredictionReminders().catch((err) => console.error('[Cron] Reminder job failed:', err))
+    },
+    15 * 60 * 1000,
   )
 })
 

@@ -5,6 +5,7 @@ import { Input } from '../components/ui/Input'
 import { Loading } from '../components/ui/Loading'
 import { apiFetch } from '../lib/api'
 import { signOut, useSession } from '../lib/auth'
+import { requireAuthGuard } from '../lib/authGuard'
 
 function SettingsPage() {
   const navigate = useNavigate()
@@ -97,4 +98,7 @@ function SettingsPage() {
   )
 }
 
-export const Route = createFileRoute('/settings')({ component: SettingsPage })
+export const Route = createFileRoute('/settings')({
+  beforeLoad: () => requireAuthGuard(),
+  component: SettingsPage,
+})
