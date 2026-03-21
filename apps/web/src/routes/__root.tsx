@@ -1,4 +1,4 @@
-import { Link, Outlet, createRootRoute, useRouter } from '@tanstack/react-router'
+import { createRootRoute, Link, Outlet, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useSession } from '../lib/auth'
 

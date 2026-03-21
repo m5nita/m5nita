@@ -1,7 +1,7 @@
 import { upsertPredictionSchema } from '@m5nita/shared'
 import { Hono } from 'hono'
 import { requireAuth } from '../middleware/auth'
-import { PredictionError, getUserPredictions, upsertPrediction } from '../services/prediction'
+import { getUserPredictions, PredictionError, upsertPrediction } from '../services/prediction'
 import type { AppEnv } from '../types/hono'
 
 const predictionsRoutes = new Hono<AppEnv>()

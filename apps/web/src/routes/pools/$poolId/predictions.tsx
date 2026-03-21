@@ -38,7 +38,11 @@ function PredictionsPage() {
       matchId,
       homeScore,
       awayScore,
-    }: { matchId: string; homeScore: number; awayScore: number }) => {
+    }: {
+      matchId: string
+      homeScore: number
+      awayScore: number
+    }) => {
       const res = await apiFetch(`/api/pools/${poolId}/predictions/${matchId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

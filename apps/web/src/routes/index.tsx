@@ -1,6 +1,6 @@
 import type { Match, PoolListItem } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { MatchCard } from '../components/match/MatchCard'
 import { PoolCard } from '../components/pool/PoolCard'

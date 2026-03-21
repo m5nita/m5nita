@@ -26,7 +26,7 @@ packages/shared/ # Shared types, schemas, constants
 pnpm dev                     # Start API + Web dev servers
 pnpm build                   # Production build
 pnpm test                    # Run tests (Vitest)
-pnpm biome check --apply .   # Lint + format
+pnpm biome check --write .   # Lint + format
 pnpm drizzle-kit generate    # Generate migrations
 pnpm drizzle-kit migrate     # Apply migrations
 pnpm drizzle-kit push        # Push schema (dev only)
