@@ -6,5 +6,6 @@ export type AppEnv = {
   Variables: {
     user: Session['user']
     session: Session['session']
+    parsedBody?: { phoneNumber?: string }
   }
 }
