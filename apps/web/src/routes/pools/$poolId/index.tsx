@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { InviteTicket } from '../../../components/pool/InviteTicket'
 import { Button } from '../../../components/ui/Button'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'

@@ -1,4 +1,4 @@
-import { POOL, createPoolSchema, updatePoolSchema, validateCouponSchema } from '@m5nita/shared'
+import { createPoolSchema, POOL, updatePoolSchema, validateCouponSchema } from '@m5nita/shared'
 import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../db/client'
@@ -10,12 +10,12 @@ import { requireAuth } from '../middleware/auth'
 import { getEffectiveFeeRate, validateCoupon } from '../services/coupon'
 import { createEntryPayment, createRefund } from '../services/payment'
 import {
-  PoolError,
   createPool,
   getPoolById,
   getPoolByInviteCode,
   getUserPools,
   isPoolMember,
+  PoolError,
 } from '../services/pool'
 import type { AppEnv } from '../types/hono'
 
@@ -283,7 +283,7 @@ poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
     try {
       await createRefund(p.id)
       refunds.push({ userId: p.userId, amount: p.amount, status: 'pending' })
-    } catch (err) {
+    } catch (_err) {
       refunds.push({ userId: p.userId, amount: p.amount, status: 'error' })
     }
   }

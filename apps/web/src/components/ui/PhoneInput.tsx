@@ -1,4 +1,4 @@
-import { type ChangeEvent, type InputHTMLAttributes, forwardRef } from 'react'
+import { type ChangeEvent, forwardRef, type InputHTMLAttributes } from 'react'
 
 interface PhoneInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   value: string

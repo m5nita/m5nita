@@ -7,7 +7,6 @@ import { isAdmin } from './admin'
 
 export const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '')
 
-
 bot.command('start', async (ctx) => {
   await ctx.reply(
     'Bem-vindo ao m5nita!\n\nToque no botão abaixo para compartilhar seu número. Não digite — use o botão.',
