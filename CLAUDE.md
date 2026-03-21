@@ -1,10 +1,11 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-19
+Auto-generated from all feature plans. Last updated: 2026-03-20
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 20) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
 - PostgreSQL 16 (new `telegram_chat` table) (002-telegram-otp)
+- TypeScript 5.x (Node.js >= 20) + Hono (API), Better Auth + phone-number plugin, Drizzle ORM, grammY (Telegram), React 19, TanStack Router, TanStack Query (004-critical-fixes-telegram-reminders)
 
 - TypeScript 5.x (Node.js >= 20) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM, Stripe SDK
@@ -41,8 +42,8 @@ pnpm drizzle-kit push        # Push schema (dev only)
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 004-critical-fixes-telegram-reminders: Added TypeScript 5.x (Node.js >= 20) + Hono (API), Better Auth + phone-number plugin, Drizzle ORM, grammY (Telegram), React 19, TanStack Router, TanStack Query
 - 002-telegram-otp: Added TypeScript 5.x (Node.js >= 20) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new)
-
 - 001-world-cup-pool-app: Initial feature — World Cup 2026 betting pool app
 
 <!-- MANUAL ADDITIONS START -->
