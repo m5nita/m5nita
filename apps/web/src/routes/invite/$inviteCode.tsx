@@ -1,19 +1,18 @@
 import type { PoolInviteInfo } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { Loading } from '../../components/ui/Loading'
 import { apiFetch } from '../../lib/api'
-import { useSession } from '../../lib/auth'
+import { authClient } from '../../lib/auth'
 import { savePendingRedirect } from '../../lib/authGuard'
 import { formatCurrency } from '../../lib/utils'
 
 function InvitePage() {
   const { inviteCode } = Route.useParams()
   const navigate = useNavigate()
-  const { data: session, isPending: sessionPending } = useSession()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -33,16 +32,9 @@ function InvitePage() {
       if (!res.ok) throw new Error('Erro ao carregar convite')
       return res.json() as Promise<PoolInviteInfo>
     },
-    enabled: !!session,
   })
 
-  if (!sessionPending && !session) {
-    savePendingRedirect(window.location.pathname)
-    navigate({ to: '/login' })
-    return null
-  }
-
-  if (sessionPending || isPending) return <Loading message="Carregando convite..." />
+  if (isPending) return <Loading message="Carregando convite..." />
 
   if (fetchError) {
     return (
@@ -148,5 +140,15 @@ function InvitePage() {
 }
 
 export const Route = createFileRoute('/invite/$inviteCode')({
+  beforeLoad: async ({ location }) => {
+    const session = await authClient.getSession()
+    if (!session.data) {
+      savePendingRedirect(location.pathname)
+      throw redirect({ to: '/login' })
+    }
+    if (!session.data.user.name) {
+      throw redirect({ to: '/complete-profile' })
+    }
+  },
   component: InvitePage,
 })
