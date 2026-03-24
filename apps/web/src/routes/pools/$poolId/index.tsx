@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { InviteTicket } from '../../../components/pool/InviteTicket'
+import { PrizeWithdrawal } from '../../../components/pool/PrizeWithdrawal'
 import { Button } from '../../../components/ui/Button'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import { Loading } from '../../../components/ui/Loading'
@@ -88,6 +89,8 @@ function PoolDetailPage() {
           </Link>
         )}
       </div>
+
+      {pool.status === 'closed' && <PrizeWithdrawal poolId={poolId} />}
 
       {isOwner && pool.inviteCode && (
         <section>

@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { match } from '../db/schema/match'
 import { calcPointsForMatch } from '../jobs/calcPoints'
+import { closePoolsIfAllMatchesFinished } from '../jobs/closePoolsJob'
 
 const FOOTBALL_DATA_BASE = 'https://api.football-data.org/v4'
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY || ''
@@ -167,6 +168,10 @@ export async function syncLiveScores() {
         await calcPointsForMatch(existing.id)
       }
     }
+    // After processing all matches, check if all are finished to close pools
+    closePoolsIfAllMatchesFinished().catch((err) =>
+      console.error('[Live Sync] Close pools check failed:', err),
+    )
   } catch (err) {
     console.error('[Live Sync] Error:', err)
   }

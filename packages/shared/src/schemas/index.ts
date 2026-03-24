@@ -45,3 +45,37 @@ export const phoneSchema = z.string().regex(/^\+55\d{10,11}$/, 'Telefone inváli
 
 // OTP schema
 export const otpSchema = z.string().length(6).regex(/^\d+$/, 'Código deve ter 6 dígitos')
+
+// PIX key schemas
+const pixKeyCpfSchema = z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos')
+const pixKeyEmailSchema = z.string().email('E-mail inválido')
+const pixKeyPhoneSchema = z
+  .string()
+  .regex(/^\+55\d{10,11}$/, 'Telefone inválido (formato: +55XXXXXXXXXXX)')
+const pixKeyRandomSchema = z
+  .string()
+  .regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    'Chave aleatória deve estar no formato UUID',
+  )
+
+export const pixKeyTypeSchema = z.enum(['cpf', 'email', 'phone', 'random'])
+
+export function validatePixKey(type: string, key: string): { success: boolean; error?: string } {
+  const schemas: Record<string, z.ZodString> = {
+    cpf: pixKeyCpfSchema,
+    email: pixKeyEmailSchema,
+    phone: pixKeyPhoneSchema,
+    random: pixKeyRandomSchema,
+  }
+  const schema = schemas[type]
+  if (!schema) return { success: false, error: 'Tipo de chave PIX inválido' }
+  const result = schema.safeParse(key)
+  if (!result.success) return { success: false, error: result.error.issues[0]?.message }
+  return { success: true }
+}
+
+export const withdrawPrizeSchema = z.object({
+  pixKeyType: pixKeyTypeSchema,
+  pixKey: z.string().min(1, 'Chave PIX é obrigatória'),
+})

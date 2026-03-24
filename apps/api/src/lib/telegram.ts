@@ -226,6 +226,36 @@ export async function sendOtpViaTelegram(chatId: number, code: string): Promise<
   }
 }
 
+export async function notifyWinners(
+  poolName: string,
+  winners: { userId: string; name: string | null; phoneNumber: string | null }[],
+  prizeShare: number,
+): Promise<void> {
+  const formattedPrize = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(prizeShare / 100)
+
+  for (const winner of winners) {
+    if (!winner.phoneNumber) continue
+
+    try {
+      const chatId = await findChatIdByPhone(winner.phoneNumber)
+      if (!chatId) continue
+
+      const message =
+        `🏆 *Parabéns, ${winner.name || 'Campeão'}!*\n\n` +
+        `Você venceu o bolão *${poolName}*!\n` +
+        `Seu prêmio: *${formattedPrize}*\n\n` +
+        `Acesse o app para solicitar a retirada do seu prêmio.`
+
+      await bot.api.sendMessage(chatId, message, { parse_mode: 'Markdown' })
+    } catch (error) {
+      console.error(`[Telegram] Failed to notify winner ${winner.userId}:`, error)
+    }
+  }
+}
+
 export async function findChatIdByPhone(phone: string): Promise<number | null> {
   const result = await db
     .select({ chatId: telegramChat.chatId })

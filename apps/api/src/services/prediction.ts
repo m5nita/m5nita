@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { match } from '../db/schema/match'
+import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
 
@@ -21,6 +22,14 @@ export async function upsertPrediction(
   homeScore: number,
   awayScore: number,
 ) {
+  // Verify pool is not closed
+  const poolData = await db.query.pool.findFirst({
+    where: eq(pool.id, poolId),
+  })
+  if (poolData?.status === 'closed') {
+    throw new PredictionError('POOL_CLOSED', 'Não é possível palpitar em um bolão finalizado')
+  }
+
   // Verify membership
   const member = await db.query.poolMember.findFirst({
     where: and(eq(poolMember.poolId, poolId), eq(poolMember.userId, userId)),
