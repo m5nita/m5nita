@@ -58,3 +58,11 @@ export const PREDICTION = {
   DEBOUNCE_MS: 500,
   MIN_SCORE: 0,
 } as const
+
+export const PIX = {
+  KEY_TYPES: ['cpf', 'email', 'phone', 'random'] as const,
+} as const
+
+export const WITHDRAWAL = {
+  STATUSES: ['pending', 'processing', 'completed', 'failed'] as const,
+} as const

@@ -6,6 +6,7 @@ import { payment } from './payment'
 import { pool } from './pool'
 import { poolMember } from './poolMember'
 import { prediction } from './prediction'
+import { prizeWithdrawal } from './prizeWithdrawal'
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
@@ -14,6 +15,7 @@ export const userRelations = relations(user, ({ many }) => ({
   poolMembers: many(poolMember),
   payments: many(payment),
   predictions: many(prediction),
+  prizeWithdrawals: many(prizeWithdrawal),
 }))
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -46,6 +48,7 @@ export const poolRelations = relations(pool, ({ one, many }) => ({
   poolMembers: many(poolMember),
   payments: many(payment),
   predictions: many(prediction),
+  prizeWithdrawals: many(prizeWithdrawal),
 }))
 
 export const poolMemberRelations = relations(poolMember, ({ one }) => ({
@@ -90,5 +93,20 @@ export const predictionRelations = relations(prediction, ({ one }) => ({
   match: one(match, {
     fields: [prediction.matchId],
     references: [match.id],
+  }),
+}))
+
+export const prizeWithdrawalRelations = relations(prizeWithdrawal, ({ one }) => ({
+  pool: one(pool, {
+    fields: [prizeWithdrawal.poolId],
+    references: [pool.id],
+  }),
+  user: one(user, {
+    fields: [prizeWithdrawal.userId],
+    references: [user.id],
+  }),
+  payment: one(payment, {
+    fields: [prizeWithdrawal.paymentId],
+    references: [payment.id],
   }),
 }))
