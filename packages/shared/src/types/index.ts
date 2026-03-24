@@ -106,3 +106,32 @@ export interface ApiError {
   error: string
   message: string
 }
+
+export type PixKeyType = 'cpf' | 'email' | 'phone' | 'random'
+export type WithdrawalStatus = 'pending' | 'processing' | 'completed' | 'failed'
+
+export interface PrizeWithdrawal {
+  id: string
+  poolId: string
+  userId: string
+  amount: number
+  pixKeyType: PixKeyType
+  pixKey: string
+  status: WithdrawalStatus
+  createdAt: string
+}
+
+export interface PrizeInfo {
+  prizeTotal: number
+  winnerCount: number
+  winnerShare: number
+  isWinner: boolean
+  withdrawal: PrizeWithdrawal | null
+  winners: {
+    userId: string
+    name: string | null
+    position: number
+    totalPoints: number
+    exactMatches: number
+  }[]
+}

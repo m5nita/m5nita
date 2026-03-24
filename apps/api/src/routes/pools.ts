@@ -1,4 +1,10 @@
-import { createPoolSchema, POOL, updatePoolSchema, validateCouponSchema } from '@m5nita/shared'
+import {
+  createPoolSchema,
+  POOL,
+  updatePoolSchema,
+  validateCouponSchema,
+  withdrawPrizeSchema,
+} from '@m5nita/shared'
 import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../db/client'
@@ -17,6 +23,7 @@ import {
   isPoolMember,
   PoolError,
 } from '../services/pool'
+import { getPrizeInfo, PrizeWithdrawalError, requestWithdrawal } from '../services/prizeWithdrawal'
 import type { AppEnv } from '../types/hono'
 
 const poolsRoutes = new Hono<AppEnv>()
@@ -241,6 +248,60 @@ poolsRoutes.delete('/pools/:poolId/members/:memberId', async (c) => {
   return c.json({ refund: { id: member.paymentId, amount: poolData.entryFee, status: 'pending' } })
 })
 
+// GET /api/pools/:poolId/prize — Prize info for finalized pool
+poolsRoutes.get('/pools/:poolId/prize', async (c) => {
+  const { poolId } = c.req.param()
+  const currentUser = c.get('user')
+
+  try {
+    const prizeInfo = await getPrizeInfo(poolId, currentUser.id)
+    return c.json(prizeInfo)
+  } catch (err) {
+    if (err instanceof PrizeWithdrawalError) {
+      const status = err.code === 'NOT_FOUND' ? 404 : 400
+      return c.json({ error: err.code, message: err.message }, status)
+    }
+    throw err
+  }
+})
+
+// POST /api/pools/:poolId/prize/withdraw — Request prize withdrawal (winner only)
+poolsRoutes.post('/pools/:poolId/prize/withdraw', async (c) => {
+  const { poolId } = c.req.param()
+  const currentUser = c.get('user')
+  const body = await c.req.json()
+
+  const parsed = withdrawPrizeSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json(
+      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados inválidos' },
+      400,
+    )
+  }
+
+  try {
+    const withdrawal = await requestWithdrawal(
+      poolId,
+      currentUser.id,
+      parsed.data.pixKeyType,
+      parsed.data.pixKey,
+    )
+    return c.json(withdrawal, 201)
+  } catch (err) {
+    if (err instanceof PrizeWithdrawalError) {
+      const statusMap: Record<string, number> = {
+        NOT_FOUND: 404,
+        NOT_A_WINNER: 403,
+        WITHDRAWAL_ALREADY_REQUESTED: 409,
+        POOL_NOT_CLOSED: 400,
+        INVALID_PIX_KEY: 400,
+      }
+      return c.json({ error: err.code, message: err.message }, (statusMap[err.code] ?? 400) as 400)
+    }
+    throw err
+  }
+})
+
 // POST /api/pools/:poolId/cancel — Cancel pool with full refund (owner only)
 poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
   const { poolId } = c.req.param()
@@ -250,20 +311,18 @@ poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
   if (!poolData) return c.json({ error: 'NOT_FOUND' }, 404)
   if (poolData.ownerId !== currentUser.id) return c.json({ error: 'FORBIDDEN' }, 403)
 
-  // Check if prize already distributed
+  // Check if any prize payment exists (pending or completed)
   const [prizePayment] = await db
     .select()
     .from(payment)
-    .where(
-      and(eq(payment.poolId, poolId), eq(payment.type, 'prize'), eq(payment.status, 'completed')),
-    )
+    .where(and(eq(payment.poolId, poolId), eq(payment.type, 'prize')))
     .limit(1)
 
   if (prizePayment) {
     return c.json(
       {
-        error: 'PRIZE_ALREADY_DISTRIBUTED',
-        message: 'Não é possível encerrar após distribuição do prêmio',
+        error: 'PRIZE_WITHDRAWAL_REQUESTED',
+        message: 'Não é possível cancelar o bolão após solicitação de retirada do prêmio.',
       },
       409,
     )
