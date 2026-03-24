@@ -102,7 +102,6 @@ serve({ fetch: app.fetch, port }, () => {
     },
     15 * 60 * 1000,
   )
-
 })
 
 export default app
