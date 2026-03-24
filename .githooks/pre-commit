@@ -1,0 +1,7 @@
+#!/bin/sh
+
+echo "Running lint..."
+pnpm lint || exit 1
+
+echo "Running typecheck..."
+pnpm typecheck || exit 1
