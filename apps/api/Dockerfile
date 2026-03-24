@@ -19,4 +19,4 @@ COPY packages/shared/ ./packages/shared/
 COPY tsconfig.json ./
 ENV NODE_ENV=production
 EXPOSE 3001
-CMD ["npx", "tsx", "apps/api/src/index.ts"]
+CMD ["pnpm", "exec", "tsx", "apps/api/src/index.ts"]
