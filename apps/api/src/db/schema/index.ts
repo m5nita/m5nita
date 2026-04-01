@@ -1,4 +1,5 @@
 export * from './auth'
+export * from './competition'
 export * from './coupon'
 export * from './match'
 export * from './payment'

@@ -2,6 +2,13 @@ import { eq } from 'drizzle-orm'
 import { Bot } from 'grammy'
 import { db } from '../db/client'
 import { telegramChat } from '../db/schema/telegram'
+import {
+  CompetitionError,
+  createCompetition,
+  deactivateCompetition,
+  listCompetitions,
+  toggleFeatured,
+} from '../services/competition'
 import { CouponError, createCoupon, deactivateCoupon, listCoupons } from '../services/coupon'
 import { isAdmin } from './admin'
 
@@ -190,6 +197,175 @@ bot.command('cupom_desativar', async (ctx) => {
     await ctx.reply(`Cupom ${code.toUpperCase()} desativado. Boloes existentes mantem o desconto.`)
   } catch (error) {
     if (error instanceof CouponError) {
+      await ctx.reply(error.message)
+      return
+    }
+    throw error
+  }
+})
+
+function parseCompetitionArgs(raw: string): {
+  error?: string
+  code: string
+  name: string
+  season: number
+  type: string
+} {
+  const quotedMatch = raw.match(/^(\S+)\s+"([^"]+)"\s+(\S+)\s+(\S+)$/)
+  if (quotedMatch) {
+    const code = quotedMatch[1] as string
+    const name = quotedMatch[2] as string
+    const season = Number.parseInt(quotedMatch[3] as string, 10)
+    const type = quotedMatch[4] as string
+    if (Number.isNaN(season)) {
+      return { error: 'Temporada deve ser um numero (ex: 2025).', code, name, season, type }
+    }
+    if (type !== 'cup' && type !== 'league') {
+      return { error: 'Tipo deve ser "cup" ou "league".', code, name, season, type }
+    }
+    return { code, name, season, type }
+  }
+
+  const args = raw.split(/\s+/).filter(Boolean)
+  if (args.length < 4) {
+    return {
+      error: 'Uso: /competicao_criar CODIGO "Nome" TEMPORADA TIPO',
+      code: '',
+      name: '',
+      season: 0,
+      type: '',
+    }
+  }
+
+  const code = args[0] as string
+  const name = args[1] as string
+  const season = Number.parseInt(args[2] as string, 10)
+  const type = args[3] as string
+
+  if (Number.isNaN(season)) {
+    return { error: 'Temporada deve ser um numero (ex: 2025).', code, name, season, type }
+  }
+  if (type !== 'cup' && type !== 'league') {
+    return { error: 'Tipo deve ser "cup" ou "league".', code, name, season, type }
+  }
+
+  return { code, name, season, type }
+}
+
+bot.command('competicao_criar', async (ctx) => {
+  if (!ctx.from || !isAdmin(ctx.from.id)) {
+    await ctx.reply('Voce nao tem permissao para este comando.')
+    return
+  }
+
+  const raw = ctx.match.trim()
+  const parsed = parseCompetitionArgs(raw)
+
+  if (parsed.error) {
+    await ctx.reply(parsed.error)
+    return
+  }
+
+  try {
+    const created = await createCompetition(
+      parsed.code,
+      parsed.name,
+      String(parsed.season),
+      parsed.type,
+    )
+
+    await ctx.reply(
+      `Competicao criada!\n\nCodigo: ${created.externalId}\nNome: ${created.name}\nTemporada: ${created.season}\nTipo: ${created.type}`,
+    )
+  } catch (error) {
+    if (error instanceof CompetitionError) {
+      await ctx.reply(error.message)
+      return
+    }
+    throw error
+  }
+})
+
+bot.command('competicao_listar', async (ctx) => {
+  if (!ctx.from || !isAdmin(ctx.from.id)) {
+    await ctx.reply('Voce nao tem permissao para este comando.')
+    return
+  }
+
+  const competitions = await listCompetitions()
+
+  if (competitions.length === 0) {
+    await ctx.reply('Nenhuma competicao cadastrada.')
+    return
+  }
+
+  const lines = competitions.map((c, i) => {
+    const statusText = c.status === 'active' ? 'Ativo' : 'Inativo'
+    const featuredText = c.featured ? ' [Destaque]' : ''
+    return `${i + 1}. ${c.externalId} - ${c.name} - ${c.season} - ${c.type} - ${statusText}${featuredText}`
+  })
+
+  await ctx.reply(`Competicoes (${competitions.length}):\n\n${lines.join('\n')}`)
+})
+
+bot.command('competicao_desativar', async (ctx) => {
+  if (!ctx.from || !isAdmin(ctx.from.id)) {
+    await ctx.reply('Voce nao tem permissao para este comando.')
+    return
+  }
+
+  const args = ctx.match.split(/\s+/).filter(Boolean)
+  if (args.length < 2) {
+    await ctx.reply('Uso: /competicao_desativar CODIGO TEMPORADA')
+    return
+  }
+
+  const code = args[0] as string
+  const season = args[1] as string
+
+  if (!/^\d{4}$/.test(season)) {
+    await ctx.reply('Temporada deve ser um ano (ex: 2025).')
+    return
+  }
+
+  try {
+    await deactivateCompetition(code, season)
+    await ctx.reply(`Competicao ${code.toUpperCase()} (${season}) desativada.`)
+  } catch (error) {
+    if (error instanceof CompetitionError) {
+      await ctx.reply(error.message)
+      return
+    }
+    throw error
+  }
+})
+
+bot.command('competicao_destacar', async (ctx) => {
+  if (!ctx.from || !isAdmin(ctx.from.id)) {
+    await ctx.reply('Voce nao tem permissao para este comando.')
+    return
+  }
+
+  const args = ctx.match.split(/\s+/).filter(Boolean)
+  if (args.length < 2) {
+    await ctx.reply('Uso: /competicao_destacar CODIGO TEMPORADA')
+    return
+  }
+
+  const code = args[0] as string
+  const season = args[1] as string
+
+  if (!/^\d{4}$/.test(season)) {
+    await ctx.reply('Temporada deve ser um ano (ex: 2025).')
+    return
+  }
+
+  try {
+    const updated = await toggleFeatured(code, season)
+    const status = updated.featured ? 'destacada' : 'removida dos destaques'
+    await ctx.reply(`Competicao ${code.toUpperCase()} (${season}) ${status}.`)
+  } catch (error) {
+    if (error instanceof CompetitionError) {
       await ctx.reply(error.message)
       return
     }

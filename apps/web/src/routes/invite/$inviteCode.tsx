@@ -82,6 +82,15 @@ function InvitePage() {
           {poolInfo.name}
         </h1>
         <div className="mt-3 h-1 w-12 bg-red" />
+        {poolInfo.competitionName && (
+          <p className="mt-3 font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+            {poolInfo.competitionName}
+            {poolInfo.matchdayFrom != null &&
+              (poolInfo.matchdayTo && poolInfo.matchdayTo !== poolInfo.matchdayFrom
+                ? ` · Rodadas ${poolInfo.matchdayFrom} a ${poolInfo.matchdayTo}`
+                : ` · Rodada ${poolInfo.matchdayFrom}`)}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col border-t-2 border-black">

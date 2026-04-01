@@ -75,6 +75,9 @@ poolsRoutes.post('/pools', async (c) => {
       currentUser.id,
       parsed.data.name,
       parsed.data.entryFee,
+      parsed.data.competitionId,
+      parsed.data.matchdayFrom,
+      parsed.data.matchdayTo,
       parsed.data.couponCode,
     )
     const paymentResult = await createEntryPayment(

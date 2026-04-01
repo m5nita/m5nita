@@ -1,13 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockSendMessage, mockFindChatIdByPhone, mockSelect, mockSelectDistinctOn } = vi.hoisted(
-  () => ({
-    mockSendMessage: vi.fn(),
-    mockFindChatIdByPhone: vi.fn(),
-    mockSelect: vi.fn(),
-    mockSelectDistinctOn: vi.fn(),
-  }),
-)
+const {
+  mockSendMessage,
+  mockFindChatIdByPhone,
+  mockSelect,
+  mockSelectDistinctOn,
+  mockPoolFindMany,
+} = vi.hoisted(() => ({
+  mockSendMessage: vi.fn(),
+  mockFindChatIdByPhone: vi.fn(),
+  mockSelect: vi.fn(),
+  mockSelectDistinctOn: vi.fn(),
+  mockPoolFindMany: vi.fn(),
+}))
 
 vi.mock('../../lib/telegram', () => ({
   bot: { api: { sendMessage: mockSendMessage } },
@@ -18,6 +23,9 @@ vi.mock('../../db/client', () => ({
   db: {
     select: mockSelect,
     selectDistinctOn: mockSelectDistinctOn,
+    query: {
+      pool: { findMany: mockPoolFindMany },
+    },
   },
 }))
 
@@ -31,6 +39,15 @@ vi.mock('../../db/schema/match', () => ({
     awayTeam: 'match.away_team',
     matchDate: 'match.match_date',
     status: 'match.status',
+  },
+}))
+vi.mock('../../db/schema/pool', () => ({
+  pool: {
+    id: 'pool.id',
+    status: 'pool.status',
+    competitionId: 'pool.competition_id',
+    matchdayFrom: 'pool.matchday_from',
+    matchdayTo: 'pool.matchday_to',
   },
 }))
 vi.mock('../../db/schema/poolMember', () => ({
@@ -77,6 +94,9 @@ describe('sendPredictionReminders', () => {
   })
 
   it('noUpcomingMatches_sendsNoReminders', async () => {
+    mockPoolFindMany.mockResolvedValue([
+      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    ])
     mockSelect.mockReturnValue(createChainableMock([]))
 
     const { sendPredictionReminders } = await import('../reminderJob')
@@ -86,6 +106,9 @@ describe('sendPredictionReminders', () => {
   })
 
   it('userWithPrediction_skipsUser', async () => {
+    mockPoolFindMany.mockResolvedValue([
+      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    ])
     mockSelect.mockReturnValue(
       createChainableMock([
         {
@@ -105,6 +128,9 @@ describe('sendPredictionReminders', () => {
   })
 
   it('userWithoutPrediction_sendsReminder', async () => {
+    mockPoolFindMany.mockResolvedValue([
+      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    ])
     mockSelect.mockReturnValue(
       createChainableMock([
         {
@@ -134,6 +160,9 @@ describe('sendPredictionReminders', () => {
   })
 
   it('userWithNoTelegramChat_skipsWithoutError', async () => {
+    mockPoolFindMany.mockResolvedValue([
+      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    ])
     mockSelect.mockReturnValue(
       createChainableMock([
         {
@@ -156,6 +185,9 @@ describe('sendPredictionReminders', () => {
   })
 
   it('duplicateReminder_skippedByDedupSet', async () => {
+    mockPoolFindMany.mockResolvedValue([
+      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    ])
     const matchData = [
       {
         id: 'match-3',
@@ -186,6 +218,9 @@ describe('sendPredictionReminders', () => {
   })
 
   it('telegramApiFailure_continuesProcessing', async () => {
+    mockPoolFindMany.mockResolvedValue([
+      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    ])
     mockSelect.mockReturnValue(
       createChainableMock([
         {
