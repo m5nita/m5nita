@@ -39,7 +39,16 @@ export default defineConfig({
         ],
       },
       workbox: {
+        navigateFallback: null,
         runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 86400 },
+            },
+          },
           {
             urlPattern: /\/api\//,
             handler: 'NetworkFirst',
