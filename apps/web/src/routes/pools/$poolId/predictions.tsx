@@ -1,11 +1,21 @@
-import { MATCH, type Match, type Prediction } from '@m5nita/shared'
+import { MATCH, type Match, type PoolDetail, type Prediction } from '@m5nita/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Bracket } from '../../../components/match/Bracket'
 import { ScoreInput } from '../../../components/prediction/ScoreInput'
 import { Loading } from '../../../components/ui/Loading'
 import { apiFetch } from '../../../lib/api'
+
+const knockoutStageLabels: Record<string, string> = {
+  'round-of-32': '32-avos',
+  'round-of-16': 'Oitavas',
+  quarter: 'Quartas',
+  semi: 'Semi',
+  'third-place': '3º Lugar',
+  final: 'Final',
+}
+
+const knockoutStageOrder = ['round-of-32', 'round-of-16', 'quarter', 'semi', 'third-place', 'final']
 
 type Tab = 'groups' | 'knockout'
 
@@ -14,14 +24,28 @@ function PredictionsPage() {
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<Tab>('groups')
   const [activeGroup, setActiveGroup] = useState('A')
+  const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
+  const [activeKnockoutStage, setActiveKnockoutStage] = useState<string | null>(null)
+
+  const { data: poolDetail, isPending: poolPending } = useQuery({
+    queryKey: ['pool', poolId],
+    queryFn: async (): Promise<PoolDetail> => {
+      const res = await apiFetch(`/api/pools/${poolId}`)
+      if (!res.ok) throw new Error('Erro ao carregar bolao')
+      return res.json()
+    },
+  })
 
   const { data: matchesData, isPending: matchesPending } = useQuery({
-    queryKey: ['matches'],
+    queryKey: ['matches', poolDetail?.competitionId],
     queryFn: async (): Promise<{ matches: Match[] }> => {
-      const res = await apiFetch('/api/matches')
+      const params = new URLSearchParams()
+      if (poolDetail?.competitionId) params.set('competitionId', poolDetail.competitionId)
+      const res = await apiFetch(`/api/matches?${params}`)
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json()
     },
+    enabled: !!poolDetail,
   })
 
   const { data: predictionsData, isPending: predictionsPending } = useQuery({
@@ -57,13 +81,23 @@ function PredictionsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['predictions', poolId] }),
   })
 
-  if (matchesPending || predictionsPending) return <Loading message="Carregando palpites..." />
+  if (poolPending || (!!poolDetail && matchesPending) || predictionsPending)
+    return <Loading message="Carregando palpites..." />
 
-  const allMatches = matchesData?.matches ?? []
+  const rawMatches = matchesData?.matches ?? []
+  const allMatches = rawMatches.filter((m) => {
+    if (poolDetail?.matchdayFrom != null && poolDetail?.matchdayTo != null && m.matchday != null) {
+      return m.matchday >= poolDetail.matchdayFrom && m.matchday <= poolDetail.matchdayTo
+    }
+    return true
+  })
   const predictions = predictionsData?.predictions ?? []
   const predictionMap = new Map(predictions.map((p) => [p.matchId, p]))
+
+  const hasLeagueMatches = allMatches.some((m) => m.stage === 'league')
   const groupMatches = allMatches.filter((m) => m.stage === 'group')
-  const knockoutMatches = allMatches.filter((m) => m.stage !== 'group')
+  const knockoutMatches = allMatches.filter((m) => m.stage !== 'group' && m.stage !== 'league')
+  const leagueMatches = allMatches.filter((m) => m.stage === 'league')
   const filteredGroupMatches = groupMatches.filter((m) => m.group === activeGroup)
 
   function renderScoreInputs(matches: Match[]) {
@@ -107,28 +141,76 @@ function PredictionsPage() {
       </div>
 
       {/* Main tabs */}
-      <div className="flex gap-2" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'groups'}
-          onClick={() => setTab('groups')}
-          className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'groups' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
-        >
-          Fase de Grupos
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'knockout'}
-          onClick={() => setTab('knockout')}
-          className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'knockout' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
-        >
-          Mata-Mata
-        </button>
-      </div>
+      {hasLeagueMatches ? (
+        (() => {
+          const byMatchday = new Map<number, Match[]>()
+          for (const m of leagueMatches) {
+            const md = m.matchday ?? 0
+            if (!byMatchday.has(md)) byMatchday.set(md, [])
+            byMatchday.get(md)?.push(m)
+          }
+          const sortedMatchdays = [...byMatchday.keys()].sort((a, b) => a - b)
+          const currentMatchday = activeMatchday ?? sortedMatchdays[0] ?? 0
+          const currentMatches = byMatchday.get(currentMatchday) ?? []
 
-      {tab === 'groups' && (
+          return (
+            <>
+              <div
+                className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1"
+                role="tablist"
+                aria-label="Rodadas"
+              >
+                {sortedMatchdays.map((md) => (
+                  <button
+                    key={md}
+                    type="button"
+                    role="tab"
+                    aria-selected={currentMatchday === md}
+                    onClick={() => setActiveMatchday(md)}
+                    className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
+                      currentMatchday === md
+                        ? 'bg-black text-white'
+                        : 'text-gray-muted hover:text-black'
+                    }`}
+                  >
+                    {md}ª
+                  </button>
+                ))}
+              </div>
+
+              <p className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+                {currentMatchday}ª Rodada
+              </p>
+              {renderScoreInputs(currentMatches)}
+            </>
+          )
+        })()
+      ) : (
+        <>
+          <div className="flex gap-2" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'groups'}
+              onClick={() => setTab('groups')}
+              className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'groups' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
+            >
+              Fase de Grupos
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'knockout'}
+              onClick={() => setTab('knockout')}
+              className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'knockout' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
+            >
+              Mata-Mata
+            </button>
+          </div>
+        </>
+      )}
+
+      {!hasLeagueMatches && tab === 'groups' && (
         <>
           <div
             className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1"
@@ -171,7 +253,7 @@ function PredictionsPage() {
                   {sorted.map(([matchday, matches]) => (
                     <div key={matchday}>
                       <p className="mb-1 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
-                        {matchday > 0 ? `${matchday}a Rodada` : 'Rodada'}
+                        {matchday > 0 ? `${matchday}ª Rodada` : 'Rodada'}
                       </p>
                       {renderScoreInputs(matches)}
                     </div>
@@ -183,26 +265,55 @@ function PredictionsPage() {
         </>
       )}
 
-      {tab === 'knockout' &&
-        (knockoutMatches.length === 0 ? (
-          <div className="border-2 border-dashed border-border py-10 text-center">
-            <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
-              Em breve
-            </p>
-            <p className="mt-1 text-xs text-gray-muted">Mata-mata após a fase de grupos</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            <Bracket matches={knockoutMatches} />
-            <div className="flex items-center gap-3">
-              <h3 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-                Seus Palpites
-              </h3>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            {renderScoreInputs(knockoutMatches.filter((m) => m.homeTeam && m.awayTeam))}
-          </div>
-        ))}
+      {!hasLeagueMatches &&
+        tab === 'knockout' &&
+        (() => {
+          const availableStages = knockoutStageOrder.filter((stage) =>
+            knockoutMatches.some((m) => m.stage === stage),
+          )
+
+          if (availableStages.length === 0) {
+            return (
+              <div className="border-2 border-dashed border-border py-10 text-center">
+                <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
+                  Em breve
+                </p>
+                <p className="mt-1 text-xs text-gray-muted">Mata-mata apos a fase de grupos</p>
+              </div>
+            )
+          }
+
+          const currentStage = activeKnockoutStage ?? availableStages[0] ?? ''
+          const stageMatches = knockoutMatches.filter((m) => m.stage === currentStage)
+
+          return (
+            <>
+              <div
+                className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1"
+                role="tablist"
+                aria-label="Fases"
+              >
+                {availableStages.map((stage) => (
+                  <button
+                    key={stage}
+                    type="button"
+                    role="tab"
+                    aria-selected={currentStage === stage}
+                    onClick={() => setActiveKnockoutStage(stage)}
+                    className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
+                      currentStage === stage
+                        ? 'bg-black text-white'
+                        : 'text-gray-muted hover:text-black'
+                    }`}
+                  >
+                    {knockoutStageLabels[stage] ?? stage}
+                  </button>
+                ))}
+              </div>
+              {renderScoreInputs(stageMatches)}
+            </>
+          )
+        })()}
     </div>
   )
 }

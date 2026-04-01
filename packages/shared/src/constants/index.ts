@@ -34,6 +34,7 @@ export const MATCH = {
     'semi',
     'third-place',
     'final',
+    'league',
   ] as const,
   STATUSES: ['scheduled', 'live', 'finished', 'postponed', 'cancelled'] as const,
   GROUPS: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'] as const,
@@ -65,4 +66,9 @@ export const PIX = {
 
 export const WITHDRAWAL = {
   STATUSES: ['pending', 'processing', 'completed', 'failed'] as const,
+} as const
+
+export const COMPETITION = {
+  TYPES: ['cup', 'league'] as const,
+  STATUSES: ['active', 'finished'] as const,
 } as const

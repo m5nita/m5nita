@@ -112,14 +112,26 @@ describe('POST /api/pools', () => {
         'Content-Type': 'application/json',
         'x-test-user': JSON.stringify(testUser),
       },
-      body: JSON.stringify({ name: 'Test Pool', entryFee: 5000 }),
+      body: JSON.stringify({
+        name: 'Test Pool',
+        entryFee: 5000,
+        competitionId: '00000000-0000-0000-0000-000000000001',
+      }),
     })
 
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.pool.name).toBe('Test Pool')
     expect(body.payment.checkoutUrl).toBe('https://checkout.stripe.com/test')
-    expect(mockCreatePool).toHaveBeenCalledWith('user-1', 'Test Pool', 5000, undefined)
+    expect(mockCreatePool).toHaveBeenCalledWith(
+      'user-1',
+      'Test Pool',
+      5000,
+      '00000000-0000-0000-0000-000000000001',
+      undefined,
+      undefined,
+      undefined,
+    )
   })
 
   it('rejects_shortName_400validation', async () => {

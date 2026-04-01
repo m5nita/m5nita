@@ -1,4 +1,4 @@
-import type { Match } from '@m5nita/shared'
+import type { CompetitionListItem, Match } from '@m5nita/shared'
 import { MATCH } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -17,16 +17,39 @@ const stageLabels: Record<string, string> = {
   semi: 'Semi',
   'third-place': '3º Lugar',
   final: 'Final',
+  league: 'Liga',
 }
 
 function MatchesPage() {
+  const [activeCompetition, setActiveCompetition] = useState<string | null>(null)
   const [activeStage, setActiveStage] = useState('all')
   const [activeGroup, setActiveGroup] = useState<string | null>(null)
+  const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
+
+  const { data: competitionsData } = useQuery({
+    queryKey: ['competitions'],
+    queryFn: async () => {
+      const res = await apiFetch('/api/competitions')
+      if (!res.ok) throw new Error('Erro')
+      return res.json() as Promise<{ competitions: CompetitionListItem[] }>
+    },
+  })
+
+  const allCompetitions = competitionsData?.competitions ?? []
+  const competitions = allCompetitions.filter((c) => c.featured)
+
+  const effectiveCompetition =
+    activeCompetition ?? (competitions.length === 1 ? (competitions[0]?.id ?? null) : null)
+  const selectedComp = allCompetitions.find((c) => c.id === effectiveCompetition)
+  const isLeagueSelected = selectedComp?.type === 'league'
 
   const { data, isPending, error, refetch } = useQuery({
-    queryKey: ['matches'],
+    queryKey: ['matches', effectiveCompetition],
     queryFn: async () => {
-      const res = await apiFetch('/api/matches')
+      const params = new URLSearchParams()
+      if (effectiveCompetition) params.set('competitionId', effectiveCompetition)
+      else params.set('featured', 'true')
+      const res = await apiFetch(`/api/matches?${params}`)
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json() as Promise<{ matches: Match[] }>
     },
@@ -45,6 +68,17 @@ function MatchesPage() {
   if (activeGroup && activeStage === 'group')
     filtered = filtered.filter((m) => m.group === activeGroup)
   const hasLive = allMatches.some((m) => m.status === 'live')
+
+  // For league, compute matchday tabs
+  const leagueMatchdays = isLeagueSelected
+    ? [...new Set(allMatches.map((m) => m.matchday).filter((md): md is number => md != null))].sort(
+        (a, b) => a - b,
+      )
+    : []
+  const currentMatchday = activeMatchday ?? leagueMatchdays[0] ?? null
+  if (isLeagueSelected && currentMatchday != null) {
+    filtered = allMatches.filter((m) => m.matchday === currentMatchday)
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,25 +105,74 @@ function MatchesPage() {
         <div className="mt-3 h-1 w-12 bg-red" />
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5" role="tablist">
-        {['all', ...MATCH.STAGES].map((stage) => (
-          <button
-            key={stage}
-            type="button"
-            role="tab"
-            aria-selected={activeStage === stage}
-            onClick={() => {
-              setActiveStage(stage)
-              setActiveGroup(null)
-            }}
-            className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
-              activeStage === stage ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
-            }`}
-          >
-            {stageLabels[stage] ?? stage}
-          </button>
-        ))}
-      </div>
+      {competitions.length > 1 && (
+        <div className="flex gap-2" role="tablist" aria-label="Competicoes">
+          {competitions.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              role="tab"
+              aria-selected={effectiveCompetition === c.id}
+              onClick={() => {
+                setActiveCompetition(effectiveCompetition === c.id ? null : c.id)
+                setActiveStage('all')
+                setActiveGroup(null)
+                setActiveMatchday(null)
+              }}
+              className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                activeCompetition === c.id
+                  ? 'bg-black text-white'
+                  : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isLeagueSelected ? (
+        <div
+          className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5"
+          role="tablist"
+          aria-label="Rodadas"
+        >
+          {leagueMatchdays.map((md) => (
+            <button
+              key={md}
+              type="button"
+              role="tab"
+              aria-selected={currentMatchday === md}
+              onClick={() => setActiveMatchday(md)}
+              className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
+                currentMatchday === md ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
+              }`}
+            >
+              {md}ª
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5" role="tablist">
+          {['all', ...MATCH.STAGES.filter((s) => s !== 'league')].map((stage) => (
+            <button
+              key={stage}
+              type="button"
+              role="tab"
+              aria-selected={activeStage === stage}
+              onClick={() => {
+                setActiveStage(stage)
+                setActiveGroup(null)
+              }}
+              className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
+                activeStage === stage ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
+              }`}
+            >
+              {stageLabels[stage] ?? stage}
+            </button>
+          ))}
+        </div>
+      )}
 
       {activeStage === 'group' && (
         <div className="flex gap-1 overflow-x-auto -mx-5 px-5" role="tablist">
@@ -137,7 +220,7 @@ function MatchesPage() {
               {sortedMatchdays.map(([matchday, matches]) => (
                 <div key={matchday}>
                   <p className="mb-2 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
-                    {matchday > 0 ? `${matchday}a Rodada` : 'Rodada'}
+                    {matchday > 0 ? `${matchday}ª Rodada` : 'Rodada'}
                   </p>
                   <div className="flex flex-col">
                     {matches.map((m) => (

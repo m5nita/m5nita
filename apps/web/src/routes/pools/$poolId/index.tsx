@@ -43,6 +43,15 @@ function PoolDetailPage() {
         </h1>
         <div className="mt-3 h-1 w-12 bg-red" />
         <p className="mt-3 text-sm text-gray-dark">Criado por {pool.owner?.name || 'Anônimo'}</p>
+        {pool.competitionName && (
+          <p className="mt-1 font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+            {pool.competitionName}
+            {pool.matchdayFrom != null &&
+              (pool.matchdayTo && pool.matchdayTo !== pool.matchdayFrom
+                ? ` · Rodadas ${pool.matchdayFrom} a ${pool.matchdayTo}`
+                : ` · Rodada ${pool.matchdayFrom}`)}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-px bg-border">

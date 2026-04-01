@@ -75,8 +75,24 @@ export async function upsertPrediction(
 }
 
 export async function getUserPredictions(userId: string, poolId: string) {
-  return db.query.prediction.findMany({
+  const poolData = await db.query.pool.findFirst({
+    where: eq(pool.id, poolId),
+  })
+
+  const predictions = await db.query.prediction.findMany({
     where: and(eq(prediction.userId, userId), eq(prediction.poolId, poolId)),
     with: { match: true },
+  })
+
+  if (!poolData) return predictions
+
+  return predictions.filter((p) => {
+    if (p.match.competitionId !== poolData.competitionId) return false
+    if (poolData.matchdayFrom != null && poolData.matchdayTo != null && p.match.matchday != null) {
+      if (p.match.matchday < poolData.matchdayFrom || p.match.matchday > poolData.matchdayTo) {
+        return false
+      }
+    }
+    return true
   })
 }

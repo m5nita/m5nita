@@ -16,3 +16,4 @@ coverage/
 apps/web/src/**/*.js
 .turbo/
 .playwright-mcp/
+.devdbrc

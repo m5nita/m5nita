@@ -1,4 +1,4 @@
-import { eq, ne, sql } from 'drizzle-orm'
+import { and, eq, gte, lte, ne, sql } from 'drizzle-orm'
 import { db } from '../db/client'
 import { user } from '../db/schema/auth'
 import { match } from '../db/schema/match'
@@ -8,45 +8,65 @@ import { notifyWinners } from '../lib/telegram'
 import { getEffectiveFeeRate } from '../services/coupon'
 import { getPoolRanking } from '../services/ranking'
 
-export async function closePoolsIfAllMatchesFinished(): Promise<void> {
-  // 1. Check if ANY match is not finished (single cheap query)
-  const [unfinished] = await db
-    .select({ id: match.id })
-    .from(match)
-    .where(ne(match.status, 'finished'))
-    .limit(1)
-
-  if (unfinished) return
-
-  // 2. Find all active pools to close (batch)
+export async function checkAndClosePools(): Promise<void> {
+  // 1. Find all active pools (with competition and coupon relations)
   const activePools = await db.query.pool.findMany({
     where: eq(pool.status, 'active'),
-    with: { coupon: true },
+    with: { competition: true, coupon: true },
   })
 
   if (activePools.length === 0) return
 
-  console.log(
-    `[ClosePoolsJob] All matches finished. Closing ${activePools.length} active pool(s)...`,
-  )
+  let closedCount = 0
 
-  // 3. Bulk update all active pools to closed
-  await db
-    .update(pool)
-    .set({ status: 'closed', isOpen: false, updatedAt: new Date() })
-    .where(eq(pool.status, 'active'))
-
-  // 4. Notify winners for each pool (sequentially to avoid overload)
+  // 2. Process each pool sequentially
   for (const p of activePools) {
     try {
+      // Build conditions scoped to this pool's competition
+      const conditions = [eq(match.competitionId, p.competitionId), ne(match.status, 'finished')]
+
+      // If pool has matchday range, also filter by matchday
+      if (p.matchdayFrom != null) {
+        conditions.push(gte(match.matchday, p.matchdayFrom))
+      }
+      if (p.matchdayTo != null) {
+        conditions.push(lte(match.matchday, p.matchdayTo))
+      }
+
+      // Check if there are any unfinished matches in scope
+      const [unfinished] = await db
+        .select({ id: match.id })
+        .from(match)
+        .where(and(...conditions))
+        .limit(1)
+
+      // If any unfinished match exists, skip this pool
+      if (unfinished) continue
+
+      // All matches in scope are finished — close this pool
+      await db
+        .update(pool)
+        .set({ status: 'closed', isOpen: false, updatedAt: new Date() })
+        .where(eq(pool.id, p.id))
+
+      closedCount++
+
+      console.log(`[ClosePoolsJob] Closed pool "${p.name}" (${p.id})`)
+
+      // Notify winners
       await notifyWinnersForPool(p.id, p.name, p.entryFee, p.coupon?.discountPercent ?? 0)
     } catch (err) {
-      console.error(`[ClosePoolsJob] Failed to notify winners for pool ${p.id}:`, err)
+      console.error(`[ClosePoolsJob] Failed to process pool ${p.id}:`, err)
     }
   }
 
-  console.log(`[ClosePoolsJob] Done. Closed ${activePools.length} pool(s).`)
+  if (closedCount > 0) {
+    console.log(`[ClosePoolsJob] Done. Closed ${closedCount} pool(s).`)
+  }
 }
+
+/** @deprecated Use checkAndClosePools instead */
+export const closePoolsIfAllMatchesFinished = checkAndClosePools
 
 async function notifyWinnersForPool(
   poolId: string,

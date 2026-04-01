@@ -1,5 +1,6 @@
 import { db } from './client'
 import { user } from './schema/auth'
+import { competition } from './schema/competition'
 import { match } from './schema/match'
 import { payment } from './schema/payment'
 import { pool } from './schema/pool'
@@ -45,6 +46,19 @@ async function seed() {
 
   console.log('Users created:', user1?.id, user2?.id, user3?.id)
 
+  // Competition
+  const competitionId = '00000000-0000-0000-0000-000000000001'
+  await db.insert(competition).values({
+    id: competitionId,
+    externalId: 'WC',
+    name: 'Copa do Mundo 2026',
+    season: '2026',
+    type: 'cup',
+    status: 'active',
+  })
+
+  console.log('Competition created:', competitionId)
+
   // Pool
   const [pool1] = await db
     .insert(pool)
@@ -54,6 +68,7 @@ async function seed() {
       // biome-ignore lint/style/noNonNullAssertion: seed script assumes successful inserts
       ownerId: user1!.id,
       inviteCode: 'GALERA26',
+      competitionId,
     })
     .returning()
 
@@ -96,6 +111,7 @@ async function seed() {
       matchDate: new Date('2026-06-11T18:00:00Z'),
       status: 'scheduled',
       externalId: 1001,
+      competitionId,
     },
     {
       homeTeam: 'Argentina',
@@ -105,6 +121,7 @@ async function seed() {
       matchDate: new Date('2026-06-11T21:00:00Z'),
       status: 'scheduled',
       externalId: 1002,
+      competitionId,
     },
     {
       homeTeam: 'Brasil',
@@ -116,6 +133,7 @@ async function seed() {
       homeScore: 2,
       awayScore: 1,
       externalId: 1003,
+      competitionId,
     },
     {
       homeTeam: 'Alemanha',
@@ -127,6 +145,7 @@ async function seed() {
       homeScore: 1,
       awayScore: 1,
       externalId: 1004,
+      competitionId,
     },
   ]
 
