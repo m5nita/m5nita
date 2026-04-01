@@ -7,6 +7,7 @@ import { MatchCard } from '../components/match/MatchCard'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
 import { Loading } from '../components/ui/Loading'
 import { apiFetch } from '../lib/api'
+import { requireAuthGuard } from '../lib/authGuard'
 
 const stageLabels: Record<string, string> = {
   all: 'Todos',
@@ -243,4 +244,7 @@ function MatchesPage() {
   )
 }
 
-export const Route = createFileRoute('/matches')({ component: MatchesPage })
+export const Route = createFileRoute('/matches')({
+  beforeLoad: () => requireAuthGuard(),
+  component: MatchesPage,
+})
