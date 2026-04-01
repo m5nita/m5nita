@@ -146,8 +146,7 @@ export async function syncFixtures() {
     return
   }
 
-  for (let i = 0; i < activeCompetitions.length; i++) {
-    const comp = activeCompetitions[i]!
+  for (const [i, comp] of activeCompetitions.entries()) {
     try {
       const matches = await fetchMatches(
         `/competitions/${comp.externalId}/matches?season=${comp.season}`,
@@ -171,8 +170,7 @@ export async function syncLiveScores() {
     where: eq(competition.status, 'active'),
   })
 
-  for (let i = 0; i < activeCompetitions.length; i++) {
-    const comp = activeCompetitions[i]!
+  for (const [i, comp] of activeCompetitions.entries()) {
     try {
       const liveMatches = await fetchMatches(`/competitions/${comp.externalId}/matches?status=LIVE`)
       const finishedMatches = await fetchMatches(
