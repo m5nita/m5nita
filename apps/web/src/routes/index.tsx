@@ -27,7 +27,7 @@ function HomePage() {
   const { data: matchesData } = useQuery({
     queryKey: ['matches', 'upcoming'],
     queryFn: async () => {
-      const res = await apiFetch('/api/matches?status=scheduled')
+      const res = await apiFetch('/api/matches?status=scheduled&featured=true')
       if (!res.ok) throw new Error('Failed to fetch matches')
       return res.json() as Promise<{ matches: Match[] }>
     },

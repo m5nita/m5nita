@@ -3,6 +3,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
+import { getCompetitionById } from './competition'
 import { getEffectiveFeeRate, incrementUsage, validateCoupon } from './coupon'
 
 function generateInviteCode(): string {
@@ -18,6 +19,9 @@ export async function createPool(
   userId: string,
   name: string,
   entryFee: number,
+  competitionId: string,
+  matchdayFrom?: number,
+  matchdayTo?: number,
   couponCode?: string,
 ) {
   if (name.length < POOL.MIN_NAME_LENGTH || name.length > POOL.MAX_NAME_LENGTH) {
@@ -25,6 +29,14 @@ export async function createPool(
   }
   if (entryFee < POOL.MIN_ENTRY_FEE || entryFee > POOL.MAX_ENTRY_FEE) {
     throw new PoolError('VALIDATION_ERROR', 'Valor deve ser entre R$ 10 e R$ 1.000')
+  }
+
+  const comp = await getCompetitionById(competitionId)
+  if (!comp) {
+    throw new PoolError('INVALID_COMPETITION', 'Competição não encontrada')
+  }
+  if (comp.status !== 'active') {
+    throw new PoolError('INVALID_COMPETITION', 'Competição não está ativa')
   }
 
   let couponId: string | null = null
@@ -61,6 +73,9 @@ export async function createPool(
       entryFee,
       ownerId: userId,
       inviteCode,
+      competitionId,
+      matchdayFrom: matchdayFrom ?? null,
+      matchdayTo: matchdayTo ?? null,
       couponId,
       status: 'pending',
     })
@@ -79,7 +94,11 @@ export async function getUserPools(userId: string) {
   const members = await db.query.poolMember.findMany({
     where: eq(poolMember.userId, userId),
     with: {
-      pool: true,
+      pool: {
+        with: {
+          competition: true,
+        },
+      },
     },
   })
 
@@ -100,6 +119,7 @@ export async function getUserPools(userId: string) {
     name: m.pool.name,
     entryFee: m.pool.entryFee,
     status: m.pool.status,
+    competitionName: m.pool.competition.name,
     memberCount: counts[i] ?? 0,
     userPosition: null,
     userPoints: 0,
@@ -112,6 +132,7 @@ export async function getPoolById(poolId: string, _userId: string) {
     with: {
       owner: true,
       coupon: true,
+      competition: true,
     },
   })
 
@@ -129,6 +150,7 @@ export async function getPoolById(poolId: string, _userId: string) {
   return {
     ...poolData,
     owner: { id: poolData.owner.id, name: poolData.owner.name },
+    competitionName: poolData.competition.name,
     memberCount: memberCount?.count ?? 0,
     prizeTotal,
     discountPercent,
@@ -143,6 +165,7 @@ export async function getPoolByInviteCode(inviteCode: string) {
     with: {
       owner: true,
       coupon: true,
+      competition: true,
     },
   })
 
@@ -167,6 +190,9 @@ export async function getPoolByInviteCode(inviteCode: string) {
     platformFee,
     originalPlatformFee,
     discountPercent,
+    competitionName: poolData.competition.name,
+    matchdayFrom: poolData.matchdayFrom,
+    matchdayTo: poolData.matchdayTo,
     owner: { name: poolData.owner.name },
     memberCount: count,
     prizeTotal,

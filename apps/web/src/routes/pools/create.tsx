@@ -1,6 +1,7 @@
+import type { CompetitionListItem } from '@m5nita/shared'
 import { POOL } from '@m5nita/shared'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { InviteTicket } from '../../components/pool/InviteTicket'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -22,6 +23,10 @@ function CreatePoolPage() {
   const [name, setName] = useState('')
   const [entryFee, setEntryFee] = useState(5000)
   const [customFee, setCustomFee] = useState('')
+  const [competitions, setCompetitions] = useState<CompetitionListItem[]>([])
+  const [competitionId, setCompetitionId] = useState('')
+  const [matchdayFrom, setMatchdayFrom] = useState('')
+  const [matchdayTo, setMatchdayTo] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponState>({
     valid: false,
@@ -32,6 +37,21 @@ function CreatePoolPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [createdPool, setCreatedPool] = useState<{ name: string; inviteCode: string } | null>(null)
+
+  const selectedCompetition = competitions.find((c) => c.id === competitionId)
+  const isLeague = selectedCompetition?.type === 'league'
+
+  useEffect(() => {
+    apiFetch('/api/competitions')
+      .then((res) => res.json())
+      .then((data) => {
+        setCompetitions(data.competitions || [])
+        if (data.competitions?.length === 1) {
+          setCompetitionId(data.competitions[0].id)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const currentFee = customFee ? Number(customFee) * 100 : entryFee
   const platformFee = calculatePlatformFee(currentFee)
@@ -99,10 +119,22 @@ function CreatePoolPage() {
       setError('Valor deve ser entre R$ 10 e R$ 1.000')
       return
     }
+    if (!competitionId) {
+      setError('Selecione uma competicao')
+      return
+    }
     setLoading(true)
     setError('')
     try {
-      const body: Record<string, unknown> = { name: name.trim(), entryFee: currentFee }
+      const body: Record<string, unknown> = {
+        name: name.trim(),
+        entryFee: currentFee,
+        competitionId,
+      }
+      if (isLeague && matchdayFrom && matchdayTo) {
+        body.matchdayFrom = Number(matchdayFrom)
+        body.matchdayTo = Number(matchdayTo)
+      }
       if (couponCode.trim() && coupon.valid) {
         body.couponCode = couponCode.trim()
       }
@@ -171,6 +203,69 @@ function CreatePoolPage() {
         onChange={(e) => setName(e.target.value)}
         maxLength={50}
       />
+
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor="competition-select"
+          className="font-display text-xs font-semibold uppercase tracking-wider text-gray-dark"
+        >
+          Competicao
+        </label>
+        <select
+          id="competition-select"
+          value={competitionId}
+          onChange={(e) => {
+            setCompetitionId(e.target.value)
+            setMatchdayFrom('')
+            setMatchdayTo('')
+          }}
+          className="border-b-2 border-border bg-transparent px-0 py-2.5 text-black transition-colors duration-150 focus:border-black focus:outline-none appearance-none"
+        >
+          <option value="" className="text-gray-muted">
+            Selecione uma competicao
+          </option>
+          {competitions.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.seasonDisplay ?? c.season})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {isLeague && selectedCompetition?.matchdays && (
+        <div className="flex flex-col gap-2">
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+            Rodadas
+          </p>
+          <p className="text-xs text-gray-muted">
+            Rodadas {selectedCompetition.matchdays.nextMatchday} a{' '}
+            {selectedCompetition.matchdays.max} disponiveis
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              label="De"
+              type="number"
+              placeholder={String(selectedCompetition.matchdays.nextMatchday)}
+              value={matchdayFrom}
+              onChange={(e) => {
+                setMatchdayFrom(e.target.value)
+                if (!matchdayTo) setMatchdayTo(e.target.value)
+              }}
+              min={selectedCompetition.matchdays.nextMatchday}
+              max={selectedCompetition.matchdays.max}
+            />
+            <Input
+              label="Ate"
+              type="number"
+              placeholder={String(selectedCompetition.matchdays.nextMatchday)}
+              value={matchdayTo}
+              onChange={(e) => setMatchdayTo(e.target.value)}
+              min={matchdayFrom || selectedCompetition.matchdays.nextMatchday}
+              max={selectedCompetition.matchdays.max}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">

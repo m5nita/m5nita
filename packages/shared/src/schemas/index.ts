@@ -1,17 +1,38 @@
 import { z } from 'zod'
 
 // Pool schemas
-export const createPoolSchema = z.object({
-  name: z.string().min(3).max(50),
-  entryFee: z.number().int().min(100).max(100000),
-  couponCode: z
-    .string()
-    .min(2)
-    .max(20)
-    .transform((v) => v.trim().toUpperCase())
-    .pipe(z.string().regex(/^[A-Z0-9]+$/, 'Código deve conter apenas letras e números'))
-    .optional(),
-})
+export const createPoolSchema = z
+  .object({
+    name: z.string().min(3).max(50),
+    entryFee: z.number().int().min(100).max(100000),
+    competitionId: z.string().uuid('ID da competicao invalido'),
+    matchdayFrom: z.number().int().min(1).optional(),
+    matchdayTo: z.number().int().min(1).optional(),
+    couponCode: z
+      .string()
+      .min(2)
+      .max(20)
+      .transform((v) => v.trim().toUpperCase())
+      .pipe(z.string().regex(/^[A-Z0-9]+$/, 'Código deve conter apenas letras e números'))
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.matchdayFrom != null && data.matchdayTo == null) return false
+      if (data.matchdayFrom == null && data.matchdayTo != null) return false
+      return true
+    },
+    { message: 'matchdayFrom e matchdayTo devem ser informados juntos', path: ['matchdayTo'] },
+  )
+  .refine(
+    (data) => {
+      if (data.matchdayFrom != null && data.matchdayTo != null) {
+        return data.matchdayFrom <= data.matchdayTo
+      }
+      return true
+    },
+    { message: 'matchdayFrom deve ser menor ou igual a matchdayTo', path: ['matchdayFrom'] },
+  )
 
 // Coupon schemas
 export const validateCouponSchema = z.object({

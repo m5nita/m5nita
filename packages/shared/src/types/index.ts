@@ -9,6 +9,20 @@ export type MatchStage =
   | 'semi'
   | 'third-place'
   | 'final'
+  | 'league'
+
+export type CompetitionType = 'cup' | 'league'
+export type CompetitionStatus = 'active' | 'finished'
+
+export interface Competition {
+  id: string
+  externalId: string
+  name: string
+  season: string
+  type: CompetitionType
+  status: CompetitionStatus
+  featured: boolean
+}
 export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled'
 export type MatchGroup = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L'
 
@@ -24,6 +38,9 @@ export interface Pool {
   entryFee: number
   ownerId: string
   inviteCode: string
+  competitionId: string
+  matchdayFrom: number | null
+  matchdayTo: number | null
   isOpen: boolean
   status: PoolStatus
 }
@@ -32,6 +49,7 @@ export interface PoolListItem {
   id: string
   name: string
   entryFee: number
+  competitionName: string
   memberCount: number
   userPosition: number | null
   userPoints: number
@@ -39,6 +57,7 @@ export interface PoolListItem {
 }
 
 export interface PoolDetail extends Pool {
+  competitionName: string
   owner: { id: string; name: string | null }
   memberCount: number
   prizeTotal: number
@@ -54,6 +73,9 @@ export interface PoolInviteInfo {
   id: string
   name: string
   entryFee: number
+  competitionName: string
+  matchdayFrom: number | null
+  matchdayTo: number | null
   platformFee: number
   originalPlatformFee: number
   discountPercent: number
@@ -63,8 +85,16 @@ export interface PoolInviteInfo {
   isOpen: boolean
 }
 
+export interface CompetitionListItem extends Competition {
+  seasonDisplay: string
+  matchCount: number
+  upcomingMatchCount: number
+  matchdays: { min: number; max: number; nextMatchday: number } | null
+}
+
 export interface Match {
   id: string
+  competitionId: string
   homeTeam: string
   awayTeam: string
   homeFlag: string | null

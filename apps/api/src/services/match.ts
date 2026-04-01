@@ -1,11 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../db/client'
+import { competition } from '../db/schema/competition'
 import { match } from '../db/schema/match'
 import { calcPointsForMatch } from '../jobs/calcPoints'
-import { closePoolsIfAllMatchesFinished } from '../jobs/closePoolsJob'
+import { checkAndClosePools } from '../jobs/closePoolsJob'
 
 const FOOTBALL_DATA_BASE = 'https://api.football-data.org/v4'
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY || ''
+const RATE_LIMIT_DELAY_MS = 6000
 
 interface FootballDataMatch {
   id: number
@@ -51,8 +53,14 @@ function mapStage(stage: string): string {
     SEMI_FINALS: 'semi',
     THIRD_PLACE: 'third-place',
     FINAL: 'final',
+    REGULAR_SEASON: 'league',
   }
   return stageMap[stage] || 'group'
+}
+
+export function mapStageForCompetition(stage: string, competitionType: string): string {
+  if (competitionType === 'league') return 'league'
+  return mapStage(stage)
 }
 
 function extractGroup(group: string | null): string | null {
@@ -67,7 +75,7 @@ async function fetchMatches(endpoint: string): Promise<FootballDataMatch[]> {
   })
 
   if (!res.ok) {
-    console.error(`[Match Sync] API error: ${res.status}`)
+    console.error(`[Match Sync] API error: ${res.status} for ${endpoint}`)
     return []
   }
 
@@ -75,7 +83,15 @@ async function fetchMatches(endpoint: string): Promise<FootballDataMatch[]> {
   return data.matches || []
 }
 
-async function upsertMatches(matches: FootballDataMatch[]) {
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function upsertMatches(
+  matches: FootballDataMatch[],
+  competitionId: string,
+  competitionType: string,
+) {
   for (const m of matches) {
     const existing = await db.query.match.findFirst({
       where: eq(match.externalId, m.id),
@@ -83,6 +99,7 @@ async function upsertMatches(matches: FootballDataMatch[]) {
 
     const newStatus = mapStatus(m.status)
     const values = {
+      competitionId,
       externalId: m.id,
       homeTeam: m.homeTeam.name || 'TBD',
       awayTeam: m.awayTeam.name || 'TBD',
@@ -90,7 +107,7 @@ async function upsertMatches(matches: FootballDataMatch[]) {
       awayFlag: m.awayTeam.crest || null,
       homeScore: m.score.fullTime.home,
       awayScore: m.score.fullTime.away,
-      stage: mapStage(m.stage),
+      stage: mapStageForCompetition(m.stage, competitionType),
       group: extractGroup(m.group),
       matchday: m.matchday,
       matchDate: new Date(m.utcDate),
@@ -120,61 +137,86 @@ export async function syncFixtures() {
     return
   }
 
-  try {
-    const matches = await fetchMatches('/competitions/WC/matches?season=2026')
-    await upsertMatches(matches)
-    console.log(`[Match Sync] Synced ${matches.length} fixtures`)
-  } catch (err) {
-    console.error('[Match Sync] Error:', err)
+  const activeCompetitions = await db.query.competition.findMany({
+    where: eq(competition.status, 'active'),
+  })
+
+  if (activeCompetitions.length === 0) {
+    console.log('[Match Sync] No active competitions, skipping sync')
+    return
+  }
+
+  for (let i = 0; i < activeCompetitions.length; i++) {
+    const comp = activeCompetitions[i]!
+    try {
+      const matches = await fetchMatches(
+        `/competitions/${comp.externalId}/matches?season=${comp.season}`,
+      )
+      await upsertMatches(matches, comp.id, comp.type)
+      console.log(`[Match Sync] Synced ${matches.length} fixtures for ${comp.name}`)
+    } catch (err) {
+      console.error(`[Match Sync] Error syncing ${comp.name}:`, err)
+    }
+
+    if (i < activeCompetitions.length - 1) {
+      await delay(RATE_LIMIT_DELAY_MS)
+    }
   }
 }
 
 export async function syncLiveScores() {
   if (!FOOTBALL_DATA_API_KEY) return
 
-  try {
-    // Fetch both live and recently finished matches
-    const liveMatches = await fetchMatches('/competitions/WC/matches?status=LIVE')
-    const finishedMatches = await fetchMatches(
-      `/competitions/WC/matches?status=FINISHED&dateFrom=${getTodayDate()}&dateTo=${getTodayDate()}`,
-    )
+  const activeCompetitions = await db.query.competition.findMany({
+    where: eq(competition.status, 'active'),
+  })
 
-    const allMatches = [...liveMatches, ...finishedMatches]
+  for (let i = 0; i < activeCompetitions.length; i++) {
+    const comp = activeCompetitions[i]!
+    try {
+      const liveMatches = await fetchMatches(`/competitions/${comp.externalId}/matches?status=LIVE`)
+      const finishedMatches = await fetchMatches(
+        `/competitions/${comp.externalId}/matches?status=FINISHED&dateFrom=${getTodayDate()}&dateTo=${getTodayDate()}`,
+      )
 
-    for (const m of allMatches) {
-      const existing = await db.query.match.findFirst({
-        where: eq(match.externalId, m.id),
-      })
+      const allMatches = [...liveMatches, ...finishedMatches]
 
-      if (!existing) continue
-
-      const newStatus = mapStatus(m.status)
-      const wasNotFinished = existing.status !== 'finished'
-      const isNowFinished = newStatus === 'finished'
-
-      await db
-        .update(match)
-        .set({
-          homeScore: m.score.fullTime.home,
-          awayScore: m.score.fullTime.away,
-          status: newStatus,
-          updatedAt: new Date(),
+      for (const m of allMatches) {
+        const existing = await db.query.match.findFirst({
+          where: eq(match.externalId, m.id),
         })
-        .where(eq(match.id, existing.id))
 
-      // Calculate points when a match just finished
-      if (wasNotFinished && isNowFinished) {
-        console.log(`[Live Sync] Match ${existing.id} finished, calculating points...`)
-        await calcPointsForMatch(existing.id)
+        if (!existing) continue
+
+        const newStatus = mapStatus(m.status)
+        const wasNotFinished = existing.status !== 'finished'
+        const isNowFinished = newStatus === 'finished'
+
+        await db
+          .update(match)
+          .set({
+            homeScore: m.score.fullTime.home,
+            awayScore: m.score.fullTime.away,
+            status: newStatus,
+            updatedAt: new Date(),
+          })
+          .where(eq(match.id, existing.id))
+
+        if (wasNotFinished && isNowFinished) {
+          console.log(`[Live Sync] Match ${existing.id} finished, calculating points...`)
+          await calcPointsForMatch(existing.id)
+        }
       }
+    } catch (err) {
+      console.error(`[Live Sync] Error syncing ${comp.name}:`, err)
     }
-    // After processing all matches, check if all are finished to close pools
-    closePoolsIfAllMatchesFinished().catch((err) =>
-      console.error('[Live Sync] Close pools check failed:', err),
-    )
-  } catch (err) {
-    console.error('[Live Sync] Error:', err)
+
+    if (i < activeCompetitions.length - 1) {
+      await delay(RATE_LIMIT_DELAY_MS)
+    }
   }
+
+  checkAndClosePools().catch((err) => console.error('[Live Sync] Close pools check failed:', err))
 }
 
 function getTodayDate(): string {

@@ -19,6 +19,7 @@ export function PoolCard({ pool, index }: PoolCardProps) {
             {pool.name}
           </h3>
           <p className="text-xs text-gray-muted">
+            {pool.competitionName && <>{pool.competitionName} · </>}
             {pool.memberCount} participante{pool.memberCount !== 1 ? 's' : ''} ·{' '}
             {formatCurrency(pool.entryFee)}
           </p>

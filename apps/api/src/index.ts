@@ -5,6 +5,7 @@ import { HTTPException } from 'hono/http-exception'
 import { sendPredictionReminders } from './jobs/reminderJob'
 import { auth } from './lib/auth'
 import { globalRateLimit, otpRateLimit } from './middleware/rateLimit'
+import { competitionsRoutes } from './routes/competitions'
 import { matchesRoutes } from './routes/matches'
 import { poolsRoutes } from './routes/pools'
 import { predictionsRoutes } from './routes/predictions'
@@ -51,6 +52,7 @@ app.route('/api', telegramRoutes)
 
 // Protected routes
 app.route('/api', usersRoutes)
+app.route('/api', competitionsRoutes)
 app.route('/api', poolsRoutes)
 app.route('/api', matchesRoutes)
 app.route('/api', predictionsRoutes)

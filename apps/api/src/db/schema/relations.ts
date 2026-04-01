@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm'
 import { account, session, user } from './auth'
+import { competition } from './competition'
 import { coupon } from './coupon'
 import { match } from './match'
 import { payment } from './payment'
@@ -32,6 +33,11 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }))
 
+export const competitionRelations = relations(competition, ({ many }) => ({
+  matches: many(match),
+  pools: many(pool),
+}))
+
 export const couponRelations = relations(coupon, ({ many }) => ({
   pools: many(pool),
 }))
@@ -40,6 +46,10 @@ export const poolRelations = relations(pool, ({ one, many }) => ({
   owner: one(user, {
     fields: [pool.ownerId],
     references: [user.id],
+  }),
+  competition: one(competition, {
+    fields: [pool.competitionId],
+    references: [competition.id],
   }),
   coupon: one(coupon, {
     fields: [pool.couponId],
@@ -77,7 +87,11 @@ export const paymentRelations = relations(payment, ({ one }) => ({
   }),
 }))
 
-export const matchRelations = relations(match, ({ many }) => ({
+export const matchRelations = relations(match, ({ one, many }) => ({
+  competition: one(competition, {
+    fields: [match.competitionId],
+    references: [competition.id],
+  }),
   predictions: many(prediction),
 }))
 

@@ -1,8 +1,9 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../db/client'
 import { match } from '../db/schema/match'
 import { requireAuth } from '../middleware/auth'
+import { getFeaturedCompetitionIds } from '../services/competition'
 import type { AppEnv } from '../types/hono'
 
 const matchesRoutes = new Hono<AppEnv>()
@@ -14,10 +15,22 @@ matchesRoutes.get('/matches', async (c) => {
   const stage = c.req.query('stage')
   const group = c.req.query('group')
   const status = c.req.query('status')
+  const competitionId = c.req.query('competitionId')
+  const featured = c.req.query('featured')
 
   let query = db.select().from(match).$dynamic()
 
   const conditions = []
+  if (competitionId) {
+    conditions.push(eq(match.competitionId, competitionId))
+  } else if (featured === 'true') {
+    const featuredIds = await getFeaturedCompetitionIds()
+    if (featuredIds.length > 0) {
+      conditions.push(inArray(match.competitionId, featuredIds))
+    } else {
+      return c.json({ matches: [] })
+    }
+  }
   if (stage) conditions.push(eq(match.stage, stage))
   if (group) conditions.push(eq(match.group, group))
   if (status) conditions.push(eq(match.status, status))
