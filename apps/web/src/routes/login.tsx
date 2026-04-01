@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button'
 import { OtpInput } from '../components/ui/OtpInput'
 import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
-import { consumePendingRedirect } from '../lib/authGuard'
+import { consumePendingRedirect, redirectIfAuthenticated } from '../lib/authGuard'
 
 const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'm5nita_bot'
 
@@ -168,5 +168,6 @@ function LoginPage() {
 }
 
 export const Route = createFileRoute('/login')({
+  beforeLoad: () => redirectIfAuthenticated(),
   component: LoginPage,
 })

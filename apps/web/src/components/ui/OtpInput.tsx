@@ -83,9 +83,10 @@ export function OtpInput({
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
-          className="absolute inset-0 opacity-0"
+          className="pointer-events-none absolute inset-0 opacity-0"
           tabIndex={-1}
           onChange={(e) => handleHiddenInput(e.target.value)}
+          onPaste={handlePaste}
         />
         {digits.map((digit, pos) => (
           <input

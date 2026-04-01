@@ -13,6 +13,14 @@ export function consumePendingRedirect(): string | null {
   return url
 }
 
+export async function redirectIfAuthenticated() {
+  const session = await authClient.getSession()
+
+  if (session.data?.user) {
+    throw redirect({ to: '/' })
+  }
+}
+
 export async function requireAuthGuard() {
   const session = await authClient.getSession()
 
