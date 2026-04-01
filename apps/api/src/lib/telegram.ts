@@ -211,7 +211,7 @@ function parseCompetitionArgs(raw: string): {
   season: number
   type: string
 } {
-  const quotedMatch = raw.match(/^(\S+)\s+"([^"]+)"\s+(\S+)\s+(\S+)$/)
+  const quotedMatch = raw.match(/^(\S+)\s+["""]([^"""]+)["""]\s+(\S+)\s+(\S+)$/)
   if (quotedMatch) {
     const code = quotedMatch[1] as string
     const name = quotedMatch[2] as string
