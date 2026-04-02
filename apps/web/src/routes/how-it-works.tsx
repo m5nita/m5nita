@@ -40,8 +40,8 @@ const scoringRules = [
   },
   {
     points: SCORING.WINNER_AND_DIFF,
-    label: 'Vencedor + diferença de gols',
-    example: 'Palpite 3×1, resultado 2×0',
+    label: 'Resultado + diferença de gols',
+    example: 'Palpite 3×1, resultado 2×0 ou 1×1 vs 0×0',
     color: 'bg-green/70',
   },
   {
@@ -49,12 +49,6 @@ const scoringRules = [
     label: 'Acertou o vencedor',
     example: 'Palpite 1×0, resultado 3×2',
     color: 'bg-green/40',
-  },
-  {
-    points: SCORING.DRAW_CORRECT,
-    label: 'Acertou o empate',
-    example: 'Palpite 1×1, resultado 0×0',
-    color: 'bg-gray-muted/50',
   },
   {
     points: SCORING.MISS,

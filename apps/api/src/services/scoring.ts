@@ -24,9 +24,6 @@ export function calculatePoints(
   const actualResult = Math.sign(actualDiff)
 
   if (predictedResult === actualResult) {
-    if (actualResult === 0) {
-      return SCORING.DRAW_CORRECT
-    }
     return SCORING.WINNER_CORRECT
   }
 
