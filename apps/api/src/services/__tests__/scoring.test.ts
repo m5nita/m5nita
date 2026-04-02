@@ -24,10 +24,12 @@ describe('calculatePoints', () => {
   })
 
   it('drawCorrect_wrongScore_returnsWinnerAndDiff', () => {
-    // Predicted 1-1, Actual 0-0 — both draws, diff=0 matches
+    // Predicted 1-1, Actual 0-0 — both draws, diff=0 always matches
     expect(calculatePoints(1, 1, 0, 0)).toBe(SCORING.WINNER_AND_DIFF)
-    // Predicted 2-2, Actual 3-3 — both draws, diff=0 matches
+    // Predicted 2-2, Actual 3-3 — both draws, diff=0 always matches
     expect(calculatePoints(2, 2, 3, 3)).toBe(SCORING.WINNER_AND_DIFF)
+    // Predicted 0-0, Actual 4-4
+    expect(calculatePoints(0, 0, 4, 4)).toBe(SCORING.WINNER_AND_DIFF)
   })
 
   it('miss_wrongEverything_returns0', () => {
