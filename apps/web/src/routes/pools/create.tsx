@@ -86,7 +86,7 @@ function CreatePoolPage() {
           })
         } else {
           const reasons: Record<string, string> = {
-            not_found: 'Cupom nao encontrado',
+            not_found: 'Cupom não encontrado',
             expired: 'Cupom expirado',
             exhausted: 'Cupom esgotado',
             inactive: 'Cupom inativo',
@@ -95,7 +95,7 @@ function CreatePoolPage() {
             valid: false,
             discountPercent: 0,
             loading: false,
-            error: reasons[data.reason] || 'Cupom invalido',
+            error: reasons[data.reason] || 'Cupom inválido',
           })
         }
       } catch {
@@ -146,7 +146,7 @@ function CreatePoolPage() {
       })
       if (!res.ok) {
         const data = await res.json()
-        setError(data.message || 'Erro ao criar bolao')
+        setError(data.message || 'Erro ao criar bolão')
         return
       }
       const data = await res.json()
@@ -197,7 +197,7 @@ function CreatePoolPage() {
       </div>
 
       <Input
-        label="Nome do bolao"
+        label="Nome do bolão"
         placeholder="Ex: Bolao da Galera"
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -209,7 +209,7 @@ function CreatePoolPage() {
           htmlFor="competition-select"
           className="font-display text-xs font-semibold uppercase tracking-wider text-gray-dark"
         >
-          Competicao
+          Competição
         </label>
         <select
           id="competition-select"

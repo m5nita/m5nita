@@ -28,7 +28,7 @@ export async function createCompetition(
   })
 
   if (existing) {
-    throw new CompetitionError('ALREADY_EXISTS', 'Competicao ja cadastrada para esta temporada')
+    throw new CompetitionError('ALREADY_EXISTS', 'Competição já cadastrada para esta temporada')
   }
 
   const [created] = await db
@@ -123,7 +123,7 @@ export async function deactivateCompetition(externalId: string, season: string) 
     .returning()
 
   if (!updated) {
-    throw new CompetitionError('NOT_FOUND', 'Competicao nao encontrada')
+    throw new CompetitionError('NOT_FOUND', 'Competição não encontrada')
   }
 
   return updated
@@ -143,7 +143,7 @@ export async function toggleFeatured(externalId: string, season: string) {
   })
 
   if (!existing) {
-    throw new CompetitionError('NOT_FOUND', 'Competicao nao encontrada')
+    throw new CompetitionError('NOT_FOUND', 'Competição não encontrada')
   }
 
   const [updated] = await db

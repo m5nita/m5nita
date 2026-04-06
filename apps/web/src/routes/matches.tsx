@@ -107,7 +107,7 @@ function MatchesPage() {
       </div>
 
       {competitions.length > 1 && (
-        <div className="flex gap-2" role="tablist" aria-label="Competicoes">
+        <div className="flex gap-2" role="tablist" aria-label="Competições">
           {competitions.map((c) => (
             <button
               key={c.id}
