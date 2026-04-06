@@ -31,7 +31,7 @@ function PredictionsPage() {
     queryKey: ['pool', poolId],
     queryFn: async (): Promise<PoolDetail> => {
       const res = await apiFetch(`/api/pools/${poolId}`)
-      if (!res.ok) throw new Error('Erro ao carregar bolao')
+      if (!res.ok) throw new Error('Erro ao carregar bolão')
       return res.json()
     },
   })

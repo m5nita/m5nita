@@ -289,6 +289,20 @@ poolsRoutes.post('/pools/:poolId/prize/withdraw', async (c) => {
       parsed.data.pixKeyType,
       parsed.data.pixKey,
     )
+
+    const poolData = await getPoolById(poolId, currentUser.id)
+    import('../lib/telegram')
+      .then(({ notifyAdminWithdrawalRequest }) =>
+        notifyAdminWithdrawalRequest(
+          currentUser.name || 'Anônimo',
+          poolData?.name || poolId,
+          withdrawal.amount,
+          parsed.data.pixKeyType,
+          parsed.data.pixKey,
+        ),
+      )
+      .catch((err) => console.error('[Telegram] Failed to notify admin:', err))
+
     return c.json(withdrawal, 201)
   } catch (err) {
     if (err instanceof PrizeWithdrawalError) {

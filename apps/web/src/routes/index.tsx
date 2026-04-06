@@ -62,7 +62,9 @@ function HomePage() {
     )
   }
 
-  const pools = poolsData?.pools ?? []
+  const allPools = poolsData?.pools ?? []
+  const activePools = allPools.filter((p) => p.status === 'active')
+  const finishedPools = allPools.filter((p) => p.status === 'closed')
   const upcomingMatches = (matchesData?.matches ?? []).slice(0, 4)
 
   function handleJoinByCode() {
@@ -120,22 +122,22 @@ function HomePage() {
       <section>
         <div className="flex items-center gap-3 mb-4">
           <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-            Meus Boloes
+            Meus Bolões
           </h2>
           <div className="h-px flex-1 bg-border" />
         </div>
         {poolsPending ? (
           <Loading message="Carregando..." />
-        ) : pools.length > 0 ? (
+        ) : activePools.length > 0 ? (
           <div className="flex flex-col gap-3">
-            {pools.map((pool, i) => (
+            {activePools.map((pool, i) => (
               <PoolCard key={pool.id} pool={pool} index={i + 1} />
             ))}
           </div>
         ) : (
           <div className="border-2 border-dashed border-border py-10 text-center">
             <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
-              Nenhum bolao
+              Nenhum bolão
             </p>
             <p className="mt-1 text-xs text-gray-muted">
               Crie um ou entre pelo convite de um amigo
@@ -143,6 +145,22 @@ function HomePage() {
           </div>
         )}
       </section>
+
+      {finishedPools.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+              Finalizados
+            </h2>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <div className="flex flex-col gap-3">
+            {finishedPools.map((pool, i) => (
+              <PoolCard key={pool.id} pool={pool} index={i + 1} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <div className="flex items-center gap-3 mb-4">

@@ -6,7 +6,7 @@ export async function requireAuth(c: Context<AppEnv>, next: Next) {
   const session = await auth.api.getSession({ headers: c.req.raw.headers })
 
   if (!session) {
-    return c.json({ error: 'UNAUTHORIZED', message: 'Autenticacao necessaria' }, 401)
+    return c.json({ error: 'UNAUTHORIZED', message: 'Autenticação necessária' }, 401)
   }
 
   c.set('user', session.user)

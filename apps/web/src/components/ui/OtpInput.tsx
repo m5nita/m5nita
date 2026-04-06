@@ -74,9 +74,9 @@ export function OtpInput({
         htmlFor="otp-hidden"
         className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark"
       >
-        Codigo de verificacao
+        Código de verificação
       </label>
-      <fieldset className="relative flex gap-2 w-full border-0 p-0 m-0" aria-label="Codigo OTP">
+      <fieldset className="relative flex gap-2 w-full border-0 p-0 m-0" aria-label="Código OTP">
         <input
           id="otp-hidden"
           ref={hiddenRef}
@@ -103,7 +103,7 @@ export function OtpInput({
             onChange={(e) => handleInput(pos, e.target.value.slice(-1))}
             onKeyDown={(e) => handleKeyDown(pos, e)}
             onPaste={handlePaste}
-            aria-label={`Digito ${pos + 1}`}
+            aria-label={`Dígito ${pos + 1}`}
             aria-invalid={!!error}
             className={`h-14 w-0 flex-1 min-w-0 border-b-2 bg-transparent text-center font-display text-2xl font-black transition-colors duration-150 focus:border-black focus:outline-none disabled:text-gray-muted ${
               error ? 'border-red' : digit ? 'border-black' : 'border-border'

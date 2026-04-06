@@ -93,7 +93,7 @@ describe('PUT /api/pools/:poolId/predictions/:matchId', () => {
   it('rejects_notMember_403', async () => {
     const { PredictionError } = await import('../../services/prediction')
     mockUpsertPrediction.mockRejectedValue(
-      new PredictionError('NOT_MEMBER', 'Voce nao e membro deste bolao'),
+      new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão'),
     )
 
     const res = await app.request('/api/pools/pool-1/predictions/match-1', {

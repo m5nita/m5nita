@@ -90,7 +90,7 @@ function parseCouponArgs(args: string[]): {
     const daysMatch = args[2].match(/^(\d+)d$/)
     if (!daysMatch) {
       return {
-        error: 'Formato de duracao invalido. Use Nd (ex: 30d).',
+        error: 'Formato de duração inválido. Use Nd (ex: 30d).',
         code,
         discountPercent,
         expiresAt: null,
@@ -104,7 +104,7 @@ function parseCouponArgs(args: string[]): {
   const maxUses = args[3] ? Number.parseInt(args[3], 10) : null
   if (maxUses !== null && (Number.isNaN(maxUses) || maxUses < 1)) {
     return {
-      error: 'Limite de usos deve ser um numero positivo.',
+      error: 'Limite de usos deve ser um número positivo.',
       code,
       discountPercent,
       expiresAt,
@@ -117,7 +117,7 @@ function parseCouponArgs(args: string[]): {
 
 bot.command('cupom_criar', async (ctx) => {
   if (!ctx.from || !isAdmin(ctx.from.id)) {
-    await ctx.reply('Voce nao tem permissao para este comando.')
+    await ctx.reply('Você não tem permissão para este comando.')
     return
   }
 
@@ -142,7 +142,7 @@ bot.command('cupom_criar', async (ctx) => {
     const limitText = created.maxUses !== null ? String(created.maxUses) : 'Ilimitado'
 
     await ctx.reply(
-      `Cupom criado!\n\nCodigo: ${created.code}\nDesconto: ${created.discountPercent}% na taxa\nExpira: ${expiryText}\nLimite de usos: ${limitText}`,
+      `Cupom criado!\n\nCódigo: ${created.code}\nDesconto: ${created.discountPercent}% na taxa\nExpira: ${expiryText}\nLimite de usos: ${limitText}`,
     )
   } catch (error) {
     if (error instanceof CouponError) {
@@ -155,7 +155,7 @@ bot.command('cupom_criar', async (ctx) => {
 
 bot.command('cupom_listar', async (ctx) => {
   if (!ctx.from || !isAdmin(ctx.from.id)) {
-    await ctx.reply('Voce nao tem permissao para este comando.')
+    await ctx.reply('Você não tem permissão para este comando.')
     return
   }
 
@@ -182,7 +182,7 @@ bot.command('cupom_listar', async (ctx) => {
 
 bot.command('cupom_desativar', async (ctx) => {
   if (!ctx.from || !isAdmin(ctx.from.id)) {
-    await ctx.reply('Voce nao tem permissao para este comando.')
+    await ctx.reply('Você não tem permissão para este comando.')
     return
   }
 
@@ -194,7 +194,7 @@ bot.command('cupom_desativar', async (ctx) => {
 
   try {
     await deactivateCoupon(code)
-    await ctx.reply(`Cupom ${code.toUpperCase()} desativado. Boloes existentes mantem o desconto.`)
+    await ctx.reply(`Cupom ${code.toUpperCase()} desativado. Bolões existentes mantêm o desconto.`)
   } catch (error) {
     if (error instanceof CouponError) {
       await ctx.reply(error.message)
@@ -218,7 +218,7 @@ function parseCompetitionArgs(raw: string): {
     const season = Number.parseInt(quotedMatch[3] as string, 10)
     const type = quotedMatch[4] as string
     if (Number.isNaN(season)) {
-      return { error: 'Temporada deve ser um numero (ex: 2025).', code, name, season, type }
+      return { error: 'Temporada deve ser um número (ex: 2025).', code, name, season, type }
     }
     if (type !== 'cup' && type !== 'league') {
       return { error: 'Tipo deve ser "cup" ou "league".', code, name, season, type }
@@ -243,7 +243,7 @@ function parseCompetitionArgs(raw: string): {
   const type = args[3] as string
 
   if (Number.isNaN(season)) {
-    return { error: 'Temporada deve ser um numero (ex: 2025).', code, name, season, type }
+    return { error: 'Temporada deve ser um número (ex: 2025).', code, name, season, type }
   }
   if (type !== 'cup' && type !== 'league') {
     return { error: 'Tipo deve ser "cup" ou "league".', code, name, season, type }
@@ -254,7 +254,7 @@ function parseCompetitionArgs(raw: string): {
 
 bot.command('competicao_criar', async (ctx) => {
   if (!ctx.from || !isAdmin(ctx.from.id)) {
-    await ctx.reply('Voce nao tem permissao para este comando.')
+    await ctx.reply('Você não tem permissão para este comando.')
     return
   }
 
@@ -275,7 +275,7 @@ bot.command('competicao_criar', async (ctx) => {
     )
 
     await ctx.reply(
-      `Competicao criada!\n\nCodigo: ${created.externalId}\nNome: ${created.name}\nTemporada: ${created.season}\nTipo: ${created.type}`,
+      `Competição criada!\n\nCódigo: ${created.externalId}\nNome: ${created.name}\nTemporada: ${created.season}\nTipo: ${created.type}`,
     )
   } catch (error) {
     if (error instanceof CompetitionError) {
@@ -288,14 +288,14 @@ bot.command('competicao_criar', async (ctx) => {
 
 bot.command('competicao_listar', async (ctx) => {
   if (!ctx.from || !isAdmin(ctx.from.id)) {
-    await ctx.reply('Voce nao tem permissao para este comando.')
+    await ctx.reply('Você não tem permissão para este comando.')
     return
   }
 
   const competitions = await listCompetitions()
 
   if (competitions.length === 0) {
-    await ctx.reply('Nenhuma competicao cadastrada.')
+    await ctx.reply('Nenhuma competição cadastrada.')
     return
   }
 
@@ -305,12 +305,12 @@ bot.command('competicao_listar', async (ctx) => {
     return `${i + 1}. ${c.externalId} - ${c.name} - ${c.season} - ${c.type} - ${statusText}${featuredText}`
   })
 
-  await ctx.reply(`Competicoes (${competitions.length}):\n\n${lines.join('\n')}`)
+  await ctx.reply(`Competições (${competitions.length}):\n\n${lines.join('\n')}`)
 })
 
 bot.command('competicao_desativar', async (ctx) => {
   if (!ctx.from || !isAdmin(ctx.from.id)) {
-    await ctx.reply('Voce nao tem permissao para este comando.')
+    await ctx.reply('Você não tem permissão para este comando.')
     return
   }
 
@@ -330,7 +330,7 @@ bot.command('competicao_desativar', async (ctx) => {
 
   try {
     await deactivateCompetition(code, season)
-    await ctx.reply(`Competicao ${code.toUpperCase()} (${season}) desativada.`)
+    await ctx.reply(`Competição ${code.toUpperCase()} (${season}) desativada.`)
   } catch (error) {
     if (error instanceof CompetitionError) {
       await ctx.reply(error.message)
@@ -342,7 +342,7 @@ bot.command('competicao_desativar', async (ctx) => {
 
 bot.command('competicao_destacar', async (ctx) => {
   if (!ctx.from || !isAdmin(ctx.from.id)) {
-    await ctx.reply('Voce nao tem permissao para este comando.')
+    await ctx.reply('Você não tem permissão para este comando.')
     return
   }
 
@@ -363,7 +363,7 @@ bot.command('competicao_destacar', async (ctx) => {
   try {
     const updated = await toggleFeatured(code, season)
     const status = updated.featured ? 'destacada' : 'removida dos destaques'
-    await ctx.reply(`Competicao ${code.toUpperCase()} (${season}) ${status}.`)
+    await ctx.reply(`Competição ${code.toUpperCase()} (${season}) ${status}.`)
   } catch (error) {
     if (error instanceof CompetitionError) {
       await ctx.reply(error.message)
@@ -428,6 +428,40 @@ export async function notifyWinners(
       await bot.api.sendMessage(chatId, message, { parse_mode: 'Markdown' })
     } catch (error) {
       console.error(`[Telegram] Failed to notify winner ${winner.userId}:`, error)
+    }
+  }
+}
+
+export async function notifyAdminWithdrawalRequest(
+  userName: string,
+  poolName: string,
+  amount: number,
+  pixKeyType: string,
+  pixKey: string,
+): Promise<void> {
+  const adminIds = (process.env.ADMIN_USER_IDS ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean)
+  if (adminIds.length === 0) return
+
+  const formattedAmount = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(amount / 100)
+
+  const message =
+    `💸 *Solicitação de retirada*\n\n` +
+    `Jogador: *${userName}*\n` +
+    `Bolão: *${poolName}*\n` +
+    `Valor: *${formattedAmount}*\n` +
+    `Chave PIX (${pixKeyType}): \`${pixKey}\``
+
+  for (const adminId of adminIds) {
+    try {
+      await bot.api.sendMessage(Number(adminId), message, { parse_mode: 'Markdown' })
+    } catch (error) {
+      console.error(`[Telegram] Failed to notify admin ${adminId}:`, error)
     }
   }
 }

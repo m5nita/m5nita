@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import { formatCurrency } from '../../lib/utils'
 import { Button } from '../ui/Button'
-import { ErrorMessage } from '../ui/ErrorMessage'
 import { Loading } from '../ui/Loading'
 import { PixKeyInput } from './PixKeyInput'
 
@@ -50,8 +49,7 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
   })
 
   if (isPending) return <Loading />
-  if (error) return <ErrorMessage message={error.message} />
-  if (!prize) return null
+  if (error || !prize) return null
 
   const canSubmit = pixKey.length > 0 && validatePixKey(pixKeyType, pixKey).success
 
@@ -59,45 +57,27 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
     <section>
       <div className="flex items-center gap-3 mb-4">
         <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-          Prêmio
+          {prize.winnerCount > 1 ? 'Vencedores' : 'Vencedor'}
         </h2>
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      <div className="grid grid-cols-2 gap-px bg-border mb-6">
-        <div className="bg-cream py-4 text-center">
-          <p className="font-display text-2xl font-black text-green">
-            {formatCurrency(prize.prizeTotal)}
-          </p>
-          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-            Total
-          </p>
-        </div>
-        <div className="bg-cream py-4 text-center">
-          <p className="font-display text-2xl font-black text-green">
-            {formatCurrency(prize.winnerShare)}
-          </p>
-          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-            {prize.winnerCount > 1 ? `Sua Parte (1/${prize.winnerCount})` : 'Seu Prêmio'}
-          </p>
-        </div>
-      </div>
-
-      {/* Winners list */}
-      <div className="mb-6">
-        <p className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted mb-3">
-          {prize.winnerCount > 1 ? 'Vencedores' : 'Vencedor'}
-        </p>
+      <div className="flex flex-col mb-6">
         {prize.winners.map((w) => (
           <div
             key={w.userId}
-            className="flex items-center justify-between py-2 border-b border-border"
+            className="flex items-center justify-between py-3 border-b border-border"
           >
-            <p className="font-display text-xs font-bold uppercase tracking-wide text-black">
-              {w.name || 'Anônimo'}
-            </p>
-            <p className="text-xs text-gray-muted">
-              {w.totalPoints} pts · {w.exactMatches} exatos
+            <div>
+              <p className="font-display text-xs font-bold uppercase tracking-wide text-black">
+                {w.name || 'Anônimo'}
+              </p>
+              <p className="text-[10px] text-gray-muted">
+                {w.totalPoints} pts · {w.exactMatches} exatos
+              </p>
+            </div>
+            <p className="font-display text-lg font-black text-green">
+              {formatCurrency(prize.winnerShare)}
             </p>
           </div>
         ))}
@@ -153,12 +133,6 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
             </p>
           </div>
         </div>
-      )}
-
-      {!prize.isWinner && (
-        <p className="text-sm text-gray-muted">
-          Você não é o vencedor deste bolão. Boa sorte na próxima!
-        </p>
       )}
     </section>
   )
