@@ -45,6 +45,8 @@ export function ScoreInput({
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isLocked = matchStatus === 'live' || matchStatus === 'finished'
+  const hasPrediction = initialHome !== null && initialAway !== null
+  const hasActualScore = actualHomeScore != null && actualAwayScore != null
 
   const debouncedSave = useCallback(
     (h: string, a: string) => {
@@ -82,10 +84,21 @@ export function ScoreInput({
   }
 
   return (
-    <div className={`border-b border-border py-3 ${isLocked ? 'opacity-60' : ''}`}>
+    <div className="border-b border-border py-3">
       <p className="mb-1.5 text-center font-display text-[10px] text-gray-muted">
         {formatDate(matchDate)}
       </p>
+      {isLocked && hasActualScore && (
+        <div className="mb-1 flex items-center justify-center gap-1.5">
+          <span className="font-display text-[10px] font-bold uppercase tracking-wider text-gray-muted">
+            {actualHomeScore}
+          </span>
+          <span className="font-display text-[9px] text-gray-muted">x</span>
+          <span className="font-display text-[10px] font-bold uppercase tracking-wider text-gray-muted">
+            {actualAwayScore}
+          </span>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
           <span
@@ -98,25 +111,39 @@ export function ScoreInput({
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <input
-            type="text"
-            inputMode="numeric"
-            value={isLocked && actualHomeScore != null ? actualHomeScore : home}
-            onChange={(e) => handleHomeChange(e.target.value)}
-            disabled={isLocked}
-            className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-gray-muted"
-            aria-label={`Gols ${homeTeam}`}
-          />
-          <span className="font-display text-xs font-black text-gray-muted">x</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={isLocked && actualAwayScore != null ? actualAwayScore : away}
-            onChange={(e) => handleAwayChange(e.target.value)}
-            disabled={isLocked}
-            className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-gray-muted"
-            aria-label={`Gols ${awayTeam}`}
-          />
+          {isLocked && !hasPrediction ? (
+            <>
+              <div className="flex h-10 w-10 items-center justify-center border-2 border-border bg-transparent font-display text-lg font-black text-gray-muted">
+                –
+              </div>
+              <span className="font-display text-xs font-black text-gray-muted">x</span>
+              <div className="flex h-10 w-10 items-center justify-center border-2 border-border bg-transparent font-display text-lg font-black text-gray-muted">
+                –
+              </div>
+            </>
+          ) : (
+            <>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={home}
+                onChange={(e) => handleHomeChange(e.target.value)}
+                disabled={isLocked}
+                className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-black disabled:border-border"
+                aria-label={`Gols ${homeTeam}`}
+              />
+              <span className="font-display text-xs font-black text-gray-muted">x</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={away}
+                onChange={(e) => handleAwayChange(e.target.value)}
+                disabled={isLocked}
+                className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-black disabled:border-border"
+                aria-label={`Gols ${awayTeam}`}
+              />
+            </>
+          )}
         </div>
         <div className="flex flex-1 items-center gap-1.5 min-w-0">
           {awayFlag && (
@@ -134,6 +161,11 @@ export function ScoreInput({
           <span className="flex items-center gap-1 font-display text-[9px] font-bold uppercase tracking-widest text-red">
             <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
             Ao Vivo
+          </span>
+        )}
+        {isLocked && !hasPrediction && (
+          <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
+            Sem palpite
           </span>
         )}
         {status === 'saved' && (
