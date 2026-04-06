@@ -46,16 +46,16 @@ export async function createPool(
     const result = await validateCoupon(couponCode)
     if (!result.valid) {
       const messages: Record<string, string> = {
-        not_found: 'Cupom invalido ou expirado',
-        expired: 'Cupom invalido ou expirado',
-        exhausted: 'Cupom atingiu o limite de utilizacoes',
-        inactive: 'Cupom invalido ou expirado',
+        not_found: 'Cupom inválido ou expirado',
+        expired: 'Cupom inválido ou expirado',
+        exhausted: 'Cupom atingiu o limite de utilizações',
+        inactive: 'Cupom inválido ou expirado',
       }
-      throw new PoolError('INVALID_COUPON', messages[result.reason] ?? 'Cupom invalido')
+      throw new PoolError('INVALID_COUPON', messages[result.reason] ?? 'Cupom inválido')
     }
     const incremented = await incrementUsage(result.couponId)
     if (!incremented) {
-      throw new PoolError('COUPON_EXHAUSTED', 'Cupom atingiu o limite de utilizacoes')
+      throw new PoolError('COUPON_EXHAUSTED', 'Cupom atingiu o limite de utilizações')
     }
     couponId = result.couponId
     discountPercent = result.discountPercent
@@ -102,10 +102,10 @@ export async function getUserPools(userId: string) {
     },
   })
 
-  const activePools = members.filter((m) => m.pool.status === 'active')
+  const visiblePools = members.filter((m) => m.pool.status !== 'cancelled')
 
   const counts = await Promise.all(
-    activePools.map(async (m) => {
+    visiblePools.map(async (m) => {
       const [result] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(poolMember)
@@ -114,7 +114,7 @@ export async function getUserPools(userId: string) {
     }),
   )
 
-  return activePools.map((m, i) => ({
+  return visiblePools.map((m, i) => ({
     id: m.pool.id,
     name: m.pool.name,
     entryFee: m.pool.entryFee,

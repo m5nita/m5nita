@@ -101,7 +101,7 @@ function PoolDetailPage() {
 
       {pool.status === 'closed' && <PrizeWithdrawal poolId={poolId} />}
 
-      {pool.inviteCode && (
+      {pool.status !== 'closed' && pool.inviteCode && (
         <section>
           <div className="flex items-center gap-3 mb-4">
             <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">

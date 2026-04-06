@@ -15,9 +15,16 @@ export function PoolCard({ pool, index }: PoolCardProps) {
           {String(index).padStart(2, '0')}
         </span>
         <div className="flex-1 min-w-0">
-          <h3 className="font-display text-base font-bold uppercase tracking-wide text-black truncate">
-            {pool.name}
-          </h3>
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="font-display text-base font-bold uppercase tracking-wide text-black truncate">
+              {pool.name}
+            </h3>
+            {pool.status === 'closed' && (
+              <span className="shrink-0 bg-gray-muted/20 px-1.5 py-0.5 font-display text-[9px] font-bold uppercase tracking-wider text-gray-muted">
+                Finalizado
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-muted">
             {pool.competitionName && <>{pool.competitionName} · </>}
             {pool.memberCount} participante{pool.memberCount !== 1 ? 's' : ''} ·{' '}
