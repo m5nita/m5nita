@@ -69,7 +69,7 @@ app.onError((err, c) => {
 })
 
 app.notFound((c) => {
-  return c.json({ error: 'NOT_FOUND', message: 'Rota nao encontrada' }, 404)
+  return c.json({ error: 'NOT_FOUND', message: 'Rota não encontrada' }, 404)
 })
 
 const port = Number(process.env.PORT) || 3001
