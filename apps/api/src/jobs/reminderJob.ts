@@ -7,10 +7,12 @@ import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
 import { bot, findChatIdByPhone } from '../lib/telegram'
 
-// In-memory dedup: "userId:matchId:poolId" — prevents duplicate reminders per user per match per pool.
-// Grows monotonically (max ~64K entries for 64 matches x 1000 users ≈ 2MB).
+// In-memory dedup: "userId:poolId" — prevents duplicate reminders per user per pool per cycle.
+// Grows monotonically (max ~64K entries for 64 pools x 1000 users ≈ 2MB).
 // Resets on process restart, which may cause a single duplicate — acceptable tradeoff.
 const sentReminders = new Set<string>()
+
+const APP_URL = process.env.APP_URL || ''
 
 export async function sendPredictionReminders(): Promise<void> {
   const now = new Date()
@@ -22,6 +24,18 @@ export async function sendPredictionReminders(): Promise<void> {
   })
 
   if (activePools.length === 0) return
+
+  // Collect reminders grouped by userId+poolId to send one message per pool
+  const pendingReminders = new Map<
+    string,
+    {
+      userId: string
+      phoneNumber: string
+      poolId: string
+      poolName: string
+      matches: { homeTeam: string; awayTeam: string; minutesUntil: number }[]
+    }
+  >()
 
   for (const activePool of activePools) {
     // 2. Find upcoming matches scoped to this pool's competition and matchday range
@@ -52,9 +66,6 @@ export async function sendPredictionReminders(): Promise<void> {
     if (upcomingMatches.length === 0) continue
 
     for (const upcomingMatch of upcomingMatches) {
-      // Find pool members without predictions for this match in this pool.
-      // Intentional N+1 on findChatIdByPhone — acceptable at expected scale (~hundreds of users).
-      // See research.md R-005 for rationale.
       const usersToRemind = await db
         .selectDistinctOn([poolMember.userId], {
           userId: poolMember.userId,
@@ -78,25 +89,56 @@ export async function sendPredictionReminders(): Promise<void> {
           ),
         )
 
+      const minutesUntil = Math.round((upcomingMatch.matchDate.getTime() - now.getTime()) / 60_000)
+
       for (const u of usersToRemind) {
-        const key = `${u.userId}:${upcomingMatch.id}:${activePool.id}`
-        if (sentReminders.has(key)) continue
+        const groupKey = `${u.userId}:${activePool.id}`
 
-        const chatId = await findChatIdByPhone(u.phoneNumber as string)
-        if (!chatId) continue
-
-        const minutesUntil = Math.round(
-          (upcomingMatch.matchDate.getTime() - now.getTime()) / 60_000,
-        )
-        const message = `Jogo em ${minutesUntil} min!\n\n*${upcomingMatch.homeTeam} x ${upcomingMatch.awayTeam}*\n\nVoce ainda nao fez seu palpite. Acesse o app agora!`
-
-        try {
-          await bot.api.sendMessage(Number(chatId), message, { parse_mode: 'Markdown' })
-          sentReminders.add(key)
-        } catch (err) {
-          console.error(`[Reminder] Failed to send to chatId ${chatId}:`, err)
+        if (!pendingReminders.has(groupKey)) {
+          pendingReminders.set(groupKey, {
+            userId: u.userId,
+            phoneNumber: u.phoneNumber as string,
+            poolId: activePool.id,
+            poolName: activePool.name,
+            matches: [],
+          })
         }
+
+        pendingReminders.get(groupKey)!.matches.push({
+          homeTeam: upcomingMatch.homeTeam,
+          awayTeam: upcomingMatch.awayTeam,
+          minutesUntil,
+        })
       }
+    }
+  }
+
+  // 3. Send one grouped message per user per pool
+  for (const [groupKey, reminder] of pendingReminders) {
+    if (sentReminders.has(groupKey)) continue
+
+    const chatId = await findChatIdByPhone(reminder.phoneNumber)
+    if (!chatId) continue
+
+    const matchLines = reminder.matches
+      .map((m) => `⚽ *${m.homeTeam} x ${m.awayTeam}* — em ${m.minutesUntil} min`)
+      .join('\n')
+
+    const linkLine = APP_URL
+      ? `\n👉 [Fazer palpites](${APP_URL}/pools/${reminder.poolId}/predictions)`
+      : '\nAcesse o app para fazer seus palpites.'
+
+    const message =
+      `🎯 *${reminder.poolName}*\n\n` +
+      `Você ainda não fez palpite para:\n\n` +
+      `${matchLines}\n` +
+      linkLine
+
+    try {
+      await bot.api.sendMessage(Number(chatId), message, { parse_mode: 'Markdown' })
+      sentReminders.add(groupKey)
+    } catch (err) {
+      console.error(`[Reminder] Failed to send to chatId ${chatId}:`, err)
     }
   }
 }
