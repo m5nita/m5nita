@@ -29,7 +29,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       manifest: {
         name: 'm5nita — Monte seu bolão',
         short_name: 'm5nita',
@@ -43,6 +43,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        globPatterns: [],
         cleanupOutdatedCaches: true,
         navigateFallback: null,
         runtimeCaching: [
