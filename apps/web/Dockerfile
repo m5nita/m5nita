@@ -10,19 +10,19 @@ COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile
 
 FROM base AS build
-RUN apk add --no-cache git
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY .git .git
 COPY package.json pnpm-workspace.yaml tsconfig.json ./
 COPY apps/web/ ./apps/web/
 COPY apps/api/ ./apps/api/
 COPY packages/shared/ ./packages/shared/
 ARG VITE_API_URL
 ARG VITE_STRIPE_PUBLISHABLE_KEY
+ARG SOURCE_COMMIT=unknown
+ENV VITE_COMMIT_HASH=${SOURCE_COMMIT}
 RUN cd apps/web && npx vite build
 
 FROM nginx:alpine AS runner
