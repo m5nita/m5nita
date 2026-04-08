@@ -18,18 +18,18 @@ describe('calculatePoints', () => {
 
   it('winnerCorrect_wrongScore_returns5', () => {
     // Predicted 2-0 (home win), Actual 1-0 (home win, diff differs)
-    expect(calculatePoints(2, 0, 1, 0)).toBe(SCORING.WINNER_CORRECT)
+    expect(calculatePoints(2, 0, 1, 0)).toBe(SCORING.OUTCOME_CORRECT)
     // Predicted 0-1 (away win), Actual 0-3 (away win)
-    expect(calculatePoints(0, 1, 0, 3)).toBe(SCORING.WINNER_CORRECT)
+    expect(calculatePoints(0, 1, 0, 3)).toBe(SCORING.OUTCOME_CORRECT)
   })
 
-  it('drawCorrect_wrongScore_returnsWinnerAndDiff', () => {
-    // Predicted 1-1, Actual 0-0 — both draws, diff=0 always matches
-    expect(calculatePoints(1, 1, 0, 0)).toBe(SCORING.WINNER_AND_DIFF)
-    // Predicted 2-2, Actual 3-3 — both draws, diff=0 always matches
-    expect(calculatePoints(2, 2, 3, 3)).toBe(SCORING.WINNER_AND_DIFF)
+  it('drawCorrect_wrongScore_returnsWinnerCorrect', () => {
+    // Predicted 1-1, Actual 0-0 — both draws, but different scores
+    expect(calculatePoints(1, 1, 0, 0)).toBe(SCORING.OUTCOME_CORRECT)
+    // Predicted 2-2, Actual 3-3 — both draws, but different scores
+    expect(calculatePoints(2, 2, 3, 3)).toBe(SCORING.OUTCOME_CORRECT)
     // Predicted 0-0, Actual 4-4
-    expect(calculatePoints(0, 0, 4, 4)).toBe(SCORING.WINNER_AND_DIFF)
+    expect(calculatePoints(0, 0, 4, 4)).toBe(SCORING.OUTCOME_CORRECT)
   })
 
   it('miss_wrongEverything_returns0', () => {
@@ -44,7 +44,7 @@ describe('calculatePoints', () => {
   it('edgeCase_highScores_calculatesCorrectly', () => {
     expect(calculatePoints(5, 5, 5, 5)).toBe(SCORING.EXACT_MATCH)
     expect(calculatePoints(7, 1, 7, 1)).toBe(SCORING.EXACT_MATCH)
-    expect(calculatePoints(0, 0, 1, 1)).toBe(SCORING.WINNER_AND_DIFF)
+    expect(calculatePoints(0, 0, 1, 1)).toBe(SCORING.OUTCOME_CORRECT)
   })
 
   it('edgeCase_zeroZero_exactMatch', () => {

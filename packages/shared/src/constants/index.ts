@@ -1,7 +1,7 @@
 export const SCORING = {
   EXACT_MATCH: 10,
   WINNER_AND_DIFF: 7,
-  WINNER_CORRECT: 5,
+  OUTCOME_CORRECT: 5,
   MISS: 0,
 } as const
 
