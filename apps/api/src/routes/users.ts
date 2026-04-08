@@ -1,4 +1,4 @@
-import { updateUserSchema } from '@m5nita/shared'
+import { phoneSchema, updateUserSchema } from '@m5nita/shared'
 import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../db/client'
@@ -41,6 +41,35 @@ usersRoutes.patch('/users/me', async (c) => {
   if (!updated) {
     return c.json({ error: 'NOT_FOUND', message: 'Usuário não encontrado' }, 404)
   }
+
+  return c.json(updated)
+})
+
+usersRoutes.patch('/users/me/phone', async (c) => {
+  const currentUser = c.get('user')
+  const body = await c.req.json()
+  const parsed = phoneSchema.safeParse(body.phoneNumber)
+
+  if (!parsed.success) {
+    return c.json({ error: 'VALIDATION_ERROR', message: 'Telefone inválido' }, 400)
+  }
+
+  const existing = await db.query.user.findFirst({
+    where: eq(user.phoneNumber, parsed.data),
+  })
+
+  if (existing && existing.id !== currentUser.id) {
+    return c.json(
+      { error: 'CONFLICT', message: 'Este telefone já está vinculado a outra conta' },
+      409,
+    )
+  }
+
+  const [updated] = await db
+    .update(user)
+    .set({ phoneNumber: parsed.data, phoneNumberVerified: true, updatedAt: new Date() })
+    .where(eq(user.id, currentUser.id))
+    .returning({ id: user.id, phoneNumber: user.phoneNumber })
 
   return c.json(updated)
 })

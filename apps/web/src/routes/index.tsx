@@ -79,11 +79,7 @@ function HomePage() {
         <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
           Olá, {session.user.name || 'Jogador'}
         </p>
-        <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
-          Copa
-          <br />
-          2026
-        </h1>
+        <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">Bolões</h1>
         <div className="mt-3 h-1 w-12 bg-red" />
       </div>
 
