@@ -14,8 +14,8 @@ export function calculatePoints(
   const predictedDiff = predictedHome - predictedAway
   const actualDiff = actualHome - actualAway
 
-  // Correct winner + correct goal difference
-  if (predictedDiff === actualDiff) {
+  // Correct winner + correct goal difference (exclude draws — diff is always 0)
+  if (predictedDiff === actualDiff && predictedDiff !== 0) {
     return SCORING.WINNER_AND_DIFF
   }
 
@@ -24,7 +24,7 @@ export function calculatePoints(
   const actualResult = Math.sign(actualDiff)
 
   if (predictedResult === actualResult) {
-    return SCORING.WINNER_CORRECT
+    return SCORING.OUTCOME_CORRECT
   }
 
   return SCORING.MISS
