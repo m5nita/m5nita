@@ -5,11 +5,15 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-let commitHash = 'unknown'
-try {
-  commitHash = execSync('git rev-parse --short HEAD').toString().trim()
-} catch {
-  // git not available
+let commitHash = process.env.VITE_COMMIT_HASH || 'unknown'
+if (commitHash === 'unknown') {
+  try {
+    commitHash = execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {
+    // git not available
+  }
+} else {
+  commitHash = commitHash.substring(0, 7)
 }
 
 export default defineConfig({
