@@ -27,7 +27,7 @@ describe('sendMagicLinkEmail', () => {
     expect(mockSend).toHaveBeenCalledOnce()
     const callArgs = mockSend.mock.calls[0]?.[0]
     expect(callArgs.from).toContain('M5nita')
-    expect(callArgs.from).toContain('noreply@m5nita.app')
+    expect(callArgs.from).toContain('noreply@notifications.m5nita.com')
     expect(callArgs.to).toBe('user@example.com')
     expect(callArgs.subject).toContain('M5nita')
     expect(callArgs.html).toContain('https://m5nita.app/verify?token=abc')

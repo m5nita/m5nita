@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function sendMagicLinkEmail(email: string, url: string) {
   await resend.emails.send({
-    from: 'M5nita <noreply@m5nita.app>',
+    from: 'M5nita <noreply@notifications.m5nita.com>',
     to: email,
     subject: 'Seu link de acesso — M5nita',
     html: `
