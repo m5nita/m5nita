@@ -31,7 +31,7 @@ describe('sendMagicLinkEmail', () => {
     expect(callArgs.to).toBe('user@example.com')
     expect(callArgs.subject).toContain('M5nita')
     expect(callArgs.html).toContain('https://m5nita.app/verify?token=abc')
-    expect(callArgs.html).toContain('Acessar M5nita')
+    expect(callArgs.html).toContain('Acessar m5nita')
     expect(callArgs.html).toContain('15 minutos')
   })
 })
