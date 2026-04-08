@@ -65,7 +65,9 @@ export const auth = betterAuth({
           entry.count++
         }
 
-        console.log(`[AUTH] Magic link for ${email}: ${url}`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[AUTH] Magic link for ${email}: ${url}`)
+        }
         if (process.env.RESEND_API_KEY) {
           await sendMagicLinkEmail(email, url)
         }
