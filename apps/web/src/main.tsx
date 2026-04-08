@@ -1,3 +1,4 @@
+import { registerSW } from 'virtual:pwa-register'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
@@ -21,6 +22,17 @@ declare module '@tanstack/react-router' {
     router: typeof router
   }
 }
+
+registerSW({
+  onNeedRefresh() {
+    window.location.reload()
+  },
+  onRegisteredSW(_swUrl, registration) {
+    if (registration) {
+      setInterval(() => registration.update(), 60 * 1000)
+    }
+  },
+})
 
 const rootElement = document.getElementById('root')
 

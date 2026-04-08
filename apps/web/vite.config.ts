@@ -9,7 +9,7 @@ let commitHash = 'unknown'
 try {
   commitHash = execSync('git rev-parse --short HEAD').toString().trim()
 } catch {
-  // git not available (e.g. Docker build)
+  // git not available
 }
 
 export default defineConfig({
@@ -25,7 +25,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       manifest: {
         name: 'm5nita — Monte seu bolão',
         short_name: 'm5nita',
@@ -39,16 +39,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
         navigateFallback: null,
         runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'pages-cache',
-              expiration: { maxEntries: 10, maxAgeSeconds: 86400 },
-            },
-          },
           {
             urlPattern: /\/api\//,
             handler: 'NetworkFirst',
