@@ -39,23 +39,76 @@ function HomePage() {
   if (!session) {
     return (
       <div className="flex min-h-[75vh] flex-col justify-center">
-        <div>
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-            Bolão
-          </p>
-          <h1 className="mt-1 font-display text-7xl font-black leading-[0.85] text-black">
-            Copa
+        <div className="text-center mb-8">
+          <h1 className="font-display text-6xl font-black leading-tight text-black">
+            Monte seu
             <br />
-            2026
+            bolão.
           </h1>
-          <div className="mt-4 h-1 w-16 bg-red" />
+          <div className="mt-4 h-1 w-10 bg-red mx-auto" />
           <p className="mt-4 text-sm text-gray-dark leading-relaxed">
-            Crie bolões, convide amigos e dispute o prêmio. O 1º lugar leva tudo.
+            Palpites, ranking e prêmio. Simples assim!
           </p>
         </div>
-        <Link to="/login" className="mt-8">
+
+        <div className="flex flex-col mb-7">
+          <div className="flex gap-3 items-start py-4 border-b border-border">
+            <div className="w-8 h-8 bg-black text-white flex items-center justify-center font-display text-sm font-black shrink-0">
+              1
+            </div>
+            <div>
+              <p className="font-display text-sm font-bold uppercase tracking-wider text-black">
+                Crie um bolão
+              </p>
+              <p className="text-xs text-gray-dark mt-0.5">
+                Escolha a competição e defina o valor da entrada
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 items-start py-4 border-b border-border">
+            <div className="w-8 h-8 bg-black text-white flex items-center justify-center font-display text-sm font-black shrink-0">
+              2
+            </div>
+            <div>
+              <p className="font-display text-sm font-bold uppercase tracking-wider text-black">
+                Convide amigos
+              </p>
+              <p className="text-xs text-gray-dark mt-0.5">
+                Compartilhe o código do bolão com a galera
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 items-start py-4 border-b border-border">
+            <div className="w-8 h-8 bg-black text-white flex items-center justify-center font-display text-sm font-black shrink-0">
+              3
+            </div>
+            <div>
+              <p className="font-display text-sm font-bold uppercase tracking-wider text-black">
+                Faça seus palpites
+              </p>
+              <p className="text-xs text-gray-dark mt-0.5">
+                Aposte nos resultados antes dos jogos começarem
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 items-start py-4">
+            <div className="w-8 h-8 bg-red text-white flex items-center justify-center font-display text-sm font-black shrink-0">
+              4
+            </div>
+            <div>
+              <p className="font-display text-sm font-bold uppercase tracking-wider text-black">
+                Leve o prêmio
+              </p>
+              <p className="text-xs text-gray-dark mt-0.5">
+                1º lugar leva tudo. Saque direto via Pix.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Link to="/login">
           <Button size="lg" className="w-full">
-            Entrar
+            Começar agora
           </Button>
         </Link>
       </div>
@@ -182,7 +235,7 @@ function HomePage() {
             <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
               Em breve
             </p>
-            <p className="mt-1 text-xs text-gray-muted">Jogos da Copa 2026</p>
+            <p className="mt-1 text-xs text-gray-muted">Jogos serão exibidos aqui</p>
           </div>
         )}
       </section>
