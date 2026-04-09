@@ -7,6 +7,8 @@ describe('calculatePoints', () => {
     expect(calculatePoints(2, 1, 2, 1)).toBe(SCORING.EXACT_MATCH)
     expect(calculatePoints(0, 0, 0, 0)).toBe(SCORING.EXACT_MATCH)
     expect(calculatePoints(3, 3, 3, 3)).toBe(SCORING.EXACT_MATCH)
+    expect(calculatePoints(1, 2, 1, 2)).toBe(SCORING.EXACT_MATCH)
+    expect(calculatePoints(5, 2, 5, 2)).toBe(SCORING.EXACT_MATCH)
   })
 
   it('winnerAndDiff_correctDifference_returns7', () => {
