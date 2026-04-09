@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process'
 import tailwindcss from '@tailwindcss/vite'
-import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -21,7 +21,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(commitHash),
   },
   plugins: [
-    TanStackRouterVite({
+    tanstackRouter({
       routesDirectory: './src/routes',
       generatedRouteTree: './src/routeTree.gen.ts',
       autoCodeSplitting: true,
