@@ -308,7 +308,7 @@ function PredictionsPage() {
                 <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
                   Em breve
                 </p>
-                <p className="mt-1 text-xs text-gray-muted">Mata-mata apos a fase de grupos</p>
+                <p className="mt-1 text-xs text-gray-muted">Mata-mata após a fase de grupos</p>
               </div>
             )
           }

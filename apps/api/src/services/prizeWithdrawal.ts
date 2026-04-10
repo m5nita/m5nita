@@ -141,33 +141,56 @@ export async function requestWithdrawal(
   const prizeTotal = Math.floor(poolData.entryFee * count * (1 - effectiveRate))
   const winnerShare = Math.floor(prizeTotal / winners.length)
 
-  const [prizePayment] = await db
-    .insert(payment)
-    .values({
-      userId,
-      poolId,
-      amount: winnerShare,
-      platformFee: 0,
-      type: 'prize',
-      status: 'pending',
+  try {
+    return await db.transaction(async (tx) => {
+      const [prizePayment] = await tx
+        .insert(payment)
+        .values({
+          userId,
+          poolId,
+          amount: winnerShare,
+          platformFee: 0,
+          type: 'prize',
+          status: 'pending',
+        })
+        .returning()
+
+      const paymentRecord = prizePayment as NonNullable<typeof prizePayment>
+
+      const [withdrawal] = await tx
+        .insert(prizeWithdrawal)
+        .values({
+          poolId,
+          userId,
+          paymentId: paymentRecord.id,
+          amount: winnerShare,
+          pixKeyType,
+          pixKey,
+        })
+        .returning()
+
+      return withdrawal as NonNullable<typeof withdrawal>
     })
-    .returning()
+  } catch (err) {
+    // Concurrent duplicate: unique index (pool_id, user_id) rejected the second insert.
+    // Transaction rollback removes the orphan payment row automatically.
+    if (isUniqueViolation(err)) {
+      throw new PrizeWithdrawalError(
+        'WITHDRAWAL_ALREADY_REQUESTED',
+        'Você já solicitou a retirada do prêmio deste bolão.',
+      )
+    }
+    throw err
+  }
+}
 
-  const paymentRecord = prizePayment as NonNullable<typeof prizePayment>
-
-  const [withdrawal] = await db
-    .insert(prizeWithdrawal)
-    .values({
-      poolId,
-      userId,
-      paymentId: paymentRecord.id,
-      amount: winnerShare,
-      pixKeyType,
-      pixKey,
-    })
-    .returning()
-
-  return withdrawal as NonNullable<typeof withdrawal>
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code?: unknown }).code === '23505'
+  )
 }
 
 function maskPixKey(key: string): string {
