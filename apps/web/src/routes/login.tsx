@@ -7,7 +7,7 @@ import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
 import { consumePendingRedirect, redirectIfAuthenticated } from '../lib/authGuard'
 
-const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'm5nita_bot'
+const TELEGRAM_BOT_USERNAME = 'm5nita_bot'
 
 function GoogleIcon() {
   return (
