@@ -1,4 +1,9 @@
+// Sentry MUST be the first import so it can instrument http/https before other modules load.
+// Side-effect import keeps Biome's import sorter from reordering it.
+import './lib/instrument'
+
 import { serve } from '@hono/node-server'
+import * as Sentry from '@sentry/node'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
@@ -64,6 +69,7 @@ app.onError((err, c) => {
   if (err instanceof HTTPException) {
     return c.json({ error: err.message, message: err.cause?.toString() ?? err.message }, err.status)
   }
+  Sentry.captureException(err)
   console.error('Unhandled error:', err)
   return c.json({ error: 'INTERNAL_ERROR', message: 'Erro interno do servidor' }, 500)
 })
@@ -78,13 +84,24 @@ serve({ fetch: app.fetch, port }, () => {
   console.log(`m5nita API running on http://localhost:${port}`)
 
   // Run fixture sync on startup
-  syncFixtures().catch((err) => console.error('[Startup] Fixture sync failed:', err))
+  syncFixtures().catch((err) => {
+    Sentry.captureException(err)
+    console.error('[Startup] Fixture sync failed:', err)
+  })
 
-  // Schedule cron jobs
   // Sync fixtures every 6 hours
   setInterval(
     () => {
-      syncFixtures().catch((err) => console.error('[Cron] Fixture sync failed:', err))
+      Sentry.withMonitor(
+        'fixture-sync',
+        () =>
+          syncFixtures().catch((err) => {
+            Sentry.captureException(err)
+            console.error('[Cron] Fixture sync failed:', err)
+            throw err
+          }),
+        { schedule: { type: 'interval', value: 6, unit: 'hour' } },
+      )
     },
     6 * 60 * 60 * 1000,
   )
@@ -92,7 +109,16 @@ serve({ fetch: app.fetch, port }, () => {
   // Sync live scores every 5 minutes
   setInterval(
     () => {
-      syncLiveScores().catch((err) => console.error('[Cron] Live sync failed:', err))
+      Sentry.withMonitor(
+        'live-score-sync',
+        () =>
+          syncLiveScores().catch((err) => {
+            Sentry.captureException(err)
+            console.error('[Cron] Live sync failed:', err)
+            throw err
+          }),
+        { schedule: { type: 'interval', value: 5, unit: 'minute' } },
+      )
     },
     5 * 60 * 1000,
   )
@@ -100,7 +126,16 @@ serve({ fetch: app.fetch, port }, () => {
   // Send prediction reminders every 15 minutes
   setInterval(
     () => {
-      sendPredictionReminders().catch((err) => console.error('[Cron] Reminder job failed:', err))
+      Sentry.withMonitor(
+        'prediction-reminders',
+        () =>
+          sendPredictionReminders().catch((err) => {
+            Sentry.captureException(err)
+            console.error('[Cron] Reminder job failed:', err)
+            throw err
+          }),
+        { schedule: { type: 'interval', value: 15, unit: 'minute' } },
+      )
     },
     15 * 60 * 1000,
   )
