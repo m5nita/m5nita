@@ -63,7 +63,10 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const homeInputRef = useRef<HTMLInputElement>(null)
   const awayInputRef = useRef<HTMLInputElement>(null)
-  const isLocked = matchStatus === 'live' || matchStatus === 'finished'
+  const isLocked =
+    matchStatus === 'live' ||
+    matchStatus === 'finished' ||
+    new Date(matchDate).getTime() <= Date.now()
 
   useImperativeHandle(ref, () => ({
     focusHome: () => homeInputRef.current?.focus(),
@@ -163,7 +166,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
                 onChange={(e) => handleHomeChange(e.target.value)}
                 onFocus={(e) => e.target.select()}
                 disabled={isLocked}
-                className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-black disabled:border-border"
+                className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:cursor-not-allowed disabled:text-gray-muted disabled:border-border/50"
                 aria-label={`Gols ${homeTeam}`}
               />
               <span className="font-display text-xs font-black text-gray-muted">x</span>
@@ -176,7 +179,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
                 onFocus={(e) => e.target.select()}
                 onKeyDown={handleAwayKeyDown}
                 disabled={isLocked}
-                className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-black disabled:border-border"
+                className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:cursor-not-allowed disabled:text-gray-muted disabled:border-border/50"
                 aria-label={`Gols ${awayTeam}`}
               />
             </>
