@@ -76,7 +76,7 @@ describe('PUT /api/pools/:poolId/predictions/:matchId', () => {
   it('rejects_matchStarted_403', async () => {
     const { PredictionError } = await import('../../services/prediction')
     mockUpsertPrediction.mockRejectedValue(
-      new PredictionError('MATCH_STARTED', 'Nao e possivel palpitar apos o inicio do jogo'),
+      new PredictionError('MATCH_STARTED', 'Não é possível palpitar após o início do jogo'),
     )
 
     const res = await app.request('/api/pools/pool-1/predictions/match-1', {

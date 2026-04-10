@@ -33,6 +33,6 @@
 
 - All items passed validation on first iteration.
 - Clarification session (2026-04-08) resolved 3 questions: account linking scope, login page hierarchy, email service.
-- Key clarification: Telegram (phone) and email-based providers (Google, Apple, Magic Link) are separate identity spaces — no auto-linking between them.
+- Key clarification: Telegram (phone) and email-based providers (Google, Magic Link) are separate identity spaces — no auto-linking between them.
 - Email service: Resend.
-- Assumptions section documents external dependencies (Google/Apple developer accounts, Resend).
+- Assumptions section documents external dependencies (Google Cloud, Resend).

@@ -5,18 +5,18 @@
 
 ## Summary
 
-Add Google and Apple social sign-in, email magic link authentication, and automatic account linking to the existing Telegram phone-based auth system. Uses Better Auth's built-in social providers, magic link plugin, and account linking config. Email delivery via Resend. Includes data migration to clean up fake Telegram emails.
+Add Google social sign-in, email magic link authentication, and automatic account linking to the existing Telegram phone-based auth system. Uses Better Auth's built-in social providers, magic link plugin, and account linking config. Email delivery via Resend.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.x (Node.js >= 20)  
-**Primary Dependencies**: Hono (API), Better Auth 1.2.x (auth), Drizzle ORM, React 19, TanStack Router/Query, resend (new), jose (new)  
+**Primary Dependencies**: Hono (API), Better Auth 1.2.x (auth), Drizzle ORM, React 19, TanStack Router/Query, resend (new)  
 **Storage**: PostgreSQL 16  
 **Testing**: Vitest  
 **Target Platform**: Web (PWA), mobile-responsive  
 **Project Type**: Web application (monorepo: API + Web + Shared)  
 **Performance Goals**: Login page < 2s load, OAuth redirect < 30s total, magic link email < 60s delivery  
-**Constraints**: Must not break existing Telegram auth flow. Apple Sign-In requires HTTPS in production.  
+**Constraints**: Must not break existing Telegram auth flow.  
 **Scale/Scope**: Existing user base on Telegram, expanding to social/email users
 
 ## Constitution Check
@@ -25,10 +25,10 @@ Add Google and Apple social sign-in, email magic link authentication, and automa
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| I. Code Quality | PASS | Single responsibility maintained — auth config, email delivery, and UI are separate concerns. No dead code (fake email generation removed). |
-| II. Testing Standards | PASS | Integration tests needed for OAuth callbacks, magic link flow, and account linking. Unit tests for Apple JWT generation and email template. |
+| I. Code Quality | PASS | Single responsibility maintained — auth config, email delivery, and UI are separate concerns. |
+| II. Testing Standards | PASS | Integration tests needed for OAuth callbacks, magic link flow, and account linking. Unit tests for email template and rate limiting. |
 | III. UX Consistency | PASS | Login page follows design system. Error states defined for all OAuth failures. Loading states required during OAuth redirects. |
-| IV. Performance | PASS | No new heavy dependencies. `resend` (~15KB) and `jose` (~45KB, may be transitive dep). Login page load target < 2s maintained. |
+| IV. Performance | PASS | No new heavy dependencies. `resend` (~15KB). Login page load target < 2s maintained. |
 
 No violations. No complexity tracking needed.
 
@@ -59,21 +59,19 @@ apps/api/
 │   │   ├── auth.ts          # Modified: add social providers, magic link, account linking
 │   │   ├── telegram.ts      # Unchanged
 │   │   └── resend.ts        # New: Resend email client
-│   ├── db/
-│   │   └── schema/
-│   │       └── auth.ts      # Unchanged (schema already supports this)
-│   └── migrations/
-│       └── XXXX_clean_fake_emails.sql  # New: data migration
+│   └── db/
+│       └── schema/
+│           └── auth.ts      # Unchanged (schema already supports this)
 
 apps/web/
 ├── src/
 │   ├── lib/
 │   │   └── auth.ts          # Modified: add magicLinkClient plugin
 │   ├── routes/
-│   │   └── login.tsx        # Modified: redesign with social buttons + magic link + Telegram
+│   │   └── login.tsx        # Modified: redesign with social button + magic link + Telegram
 │   └── components/
 │       └── ui/
-│           └── (existing)   # May add social button components
+│           └── (existing)   # May add social button component
 
 packages/shared/
 └── src/
@@ -81,31 +79,29 @@ packages/shared/
         └── index.ts         # Modified: add magic link constants
 ```
 
-**Structure Decision**: Existing monorepo structure (`apps/api`, `apps/web`, `packages/shared`) — no new projects needed. Changes are additive to existing files plus one new utility file (`resend.ts`) and one data migration.
+**Structure Decision**: Existing monorepo structure (`apps/api`, `apps/web`, `packages/shared`) — no new projects needed. Changes are additive to existing files plus one new utility file (`resend.ts`).
 
 ## Implementation Phases
 
-### Phase 1: Data Migration & Backend Config (Foundation)
+### Phase 1: Backend Config (Foundation)
 
-**Goal**: Clean up fake emails, configure all auth providers server-side.
+**Goal**: Configure all auth providers server-side.
 
-1. **Data migration**: Create Drizzle migration to null-ify `*@m5nita.app` emails.
-2. **Remove fake email generation**: Update `phoneNumber` plugin config — remove `getTempEmail`.
-3. **Add social providers**: Configure `socialProviders.google` and `socialProviders.apple` in Better Auth config.
-4. **Add magic link plugin**: Configure `magicLink` plugin with Resend integration.
-5. **Add account linking**: Configure `account.accountLinking` with `trustedProviders: ["google", "apple", "magic-link"]`.
-6. **Apple JWT helper**: Create utility for generating Apple client secret JWT using `jose`.
-7. **Environment variables**: Add all new env vars to `.env.example`.
+1. **Sentinel email for Telegram**: Update `phoneNumber` plugin config — replace fake email generation with inert sentinel domain.
+2. **Add Google provider**: Configure `socialProviders.google` in Better Auth config.
+3. **Add magic link plugin**: Configure `magicLink` plugin with Resend integration.
+4. **Add account linking**: Configure `account.accountLinking` with `trustedProviders: ["google", "magic-link"]`.
+5. **Environment variables**: Add all new env vars to `.env.example`.
 
 ### Phase 2: Frontend — Login Page Redesign
 
 **Goal**: Redesign login page with all auth methods in correct hierarchy.
 
 1. **Update auth client**: Add `magicLinkClient` plugin to web auth client.
-2. **Social sign-in buttons**: Add "Continue with Google" and "Continue with Apple" buttons at top of login page.
-3. **Magic link form**: Add email input + "Send magic link" button below social buttons.
+2. **Social sign-in button**: Add "Continue with Google" button at top of login page.
+3. **Magic link form**: Add email input + "Send magic link" button below the social button.
 4. **Telegram section**: Move existing phone/OTP flow to bottom as secondary option.
-5. **Visual hierarchy**: Social buttons (primary) → separator → magic link → separator → Telegram.
+5. **Visual hierarchy**: Google button (primary) → separator → magic link → separator → Telegram.
 6. **Error/loading states**: Handle OAuth cancellation, magic link sent confirmation, expired link messaging.
 7. **Post-login redirect**: Ensure complete-profile redirect works for all new auth methods.
 
@@ -114,7 +110,7 @@ packages/shared/
 **Goal**: Verify all flows work end-to-end, meet constitution standards.
 
 1. **Integration tests**: OAuth callback handling, magic link send/verify, account linking by email.
-2. **Unit tests**: Apple JWT generation, Resend email sending, auth config validation.
+2. **Unit tests**: Resend email sending, auth config validation, rate limiting.
 3. **E2E manual testing**: Full flow for each provider on mobile and desktop.
 4. **Edge case verification**: Expired magic links, cancelled OAuth, rate limiting.
 5. **Telegram regression**: Verify existing phone OTP flow is completely unchanged.
@@ -123,8 +119,6 @@ packages/shared/
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Apple Sign-In requires HTTPS | Can't test locally | Use staging domain for Apple testing; other providers work on localhost |
 | Email scanner bots consume magic link | User can't sign in | Set `allowedAttempts: 3` in magic link config |
-| Apple private relay email complicates linking | Potential duplicate accounts | Better Auth uses Apple's stable `sub` claim as `accountId`, not just email |
 | Resend domain verification delay | Can't send emails until verified | Set up DNS early in Phase 1; use Resend sandbox for development |
-| Fake email cleanup affects existing sessions | Users logged out unexpectedly | Migration only changes `email` field, not session data — sessions are tied to `userId` |
+| Sentinel email introduction affects existing sessions | Users logged out unexpectedly | Only new Telegram signups get sentinel domain; existing rows are left untouched and remain inert |

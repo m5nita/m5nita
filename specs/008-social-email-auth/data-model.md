@@ -11,9 +11,9 @@ No schema changes needed. The `email` column is already nullable.
 
 | Field | Type | Change |
 |-------|------|--------|
-| email | text, nullable | **Behavior change**: Telegram users will now have `null` instead of fake `{phone}@m5nita.app` |
-| emailVerified | boolean, default false | **Data migration**: Set to `false` for users with `*@m5nita.app` emails |
-| image | text, nullable | May now be populated from Google/Apple avatar |
+| email | text, nullable | **Behavior change**: New Telegram users will have an inert sentinel email (`@phone.noemail.internal`) instead of `@m5nita.app` |
+| emailVerified | boolean, default false | Stays `false` for Telegram users |
+| image | text, nullable | May now be populated from Google avatar |
 
 ### Account (existing — no changes)
 
@@ -21,11 +21,11 @@ Already supports multiple providers per user. Each social sign-in creates a new 
 
 | Field | Usage for new providers |
 |-------|------------------------|
-| providerId | `"google"`, `"apple"`, `"magic-link"` |
+| providerId | `"google"`, `"magic-link"` |
 | accountId | Provider's unique user ID |
-| accessToken | OAuth access token (Google/Apple) |
+| accessToken | OAuth access token (Google) |
 | refreshToken | OAuth refresh token (Google) |
-| idToken | OAuth ID token (Google/Apple) |
+| idToken | OAuth ID token (Google) |
 
 ### Verification (existing — no changes)
 
@@ -39,20 +39,7 @@ Used by Better Auth's magic link plugin to store verification tokens.
 
 ## Data Migration
 
-### Migration: Clean fake Telegram emails
-
-**Purpose**: Remove auto-generated fake emails from Telegram-only users.
-
-```sql
-UPDATE "user"
-SET email = NULL, email_verified = false
-WHERE email LIKE '%@m5nita.app';
-```
-
-**Impact**: All users who signed up via Telegram OTP will have their fake email cleared. This is safe because:
-- These emails were never real or verified
-- No other system depends on these fake emails
-- After this migration, Telegram users are identified solely by `phoneNumber`
+No data migration is required. Old `@m5nita.app` fake emails remain inert (they were never verified and phone-number is excluded from `trustedProviders`), so they cannot be auto-linked to real provider emails. New Telegram signups will use the sentinel `@phone.noemail.internal` domain.
 
 ## Relationships
 
@@ -61,7 +48,6 @@ User (1) ──< Account (many)
   │
   ├── Account { providerId: "credential", accountId: phone } (Telegram OTP)
   ├── Account { providerId: "google", accountId: google-sub } (Google OAuth)
-  ├── Account { providerId: "apple", accountId: apple-sub } (Apple Sign-In)
   └── Account { providerId: "magic-link", accountId: email } (Magic Link)
 
 User (1) ──< Session (many)
@@ -74,6 +60,6 @@ Verification (standalone) ── magic link tokens
 | Space | Identifier | Providers | Auto-linking |
 |-------|-----------|-----------|--------------|
 | Phone | phoneNumber | Telegram OTP | No cross-linking |
-| Email | email (verified) | Google, Apple, Magic Link | Auto-link by same email |
+| Email | email (verified) | Google, Magic Link | Auto-link by same email |
 
-A single user can exist in only ONE identity space. Signing in via Telegram creates a phone-identity user. Signing in via Google/Apple/Magic Link creates an email-identity user. These are separate accounts even if the same person uses both.
+A single user can exist in only ONE identity space. Signing in via Telegram creates a phone-identity user. Signing in via Google/Magic Link creates an email-identity user. These are separate accounts even if the same person uses both.

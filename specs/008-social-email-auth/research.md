@@ -3,20 +3,18 @@
 **Feature Branch**: `008-social-email-auth`  
 **Date**: 2026-04-08
 
-## Decision 1: Social Providers (Google & Apple)
+## Decision 1: Social Provider (Google)
 
 **Decision**: Use Better Auth's built-in `socialProviders` config — no extra plugins needed.
 
-**Rationale**: Google and Apple OAuth are first-class citizens in Better Auth core. Server-side config is minimal (`clientId` + `clientSecret` in `socialProviders`). Client-side uses `authClient.signIn.social({ provider: "google" })`. No additional packages required except `jose` for generating Apple's JWT client secret.
+**Rationale**: Google OAuth is a first-class citizen in Better Auth core. Server-side config is minimal (`clientId` + `clientSecret` in `socialProviders.google`). Client-side uses `authClient.signIn.social({ provider: "google" })`. No additional packages required.
 
 **Alternatives considered**:
 - Manual OAuth2 implementation: Rejected — would duplicate what Better Auth already provides.
 - Passport.js / next-auth: Rejected — different auth framework, incompatible with existing Better Auth setup.
 
 **Key details**:
-- Callback URLs auto-registered at `/api/auth/callback/google` and `/api/auth/callback/apple`.
-- Apple requires `https://appleid.apple.com` in `trustedOrigins` (form_post flow).
-- Apple `clientSecret` is a JWT signed with Apple private key (ES256), expires in max 6 months.
+- Callback URL auto-registered at `/api/auth/callback/google`.
 - `baseURL` must be set on server for OAuth callback URLs to resolve in production.
 
 ## Decision 2: Magic Link Plugin
@@ -38,9 +36,9 @@
 
 ## Decision 3: Account Linking Strategy
 
-**Decision**: Use Better Auth's built-in `account.accountLinking` config with `trustedProviders: ["google", "apple", "magic-link"]`.
+**Decision**: Use Better Auth's built-in `account.accountLinking` config with `trustedProviders: ["google", "magic-link"]`.
 
-**Rationale**: Auto-links accounts by verified email across email-based providers. Phone-number (Telegram) accounts naturally stay isolated because once we remove fake emails (FR-017), they'll have `null` email — no collision possible.
+**Rationale**: Auto-links accounts by verified email across email-based providers. Phone-number (Telegram) accounts naturally stay isolated because of the sentinel email domain — no collision possible.
 
 **Alternatives considered**:
 - Manual account linking logic: Rejected — Better Auth handles this natively.
@@ -48,9 +46,9 @@
 
 **Key details**:
 - `trustedProviders` array controls which providers can auto-link by email.
-- Google and Apple both return verified emails, so auto-linking is safe.
+- Google returns verified emails, so auto-linking is safe.
 - Phone-number plugin NOT listed in trustedProviders → stays isolated.
-- After data migration (FR-017), Telegram users have `null` email → zero collision risk.
+- Telegram users use a sentinel `@phone.noemail.internal` email → zero collision risk with real provider emails.
 
 ## Decision 4: Email Delivery via Resend
 
@@ -68,15 +66,15 @@
 - `sendMagicLink` callback receives `{ email, url, token }` — use `url` for the full link.
 - Errors in `sendMagicLink` surface as API errors to client.
 
-## Decision 5: Telegram Fake Email Cleanup
+## Decision 5: Telegram Sentinel Email
 
-**Decision**: Remove `getTempEmail`/`getTempName` from phoneNumber plugin config and run data migration to null-ify existing fake emails.
+**Decision**: Replace `@m5nita.app` fake email domain with inert sentinel domain `@phone.noemail.internal` in the phoneNumber plugin config.
 
-**Rationale**: Per FR-016 and FR-017, fake emails (`{phone}@m5nita.app`) must be eliminated to prevent accidental account linking and keep identity spaces clean.
+**Rationale**: Per FR-008, fake emails must not accidentally match real user emails from social/magic-link providers.
 
 **Key details**:
 - `getTempEmail` is **required** by Better Auth's phoneNumber plugin type — cannot be removed.
-- Replace the `@m5nita.app` domain with an inert sentinel domain (`@phone.noemail.internal`) that will never match real emails. Combined with `emailVerified: false` and exclusion from `trustedProviders`, this prevents accidental account linking.
+- Use a non-routable sentinel domain that will never match real emails. Combined with `emailVerified: false` and exclusion from `trustedProviders`, this prevents accidental account linking.
 - No data migration needed — old `@m5nita.app` emails are equally inert (emailVerified=false + phone-number excluded from trustedProviders).
 
 ## New Dependencies
@@ -84,7 +82,6 @@
 | Package | Purpose | Size impact |
 |---------|---------|-------------|
 | `resend` | Email delivery for magic links | ~15KB minified |
-| `jose` | Apple JWT client secret generation | ~45KB minified (may already be a transitive dep) |
 
 ## Environment Variables (new)
 
@@ -92,8 +89,4 @@
 |----------|---------|
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `APPLE_CLIENT_ID` | Apple Services ID |
-| `APPLE_TEAM_ID` | Apple Developer Team ID |
-| `APPLE_KEY_ID` | Apple private key ID |
-| `APPLE_PRIVATE_KEY` | Apple private key (PEM) |
 | `RESEND_API_KEY` | Resend API key for sending emails |

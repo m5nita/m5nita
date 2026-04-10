@@ -11,12 +11,12 @@ All endpoints are auto-managed by Better Auth under `/api/auth/*`. No custom rou
 
 #### `POST /api/auth/sign-in/social`
 
-Initiates OAuth flow for Google or Apple.
+Initiates OAuth flow for Google.
 
 **Request**:
 ```json
 {
-  "provider": "google" | "apple",
+  "provider": "google",
   "callbackURL": "/",
   "errorCallbackURL": "/login"
 }
@@ -26,7 +26,6 @@ Initiates OAuth flow for Google or Apple.
 
 **Callback** (auto-handled):
 - `GET /api/auth/callback/google` — Google OAuth callback
-- `POST /api/auth/callback/apple` — Apple Sign-In callback (form_post)
 
 After callback, user is redirected to `callbackURL` with active session cookie.
 
@@ -83,9 +82,8 @@ Verifies the magic link token (user clicks link in email).
 ## Client-Side API
 
 ```typescript
-// Social sign-in (Google/Apple)
+// Social sign-in (Google)
 authClient.signIn.social({ provider: "google", callbackURL: "/" });
-authClient.signIn.social({ provider: "apple", callbackURL: "/" });
 
 // Magic link
 authClient.signIn.magicLink({ email: "user@example.com", callbackURL: "/" });
