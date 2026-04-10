@@ -1,5 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  forwardRef,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
 import { formatDate } from '../../lib/utils'
+
+export interface ScoreInputHandle {
+  focusHome: () => void
+}
 
 interface ScoreInputProps {
   matchId: string
@@ -15,6 +27,7 @@ interface ScoreInputProps {
   actualHomeScore: number | null
   actualAwayScore: number | null
   onSave: (matchId: string, homeScore: number, awayScore: number) => void
+  onAdvance?: () => void
 }
 
 function teamNameStyle(name: string): string {
@@ -25,26 +38,36 @@ function displayTeamName(name: string): string {
   return name === 'TBD' ? 'A definir' : name
 }
 
-export function ScoreInput({
-  matchId,
-  homeTeam,
-  awayTeam,
-  homeFlag,
-  awayFlag,
-  matchDate,
-  homeScore: initialHome,
-  awayScore: initialAway,
-  matchStatus,
-  points,
-  actualHomeScore,
-  actualAwayScore,
-  onSave,
-}: ScoreInputProps) {
+export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function ScoreInput(
+  {
+    matchId,
+    homeTeam,
+    awayTeam,
+    homeFlag,
+    awayFlag,
+    matchDate,
+    homeScore: initialHome,
+    awayScore: initialAway,
+    matchStatus,
+    points,
+    actualHomeScore,
+    actualAwayScore,
+    onSave,
+    onAdvance,
+  },
+  ref,
+) {
   const [home, setHome] = useState(initialHome?.toString() ?? '')
   const [away, setAway] = useState(initialAway?.toString() ?? '')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const homeInputRef = useRef<HTMLInputElement>(null)
+  const awayInputRef = useRef<HTMLInputElement>(null)
   const isLocked = matchStatus === 'live' || matchStatus === 'finished'
+
+  useImperativeHandle(ref, () => ({
+    focusHome: () => homeInputRef.current?.focus(),
+  }))
   const hasPrediction = initialHome !== null && initialAway !== null
   const hasActualScore = actualHomeScore != null && actualAwayScore != null
 
@@ -75,12 +98,21 @@ export function ScoreInput({
     const digits = value.replace(/\D/g, '').slice(0, 2)
     setHome(digits)
     if (digits && away) debouncedSave(digits, away)
+    if (digits.length === 1) awayInputRef.current?.focus()
   }
 
   function handleAwayChange(value: string) {
     const digits = value.replace(/\D/g, '').slice(0, 2)
     setAway(digits)
     if (home && digits) debouncedSave(home, digits)
+    if (digits.length === 1) onAdvance?.()
+  }
+
+  function handleAwayKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Backspace' && !away) {
+      e.preventDefault()
+      homeInputRef.current?.focus()
+    }
   }
 
   return (
@@ -124,20 +156,25 @@ export function ScoreInput({
           ) : (
             <>
               <input
+                ref={homeInputRef}
                 type="text"
                 inputMode="numeric"
                 value={home}
                 onChange={(e) => handleHomeChange(e.target.value)}
+                onFocus={(e) => e.target.select()}
                 disabled={isLocked}
                 className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-black disabled:border-border"
                 aria-label={`Gols ${homeTeam}`}
               />
               <span className="font-display text-xs font-black text-gray-muted">x</span>
               <input
+                ref={awayInputRef}
                 type="text"
                 inputMode="numeric"
                 value={away}
                 onChange={(e) => handleAwayChange(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onKeyDown={handleAwayKeyDown}
                 disabled={isLocked}
                 className="h-10 w-10 border-2 border-border bg-transparent text-center font-display text-lg font-black text-black transition-colors focus:border-black focus:outline-none disabled:text-black disabled:border-border"
                 aria-label={`Gols ${awayTeam}`}
@@ -184,4 +221,4 @@ export function ScoreInput({
       </div>
     </div>
   )
-}
+})

@@ -1,8 +1,8 @@
 import { MATCH, type Match, type PoolDetail, type Prediction } from '@m5nita/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { ScoreInput } from '../../../components/prediction/ScoreInput'
+import { useCallback, useRef, useState } from 'react'
+import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
 import { Loading } from '../../../components/ui/Loading'
 import { apiFetch } from '../../../lib/api'
 
@@ -18,6 +18,69 @@ const knockoutStageLabels: Record<string, string> = {
 const knockoutStageOrder = ['round-of-32', 'round-of-16', 'quarter', 'semi', 'third-place', 'final']
 
 type Tab = 'groups' | 'knockout'
+
+function MatchList({
+  matches,
+  predictionMap,
+  onSave,
+  matchdayHeaders,
+}: {
+  matches: Match[]
+  predictionMap: Map<string, Prediction>
+  onSave: (matchId: string, homeScore: number, awayScore: number) => void
+  matchdayHeaders?: boolean
+}) {
+  const refs = useRef<(ScoreInputHandle | null)[]>([])
+
+  function getOnAdvance(index: number) {
+    for (let i = index + 1; i < matches.length; i++) {
+      if (matches[i]?.status !== 'live' && matches[i]?.status !== 'finished') {
+        return () => refs.current[i]?.focusHome()
+      }
+    }
+    return () => (document.activeElement as HTMLElement)?.blur()
+  }
+
+  let lastMatchday: number | null = null
+
+  return (
+    <div className="flex flex-col">
+      {matches.map((m, index) => {
+        const pred = predictionMap.get(m.id)
+        const showHeader = matchdayHeaders && m.matchday !== lastMatchday
+        if (matchdayHeaders) lastMatchday = m.matchday
+        return (
+          <div key={m.id}>
+            {showHeader && (
+              <p className="mb-1 mt-4 first:mt-0 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+                {m.matchday && m.matchday > 0 ? `${m.matchday}ª Rodada` : 'Rodada'}
+              </p>
+            )}
+            <ScoreInput
+              ref={(el) => {
+                refs.current[index] = el
+              }}
+              matchId={m.id}
+              homeTeam={m.homeTeam}
+              awayTeam={m.awayTeam}
+              homeFlag={m.homeFlag}
+              awayFlag={m.awayFlag}
+              matchDate={m.matchDate}
+              homeScore={pred?.homeScore ?? null}
+              awayScore={pred?.awayScore ?? null}
+              matchStatus={m.status}
+              points={pred?.points ?? null}
+              actualHomeScore={m.homeScore}
+              actualAwayScore={m.awayScore}
+              onSave={onSave}
+              onAdvance={getOnAdvance(index)}
+            />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function PredictionsPage() {
   const { poolId } = Route.useParams()
@@ -81,6 +144,12 @@ function PredictionsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['predictions', poolId] }),
   })
 
+  const handleSave = useCallback(
+    (matchId: string, homeScore: number, awayScore: number) =>
+      saveMutation.mutate({ matchId, homeScore, awayScore }),
+    [saveMutation],
+  )
+
   if (poolPending || (!!poolDetail && matchesPending) || predictionsPending)
     return <Loading message="Carregando palpites..." />
 
@@ -99,36 +168,6 @@ function PredictionsPage() {
   const knockoutMatches = allMatches.filter((m) => m.stage !== 'group' && m.stage !== 'league')
   const leagueMatches = allMatches.filter((m) => m.stage === 'league')
   const filteredGroupMatches = groupMatches.filter((m) => m.group === activeGroup)
-
-  function renderScoreInputs(matches: Match[]) {
-    return (
-      <div className="flex flex-col">
-        {matches.map((m) => {
-          const pred = predictionMap.get(m.id)
-          return (
-            <ScoreInput
-              key={m.id}
-              matchId={m.id}
-              homeTeam={m.homeTeam}
-              awayTeam={m.awayTeam}
-              homeFlag={m.homeFlag}
-              awayFlag={m.awayFlag}
-              matchDate={m.matchDate}
-              homeScore={pred?.homeScore ?? null}
-              awayScore={pred?.awayScore ?? null}
-              matchStatus={m.status}
-              points={pred?.points ?? null}
-              actualHomeScore={m.homeScore}
-              actualAwayScore={m.awayScore}
-              onSave={(matchId, homeScore, awayScore) =>
-                saveMutation.mutate({ matchId, homeScore, awayScore })
-              }
-            />
-          )
-        })}
-      </div>
-    )
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -181,7 +220,11 @@ function PredictionsPage() {
               <p className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
                 {currentMatchday}ª Rodada
               </p>
-              {renderScoreInputs(currentMatches)}
+              <MatchList
+                matches={currentMatches}
+                predictionMap={predictionMap}
+                onSave={handleSave}
+              />
             </>
           )
         })()
@@ -240,27 +283,14 @@ function PredictionsPage() {
               </p>
             </div>
           ) : (
-            (() => {
-              const byMatchday = new Map<number, Match[]>()
-              for (const m of filteredGroupMatches) {
-                const md = m.matchday ?? 0
-                if (!byMatchday.has(md)) byMatchday.set(md, [])
-                byMatchday.get(md)?.push(m)
-              }
-              const sorted = [...byMatchday.entries()].sort(([a], [b]) => a - b)
-              return (
-                <div className="flex flex-col gap-5">
-                  {sorted.map(([matchday, matches]) => (
-                    <div key={matchday}>
-                      <p className="mb-1 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
-                        {matchday > 0 ? `${matchday}ª Rodada` : 'Rodada'}
-                      </p>
-                      {renderScoreInputs(matches)}
-                    </div>
-                  ))}
-                </div>
-              )
-            })()
+            <MatchList
+              matches={[...filteredGroupMatches].sort(
+                (a, b) => (a.matchday ?? 0) - (b.matchday ?? 0),
+              )}
+              predictionMap={predictionMap}
+              onSave={handleSave}
+              matchdayHeaders
+            />
           )}
         </>
       )}
@@ -310,7 +340,7 @@ function PredictionsPage() {
                   </button>
                 ))}
               </div>
-              {renderScoreInputs(stageMatches)}
+              <MatchList matches={stageMatches} predictionMap={predictionMap} onSave={handleSave} />
             </>
           )
         })()}
