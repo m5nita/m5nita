@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
@@ -16,9 +17,16 @@ if (commitHash === 'unknown') {
   commitHash = commitHash.substring(0, 7)
 }
 
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN
+const sentryOrg = process.env.SENTRY_ORG
+const sentryProject = process.env.SENTRY_PROJECT
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(commitHash),
+  },
+  build: {
+    sourcemap: 'hidden',
   },
   plugins: [
     tanstackRouter({
@@ -58,6 +66,18 @@ export default defineConfig({
         ],
       },
     }),
+    // Must be last so it can pick up the final bundle output.
+    sentryAuthToken && sentryOrg && sentryProject
+      ? sentryVitePlugin({
+          org: sentryOrg,
+          project: sentryProject,
+          authToken: sentryAuthToken,
+          release: { name: commitHash },
+          sourcemaps: {
+            filesToDeleteAfterUpload: ['./dist/**/*.map'],
+          },
+        })
+      : null,
   ],
   resolve: {
     conditions: ['default', 'import', 'module'],
