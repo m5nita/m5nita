@@ -16,8 +16,8 @@ if (dsn) {
 
     integrations: [nodeProfilingIntegration()],
 
-    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
-    profileSessionSampleRate: Number(process.env.SENTRY_PROFILES_SAMPLE_RATE ?? 1.0),
+    tracesSampleRate: 0.1,
+    profileSessionSampleRate: 1.0,
     profileLifecycle: 'trace',
 
     enableLogs: true,

@@ -22,10 +22,10 @@ if (dsn) {
       }),
     ],
 
-    tracesSampleRate: Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
+    tracesSampleRate: 0.1,
     tracePropagationTargets: [/^\//, /^https:\/\/(?:.*\.)?m5nita\.com\//],
 
-    profilesSampleRate: Number(import.meta.env.VITE_SENTRY_PROFILES_SAMPLE_RATE ?? 1.0),
+    profilesSampleRate: 1.0,
 
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
