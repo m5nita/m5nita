@@ -1,10 +1,52 @@
-import { MATCH, type Match, type PoolDetail, type Prediction } from '@m5nita/shared'
+import {
+  MATCH,
+  type Match,
+  type MatchPredictionsResponse,
+  type PoolDetail,
+  type Prediction,
+} from '@m5nita/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
+import { MatchPredictionsList } from '../../../components/prediction/MatchPredictionsList'
 import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
 import { Loading } from '../../../components/ui/Loading'
 import { apiFetch } from '../../../lib/api'
+
+function MatchPredictionsAccordion({ poolId, matchId }: { poolId: string; matchId: string }) {
+  const { data, isPending, isError } = useQuery({
+    queryKey: ['match-predictions', poolId, matchId],
+    queryFn: async (): Promise<MatchPredictionsResponse> => {
+      const res = await apiFetch(`/api/pools/${poolId}/matches/${matchId}/predictions`)
+      if (!res.ok) throw new Error('Erro ao carregar palpites')
+      return res.json()
+    },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  })
+
+  if (isPending) {
+    return (
+      <div className="-mx-5 mt-3 border-t border-border bg-black/[0.02] px-5 py-4 text-center">
+        <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
+          Carregando palpites...
+        </p>
+      </div>
+    )
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="-mx-5 mt-3 border-t border-border bg-black/[0.02] px-5 py-4 text-center">
+        <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
+          Erro ao carregar palpites
+        </p>
+      </div>
+    )
+  }
+
+  return <MatchPredictionsList data={data} />
+}
 
 const knockoutStageLabels: Record<string, string> = {
   'round-of-32': '32-avos',
@@ -20,11 +62,13 @@ const knockoutStageOrder = ['round-of-32', 'round-of-16', 'quarter', 'semi', 'th
 type Tab = 'groups' | 'knockout'
 
 function MatchList({
+  poolId,
   matches,
   predictionMap,
   onSave,
   matchdayHeaders,
 }: {
+  poolId: string
   matches: Match[]
   predictionMap: Map<string, Prediction>
   onSave: (matchId: string, homeScore: number, awayScore: number) => void
@@ -40,6 +84,11 @@ function MatchList({
     }
     return () => (document.activeElement as HTMLElement)?.blur()
   }
+
+  const renderExpandedContent = useCallback(
+    (matchId: string) => <MatchPredictionsAccordion poolId={poolId} matchId={matchId} />,
+    [poolId],
+  )
 
   let lastMatchday: number | null = null
 
@@ -74,6 +123,7 @@ function MatchList({
               actualAwayScore={m.awayScore}
               onSave={onSave}
               onAdvance={getOnAdvance(index)}
+              renderExpandedContent={renderExpandedContent}
             />
           </div>
         )
@@ -221,6 +271,7 @@ function PredictionsPage() {
                 {currentMatchday}ª Rodada
               </p>
               <MatchList
+                poolId={poolId}
                 matches={currentMatches}
                 predictionMap={predictionMap}
                 onSave={handleSave}
@@ -284,6 +335,7 @@ function PredictionsPage() {
             </div>
           ) : (
             <MatchList
+              poolId={poolId}
               matches={[...filteredGroupMatches].sort(
                 (a, b) => (a.matchday ?? 0) - (b.matchday ?? 0),
               )}
@@ -340,7 +392,12 @@ function PredictionsPage() {
                   </button>
                 ))}
               </div>
-              <MatchList matches={stageMatches} predictionMap={predictionMap} onSave={handleSave} />
+              <MatchList
+                poolId={poolId}
+                matches={stageMatches}
+                predictionMap={predictionMap}
+                onSave={handleSave}
+              />
             </>
           )
         })()}

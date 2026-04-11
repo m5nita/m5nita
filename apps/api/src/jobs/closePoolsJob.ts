@@ -65,9 +65,6 @@ export async function checkAndClosePools(): Promise<void> {
   }
 }
 
-/** @deprecated Use checkAndClosePools instead */
-export const closePoolsIfAllMatchesFinished = checkAndClosePools
-
 async function notifyWinnersForPool(
   poolId: string,
   poolName: string,
