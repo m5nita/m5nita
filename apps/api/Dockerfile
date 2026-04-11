@@ -17,6 +17,8 @@ COPY package.json pnpm-workspace.yaml ./
 COPY apps/api/ ./apps/api/
 COPY packages/shared/ ./packages/shared/
 COPY tsconfig.json ./
+ARG SOURCE_COMMIT=unknown
+ENV SENTRY_RELEASE=${SOURCE_COMMIT}
 ENV NODE_ENV=production
 EXPOSE 3001
 CMD ["./apps/api/node_modules/.bin/tsx", "apps/api/src/index.ts"]

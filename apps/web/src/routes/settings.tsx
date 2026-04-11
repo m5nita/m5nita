@@ -9,7 +9,7 @@ import { apiFetch } from '../lib/api'
 import { signOut, useSession } from '../lib/auth'
 import { requireAuthGuard } from '../lib/authGuard'
 
-const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'm5nita_bot'
+const TELEGRAM_BOT_USERNAME = 'm5nita_bot'
 
 function TelegramConnectInstructions() {
   return (
