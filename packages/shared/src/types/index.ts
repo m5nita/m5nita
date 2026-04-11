@@ -117,6 +117,29 @@ export interface Prediction {
   match?: Match
 }
 
+export interface MatchPredictor {
+  userId: string
+  name: string | null
+  homeScore: number
+  awayScore: number
+  points: number | null
+}
+
+export interface MatchNonPredictor {
+  userId: string
+  name: string | null
+}
+
+export interface MatchPredictionsResponse {
+  matchId: string
+  isLocked: true
+  totalMembers: number
+  viewerIncluded: boolean
+  viewerDidPredict: boolean
+  predictors: MatchPredictor[]
+  nonPredictors: MatchNonPredictor[]
+}
+
 export interface RankingEntry {
   position: number
   userId: string

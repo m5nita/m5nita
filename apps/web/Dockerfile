@@ -20,7 +20,6 @@ COPY apps/web/ ./apps/web/
 COPY apps/api/ ./apps/api/
 COPY packages/shared/ ./packages/shared/
 ARG VITE_API_URL
-ARG VITE_STRIPE_PUBLISHABLE_KEY
 ARG SOURCE_COMMIT=unknown
 ENV VITE_COMMIT_HASH=${SOURCE_COMMIT}
 RUN cd apps/web && npx vite build

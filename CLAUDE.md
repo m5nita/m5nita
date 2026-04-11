@@ -1,6 +1,6 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-08
+Auto-generated from all feature plans. Last updated: 2026-04-11
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 20) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
@@ -10,6 +10,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-08
 - TypeScript 5.x (Node.js >= 20) + Hono (API), Drizzle ORM, grammY (Telegram), React 19, TanStack Router/Query, Tailwind CSS v4 (006-multi-competition)
 - TypeScript 5.x (Node.js >= 20) + Hono (API), React 19, TanStack Router/Query, grammY (Telegram), Drizzle ORM (007-fix-ux-scores-reminders)
 - TypeScript 5.x (Node.js >= 20) + Hono (API), Better Auth 1.2.x (auth), Drizzle ORM, React 19, TanStack Router/Query, resend (new), jose (new) (008-social-email-auth)
+- TypeScript 5.x, Node.js ≥ 20 + Hono (API), Drizzle ORM, Better Auth (auth middleware), React 19, TanStack Router, TanStack Query, Tailwind CSS v4 (009-view-others-predictions)
+- PostgreSQL 16 — reuses existing `prediction`, `pool_member`, `match`, and `user` tables (no schema changes) (009-view-others-predictions)
 
 - TypeScript 5.x (Node.js >= 20) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM, Stripe SDK
@@ -46,9 +48,9 @@ pnpm drizzle-kit push        # Push schema (dev only)
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 009-view-others-predictions: Added TypeScript 5.x, Node.js ≥ 20 + Hono (API), Drizzle ORM, Better Auth (auth middleware), React 19, TanStack Router, TanStack Query, Tailwind CSS v4
 - 008-social-email-auth: Added TypeScript 5.x (Node.js >= 20) + Hono (API), Better Auth 1.2.x (auth), Drizzle ORM, React 19, TanStack Router/Query, resend (new), jose (new)
 - 007-fix-ux-scores-reminders: Added TypeScript 5.x (Node.js >= 20) + Hono (API), React 19, TanStack Router/Query, grammY (Telegram), Drizzle ORM
-- 006-multi-competition: Added TypeScript 5.x (Node.js >= 20) + Hono (API), Drizzle ORM, grammY (Telegram), React 19, TanStack Router/Query, Tailwind CSS v4
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
