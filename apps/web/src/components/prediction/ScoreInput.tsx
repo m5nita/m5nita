@@ -1,6 +1,7 @@
 import {
   forwardRef,
   type KeyboardEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -28,6 +29,7 @@ interface ScoreInputProps {
   actualAwayScore: number | null
   onSave: (matchId: string, homeScore: number, awayScore: number) => void
   onAdvance?: () => void
+  renderExpandedContent?: (matchId: string) => ReactNode
 }
 
 function teamNameStyle(name: string): string {
@@ -36,6 +38,35 @@ function teamNameStyle(name: string): string {
 
 function displayTeamName(name: string): string {
   return name === 'TBD' ? 'A definir' : name
+}
+
+function ExpandPredictionsControl({
+  isLocked,
+  matchId,
+  renderExpandedContent,
+}: {
+  isLocked: boolean
+  matchId: string
+  renderExpandedContent: (matchId: string) => ReactNode
+}) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  if (!isLocked) return null
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsExpanded((v) => !v)}
+        aria-expanded={isExpanded}
+        className={`mt-2 flex w-full items-center justify-center gap-1.5 font-display text-[10px] font-bold uppercase tracking-widest transition-colors ${
+          isExpanded ? 'text-black' : 'text-gray-muted hover:text-black'
+        }`}
+      >
+        {isExpanded ? 'Ocultar palpites' : 'Ver palpites'}
+        <span aria-hidden="true">{isExpanded ? '▴' : '▾'}</span>
+      </button>
+      {isExpanded && renderExpandedContent(matchId)}
+    </>
+  )
 }
 
 export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function ScoreInput(
@@ -54,6 +85,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
     actualAwayScore,
     onSave,
     onAdvance,
+    renderExpandedContent,
   },
   ref,
 ) {
@@ -222,6 +254,13 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
           <span className="font-display text-xs font-black text-green">+{points} pts</span>
         )}
       </div>
+      {renderExpandedContent && (
+        <ExpandPredictionsControl
+          isLocked={isLocked}
+          matchId={matchId}
+          renderExpandedContent={renderExpandedContent}
+        />
+      )}
     </div>
   )
 })
