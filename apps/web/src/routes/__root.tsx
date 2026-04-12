@@ -1,17 +1,17 @@
-import { createRootRoute, Link, Outlet, useRouter } from '@tanstack/react-router'
+import { createRootRoute, Link, Outlet, useLocation, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useSession } from '../lib/auth'
 
 function RootLayout() {
   const router = useRouter()
+  const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const { data: session } = useSession()
-  const pathname = router.state.location.pathname
-  const isHome = pathname === '/'
-  const isLogin = pathname === '/login'
+  const isHome = location.pathname === '/'
+  const isLogin = location.pathname === '/login'
 
   return (
-    <div className="min-h-screen bg-cream font-body text-black">
+    <div className="min-h-screen overflow-x-hidden bg-cream font-body text-black">
       <header className="sticky top-0 z-50 border-b border-border bg-cream/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-[430px] items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">

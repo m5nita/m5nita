@@ -27,7 +27,23 @@ interface FootballDataResponse {
   matches: FootballDataMatch[]
 }
 
-function mapStatus(apiStatus: string): string {
+const MATCH_MAX_DURATION_MS = 12 * 60 * 60 * 1000
+
+function mapStatus(
+  apiStatus: string,
+  score?: FootballDataMatch['score'],
+  utcDate?: string,
+): string {
+  if (
+    (apiStatus === 'IN_PLAY' || apiStatus === 'PAUSED') &&
+    utcDate &&
+    score?.fullTime.home !== null &&
+    score?.fullTime.away !== null &&
+    Date.now() - new Date(utcDate).getTime() > MATCH_MAX_DURATION_MS
+  ) {
+    return 'finished'
+  }
+
   const statusMap: Record<string, string> = {
     SCHEDULED: 'scheduled',
     TIMED: 'scheduled',
@@ -97,7 +113,7 @@ async function upsertMatches(
       where: eq(match.externalId, m.id),
     })
 
-    const newStatus = mapStatus(m.status)
+    const newStatus = mapStatus(m.status, m.score, m.utcDate)
     const values = {
       competitionId,
       externalId: m.id,
@@ -186,7 +202,7 @@ export async function syncLiveScores() {
 
         if (!existing) continue
 
-        const newStatus = mapStatus(m.status)
+        const newStatus = mapStatus(m.status, m.score, m.utcDate)
         const wasNotFinished = existing.status !== 'finished'
         const isNowFinished = newStatus === 'finished'
 

@@ -136,14 +136,14 @@ function HomePage() {
         <div className="mt-3 h-1 w-12 bg-red" />
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Link to="/pools/create" className="shrink-0">
           <Button size="lg" className="h-full min-h-[48px]">
             Criar Bolão
           </Button>
         </Link>
         <form
-          className="flex flex-1 gap-2"
+          className="flex min-w-[180px] flex-1 gap-2"
           onSubmit={(e) => {
             e.preventDefault()
             handleJoinByCode()
