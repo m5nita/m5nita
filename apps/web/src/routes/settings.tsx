@@ -125,94 +125,98 @@ function SettingsPage() {
   const showNotificationSection = !hasPhone || (hasPhone && !telegramConnected)
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-          Conta
-        </p>
-        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Config</h1>
-        <div className="mt-3 h-1 w-12 bg-red" />
-      </div>
-
-      <section>
-        <div className="flex items-center gap-3 mb-4">
-          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-            Perfil
-          </h2>
-          <div className="h-px flex-1 bg-border" />
+    <div className="flex flex-col gap-8 lg:items-center">
+      <div className="lg:w-full lg:max-w-[520px] lg:border lg:border-border  lg:p-10 flex flex-col gap-8">
+        <div>
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+            Conta
+          </p>
+          <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Config</h1>
+          <div className="mt-3 h-1 w-12 bg-red" />
         </div>
-        <div className="flex flex-col gap-4">
-          {hasPhone && (
-            <div>
-              <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
-                Telefone
-              </p>
-              <p className="mt-1 border-b-2 border-border py-2.5 text-gray-muted">{phoneNumber}</p>
-            </div>
-          )}
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <Input
-                label="Nome"
-                placeholder={session?.user?.name || 'Seu nome'}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={handleSaveName}
-              loading={saving}
-              disabled={name.trim().length < 1}
-              size="sm"
-            >
-              {saved ? 'Salvo!' : 'Salvar'}
-            </Button>
-          </div>
-        </div>
-      </section>
 
-      {showNotificationSection && (
         <section>
           <div className="flex items-center gap-3 mb-4">
             <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-              Notificações
+              Perfil
             </h2>
             <div className="h-px flex-1 bg-border" />
           </div>
-          {hasPhone ? (
-            <TelegramConnectInstructions />
-          ) : (
-            <div className="flex flex-col gap-4">
-              <p className="text-xs text-gray-dark leading-relaxed">
-                Informe seu telefone e conecte ao Telegram para receber lembretes de palpites e
-                resultados.
-              </p>
-              <PhoneInput value={phone} onChange={setPhone} />
-              {phoneError && (
-                <p className="text-xs font-medium text-red" role="alert">
-                  {phoneError}
+          <div className="flex flex-col gap-4">
+            {hasPhone && (
+              <div>
+                <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+                  Telefone
                 </p>
-              )}
+                <p className="mt-1 border-b-2 border-border py-2.5 text-gray-muted">
+                  {phoneNumber}
+                </p>
+              </div>
+            )}
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <Input
+                  label="Nome"
+                  placeholder={session?.user?.name || 'Seu nome'}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
               <Button
-                onClick={handleSavePhone}
-                loading={savingPhone}
-                disabled={phone.length < 13}
-                size="lg"
-                className="w-full"
+                onClick={handleSaveName}
+                loading={saving}
+                disabled={name.trim().length < 1}
+                size="sm"
               >
-                Salvar telefone
+                {saved ? 'Salvo!' : 'Salvar'}
               </Button>
             </div>
-          )}
+          </div>
         </section>
-      )}
 
-      <Button variant="danger" onClick={handleLogout} className="w-full">
-        Sair
-      </Button>
-      <p className="text-center font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-        m5nita {__APP_VERSION__}
-      </p>
+        {showNotificationSection && (
+          <section>
+            <div className="flex items-center gap-3 mb-4">
+              <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+                Notificações
+              </h2>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            {hasPhone ? (
+              <TelegramConnectInstructions />
+            ) : (
+              <div className="flex flex-col gap-4">
+                <p className="text-xs text-gray-dark leading-relaxed">
+                  Informe seu telefone e conecte ao Telegram para receber lembretes de palpites e
+                  resultados.
+                </p>
+                <PhoneInput value={phone} onChange={setPhone} />
+                {phoneError && (
+                  <p className="text-xs font-medium text-red" role="alert">
+                    {phoneError}
+                  </p>
+                )}
+                <Button
+                  onClick={handleSavePhone}
+                  loading={savingPhone}
+                  disabled={phone.length < 13}
+                  size="lg"
+                  className="w-full"
+                >
+                  Salvar telefone
+                </Button>
+              </div>
+            )}
+          </section>
+        )}
+
+        <Button variant="danger" onClick={handleLogout} className="w-full">
+          Sair
+        </Button>
+        <p className="text-center font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
+          m5nita {__APP_VERSION__}
+        </p>
+      </div>
     </div>
   )
 }

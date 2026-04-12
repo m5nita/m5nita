@@ -27,7 +27,7 @@ function MatchPredictionsAccordion({ poolId, matchId }: { poolId: string; matchI
 
   if (isPending) {
     return (
-      <div className="-mx-5 mt-3 border-t border-border bg-black/[0.02] px-5 py-4 text-center">
+      <div className="-mx-5 mt-3 border-t border-border bg-black/[0.02] px-5 py-4 text-center lg:mx-0 lg:px-4">
         <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
           Carregando palpites...
         </p>
@@ -37,7 +37,7 @@ function MatchPredictionsAccordion({ poolId, matchId }: { poolId: string; matchI
 
   if (isError || !data) {
     return (
-      <div className="-mx-5 mt-3 border-t border-border bg-black/[0.02] px-5 py-4 text-center">
+      <div className="-mx-5 mt-3 border-t border-border bg-black/[0.02] px-5 py-4 text-center lg:mx-0 lg:px-4">
         <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
           Erro ao carregar palpites
         </p>
@@ -93,38 +93,40 @@ function MatchList({
   let lastMatchday: number | null = null
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-x-4">
       {matches.map((m, index) => {
         const pred = predictionMap.get(m.id)
         const showHeader = matchdayHeaders && m.matchday !== lastMatchday
         if (matchdayHeaders) lastMatchday = m.matchday
         return (
-          <div key={m.id}>
+          <div key={m.id} className="contents lg:contents">
             {showHeader && (
-              <p className="mb-1 mt-4 first:mt-0 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+              <p className="mb-1 mt-4 first:mt-0 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted lg:col-span-2">
                 {m.matchday && m.matchday > 0 ? `${m.matchday}ª Rodada` : 'Rodada'}
               </p>
             )}
-            <ScoreInput
-              ref={(el) => {
-                refs.current[index] = el
-              }}
-              matchId={m.id}
-              homeTeam={m.homeTeam}
-              awayTeam={m.awayTeam}
-              homeFlag={m.homeFlag}
-              awayFlag={m.awayFlag}
-              matchDate={m.matchDate}
-              homeScore={pred?.homeScore ?? null}
-              awayScore={pred?.awayScore ?? null}
-              matchStatus={m.status}
-              points={pred?.points ?? null}
-              actualHomeScore={m.homeScore}
-              actualAwayScore={m.awayScore}
-              onSave={onSave}
-              onAdvance={getOnAdvance(index)}
-              renderExpandedContent={renderExpandedContent}
-            />
+            <div>
+              <ScoreInput
+                ref={(el) => {
+                  refs.current[index] = el
+                }}
+                matchId={m.id}
+                homeTeam={m.homeTeam}
+                awayTeam={m.awayTeam}
+                homeFlag={m.homeFlag}
+                awayFlag={m.awayFlag}
+                matchDate={m.matchDate}
+                homeScore={pred?.homeScore ?? null}
+                awayScore={pred?.awayScore ?? null}
+                matchStatus={m.status}
+                points={pred?.points ?? null}
+                actualHomeScore={m.homeScore}
+                actualAwayScore={m.awayScore}
+                onSave={onSave}
+                onAdvance={getOnAdvance(index)}
+                renderExpandedContent={renderExpandedContent}
+              />
+            </div>
           </div>
         )
       })}
@@ -245,7 +247,7 @@ function PredictionsPage() {
           return (
             <>
               <div
-                className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1"
+                className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
                 role="tablist"
                 aria-label="Rodadas"
               >
@@ -280,34 +282,32 @@ function PredictionsPage() {
           )
         })()
       ) : (
-        <>
-          <div className="flex gap-2" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'groups'}
-              onClick={() => setTab('groups')}
-              className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'groups' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
-            >
-              Fase de Grupos
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'knockout'}
-              onClick={() => setTab('knockout')}
-              className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'knockout' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
-            >
-              Mata-Mata
-            </button>
-          </div>
-        </>
+        <div className="flex gap-2" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'groups'}
+            onClick={() => setTab('groups')}
+            className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'groups' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
+          >
+            Fase de Grupos
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'knockout'}
+            onClick={() => setTab('knockout')}
+            className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'knockout' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
+          >
+            Mata-Mata
+          </button>
+        </div>
       )}
 
       {!hasLeagueMatches && tab === 'groups' && (
         <>
           <div
-            className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1"
+            className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
             role="tablist"
             aria-label="Grupos"
           >
@@ -371,7 +371,7 @@ function PredictionsPage() {
           return (
             <>
               <div
-                className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1"
+                className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
                 role="tablist"
                 aria-label="Fases"
               >
