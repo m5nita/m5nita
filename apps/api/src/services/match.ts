@@ -132,7 +132,7 @@ export async function syncLiveScores() {
   for (const [i, comp] of activeCompetitions.entries()) {
     try {
       const allMatches = await fetchMatches(
-        `/competitions/${comp.externalId}/matches?status=LIVE,FINISHED&dateFrom=${getTodayDate()}&dateTo=${getTodayDate()}`,
+        `/competitions/${comp.externalId}/matches?status=IN_PLAY,PAUSED,FINISHED&dateFrom=${getTodayDate()}&dateTo=${getTodayDate()}`,
       )
 
       for (const m of allMatches) {
