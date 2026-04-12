@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db/client'
 import { match } from '../db/schema/match'
 import { prediction } from '../db/schema/prediction'
-import { calculatePoints } from '../services/scoring'
+import { Score } from '../domain/scoring/Score'
 
 export async function calcPointsForMatch(matchId: string) {
   const matchData = await db.query.match.findFirst({
@@ -24,12 +24,13 @@ export async function calcPointsForMatch(matchId: string) {
   })
 
   for (const pred of predictions) {
-    const points = calculatePoints(
+    const score = Score.calculate(
       pred.homeScore,
       pred.awayScore,
       matchData.homeScore,
       matchData.awayScore,
     )
+    const points = score.points
 
     await db
       .update(prediction)
