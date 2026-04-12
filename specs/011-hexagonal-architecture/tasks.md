@@ -19,7 +19,7 @@
 
 **Purpose**: Create the hexagonal directory structure
 
-- [ ] T000 Measure API performance baseline: run representative endpoint requests (create pool, get predictions, get ranking) and record p95 response times for SC-006 comparison after migration
+- [x] T000 Measure API performance baseline: run representative endpoint requests (create pool, get predictions, get ranking) and record p95 response times for SC-006 comparison after migration
 - [x] T001 Create domain layer directories: `apps/api/src/domain/shared/`, `apps/api/src/domain/scoring/`, `apps/api/src/domain/pool/`, `apps/api/src/domain/prediction/`, `apps/api/src/domain/match/`, `apps/api/src/domain/prize/`
 - [x] T002 [P] Create application layer directories: `apps/api/src/application/pool/`, `apps/api/src/application/prediction/`, `apps/api/src/application/prize/`, `apps/api/src/application/scoring/`, `apps/api/src/application/match/`, `apps/api/src/application/ports/`
 - [x] T003 [P] Create infrastructure layer directories: `apps/api/src/infrastructure/persistence/mappers/`, `apps/api/src/infrastructure/external/`, `apps/api/src/infrastructure/http/routes/`, `apps/api/src/infrastructure/http/middleware/`
@@ -111,45 +111,45 @@
 
 ### External Service Ports
 
-- [ ] T035 [P] [US3] Define PaymentGateway port interface in `apps/api/src/application/ports/PaymentGateway.port.ts` — methods: createCheckoutSession, refund, isConfigured
-- [ ] T036 [P] [US3] Define NotificationService port interface in `apps/api/src/application/ports/NotificationService.port.ts` — methods: notifyWinners, notifyAdminWithdrawalRequest, sendPredictionReminders
-- [ ] T037 [P] [US3] Define FootballDataApi port interface in `apps/api/src/application/ports/FootballDataApi.port.ts` — methods: fetchMatches, fetchLiveMatches
+- [x] T035 [P] [US3] Define PaymentGateway port interface in `apps/api/src/application/ports/PaymentGateway.port.ts` — methods: createCheckoutSession, refund, isConfigured
+- [x] T036 [P] [US3] Define NotificationService port interface in `apps/api/src/application/ports/NotificationService.port.ts` — methods: notifyWinners, notifyAdminWithdrawalRequest, sendPredictionReminders
+- [x] T037 [P] [US3] Define FootballDataApi port interface in `apps/api/src/application/ports/FootballDataApi.port.ts` — methods: fetchMatches, fetchLiveMatches
 
 ### External Service Adapters
 
-- [ ] T038 [US3] Implement StripePaymentGateway in `apps/api/src/infrastructure/external/StripePaymentGateway.ts` — implements PaymentGateway port, extract Stripe logic from `services/payment.ts` (depends on T035)
-- [ ] T039 [P] [US3] Implement MockPaymentGateway in `apps/api/src/infrastructure/external/MockPaymentGateway.ts` — implements PaymentGateway port for dev mode, extract mock logic from `services/payment.ts` (depends on T035)
-- [ ] T040 [US3] Implement TelegramNotificationService in `apps/api/src/infrastructure/external/TelegramNotificationService.ts` — implements NotificationService port, extract from `lib/telegram.ts` notification functions (depends on T036)
+- [x] T038 [US3] Implement StripePaymentGateway in `apps/api/src/infrastructure/external/StripePaymentGateway.ts` — implements PaymentGateway port, extract Stripe logic from `services/payment.ts` (depends on T035)
+- [x] T039 [P] [US3] Implement MockPaymentGateway in `apps/api/src/infrastructure/external/MockPaymentGateway.ts` — implements PaymentGateway port for dev mode, extract mock logic from `services/payment.ts` (depends on T035)
+- [x] T040 [US3] Implement TelegramNotificationService in `apps/api/src/infrastructure/external/TelegramNotificationService.ts` — implements NotificationService port, extract from `lib/telegram.ts` notification functions (depends on T036)
 
 ### Pool Use Cases
 
-- [ ] T041 [US3] Create CreatePoolUseCase in `apps/api/src/application/pool/CreatePoolUseCase.ts` — orchestrates: validate coupon, create Pool entity, save via repository, create payment via gateway. Single `execute()` method (depends on T011, T020, T035)
-- [ ] T042 [P] [US3] Create JoinPoolUseCase in `apps/api/src/application/pool/JoinPoolUseCase.ts` — orchestrates: verify pool open, check not already member, create payment (depends on T020, T035)
-- [ ] T043 [P] [US3] Create CancelPoolUseCase in `apps/api/src/application/pool/CancelPoolUseCase.ts` — orchestrates: verify ownership, check no prize payments, refund all members, cancel pool (depends on T011, T020, T035)
-- [ ] T044 [P] [US3] Create GetPoolDetailsUseCase in `apps/api/src/application/pool/GetPoolDetailsUseCase.ts` — orchestrates: load pool, count members, calculate prize total (depends on T020)
-- [ ] T045 [P] [US3] Create GetUserPoolsUseCase in `apps/api/src/application/pool/GetUserPoolsUseCase.ts` — delegates to repository findUserPools (depends on T020)
+- [x] T041 [US3] Create CreatePoolUseCase in `apps/api/src/application/pool/CreatePoolUseCase.ts` — orchestrates: validate coupon, create Pool entity, save via repository, create payment via gateway. Single `execute()` method (depends on T011, T020, T035)
+- [x] T042 [P] [US3] Create JoinPoolUseCase in `apps/api/src/application/pool/JoinPoolUseCase.ts` — orchestrates: verify pool open, check not already member, create payment (depends on T020, T035)
+- [x] T043 [P] [US3] Create CancelPoolUseCase in `apps/api/src/application/pool/CancelPoolUseCase.ts` — orchestrates: verify ownership, check no prize payments, refund all members, cancel pool (depends on T011, T020, T035)
+- [x] T044 [P] [US3] Create GetPoolDetailsUseCase in `apps/api/src/application/pool/GetPoolDetailsUseCase.ts` — orchestrates: load pool, count members, calculate prize total (depends on T020)
+- [x] T045 [P] [US3] Create GetUserPoolsUseCase in `apps/api/src/application/pool/GetUserPoolsUseCase.ts` — delegates to repository findUserPools (depends on T020)
 
 ### Prediction Use Cases
 
-- [ ] T046 [US3] Create UpsertPredictionUseCase in `apps/api/src/application/prediction/UpsertPredictionUseCase.ts` — orchestrates: verify pool status, check membership, verify match not started, save prediction (depends on T013, T020, T021)
-- [ ] T047 [P] [US3] Create GetUserPredictionsUseCase in `apps/api/src/application/prediction/GetUserPredictionsUseCase.ts` — load pool, filter by competition/matchday range (depends on T020, T021)
-- [ ] T048 [P] [US3] Create GetMatchPredictionsUseCase in `apps/api/src/application/prediction/GetMatchPredictionsUseCase.ts` — verify lock status, return predictors/non-predictors (depends on T020, T021)
+- [x] T046 [US3] Create UpsertPredictionUseCase in `apps/api/src/application/prediction/UpsertPredictionUseCase.ts` — orchestrates: verify pool status, check membership, verify match not started, save prediction (depends on T013, T020, T021)
+- [x] T047 [P] [US3] Create GetUserPredictionsUseCase in `apps/api/src/application/prediction/GetUserPredictionsUseCase.ts` — load pool, filter by competition/matchday range (depends on T020, T021)
+- [x] T048 [P] [US3] Create GetMatchPredictionsUseCase in `apps/api/src/application/prediction/GetMatchPredictionsUseCase.ts` — verify lock status, return predictors/non-predictors (depends on T020, T021)
 
 ### Prize Use Cases
 
-- [ ] T049 [US3] Create GetPrizeInfoUseCase in `apps/api/src/application/prize/GetPrizeInfoUseCase.ts` — orchestrates: verify pool closed, get ranking, calculate prize, check winner, load existing withdrawal (depends on T015, T020, T022, T030)
-- [ ] T050 [US3] Create RequestWithdrawalUseCase in `apps/api/src/application/prize/RequestWithdrawalUseCase.ts` — orchestrates: verify eligibility, validate PixKey, calculate share, create withdrawal+payment, notify admin (depends on T009, T015, T020, T022, T030, T036)
+- [x] T049 [US3] Create GetPrizeInfoUseCase in `apps/api/src/application/prize/GetPrizeInfoUseCase.ts` — orchestrates: verify pool closed, get ranking, calculate prize, check winner, load existing withdrawal (depends on T015, T020, T022, T030)
+- [x] T050 [US3] Create RequestWithdrawalUseCase in `apps/api/src/application/prize/RequestWithdrawalUseCase.ts` — orchestrates: verify eligibility, validate PixKey, calculate share, create withdrawal+payment, notify admin (depends on T009, T015, T020, T022, T030, T036)
 
 ### Composition Root & Route Migration
 
-- [ ] T051 [US3] Create composition root in `apps/api/src/container.ts` — instantiate all repositories, gateways, and use cases. Export use case instances for routes to import (depends on T027-T031, T038-T040, T041-T050)
-- [ ] T052 [US3] Refactor `apps/api/src/routes/pools.ts` to import use cases from container instead of services. Map domain errors to HTTP status codes (depends on T051)
-- [ ] T053 [US3] Refactor `apps/api/src/routes/predictions.ts` to import use cases from container instead of services (depends on T051)
-- [ ] T054 [US3] Delete `apps/api/src/services/pool.ts` and `apps/api/src/services/__tests__/pool.test.ts` — absorbed into use cases + repository (depends on T052)
-- [ ] T055 [US3] Delete `apps/api/src/services/prediction.ts` and `apps/api/src/services/__tests__/prediction.test.ts` — absorbed into use cases + repository (depends on T053)
-- [ ] T056 [US3] Delete `apps/api/src/services/prizeWithdrawal.ts` and `apps/api/src/services/__tests__/prizeWithdrawal.test.ts` — absorbed into use cases + repository (depends on T052)
-- [ ] T057 [US3] Delete `apps/api/src/services/ranking.ts` — absorbed into DrizzleRankingRepository (depends on T052)
-- [ ] T058 [US3] Run full test suite (`pnpm test`) and verify all tests pass with use case architecture
+- [x] T051 [US3] Create composition root in `apps/api/src/container.ts` — instantiate all repositories, gateways, and use cases. Export use case instances for routes to import (depends on T027-T031, T038-T040, T041-T050)
+- [x] T052 [US3] Refactor `apps/api/src/routes/pools.ts` to import use cases from container instead of services. Map domain errors to HTTP status codes (depends on T051)
+- [x] T053 [US3] Refactor `apps/api/src/routes/predictions.ts` to import use cases from container instead of services (depends on T051)
+- [x] T054 [US3] Delete `apps/api/src/services/pool.ts` and `apps/api/src/services/__tests__/pool.test.ts` — absorbed into use cases + repository (depends on T052)
+- [x] T055 [US3] Delete `apps/api/src/services/prediction.ts` and `apps/api/src/services/__tests__/prediction.test.ts` — absorbed into use cases + repository (depends on T053)
+- [x] T056 [US3] Delete `apps/api/src/services/prizeWithdrawal.ts` and `apps/api/src/services/__tests__/prizeWithdrawal.test.ts` — absorbed into use cases + repository (depends on T052)
+- [x] T057 [US3] Delete `apps/api/src/services/ranking.ts` — absorbed into DrizzleRankingRepository (depends on T052)
+- [x] T058 [US3] Run full test suite (`pnpm test`) and verify all tests pass with use case architecture
 
 **Checkpoint**: Routes call use cases. No direct service imports in routes. All services for Pool/Prediction/Prize deleted.
 
@@ -163,23 +163,23 @@
 
 ### Match Use Cases
 
-- [ ] T059 [US4] Implement FootballDataApiAdapter in `apps/api/src/infrastructure/external/FootballDataApiAdapter.ts` — implements FootballDataApi port, extract API calls from `services/match.ts` (depends on T037)
-- [ ] T060 [US4] Create SyncFixturesUseCase in `apps/api/src/application/match/SyncFixturesUseCase.ts` — orchestrates: fetch from FootballDataApi, upsert via MatchRepository, trigger CalcPointsUseCase on finish (depends on T023, T037)
-- [ ] T061 [US4] Create SyncLiveScoresUseCase in `apps/api/src/application/match/SyncLiveScoresUseCase.ts` — orchestrates: fetch live scores, update via MatchRepository, trigger points calc and pool close (depends on T023, T037)
-- [ ] T062 [US4] Create CalcPointsUseCase in `apps/api/src/application/scoring/CalcPointsUseCase.ts` — load predictions for match, calculate Score for each, update points via repository (depends on T010, T021, T023)
+- [x] T059 [US4] Implement FootballDataApiAdapter in `apps/api/src/infrastructure/external/FootballDataApiAdapter.ts` — implements FootballDataApi port, extract API calls from `services/match.ts` (depends on T037)
+- [x] T060 [US4] Create SyncFixturesUseCase in `apps/api/src/application/match/SyncFixturesUseCase.ts` — orchestrates: fetch from FootballDataApi, upsert via MatchRepository, trigger CalcPointsUseCase on finish (depends on T023, T037)
+- [x] T061 [US4] Create SyncLiveScoresUseCase in `apps/api/src/application/match/SyncLiveScoresUseCase.ts` — orchestrates: fetch live scores, update via MatchRepository, trigger points calc and pool close (depends on T023, T037)
+- [x] T062 [US4] Create CalcPointsUseCase in `apps/api/src/application/scoring/CalcPointsUseCase.ts` — load predictions for match, calculate Score for each, update points via repository (depends on T010, T021, T023)
 
 ### Jobs Refactoring
 
-- [ ] T063 [US4] Refactor `apps/api/src/jobs/calcPoints.ts` to call CalcPointsUseCase from container (depends on T051, T062)
-- [ ] T064 [US4] Refactor `apps/api/src/jobs/closePoolsJob.ts` to call use cases from container (pool close + notification) (depends on T051, T040)
-- [ ] T065 [US4] Refactor `apps/api/src/jobs/reminderJob.ts` to call NotificationService port from container (depends on T051, T040)
+- [x] T063 [US4] Refactor `apps/api/src/jobs/calcPoints.ts` to call CalcPointsUseCase from container (depends on T051, T062)
+- [x] T064 [US4] Refactor `apps/api/src/jobs/closePoolsJob.ts` to call use cases from container (pool close + notification) (depends on T051, T040)
+- [x] T065 [US4] Refactor `apps/api/src/jobs/reminderJob.ts` to call NotificationService port from container (depends on T051, T040)
 
 ### Service Cleanup
 
-- [ ] T066 [US4] Delete `apps/api/src/services/match.ts` and `apps/api/src/services/__tests__/match.test.ts` — absorbed into use cases + adapters (depends on T060, T061)
-- [ ] T067 [US4] Delete `apps/api/src/services/matchUtils.ts` — absorbed into MatchMapper (depends on T026, T066)
-- [ ] T068 [US4] Update `apps/api/src/container.ts` with match/scoring/notification wiring (depends on T059-T062)
-- [ ] T069 [US4] Run full test suite (`pnpm test`) and verify all tests pass
+- [x] T066 [US4] Delete `apps/api/src/services/match.ts` and `apps/api/src/services/__tests__/match.test.ts` — absorbed into use cases + adapters (depends on T060, T061)
+- [x] T067 [US4] Delete `apps/api/src/services/matchUtils.ts` — absorbed into MatchMapper (depends on T026, T066)
+- [x] T068 [US4] Update `apps/api/src/container.ts` with match/scoring/notification wiring (depends on T059-T062)
+- [x] T069 [US4] Run full test suite (`pnpm test`) and verify all tests pass
 
 **Checkpoint**: All external services abstracted behind ports. Jobs delegate to use cases. No direct service files remain (except competition, coupon, payment which stay simplified).
 
@@ -193,19 +193,19 @@
 
 ### Reorganization
 
-- [ ] T070 [US5] Move route files from `apps/api/src/routes/` to `apps/api/src/infrastructure/http/routes/` — pools.ts, predictions.ts, ranking.ts, matches.ts, competitions.ts, users.ts, webhooks.ts, telegram.ts
-- [ ] T071 [US5] Move middleware files from `apps/api/src/middleware/` to `apps/api/src/infrastructure/http/middleware/` — auth.ts, rateLimit.ts
-- [ ] T072 [US5] Update `apps/api/src/index.ts` to import routes and middleware from new `infrastructure/http/` paths (depends on T070, T071)
-- [ ] T073 [US5] Update all internal imports in moved route/middleware files to reflect new relative paths (depends on T070, T071)
-- [ ] T074 [US5] Remove empty `apps/api/src/routes/`, `apps/api/src/middleware/`, and `apps/api/src/services/` directories (depends on T072, T073)
+- [x] T070 [US5] Move route files from `apps/api/src/routes/` to `apps/api/src/infrastructure/http/routes/` — pools.ts, predictions.ts, ranking.ts, matches.ts, competitions.ts, users.ts, webhooks.ts, telegram.ts
+- [x] T071 [US5] Move middleware files from `apps/api/src/middleware/` to `apps/api/src/infrastructure/http/middleware/` — auth.ts, rateLimit.ts
+- [x] T072 [US5] Update `apps/api/src/index.ts` to import routes and middleware from new `infrastructure/http/` paths (depends on T070, T071)
+- [x] T073 [US5] Update all internal imports in moved route/middleware files to reflect new relative paths (depends on T070, T071)
+- [x] T074 [US5] Remove empty `apps/api/src/routes/`, `apps/api/src/middleware/`, and `apps/api/src/services/` directories (depends on T072, T073)
 
 ### Final Validation
 
-- [ ] T075 [US5] Run full test suite (`pnpm test`) — all 116+ tests must pass
-- [ ] T076 [US5] Run typecheck (`pnpm -r typecheck`) — zero errors
-- [ ] T077 [US5] Run lint (`pnpm biome check .`) — zero lint errors
-- [ ] T078 [US5] Verify domain layer isolation: `grep -r "from 'drizzle\|from 'hono\|from 'stripe" apps/api/src/domain/` returns zero results
-- [ ] T079 [US5] Verify no service imports in routes: `grep -r "from '.*services/" apps/api/src/infrastructure/http/routes/` returns zero results for migrated domains
+- [x] T075 [US5] Run full test suite (`pnpm test`) — all 116+ tests must pass
+- [x] T076 [US5] Run typecheck (`pnpm -r typecheck`) — zero errors
+- [x] T077 [US5] Run lint (`pnpm biome check .`) — zero lint errors
+- [x] T078 [US5] Verify domain layer isolation: `grep -r "from 'drizzle\|from 'hono\|from 'stripe" apps/api/src/domain/` returns zero results
+- [x] T079 [US5] Verify no service imports in routes: `grep -r "from '.*services/" apps/api/src/infrastructure/http/routes/` returns zero results for migrated domains
 
 **Checkpoint**: Migration complete. Hexagonal architecture fully in place. All tests pass. API contract unchanged.
 
@@ -215,13 +215,13 @@
 
 **Purpose**: Final improvements that affect multiple user stories
 
-- [ ] T080 [P] Run `pnpm biome check --write .` to auto-fix any formatting issues
-- [ ] T081 Run quickstart.md validation — follow all steps in `specs/011-hexagonal-architecture/quickstart.md` and verify they work
-- [ ] T082 Verify SC-002: domain tests run in < 50ms (`pnpm --filter api vitest run src/domain/`)
-- [ ] T083 Verify SC-004: no infrastructure imports in domain layer
-- [ ] T084 Verify SC-005: each use case has single `execute()` method and constructor injection
-- [ ] T085 Verify SC-003: run `vitest --coverage` on `apps/api/src/domain/` and confirm 100% coverage for entities, value objects, and domain services
-- [ ] T086 Verify SC-006: re-run performance baseline from T000 and confirm < 20% degradation on all measured endpoints
+- [x] T080 [P] Run `pnpm biome check --write .` to auto-fix any formatting issues
+- [x] T081 Run quickstart.md validation — follow all steps in `specs/011-hexagonal-architecture/quickstart.md` and verify they work
+- [x] T082 Verify SC-002: domain tests run in < 50ms (`pnpm --filter api vitest run src/domain/`)
+- [x] T083 Verify SC-004: no infrastructure imports in domain layer
+- [x] T084 Verify SC-005: each use case has single `execute()` method and constructor injection
+- [x] T085 Verify SC-003: run `vitest --coverage` on `apps/api/src/domain/` and confirm 100% coverage for entities, value objects, and domain services
+- [x] T086 Verify SC-006: re-run performance baseline from T000 and confirm < 20% degradation on all measured endpoints
 
 ---
 
