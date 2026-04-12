@@ -30,7 +30,14 @@ declare module '@tanstack/react-router' {
 registerSW({
   onRegisteredSW(_swUrl, registration) {
     if (registration) {
-      setInterval(() => registration.update(), 60 * 1000)
+      setInterval(
+        () => {
+          if (navigator.onLine) {
+            registration.update().catch(() => {})
+          }
+        },
+        5 * 60 * 1000,
+      )
     }
   },
   onOfflineReady() {},
