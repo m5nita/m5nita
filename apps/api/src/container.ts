@@ -78,6 +78,15 @@ function buildContainer() {
   }
 
   return {
+    // Repos & services (used by jobs and other infrastructure entry points)
+    poolRepo,
+    predictionRepo,
+    rankingRepo,
+    matchRepo,
+    notificationService,
+    getEffectiveFeeRate,
+
+    // Use cases
     createPoolUseCase: new CreatePoolUseCase(
       poolRepo,
       paymentGateway,

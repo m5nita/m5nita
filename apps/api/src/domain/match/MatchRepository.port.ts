@@ -30,4 +30,9 @@ export interface MatchRepository {
   findLive(): Promise<MatchData[]>
   upsertMany(matches: UpsertMatchData[]): Promise<MatchData[]>
   updateScores(id: string, homeScore: number, awayScore: number, status: string): Promise<void>
+  hasUnfinishedMatches(
+    competitionId: string,
+    matchdayFrom?: number | null,
+    matchdayTo?: number | null,
+  ): Promise<boolean>
 }

@@ -25,6 +25,10 @@ export type PoolMemberInfo = {
   name: string | null
 }
 
+export type PoolMemberWithPhone = PoolMemberInfo & {
+  phoneNumber: string | null
+}
+
 export type PoolListItem = {
   id: string
   name: string
@@ -36,11 +40,22 @@ export type PoolListItem = {
   userPoints: number
 }
 
+export type ActivePoolInfo = {
+  id: string
+  name: string
+  entryFee: number
+  competitionId: string
+  matchdayFrom: number | null
+  matchdayTo: number | null
+  discountPercent: number
+}
+
 export interface PoolRepository {
   findById(id: string): Promise<Pool | null>
   findByIdWithDetails(id: string): Promise<PoolWithDetails | null>
   findByInviteCode(code: string): Promise<PoolWithDetails | null>
   findActiveByCompetition(competitionId: string): Promise<Pool[]>
+  findAllActive(): Promise<ActivePoolInfo[]>
   save(pool: Pool): Promise<Pool>
   updateStatus(id: string, status: PoolStatus): Promise<void>
   getMemberCount(poolId: string): Promise<number>
@@ -49,4 +64,5 @@ export interface PoolRepository {
   removeMember(poolId: string, userId: string): Promise<void>
   findUserPools(userId: string): Promise<PoolListItem[]>
   getMembers(poolId: string): Promise<PoolMemberInfo[]>
+  getMembersWithPhone(poolId: string): Promise<PoolMemberWithPhone[]>
 }

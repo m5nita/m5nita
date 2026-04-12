@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, gte, lte, ne } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { match } from '../../db/schema/match'
 import type {
@@ -135,5 +135,28 @@ export class DrizzleMatchRepository implements MatchRepository {
       .update(match)
       .set({ homeScore, awayScore, status, updatedAt: new Date() })
       .where(eq(match.id, id))
+  }
+
+  async hasUnfinishedMatches(
+    competitionId: string,
+    matchdayFrom?: number | null,
+    matchdayTo?: number | null,
+  ): Promise<boolean> {
+    const conditions = [eq(match.competitionId, competitionId), ne(match.status, 'finished')]
+
+    if (matchdayFrom != null) {
+      conditions.push(gte(match.matchday, matchdayFrom))
+    }
+    if (matchdayTo != null) {
+      conditions.push(lte(match.matchday, matchdayTo))
+    }
+
+    const [row] = await this.db
+      .select({ id: match.id })
+      .from(match)
+      .where(and(...conditions))
+      .limit(1)
+
+    return !!row
   }
 }

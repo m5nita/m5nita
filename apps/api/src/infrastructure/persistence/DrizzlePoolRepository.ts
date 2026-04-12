@@ -6,8 +6,10 @@ import { pool } from '../../db/schema/pool'
 import { poolMember } from '../../db/schema/poolMember'
 import type { Pool } from '../../domain/pool/Pool'
 import type {
+  ActivePoolInfo,
   PoolListItem,
   PoolMemberInfo,
+  PoolMemberWithPhone,
   PoolRepository,
   PoolWithDetails,
 } from '../../domain/pool/PoolRepository.port'
@@ -103,6 +105,22 @@ export class DrizzlePoolRepository implements PoolRepository {
     }
   }
 
+  async findAllActive(): Promise<ActivePoolInfo[]> {
+    const rows = await this.db.query.pool.findMany({
+      where: eq(pool.status, 'active'),
+      with: { coupon: true },
+    })
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      entryFee: r.entryFee,
+      competitionId: r.competitionId,
+      matchdayFrom: r.matchdayFrom,
+      matchdayTo: r.matchdayTo,
+      discountPercent: r.coupon?.discountPercent ?? 0,
+    }))
+  }
+
   async findActiveByCompetition(competitionId: string): Promise<Pool[]> {
     const rows = await this.db.query.pool.findMany({
       where: and(eq(pool.competitionId, competitionId), eq(pool.status, 'active')),
@@ -117,10 +135,11 @@ export class DrizzlePoolRepository implements PoolRepository {
   }
 
   async updateStatus(id: string, status: PoolStatus): Promise<void> {
-    await this.db
-      .update(pool)
-      .set({ status: status.value, updatedAt: new Date() })
-      .where(eq(pool.id, id))
+    const update: Record<string, unknown> = { status: status.value, updatedAt: new Date() }
+    if (status.value === 'closed' || status.value === 'cancelled') {
+      update.isOpen = false
+    }
+    await this.db.update(pool).set(update).where(eq(pool.id, id))
   }
 
   async getMemberCount(poolId: string): Promise<number> {
@@ -151,6 +170,19 @@ export class DrizzlePoolRepository implements PoolRepository {
   async getMembers(poolId: string): Promise<PoolMemberInfo[]> {
     const rows = await this.db
       .select({ userId: poolMember.userId, name: user.name })
+      .from(poolMember)
+      .innerJoin(user, eq(user.id, poolMember.userId))
+      .where(eq(poolMember.poolId, poolId))
+    return rows
+  }
+
+  async getMembersWithPhone(poolId: string): Promise<PoolMemberWithPhone[]> {
+    const rows = await this.db
+      .select({
+        userId: poolMember.userId,
+        name: user.name,
+        phoneNumber: user.phoneNumber,
+      })
       .from(poolMember)
       .innerJoin(user, eq(user.id, poolMember.userId))
       .where(eq(poolMember.poolId, poolId))
