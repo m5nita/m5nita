@@ -48,7 +48,7 @@ export function MatchPredictionsList({ data }: MatchPredictionsListProps) {
   const nonPredictorCount = data.nonPredictors.length
 
   return (
-    <div className="-mx-5 mt-3 border-t border-border bg-black/2 px-5 pt-2 pb-1">
+    <div className="-mx-5 mt-3 border-t border-border bg-black/2 px-5 pt-2 pb-1 lg:mx-0 lg:px-4">
       {hasPredictors ? (
         <div className="divide-y divide-border/60">
           {data.predictors.map((predictor) => (

@@ -134,7 +134,7 @@ function MatchesPage() {
 
       {isLeagueSelected ? (
         <div
-          className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5"
+          className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
           role="tablist"
           aria-label="Rodadas"
         >
@@ -154,7 +154,10 @@ function MatchesPage() {
           ))}
         </div>
       ) : (
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5" role="tablist">
+        <div
+          className="flex gap-1.5 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
+          role="tablist"
+        >
           {['all', ...MATCH.STAGES.filter((s) => s !== 'league')].map((stage) => (
             <button
               key={stage}
@@ -176,7 +179,10 @@ function MatchesPage() {
       )}
 
       {activeStage === 'group' && (
-        <div className="flex gap-1 overflow-x-auto -mx-5 px-5" role="tablist">
+        <div
+          className="flex gap-1 overflow-x-auto -mx-5 px-5 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
+          role="tablist"
+        >
           <button
             type="button"
             role="tab"
@@ -223,7 +229,7 @@ function MatchesPage() {
                   <p className="mb-2 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
                     {matchday > 0 ? `${matchday}ª Rodada` : 'Rodada'}
                   </p>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
                     {matches.map((m) => (
                       <MatchCard key={m.id} match={m} />
                     ))}
@@ -234,7 +240,7 @@ function MatchesPage() {
           )
         })()
       ) : (
-        <div className="flex flex-col">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
           {filtered.map((m) => (
             <MatchCard key={m.id} match={m} />
           ))}

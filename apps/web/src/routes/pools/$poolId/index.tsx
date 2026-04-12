@@ -38,7 +38,7 @@ function PoolDetailPage() {
         <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
           Bolão
         </p>
-        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">
+        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black lg:text-5xl">
           {pool.name}
         </h1>
         <div className="mt-3 h-1 w-12 bg-red" />
@@ -55,22 +55,24 @@ function PoolDetailPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-px bg-border">
-        <div className="bg-cream py-4 text-center">
-          <p className="font-display text-2xl font-black text-black">{pool.memberCount}</p>
+        <div className="bg-cream py-4 text-center lg:py-6">
+          <p className="font-display text-2xl font-black text-black lg:text-4xl">
+            {pool.memberCount}
+          </p>
           <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
             Jogadores
           </p>
         </div>
-        <div className="bg-cream py-4 text-center">
-          <p className="font-display text-2xl font-black text-black">
+        <div className="bg-cream py-4 text-center lg:py-6">
+          <p className="font-display text-2xl font-black text-black lg:text-4xl">
             {formatCurrency(pool.entryFee)}
           </p>
           <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
             Entrada
           </p>
         </div>
-        <div className="bg-cream py-4 text-center">
-          <p className="font-display text-2xl font-black text-green">
+        <div className="bg-cream py-4 text-center lg:py-6">
+          <p className="font-display text-2xl font-black text-green lg:text-4xl">
             {formatCurrency(pool.prizeTotal)}
           </p>
           <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
@@ -79,20 +81,20 @@ function PoolDetailPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <Link to="/pools/$poolId/predictions" params={{ poolId }}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:gap-4">
+        <Link to="/pools/$poolId/predictions" params={{ poolId }} className="lg:flex-1">
           <Button className="w-full" size="lg">
             Palpites
           </Button>
         </Link>
-        <Link to="/pools/$poolId/ranking" params={{ poolId }}>
+        <Link to="/pools/$poolId/ranking" params={{ poolId }} className="lg:flex-1">
           <Button variant="secondary" className="w-full" size="lg">
             Ranking
           </Button>
         </Link>
         {isOwner && (
-          <Link to="/pools/$poolId/manage" params={{ poolId }}>
-            <Button variant="ghost" className="w-full">
+          <Link to="/pools/$poolId/manage" params={{ poolId }} className="lg:flex-1">
+            <Button variant="ghost" className="w-full" size="lg">
               Gerenciar
             </Button>
           </Link>

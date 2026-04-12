@@ -73,77 +73,81 @@ function InvitePage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-          Convite
-        </p>
-        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">
-          {poolInfo.name}
-        </h1>
-        <div className="mt-3 h-1 w-12 bg-red" />
-        {poolInfo.competitionName && (
-          <p className="mt-3 font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-            {poolInfo.competitionName}
-            {poolInfo.matchdayFrom != null &&
-              (poolInfo.matchdayTo && poolInfo.matchdayTo !== poolInfo.matchdayFrom
-                ? ` · Rodadas ${poolInfo.matchdayFrom} a ${poolInfo.matchdayTo}`
-                : ` · Rodada ${poolInfo.matchdayFrom}`)}
+    <div className="flex flex-col gap-8 lg:items-center">
+      <div className="lg:w-full lg:max-w-[520px] lg:border lg:border-border lg:p-10 flex flex-col gap-8">
+        <div>
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+            Convite
+          </p>
+          <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">
+            {poolInfo.name}
+          </h1>
+          <div className="mt-3 h-1 w-12 bg-red" />
+          {poolInfo.competitionName && (
+            <p className="mt-3 font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+              {poolInfo.competitionName}
+              {poolInfo.matchdayFrom != null &&
+                (poolInfo.matchdayTo && poolInfo.matchdayTo !== poolInfo.matchdayFrom
+                  ? ` · Rodadas ${poolInfo.matchdayFrom} a ${poolInfo.matchdayTo}`
+                  : ` · Rodada ${poolInfo.matchdayFrom}`)}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col border-t-2 border-black">
+          {[
+            { label: 'Criado por', value: poolInfo.owner.name || 'Anonimo' },
+            { label: 'Participantes', value: String(poolInfo.memberCount) },
+            { label: 'Entrada', value: formatCurrency(poolInfo.entryFee) },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex justify-between border-b border-border py-3 text-sm">
+              <span className="text-gray-dark">{label}</span>
+              <span className="font-medium text-black">{value}</span>
+            </div>
+          ))}
+          {poolInfo.discountPercent > 0 ? (
+            <>
+              <div className="flex justify-between border-b border-border py-3 text-sm">
+                <span className="text-gray-muted line-through">Taxa (5%)</span>
+                <span className="text-gray-muted line-through">
+                  {formatCurrency(poolInfo.originalPlatformFee)}
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-border py-3 text-sm">
+                <span className="text-green font-medium">
+                  Taxa com desconto ({(5 * (1 - poolInfo.discountPercent / 100)).toFixed(1)}%)
+                </span>
+                <span className="text-green font-medium">
+                  {formatCurrency(poolInfo.platformFee)}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between border-b border-border py-3 text-sm">
+              <span className="text-gray-dark">Taxa (5%)</span>
+              <span className="font-medium text-black">{formatCurrency(poolInfo.platformFee)}</span>
+            </div>
+          )}
+          <div className="flex justify-between py-4">
+            <span className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+              Prêmio Estimado
+            </span>
+            <span className="font-display text-2xl font-black text-green">
+              {formatCurrency(poolInfo.prizeTotal)}
+            </span>
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-xs font-medium text-red" role="alert">
+            {error}
           </p>
         )}
+
+        <Button onClick={handleJoin} loading={loading} className="w-full" size="lg">
+          Pagar e Entrar — {formatCurrency(poolInfo.entryFee)}
+        </Button>
       </div>
-
-      <div className="flex flex-col border-t-2 border-black">
-        {[
-          { label: 'Criado por', value: poolInfo.owner.name || 'Anonimo' },
-          { label: 'Participantes', value: String(poolInfo.memberCount) },
-          { label: 'Entrada', value: formatCurrency(poolInfo.entryFee) },
-        ].map(({ label, value }) => (
-          <div key={label} className="flex justify-between border-b border-border py-3 text-sm">
-            <span className="text-gray-dark">{label}</span>
-            <span className="font-medium text-black">{value}</span>
-          </div>
-        ))}
-        {poolInfo.discountPercent > 0 ? (
-          <>
-            <div className="flex justify-between border-b border-border py-3 text-sm">
-              <span className="text-gray-muted line-through">Taxa (5%)</span>
-              <span className="text-gray-muted line-through">
-                {formatCurrency(poolInfo.originalPlatformFee)}
-              </span>
-            </div>
-            <div className="flex justify-between border-b border-border py-3 text-sm">
-              <span className="text-green font-medium">
-                Taxa com desconto ({(5 * (1 - poolInfo.discountPercent / 100)).toFixed(1)}%)
-              </span>
-              <span className="text-green font-medium">{formatCurrency(poolInfo.platformFee)}</span>
-            </div>
-          </>
-        ) : (
-          <div className="flex justify-between border-b border-border py-3 text-sm">
-            <span className="text-gray-dark">Taxa (5%)</span>
-            <span className="font-medium text-black">{formatCurrency(poolInfo.platformFee)}</span>
-          </div>
-        )}
-        <div className="flex justify-between py-4">
-          <span className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-            Prêmio Estimado
-          </span>
-          <span className="font-display text-2xl font-black text-green">
-            {formatCurrency(poolInfo.prizeTotal)}
-          </span>
-        </div>
-      </div>
-
-      {error && (
-        <p className="text-xs font-medium text-red" role="alert">
-          {error}
-        </p>
-      )}
-
-      <Button onClick={handleJoin} loading={loading} className="w-full" size="lg">
-        Pagar e Entrar — {formatCurrency(poolInfo.entryFee)}
-      </Button>
     </div>
   )
 }

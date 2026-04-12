@@ -38,30 +38,32 @@ function CompleteProfilePage() {
   }
 
   return (
-    <div className="flex min-h-[75vh] flex-col justify-center">
-      <div className="mb-8">
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-          Primeiro acesso
-        </p>
-        <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
-          Seu Nome
-        </h1>
-        <div className="mt-3 h-1 w-12 bg-red" />
-        <p className="mt-4 text-sm text-gray-dark">Como quer ser chamado no m5nita?</p>
-      </div>
+    <div className="flex min-h-[75vh] flex-col justify-center lg:items-center">
+      <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
+        <div className="mb-8">
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+            Primeiro acesso
+          </p>
+          <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
+            Seu Nome
+          </h1>
+          <div className="mt-3 h-1 w-12 bg-red" />
+          <p className="mt-4 text-sm text-gray-dark">Como quer ser chamado no m5nita?</p>
+        </div>
 
-      <div className="flex flex-col gap-6">
-        <Input
-          label="Nome"
-          placeholder="Ex: Igor"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          error={error || undefined}
-          autoFocus
-        />
-        <Button onClick={handleSubmit} loading={loading} className="w-full" size="lg">
-          Continuar
-        </Button>
+        <div className="flex flex-col gap-6">
+          <Input
+            label="Nome"
+            placeholder="Ex: Lionel Messi"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={error || undefined}
+            autoFocus
+          />
+          <Button onClick={handleSubmit} loading={loading} className="w-full" size="lg">
+            Continuar
+          </Button>
+        </div>
       </div>
     </div>
   )

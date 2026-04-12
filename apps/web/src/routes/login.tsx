@@ -215,42 +215,49 @@ function LoginPage() {
 
   if (step === 'phone-otp') {
     return (
-      <div className="flex min-h-[75vh] flex-col justify-center">
-        <div className="mb-8">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-            m5nita
-          </p>
-          <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">
-            Código
-          </h1>
-          <div className="mt-3 h-1 w-12 bg-red" />
-        </div>
-        <div className="flex flex-col gap-6">
-          <p className="text-sm text-gray-dark">
-            Enviamos um código pelo Telegram para{' '}
-            <span className="font-medium text-black">{phone}</span>
-          </p>
-          <OtpInput
-            value={otp}
-            onChange={setOtp}
-            onComplete={handleVerifyOtp}
-            error={error || undefined}
-            disabled={loading}
-          />
-          <Button onClick={() => handleVerifyOtp()} loading={loading} className="w-full" size="lg">
-            Verificar
-          </Button>
-          <button
-            type="button"
-            onClick={() => {
-              setStep('main')
-              setOtp('')
-              setError('')
-            }}
-            className="font-display text-xs font-bold uppercase tracking-wider text-gray-muted underline underline-offset-4 hover:text-black transition-colors cursor-pointer"
-          >
-            Voltar
-          </button>
+      <div className="flex min-h-[75vh] flex-col justify-center lg:items-center">
+        <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
+          <div className="mb-8">
+            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+              m5nita
+            </p>
+            <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">
+              Código
+            </h1>
+            <div className="mt-3 h-1 w-12 bg-red" />
+          </div>
+          <div className="flex flex-col gap-6">
+            <p className="text-sm text-gray-dark">
+              Enviamos um código pelo Telegram para{' '}
+              <span className="font-medium text-black">{phone}</span>
+            </p>
+            <OtpInput
+              value={otp}
+              onChange={setOtp}
+              onComplete={handleVerifyOtp}
+              error={error || undefined}
+              disabled={loading}
+            />
+            <Button
+              onClick={() => handleVerifyOtp()}
+              loading={loading}
+              className="w-full"
+              size="lg"
+            >
+              Verificar
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep('main')
+                setOtp('')
+                setError('')
+              }}
+              className="font-display text-xs font-bold uppercase tracking-wider text-gray-muted underline underline-offset-4 hover:text-black transition-colors cursor-pointer"
+            >
+              Voltar
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -258,45 +265,47 @@ function LoginPage() {
 
   if (step === 'magic-link-sent') {
     return (
-      <div className="flex min-h-[75vh] flex-col justify-center">
-        <div className="mb-8">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-            m5nita
-          </p>
-          <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">
-            Email enviado
-          </h1>
-          <div className="mt-3 h-1 w-12 bg-red" />
-        </div>
-        <div className="flex flex-col gap-6">
-          <p className="text-sm text-gray-dark">
-            Enviamos um link para <span className="font-medium text-black">{email}</span>. Verifique
-            sua caixa de entrada.
-          </p>
-          {error && (
-            <p className="text-xs font-medium text-red" role="alert">
-              {error}
+      <div className="flex min-h-[75vh] flex-col justify-center lg:items-center">
+        <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
+          <div className="mb-8">
+            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+              m5nita
             </p>
-          )}
-          <Button
-            onClick={handleSendMagicLink}
-            loading={loading}
-            disabled={magicLinkCooldown > 0}
-            className="w-full"
-            size="lg"
-          >
-            {magicLinkCooldown > 0 ? `Reenviar em ${magicLinkCooldown}s` : 'Reenviar link'}
-          </Button>
-          <button
-            type="button"
-            onClick={() => {
-              setStep('main')
-              setError('')
-            }}
-            className="font-display text-xs font-bold uppercase tracking-wider text-gray-muted underline underline-offset-4 hover:text-black transition-colors cursor-pointer"
-          >
-            Voltar
-          </button>
+            <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">
+              Email enviado
+            </h1>
+            <div className="mt-3 h-1 w-12 bg-red" />
+          </div>
+          <div className="flex flex-col gap-6">
+            <p className="text-sm text-gray-dark">
+              Enviamos um link para <span className="font-medium text-black">{email}</span>.
+              Verifique sua caixa de entrada.
+            </p>
+            {error && (
+              <p className="text-xs font-medium text-red" role="alert">
+                {error}
+              </p>
+            )}
+            <Button
+              onClick={handleSendMagicLink}
+              loading={loading}
+              disabled={magicLinkCooldown > 0}
+              className="w-full"
+              size="lg"
+            >
+              {magicLinkCooldown > 0 ? `Reenviar em ${magicLinkCooldown}s` : 'Reenviar link'}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setStep('main')
+                setError('')
+              }}
+              className="font-display text-xs font-bold uppercase tracking-wider text-gray-muted underline underline-offset-4 hover:text-black transition-colors cursor-pointer"
+            >
+              Voltar
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -305,131 +314,135 @@ function LoginPage() {
   const isSocialLoading = socialLoading !== null
 
   return (
-    <div className="flex min-h-[75vh] flex-col justify-center">
-      <div className="mb-8">
-        <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">Entrar</h1>
-        <div className="mt-3 h-1 w-12 bg-red" />
-      </div>
-
-      <div className="flex flex-col gap-6">
-        {/* Social Sign-In */}
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => handleSocialSignIn('google')}
-            disabled={isSocialLoading}
-            className="flex w-full items-center justify-center gap-3 border-2 border-black py-3.5 font-display text-sm font-bold uppercase tracking-wider text-black transition-all duration-150 hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
-          >
-            {socialLoading === 'google' ? (
-              <svg
-                className="h-5 w-5 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  className="opacity-25"
-                />
-                <path
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  className="opacity-75"
-                />
-              </svg>
-            ) : (
-              <GoogleIcon />
-            )}
-            Continuar com Google
-          </button>
+    <div className="flex min-h-[75vh] flex-col justify-center lg:items-center">
+      <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
+        <div className="mb-8">
+          <h1 className="mt-1 font-display text-6xl font-black leading-[0.85] text-black">
+            Entrar
+          </h1>
+          <div className="mt-3 h-1 w-12 bg-red" />
         </div>
 
-        <Separator />
+        <div className="flex flex-col gap-6">
+          {/* Social Sign-In */}
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => handleSocialSignIn('google')}
+              disabled={isSocialLoading}
+              className="flex w-full items-center justify-center gap-3 border-2 border-black py-3.5 font-display text-sm font-bold uppercase tracking-wider text-black transition-all duration-150 hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+            >
+              {socialLoading === 'google' ? (
+                <svg
+                  className="h-5 w-5 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    className="opacity-25"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    className="opacity-75"
+                  />
+                </svg>
+              ) : (
+                <GoogleIcon />
+              )}
+              Continuar com Google
+            </button>
+          </div>
 
-        {/* Magic Link */}
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault()
-            handleSendMagicLink()
-          }}
-        >
-          <Input
-            label="Email"
-            type="email"
-            placeholder="seu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
-          <Button
-            type="submit"
-            variant="secondary"
-            loading={loading}
-            disabled={isSocialLoading}
-            className="w-full"
-            size="lg"
+          <Separator />
+
+          {/* Magic Link */}
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleSendMagicLink()
+            }}
           >
-            <EmailIcon />
-            Enviar link mágico
-          </Button>
-        </form>
+            <Input
+              label="Email"
+              type="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+            <Button
+              type="submit"
+              variant="secondary"
+              loading={loading}
+              disabled={isSocialLoading}
+              className="w-full"
+              size="lg"
+            >
+              <EmailIcon />
+              Enviar link mágico
+            </Button>
+          </form>
 
-        <Separator />
+          <Separator />
 
-        {/* Telegram / Phone OTP */}
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault()
-            handleSendOtp()
-          }}
-        >
-          <PhoneInput value={phone} onChange={setPhone} />
-          {showTelegramHelp && (
-            <div className="rounded-lg border border-gray-light bg-gray-lightest p-4">
-              <p className="text-sm font-medium text-black">Conecte seu Telegram primeiro:</p>
-              <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-gray-dark">
-                <li>
-                  Abra o bot{' '}
-                  <a
-                    href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=login`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-black underline underline-offset-2"
-                  >
-                    @{TELEGRAM_BOT_USERNAME}
-                  </a>
-                </li>
-                <li>Toque em "Start"</li>
-                <li>Toque no botão "Compartilhar telefone"</li>
-                <li>Volte aqui e tente novamente</li>
-              </ol>
-            </div>
+          {/* Telegram / Phone OTP */}
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleSendOtp()
+            }}
+          >
+            <PhoneInput value={phone} onChange={setPhone} />
+            {showTelegramHelp && (
+              <div className="rounded-lg border border-gray-light bg-gray-lightest p-4">
+                <p className="text-sm font-medium text-black">Conecte seu Telegram primeiro:</p>
+                <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-gray-dark">
+                  <li>
+                    Abra o bot{' '}
+                    <a
+                      href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=login`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-black underline underline-offset-2"
+                    >
+                      @{TELEGRAM_BOT_USERNAME}
+                    </a>
+                  </li>
+                  <li>Toque em "Start"</li>
+                  <li>Toque no botão "Compartilhar telefone"</li>
+                  <li>Volte aqui e tente novamente</li>
+                </ol>
+              </div>
+            )}
+            <Button
+              type="submit"
+              variant="secondary"
+              loading={loading}
+              disabled={isSocialLoading}
+              className="w-full"
+              size="lg"
+            >
+              <TelegramIcon />
+              Entrar com Telegram
+            </Button>
+          </form>
+
+          {/* Error display */}
+          {error && (
+            <p className="text-xs font-medium text-red" role="alert">
+              {error}
+            </p>
           )}
-          <Button
-            type="submit"
-            variant="secondary"
-            loading={loading}
-            disabled={isSocialLoading}
-            className="w-full"
-            size="lg"
-          >
-            <TelegramIcon />
-            Entrar com Telegram
-          </Button>
-        </form>
-
-        {/* Error display */}
-        {error && (
-          <p className="text-xs font-medium text-red" role="alert">
-            {error}
-          </p>
-        )}
+        </div>
       </div>
     </div>
   )
