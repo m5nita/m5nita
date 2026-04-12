@@ -74,30 +74,30 @@
 
 ### Repository Ports (domain layer)
 
-- [ ] T020 [P] [US2] Define PoolRepository port interface in `apps/api/src/domain/pool/PoolRepository.port.ts` — methods: findById, findByInviteCode, findActiveByCompetition, save, updateStatus, getMemberCount, isMember, addMember, removeMember, findUserPools
-- [ ] T021 [P] [US2] Define PredictionRepository port interface in `apps/api/src/domain/prediction/PredictionRepository.port.ts` — methods: findByUserPoolMatch, findByUserPool, findByPoolMatch, save, updatePoints, findByMatch
-- [ ] T022 [P] [US2] Define PrizeWithdrawalRepository port interface in `apps/api/src/domain/prize/PrizeWithdrawalRepository.port.ts` — methods: findByPoolAndUser, createWithPayment
-- [ ] T023 [P] [US2] Define MatchRepository port interface in `apps/api/src/domain/match/MatchRepository.port.ts` — methods: findById, findByCompetition, findLive, upsertMany, updateScores
+- [x] T020 [P] [US2] Define PoolRepository port interface in `apps/api/src/domain/pool/PoolRepository.port.ts` — methods: findById, findByInviteCode, findActiveByCompetition, save, updateStatus, getMemberCount, isMember, addMember, removeMember, findUserPools
+- [x] T021 [P] [US2] Define PredictionRepository port interface in `apps/api/src/domain/prediction/PredictionRepository.port.ts` — methods: findByUserPoolMatch, findByUserPool, findByPoolMatch, save, updatePoints, findByMatch
+- [x] T022 [P] [US2] Define PrizeWithdrawalRepository port interface in `apps/api/src/domain/prize/PrizeWithdrawalRepository.port.ts` — methods: findByPoolAndUser, createWithPayment
+- [x] T023 [P] [US2] Define MatchRepository port interface in `apps/api/src/domain/match/MatchRepository.port.ts` — methods: findById, findByCompetition, findLive, upsertMany, updateScores
 
 ### Mappers (infrastructure layer)
 
-- [ ] T024 [P] [US2] Create PoolMapper in `apps/api/src/infrastructure/persistence/mappers/PoolMapper.ts` — static methods `toDomain(row)` and `toPersistence(entity)`, converts Drizzle row types to Pool entity with value objects (depends on T011)
-- [ ] T025 [P] [US2] Create PredictionMapper in `apps/api/src/infrastructure/persistence/mappers/PredictionMapper.ts` — static methods `toDomain(row)` and `toPersistence(entity)` (depends on T013)
-- [ ] T026 [P] [US2] Create MatchMapper in `apps/api/src/infrastructure/persistence/mappers/MatchMapper.ts` — static methods for mapping, absorb status/stage mapping logic from `services/matchUtils.ts`
+- [x] T024 [P] [US2] Create PoolMapper in `apps/api/src/infrastructure/persistence/mappers/PoolMapper.ts` — static methods `toDomain(row)` and `toPersistence(entity)`, converts Drizzle row types to Pool entity with value objects (depends on T011)
+- [x] T025 [P] [US2] Create PredictionMapper in `apps/api/src/infrastructure/persistence/mappers/PredictionMapper.ts` — static methods `toDomain(row)` and `toPersistence(entity)` (depends on T013)
+- [x] T026 [P] [US2] Create MatchMapper in `apps/api/src/infrastructure/persistence/mappers/MatchMapper.ts` — static methods for mapping, absorb status/stage mapping logic from `services/matchUtils.ts`
 
 ### Drizzle Repository Adapters
 
-- [ ] T027 [US2] Implement DrizzlePoolRepository in `apps/api/src/infrastructure/persistence/DrizzlePoolRepository.ts` — implements PoolRepository port, extract queries from `services/pool.ts:93-208`. Uses PoolMapper (depends on T020, T024)
-- [ ] T028 [US2] Implement DrizzlePredictionRepository in `apps/api/src/infrastructure/persistence/DrizzlePredictionRepository.ts` — implements PredictionRepository port, extract queries from `services/prediction.ts:79-182`. Uses PredictionMapper (depends on T021, T025)
-- [ ] T029 [US2] Implement DrizzlePrizeWithdrawalRepository in `apps/api/src/infrastructure/persistence/DrizzlePrizeWithdrawalRepository.ts` — implements PrizeWithdrawalRepository port, extract transaction logic from `services/prizeWithdrawal.ts:144-184` (depends on T022)
-- [ ] T030 [US2] Implement DrizzleRankingRepository in `apps/api/src/infrastructure/persistence/DrizzleRankingRepository.ts` — extract ranking SQL query from `services/ranking.ts`, expose via simple interface (depends on T020)
-- [ ] T031 [US2] Implement DrizzleMatchRepository in `apps/api/src/infrastructure/persistence/DrizzleMatchRepository.ts` — implements MatchRepository port, extract queries from `services/match.ts` (depends on T023, T026)
+- [x] T027 [US2] Implement DrizzlePoolRepository in `apps/api/src/infrastructure/persistence/DrizzlePoolRepository.ts` — implements PoolRepository port, extract queries from `services/pool.ts:93-208`. Uses PoolMapper (depends on T020, T024)
+- [x] T028 [US2] Implement DrizzlePredictionRepository in `apps/api/src/infrastructure/persistence/DrizzlePredictionRepository.ts` — implements PredictionRepository port, extract queries from `services/prediction.ts:79-182`. Uses PredictionMapper (depends on T021, T025)
+- [x] T029 [US2] Implement DrizzlePrizeWithdrawalRepository in `apps/api/src/infrastructure/persistence/DrizzlePrizeWithdrawalRepository.ts` — implements PrizeWithdrawalRepository port, extract transaction logic from `services/prizeWithdrawal.ts:144-184` (depends on T022)
+- [x] T030 [US2] Implement DrizzleRankingRepository in `apps/api/src/infrastructure/persistence/DrizzleRankingRepository.ts` — extract ranking SQL query from `services/ranking.ts`, expose via simple interface (depends on T020)
+- [x] T031 [US2] Implement DrizzleMatchRepository in `apps/api/src/infrastructure/persistence/DrizzleMatchRepository.ts` — implements MatchRepository port, extract queries from `services/match.ts` (depends on T023, T026)
 
 ### Transitional integration
 
-- [ ] T032 [US2] Refactor `apps/api/src/services/pool.ts` to delegate queries to DrizzlePoolRepository while keeping the same public API (transitional step) (depends on T027)
-- [ ] T033 [US2] Refactor `apps/api/src/services/prediction.ts` to delegate queries to DrizzlePredictionRepository while keeping the same public API (depends on T028)
-- [ ] T034 [US2] Run full test suite (`pnpm test`) and verify all tests pass with repository delegation
+- [x] T032 [US2] Refactor `apps/api/src/services/pool.ts` to delegate queries to DrizzlePoolRepository while keeping the same public API (transitional step) (depends on T027)
+- [x] T033 [US2] Refactor `apps/api/src/services/prediction.ts` to delegate queries to DrizzlePredictionRepository while keeping the same public API (depends on T028)
+- [x] T034 [US2] Run full test suite (`pnpm test`) and verify all tests pass with repository delegation
 
 **Checkpoint**: All database access goes through repositories. Services are thin wrappers. API responses identical.
 
