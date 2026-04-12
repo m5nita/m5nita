@@ -1,21 +1,23 @@
 <!--
 Sync Impact Report
 ==================
-- Version change: 1.0.0 → 1.1.0
-- Modified principles: I. Code Quality (relaxed complexity and any thresholds to match enforced CI config)
+- Version change: 1.1.0 → 1.2.0
+- Modified principles:
+  - I. Code Quality: Added SOLID principles reference and value object
+    mandate for domain primitives
+  - II. Testing Standards: Added domain unit test requirements and
+    port/adapter test strategy
 - Added sections:
-  - Core Principles: I. Code Quality, II. Testing Standards,
-    III. UX Consistency, IV. Performance Requirements
-  - Technical Decision Guidelines
-  - Development Workflow
-  - Governance
+  - V. Hexagonal Architecture & SOLID (new core principle)
 - Removed sections: None
 - Templates requiring updates:
-  - .specify/templates/plan-template.md ✅ No changes needed (Constitution Check section is generic)
-  - .specify/templates/spec-template.md ✅ No changes needed (success criteria already support performance/UX metrics)
-  - .specify/templates/tasks-template.md ✅ No changes needed (test-first and polish phases align with principles)
-- Follow-up TODOs:
-  - TODO(RATIFICATION_DATE): Using today as initial ratification date
+  - .specify/templates/plan-template.md ✅ No changes needed
+    (Constitution Check section is generic, will pick up new principle)
+  - .specify/templates/spec-template.md ✅ No changes needed
+    (success criteria already support architecture constraints)
+  - .specify/templates/tasks-template.md ✅ No changes needed
+    (phase structure supports domain-first task ordering)
+- Follow-up TODOs: None
 -->
 
 # Manita Constitution
@@ -27,12 +29,15 @@ Sync Impact Report
 Every module MUST be readable, maintainable, and self-documenting.
 Non-negotiable rules:
 
-- Functions MUST have a single, clear responsibility. If a function
-  requires more than one sentence to describe, it MUST be split.
+- Functions MUST have a single, clear responsibility (SRP). If a
+  function requires more than one sentence to describe, it MUST be
+  split.
 - No dead code, commented-out blocks, or TODO comments in merged code.
   TODOs MUST be tracked as issues, never left inline.
 - Naming MUST be explicit and intention-revealing. Abbreviations are
   forbidden unless they are universally understood domain terms.
+  Naming priority: consistency > understandability > specificity >
+  brevity > searchability.
 - Cognitive complexity per function SHOULD NOT exceed 15. Functions
   exceeding this threshold SHOULD be refactored. Biome enforces this
   as a warning; errors block CI, warnings do not.
@@ -40,11 +45,18 @@ Non-negotiable rules:
   types SHOULD be avoided and are flagged as warnings by Biome.
   Implicit `any` types are forbidden by TypeScript strict mode.
 - Code duplication MUST be eliminated when the same logic appears in
-  three or more locations. Two occurrences MAY be tolerated if
-  extraction would reduce clarity.
+  three or more locations (Rule of Three). Two occurrences MAY be
+  tolerated if extraction would reduce clarity.
 - Linting and formatting rules MUST be enforced via automated tooling
   (Biome). Lint errors block CI; warnings are permitted but SHOULD be
   addressed over time. No PR may be merged with lint errors.
+- Domain primitives (IDs, monetary amounts, email, codes) MUST be
+  wrapped in value objects. Raw primitives MUST NOT be used for
+  domain concepts in function signatures or entity fields.
+- Methods MUST NOT exceed 10 lines. Classes MUST NOT exceed 50 lines.
+  No more than one level of indentation per method.
+- Prefer early returns over `else` blocks. Prefer `Tell, Don't Ask`
+  over querying state and deciding externally.
 
 **Rationale**: Code is read far more often than it is written.
 Investing in clarity reduces onboarding time, bug surface area,
@@ -53,7 +65,9 @@ and cognitive load during reviews.
 **How this guides decisions**: When choosing between a clever
 one-liner and a verbose but clear implementation, always choose
 clarity. When designing APIs, favor explicit parameters over
-configuration objects with many optional fields.
+configuration objects with many optional fields. When handling
+domain concepts, always wrap them in value objects that validate
+and encapsulate behavior.
 
 ### II. Testing Standards
 
@@ -62,15 +76,21 @@ not implementation details. Non-negotiable rules:
 
 - Unit tests MUST cover all public functions and edge cases.
   Coverage below 80% on new code blocks merge.
+- Domain layer (entities, value objects, domain services) MUST have
+  100% unit test coverage. These are pure, no-dependency classes
+  that are trivial to test.
 - Integration tests MUST verify all cross-boundary interactions:
   API contracts, database queries, external service calls.
+- Adapter tests MUST verify that infrastructure implementations
+  (repositories, gateways) correctly satisfy their port interfaces.
 - Tests MUST be deterministic. Flaky tests MUST be quarantined
   and fixed within 48 hours or deleted.
 - Test names MUST describe the scenario and expected outcome,
   following the pattern: `[unit]_[scenario]_[expectedResult]`.
-- Mocking MUST be limited to external dependencies only. Internal
-  modules MUST be tested with real implementations to catch
-  integration regressions.
+- Mocking MUST be limited to ports and external dependencies only.
+  Domain and application layers MUST be tested with real
+  implementations. Infrastructure adapters MAY be mocked when
+  testing use cases.
 - Tests MUST run in isolation. No test may depend on the execution
   order or side effects of another test.
 - Performance-sensitive paths MUST include benchmark tests that
@@ -81,10 +101,10 @@ They MUST provide confidence that changes do not break existing
 behavior and MUST serve as living documentation.
 
 **How this guides decisions**: When implementing a feature, write
-the test first to clarify the expected behavior. When a bug is
-found, write a failing test that reproduces it before fixing.
-Prefer integration tests for critical user paths over unit tests
-that mock away the complexity.
+the test first (TDD: Red-Green-Refactor). When a bug is found,
+write a failing test that reproduces it before fixing. Domain
+logic tests MUST NOT depend on any infrastructure (no database,
+no HTTP, no file system).
 
 ### III. UX Consistency
 
@@ -147,6 +167,76 @@ optimize for the common case and defer expensive operations.
 Always measure before and after; intuition about performance is
 unreliable.
 
+### V. Hexagonal Architecture & SOLID
+
+The API backend MUST follow hexagonal architecture (ports and
+adapters) with strict SOLID principles. Non-negotiable rules:
+
+- **Three-layer structure**: Code MUST be organized into three
+  layers: `domain/`, `application/`, `infrastructure/`. Each layer
+  has a clear responsibility and strict dependency direction.
+- **Dependency Rule**: Source code dependencies MUST point inward.
+  Domain MUST NOT import from application or infrastructure.
+  Application MUST NOT import from infrastructure. Infrastructure
+  implements interfaces defined by inner layers.
+- **Domain layer** (`domain/`): Contains entities, value objects,
+  domain services, domain errors, and port interfaces (repository
+  contracts). MUST have zero external dependencies (no ORM, no
+  HTTP framework, no third-party libraries). MUST be pure
+  TypeScript.
+- **Application layer** (`application/`): Contains use cases that
+  orchestrate domain objects and ports. Each use case MUST have a
+  single public `execute()` method. External service ports
+  (payment gateways, notification services, external APIs) are
+  defined here.
+- **Infrastructure layer** (`infrastructure/`): Contains adapters
+  that implement ports: Drizzle repositories, Stripe gateway, HTTP
+  routes (Hono), Telegram notifications. This is the only layer
+  that MAY import third-party libraries.
+- **Value objects are mandatory**: Every domain primitive (Money,
+  EntryFee, InviteCode, Score, PixKey, MatchdayRange, PoolStatus)
+  MUST be a value object with validation and behavior. Raw
+  primitives (string, number) MUST NOT represent domain concepts.
+- **Entities MUST encapsulate behavior**: Domain entities MUST NOT
+  be anemic data bags. Business rules (state transitions, fee
+  calculations, eligibility checks) MUST live inside entities or
+  domain services, not in use cases or routes.
+- **Ports are TypeScript interfaces**: Repository ports live in
+  `domain/`. External service ports live in `application/ports/`.
+  Adapters in `infrastructure/` implement these interfaces.
+- **Manual dependency injection**: Dependencies MUST be wired in a
+  composition root (`container.ts`). No DI framework. Use cases
+  receive ports via constructor. Routes import from container.
+- **Pragmatic scope**: Not every domain needs full hexagonal
+  treatment. Simple CRUD without business logic (e.g., competition
+  listing) MAY remain as thin services. Full treatment is required
+  when: the domain has state machines, complex validation, multi-
+  step orchestration, or cross-domain coordination.
+- **SOLID compliance**:
+  - **SRP**: Each class has one reason to change.
+  - **OCP**: Extend behavior via new adapters, not modifying
+    existing domain code.
+  - **LSP**: All adapter implementations MUST be substitutable
+    for their port interface.
+  - **ISP**: Port interfaces MUST be specific to client needs.
+    No fat interfaces that force implementers to stub methods.
+  - **DIP**: High-level modules (domain, application) depend on
+    abstractions (ports), not on concretions (Drizzle, Stripe).
+
+**Rationale**: Hexagonal architecture isolates business rules from
+infrastructure, making the domain testable without databases or
+external services. SOLID principles ensure the codebase scales
+without accumulating coupling. When infrastructure changes (e.g.,
+switching payment providers), only adapters change — domain and
+application layers remain untouched.
+
+**How this guides decisions**: When adding a new feature, start
+with the domain (entities, value objects, ports), then define
+use cases, then implement adapters. When choosing where to place
+logic, ask: "Is this a business rule?" → domain. "Is this
+orchestration?" → application. "Is this a technical concern?" →
+infrastructure. When in doubt, push logic toward the domain.
+
 ## Technical Decision Guidelines
 
 These guidelines codify how the core principles translate into
@@ -156,23 +246,28 @@ day-to-day technical choices:
   against bundle size impact (Principle IV), type safety
   (Principle I), and accessibility support (Principle III).
   Dependencies without active maintenance (no release in 12 months)
-  MUST NOT be adopted.
-- **Architecture choices**: Favor simple, well-understood patterns
-  over novel abstractions. A new architectural pattern MUST
-  demonstrate measurable benefit to at least two principles before
-  adoption.
-- **Data modeling**: Models MUST reflect the domain language
-  (Principle III terminology consistency). Field names MUST be
-  self-documenting (Principle I). Queries MUST be benchmarked
-  (Principle IV).
+  MUST NOT be adopted. New dependencies MUST only be imported in
+  the infrastructure layer (Principle V).
+- **Architecture choices**: The API backend follows hexagonal
+  architecture (Principle V). New features MUST be structured as
+  domain → application → infrastructure. Simple patterns are
+  preferred; a new architectural pattern MUST demonstrate
+  measurable benefit to at least two principles before adoption.
+- **Data modeling**: Domain entities MUST reflect the domain
+  language (Principle III terminology consistency). Field names
+  MUST be self-documenting (Principle I). Domain models MUST be
+  separate from persistence models; mappers bridge the gap
+  (Principle V). Queries MUST be benchmarked (Principle IV).
 - **API design**: Endpoints MUST follow consistent naming
   conventions and response structures (Principle III). Response
   times MUST meet performance budgets (Principle IV). Every
-  endpoint MUST have contract tests (Principle II).
-- **Error handling**: Errors MUST be typed and categorized
-  (Principle I). User-facing errors MUST be actionable
+  endpoint MUST have contract tests (Principle II). Routes are
+  infrastructure adapters that delegate to use cases (Principle V).
+- **Error handling**: Domain errors MUST be typed and specific
+  (Principle I, V). User-facing errors MUST be actionable
   (Principle III). Error paths MUST be tested (Principle II).
-  Error handling MUST NOT degrade performance (Principle IV).
+  Domain errors are caught in the infrastructure layer (routes)
+  and mapped to HTTP status codes (Principle V).
 
 ## Development Workflow
 
@@ -181,13 +276,17 @@ at every stage:
 
 - **Before implementation**: Feature specifications MUST define
   acceptance criteria that map to Principles II (testability),
-  III (UX expectations), and IV (performance budgets).
-- **During implementation**: Code MUST pass automated linting
-  (Principle I) and tests (Principle II) locally before pushing.
-  Performance-sensitive changes MUST include benchmark results.
-- **Code review**: Reviewers MUST verify compliance with all four
+  III (UX expectations), IV (performance budgets), and V
+  (architectural layer placement).
+- **During implementation**: Start with domain layer (value objects,
+  entities, ports), then application layer (use cases), then
+  infrastructure layer (adapters, routes). Write tests first
+  (TDD). Code MUST pass automated linting (Principle I) and
+  tests (Principle II) locally before pushing.
+- **Code review**: Reviewers MUST verify compliance with all five
   principles. A single principle violation is sufficient grounds
-  to block a merge.
+  to block a merge. Reviewers MUST specifically check that domain
+  code has no infrastructure imports (Principle V).
 - **Before merge**: CI pipeline MUST pass all quality gates:
   lint, type check, test suite, coverage threshold, performance
   budget, and accessibility audit.
@@ -223,4 +322,4 @@ guidelines are subordinate.
   files for runtime development instructions that supplement
   this constitution.
 
-**Version**: 1.1.0 | **Ratified**: 2026-03-15 | **Last Amended**: 2026-03-19
+**Version**: 1.2.0 | **Ratified**: 2026-03-15 | **Last Amended**: 2026-04-12
