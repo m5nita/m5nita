@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../db/client', () => ({
+vi.mock('../../../../db/client', () => ({
   db: {
     query: {
       pool: { findFirst: vi.fn() },
@@ -54,7 +54,7 @@ const mockCancelPoolExecute = vi.fn()
 const mockGetPrizeInfoExecute = vi.fn()
 const mockRequestWithdrawalExecute = vi.fn()
 
-vi.mock('../../container', () => ({
+vi.mock('../../../../container', () => ({
   getContainer: () => ({
     createPoolUseCase: { execute: (...args: unknown[]) => mockCreatePoolExecute(...args) },
     getUserPoolsUseCase: { execute: (...args: unknown[]) => mockGetUserPoolsExecute(...args) },
@@ -70,17 +70,17 @@ vi.mock('../../container', () => ({
 
 const mockGetPoolById = vi.fn()
 
-vi.mock('../../services/pool', () => ({
+vi.mock('../../../../services/pool', () => ({
   getPoolById: (...args: unknown[]) => mockGetPoolById(...args),
   getPoolByInviteCode: vi.fn(),
   isPoolMember: vi.fn(() => false),
 }))
 
-vi.mock('../../services/payment', () => ({
+vi.mock('../../../../services/payment', () => ({
   createEntryPayment: vi.fn(),
 }))
 
-vi.mock('../../services/coupon', () => ({
+vi.mock('../../../../services/coupon', () => ({
   validateCoupon: vi.fn(() => ({ valid: false, reason: 'not_found' })),
   getEffectiveFeeRate: vi.fn((d: number) => 0.05 * (1 - d / 100)),
 }))

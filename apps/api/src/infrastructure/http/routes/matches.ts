@@ -1,10 +1,10 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { db } from '../db/client'
-import { match } from '../db/schema/match'
+import { db } from '../../../db/client'
+import { match } from '../../../db/schema/match'
+import { getFeaturedCompetitionIds } from '../../../services/competition'
+import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
-import { getFeaturedCompetitionIds } from '../services/competition'
-import type { AppEnv } from '../types/hono'
 
 const matchesRoutes = new Hono<AppEnv>()
 

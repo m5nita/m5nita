@@ -5,12 +5,12 @@ import { webhooksRoutes } from '../webhooks'
 const mockHandleCheckoutCompleted = vi.fn()
 const mockHandleCheckoutExpired = vi.fn()
 
-vi.mock('../../services/payment', () => ({
+vi.mock('../../../../services/payment', () => ({
   handleCheckoutCompleted: (...args: unknown[]) => mockHandleCheckoutCompleted(...args),
   handleCheckoutExpired: (...args: unknown[]) => mockHandleCheckoutExpired(...args),
 }))
 
-vi.mock('../../lib/stripe', () => ({
+vi.mock('../../../../lib/stripe', () => ({
   stripe: {
     webhooks: {
       constructEventAsync: vi.fn(async (body: string) => {

@@ -12,13 +12,13 @@ vi.mock('../../middleware/auth', () => ({
   }),
 }))
 
-vi.mock('../../services/pool', () => ({
+vi.mock('../../../../services/pool', () => ({
   getPoolById: vi.fn(),
   getPoolByInviteCode: vi.fn(),
   isPoolMember: vi.fn(() => false),
 }))
 
-vi.mock('../../services/payment', () => ({
+vi.mock('../../../../services/payment', () => ({
   createEntryPayment: vi.fn(),
   createRefund: vi.fn(),
 }))
@@ -32,7 +32,7 @@ const mockPool = {
   status: 'active',
 }
 
-vi.mock('../../db/client', () => ({
+vi.mock('../../../../db/client', () => ({
   db: {
     query: {
       pool: { findFirst: vi.fn(() => mockPool) },
@@ -69,7 +69,7 @@ vi.mock('../../db/client', () => ({
 
 const mockCancelPoolExecute = vi.fn()
 
-vi.mock('../../container', () => ({
+vi.mock('../../../../container', () => ({
   getContainer: () => ({
     createPoolUseCase: { execute: vi.fn() },
     getUserPoolsUseCase: { execute: vi.fn() },

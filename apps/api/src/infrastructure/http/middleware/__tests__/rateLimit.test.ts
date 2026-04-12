@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { AppEnv } from '../../types/hono'
+import type { AppEnv } from '../../../../types/hono'
 import { otpRateLimit } from '../rateLimit'
 
 function createTestApp() {

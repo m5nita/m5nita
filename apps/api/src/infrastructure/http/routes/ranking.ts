@@ -1,12 +1,12 @@
 import { eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { db } from '../db/client'
-import { pool } from '../db/schema/pool'
-import { poolMember } from '../db/schema/poolMember'
+import { db } from '../../../db/client'
+import { pool } from '../../../db/schema/pool'
+import { poolMember } from '../../../db/schema/poolMember'
+import { getEffectiveFeeRate } from '../../../services/coupon'
+import { getPoolRanking } from '../../../services/ranking'
+import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
-import { getEffectiveFeeRate } from '../services/coupon'
-import { getPoolRanking } from '../services/ranking'
-import type { AppEnv } from '../types/hono'
 
 const rankingRoutes = new Hono<AppEnv>()
 

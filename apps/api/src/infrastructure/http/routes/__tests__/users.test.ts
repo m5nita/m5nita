@@ -17,7 +17,7 @@ vi.mock('../../middleware/auth', () => ({
 }))
 
 // Mock database
-vi.mock('../../db/client', () => ({
+vi.mock('../../../../db/client', () => ({
   db: {
     update: vi.fn(() => ({
       set: vi.fn(() => ({

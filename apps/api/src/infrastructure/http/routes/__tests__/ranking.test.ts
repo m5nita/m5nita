@@ -16,11 +16,11 @@ vi.mock('../../middleware/auth', () => ({
 
 const mockGetPoolRanking = vi.fn()
 
-vi.mock('../../services/ranking', () => ({
+vi.mock('../../../../services/ranking', () => ({
   getPoolRanking: (...args: unknown[]) => mockGetPoolRanking(...args),
 }))
 
-vi.mock('../../db/client', () => ({
+vi.mock('../../../../db/client', () => ({
   db: {
     query: {
       pool: {

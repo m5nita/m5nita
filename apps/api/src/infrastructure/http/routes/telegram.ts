@@ -1,6 +1,6 @@
 import { webhookCallback } from 'grammy'
 import { Hono } from 'hono'
-import { bot, findChatIdByPhone } from '../lib/telegram'
+import { bot, findChatIdByPhone } from '../../../lib/telegram'
 
 export const telegramRoutes = new Hono()
 

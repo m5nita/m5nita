@@ -5,7 +5,7 @@ const mockUpsertPredictionExecute = vi.fn()
 const mockGetUserPredictionsExecute = vi.fn()
 const mockGetMatchPredictionsExecute = vi.fn()
 
-vi.mock('../../container', () => ({
+vi.mock('../../../../container', () => ({
   getContainer: () => ({
     createPoolUseCase: { execute: vi.fn() },
     getUserPoolsUseCase: { execute: vi.fn() },
@@ -26,7 +26,7 @@ vi.mock('../../container', () => ({
   }),
 }))
 
-import { PredictionError } from '../../domain/prediction/PredictionError'
+import { PredictionError } from '../../../../domain/prediction/PredictionError'
 import { predictionsRoutes } from '../predictions'
 
 vi.mock('../../middleware/auth', () => ({

@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
+import { getActiveCompetitions } from '../../../services/competition'
+import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
-import { getActiveCompetitions } from '../services/competition'
-import type { AppEnv } from '../types/hono'
 
 const competitionsRoutes = new Hono<AppEnv>()
 

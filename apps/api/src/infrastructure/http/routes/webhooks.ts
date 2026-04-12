@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import type Stripe from 'stripe'
-import { stripe } from '../lib/stripe'
-import { handleCheckoutCompleted, handleCheckoutExpired } from '../services/payment'
+import { stripe } from '../../../lib/stripe'
+import { handleCheckoutCompleted, handleCheckoutExpired } from '../../../services/payment'
 
 const webhooksRoutes = new Hono()
 

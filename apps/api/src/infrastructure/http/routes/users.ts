@@ -1,10 +1,10 @@
 import { phoneSchema, updateUserSchema } from '@m5nita/shared'
 import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { db } from '../db/client'
-import { user } from '../db/schema/auth'
+import { db } from '../../../db/client'
+import { user } from '../../../db/schema/auth'
+import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
-import type { AppEnv } from '../types/hono'
 
 const usersRoutes = new Hono<AppEnv>()
 

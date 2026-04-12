@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../db/client', () => ({
+vi.mock('../../../../db/client', () => ({
   db: {
     query: {
       pool: { findFirst: vi.fn() },
@@ -35,7 +35,7 @@ vi.mock('../../db/client', () => ({
 
 const mockJoinPoolExecute = vi.fn()
 
-vi.mock('../../container', () => ({
+vi.mock('../../../../container', () => ({
   getContainer: () => ({
     createPoolUseCase: { execute: vi.fn() },
     getUserPoolsUseCase: { execute: vi.fn() },
@@ -50,7 +50,7 @@ vi.mock('../../container', () => ({
   }),
 }))
 
-import { PoolError } from '../../domain/pool/PoolError'
+import { PoolError } from '../../../../domain/pool/PoolError'
 import { poolsRoutes } from '../pools'
 
 vi.mock('../../middleware/auth', () => ({
@@ -69,13 +69,13 @@ const mockGetPoolByInviteCode = vi.fn()
 const mockIsPoolMember = vi.fn()
 const mockGetPoolById = vi.fn()
 
-vi.mock('../../services/pool', () => ({
+vi.mock('../../../../services/pool', () => ({
   getPoolById: (...args: unknown[]) => mockGetPoolById(...args),
   getPoolByInviteCode: (...args: unknown[]) => mockGetPoolByInviteCode(...args),
   isPoolMember: (...args: unknown[]) => mockIsPoolMember(...args),
 }))
 
-vi.mock('../../services/payment', () => ({
+vi.mock('../../../../services/payment', () => ({
   createEntryPayment: vi.fn(),
 }))
 

@@ -1,10 +1,10 @@
 import { upsertPredictionSchema } from '@m5nita/shared'
 import { Hono } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { getContainer } from '../container'
-import { PredictionError } from '../domain/prediction/PredictionError'
+import { getContainer } from '../../../container'
+import { PredictionError } from '../../../domain/prediction/PredictionError'
+import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
-import type { AppEnv } from '../types/hono'
 
 const MATCH_PREDICTIONS_STATUS_BY_ERROR: Record<string, ContentfulStatusCode> = {
   NOT_MEMBER: 403,
