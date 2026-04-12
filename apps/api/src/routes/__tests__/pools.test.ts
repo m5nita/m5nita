@@ -47,29 +47,37 @@ vi.mock('../../middleware/auth', () => ({
   }),
 }))
 
-const mockCreatePool = vi.fn()
-const mockGetUserPools = vi.fn()
+const mockCreatePoolExecute = vi.fn()
+const mockGetUserPoolsExecute = vi.fn()
+const mockJoinPoolExecute = vi.fn()
+const mockCancelPoolExecute = vi.fn()
+const mockGetPrizeInfoExecute = vi.fn()
+const mockRequestWithdrawalExecute = vi.fn()
+
+vi.mock('../../container', () => ({
+  getContainer: () => ({
+    createPoolUseCase: { execute: (...args: unknown[]) => mockCreatePoolExecute(...args) },
+    getUserPoolsUseCase: { execute: (...args: unknown[]) => mockGetUserPoolsExecute(...args) },
+    joinPoolUseCase: { execute: (...args: unknown[]) => mockJoinPoolExecute(...args) },
+    cancelPoolUseCase: { execute: (...args: unknown[]) => mockCancelPoolExecute(...args) },
+    getPrizeInfoUseCase: { execute: (...args: unknown[]) => mockGetPrizeInfoExecute(...args) },
+    requestWithdrawalUseCase: {
+      execute: (...args: unknown[]) => mockRequestWithdrawalExecute(...args),
+    },
+    getPoolDetailsUseCase: { execute: vi.fn() },
+  }),
+}))
+
 const mockGetPoolById = vi.fn()
-const mockCreateEntryPayment = vi.fn()
 
 vi.mock('../../services/pool', () => ({
-  createPool: (...args: unknown[]) => mockCreatePool(...args),
-  getUserPools: (...args: unknown[]) => mockGetUserPools(...args),
   getPoolById: (...args: unknown[]) => mockGetPoolById(...args),
   getPoolByInviteCode: vi.fn(),
   isPoolMember: vi.fn(() => false),
-  PoolError: class extends Error {
-    code: string
-    constructor(code: string, message: string) {
-      super(message)
-      this.code = code
-      this.name = 'PoolError'
-    }
-  },
 }))
 
 vi.mock('../../services/payment', () => ({
-  createEntryPayment: (...args: unknown[]) => mockCreateEntryPayment(...args),
+  createEntryPayment: vi.fn(),
 }))
 
 vi.mock('../../services/coupon', () => ({
@@ -94,16 +102,27 @@ describe('POST /api/pools', () => {
   })
 
   it('creates_validData_201withPaymentIntent', async () => {
-    mockCreatePool.mockResolvedValue({
-      pool: { id: 'pool-1', name: 'Test Pool', inviteCode: 'ABC123', entryFee: 5000 },
+    mockCreatePoolExecute.mockResolvedValue({
+      pool: {
+        id: 'pool-1',
+        name: 'Test Pool',
+        entryFee: { value: { centavos: 5000 } },
+        ownerId: 'user-1',
+        inviteCode: { value: 'ABC123' },
+        competitionId: '00000000-0000-0000-0000-000000000001',
+        matchdayRange: null,
+        status: { value: 'pending' },
+        isOpen: true,
+        couponId: null,
+      },
+      payment: {
+        payment: { id: 'pay-1' },
+        checkoutUrl: 'https://checkout.stripe.com/test',
+      },
       platformFee: 250,
       originalPlatformFee: 250,
       discountPercent: 0,
       couponCode: null,
-    })
-    mockCreateEntryPayment.mockResolvedValue({
-      payment: { id: 'pay-1' },
-      checkoutUrl: 'https://checkout.stripe.com/test',
     })
 
     const res = await app.request('/api/pools', {
@@ -123,15 +142,15 @@ describe('POST /api/pools', () => {
     const body = await res.json()
     expect(body.pool.name).toBe('Test Pool')
     expect(body.payment.checkoutUrl).toBe('https://checkout.stripe.com/test')
-    expect(mockCreatePool).toHaveBeenCalledWith(
-      'user-1',
-      'Test Pool',
-      5000,
-      '00000000-0000-0000-0000-000000000001',
-      undefined,
-      undefined,
-      undefined,
-    )
+    expect(mockCreatePoolExecute).toHaveBeenCalledWith({
+      userId: 'user-1',
+      name: 'Test Pool',
+      entryFee: 5000,
+      competitionId: '00000000-0000-0000-0000-000000000001',
+      matchdayFrom: undefined,
+      matchdayTo: undefined,
+      couponCode: undefined,
+    })
   })
 
   it('rejects_shortName_400validation', async () => {
@@ -180,7 +199,7 @@ describe('GET /api/pools', () => {
   })
 
   it('returns_authenticated_userPools', async () => {
-    mockGetUserPools.mockResolvedValue([
+    mockGetUserPoolsExecute.mockResolvedValue([
       { id: 'pool-1', name: 'Pool A', entryFee: 5000, memberCount: 5, status: 'active' },
     ])
 

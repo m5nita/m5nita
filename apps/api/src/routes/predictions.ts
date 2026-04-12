@@ -1,13 +1,9 @@
 import { upsertPredictionSchema } from '@m5nita/shared'
 import { Hono } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
+import { getContainer } from '../container'
+import { PredictionError } from '../domain/prediction/PredictionError'
 import { requireAuth } from '../middleware/auth'
-import {
-  getMatchPredictions,
-  getUserPredictions,
-  PredictionError,
-  upsertPrediction,
-} from '../services/prediction'
 import type { AppEnv } from '../types/hono'
 
 const MATCH_PREDICTIONS_STATUS_BY_ERROR: Record<string, ContentfulStatusCode> = {
@@ -27,7 +23,10 @@ predictionsRoutes.get('/pools/:poolId/predictions', async (c) => {
   const currentUser = c.get('user')
   const { poolId } = c.req.param()
 
-  const predictions = await getUserPredictions(currentUser.id, poolId)
+  const predictions = await getContainer().getUserPredictionsUseCase.execute({
+    userId: currentUser.id,
+    poolId,
+  })
   return c.json({ predictions })
 })
 
@@ -37,7 +36,11 @@ predictionsRoutes.get('/pools/:poolId/matches/:matchId/predictions', async (c) =
   const { poolId, matchId } = c.req.param()
 
   try {
-    const response = await getMatchPredictions(currentUser.id, poolId, matchId)
+    const response = await getContainer().getMatchPredictionsUseCase.execute({
+      viewerUserId: currentUser.id,
+      poolId,
+      matchId,
+    })
     return c.json(response)
   } catch (err) {
     if (err instanceof PredictionError) {
@@ -63,13 +66,13 @@ predictionsRoutes.put('/pools/:poolId/predictions/:matchId', async (c) => {
   }
 
   try {
-    const result = await upsertPrediction(
-      currentUser.id,
+    const result = await getContainer().upsertPredictionUseCase.execute({
+      userId: currentUser.id,
       poolId,
       matchId,
-      parsed.data.homeScore,
-      parsed.data.awayScore,
-    )
+      homeScore: parsed.data.homeScore,
+      awayScore: parsed.data.awayScore,
+    })
     return c.json(result)
   } catch (err) {
     if (err instanceof PredictionError) {

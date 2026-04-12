@@ -1,11 +1,13 @@
 import { POOL } from '@m5nita/shared'
 import { and, eq, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
+import { user } from '../../db/schema/auth'
 import { pool } from '../../db/schema/pool'
 import { poolMember } from '../../db/schema/poolMember'
 import type { Pool } from '../../domain/pool/Pool'
 import type {
   PoolListItem,
+  PoolMemberInfo,
   PoolRepository,
   PoolWithDetails,
 } from '../../domain/pool/PoolRepository.port'
@@ -26,6 +28,45 @@ export class DrizzlePoolRepository implements PoolRepository {
   async findByInviteCode(code: string): Promise<PoolWithDetails | null> {
     const row = await this.db.query.pool.findFirst({
       where: eq(pool.inviteCode, code),
+      with: {
+        owner: true,
+        coupon: true,
+        competition: true,
+      },
+    })
+    if (!row) return null
+
+    const memberCount = await this.getMemberCount(row.id)
+    const discountPercent = row.coupon?.discountPercent ?? 0
+    const effectiveRate =
+      discountPercent > 0
+        ? POOL.PLATFORM_FEE_RATE * (1 - discountPercent / 100)
+        : POOL.PLATFORM_FEE_RATE
+    const prizeTotal = Math.floor(row.entryFee * memberCount * (1 - effectiveRate))
+
+    return {
+      id: row.id,
+      name: row.name,
+      entryFee: row.entryFee,
+      ownerId: row.ownerId,
+      inviteCode: row.inviteCode,
+      competitionId: row.competitionId,
+      matchdayStart: row.matchdayFrom,
+      matchdayEnd: row.matchdayTo,
+      status: row.status,
+      isOpen: row.isOpen,
+      couponId: row.couponId,
+      owner: { id: row.owner.id, name: row.owner.name ?? '' },
+      competitionName: row.competition.name,
+      coupon: row.coupon ? { discountPercent: row.coupon.discountPercent } : null,
+      memberCount,
+      prizeTotal,
+    }
+  }
+
+  async findByIdWithDetails(id: string): Promise<PoolWithDetails | null> {
+    const row = await this.db.query.pool.findFirst({
+      where: eq(pool.id, id),
       with: {
         owner: true,
         coupon: true,
@@ -105,6 +146,15 @@ export class DrizzlePoolRepository implements PoolRepository {
     await this.db
       .delete(poolMember)
       .where(and(eq(poolMember.poolId, poolId), eq(poolMember.userId, userId)))
+  }
+
+  async getMembers(poolId: string): Promise<PoolMemberInfo[]> {
+    const rows = await this.db
+      .select({ userId: poolMember.userId, name: user.name })
+      .from(poolMember)
+      .innerJoin(user, eq(user.id, poolMember.userId))
+      .where(eq(poolMember.poolId, poolId))
+    return rows
   }
 
   async findUserPools(userId: string): Promise<PoolListItem[]> {

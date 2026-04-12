@@ -3,20 +3,9 @@ import type { db as dbClient } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { poolMember } from '../../db/schema/poolMember'
 import { prediction } from '../../db/schema/prediction'
+import type { RankingEntry, RankingRepository } from '../../domain/ranking/RankingRepository.port'
 
-export type RankingEntry = {
-  position: number
-  userId: string
-  name: string | null
-  totalPoints: number
-  exactMatches: number
-  isCurrentUser: boolean
-}
-
-export interface RankingRepository {
-  getPoolRanking(poolId: string, userId: string): Promise<RankingEntry[]>
-  getPoolMemberCount(poolId: string): Promise<number>
-}
+export type { RankingEntry, RankingRepository }
 
 export class DrizzleRankingRepository implements RankingRepository {
   constructor(private readonly db: typeof dbClient) {}

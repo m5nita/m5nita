@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { poolsRoutes } from '../pools'
 
 vi.mock('../../middleware/auth', () => ({
   requireAuth: vi.fn((c, next) => {
@@ -14,18 +13,9 @@ vi.mock('../../middleware/auth', () => ({
 }))
 
 vi.mock('../../services/pool', () => ({
-  createPool: vi.fn(),
-  getUserPools: vi.fn(() => []),
   getPoolById: vi.fn(),
   getPoolByInviteCode: vi.fn(),
   isPoolMember: vi.fn(() => false),
-  PoolError: class extends Error {
-    code: string
-    constructor(c: string, m: string) {
-      super(m)
-      this.code = c
-    }
-  },
 }))
 
 vi.mock('../../services/payment', () => ({
@@ -77,6 +67,25 @@ vi.mock('../../db/client', () => ({
   },
 }))
 
+const mockCancelPoolExecute = vi.fn()
+
+vi.mock('../../container', () => ({
+  getContainer: () => ({
+    createPoolUseCase: { execute: vi.fn() },
+    getUserPoolsUseCase: { execute: vi.fn() },
+    joinPoolUseCase: { execute: vi.fn() },
+    cancelPoolUseCase: { execute: (...args: unknown[]) => mockCancelPoolExecute(...args) },
+    getPrizeInfoUseCase: { execute: vi.fn() },
+    requestWithdrawalUseCase: { execute: vi.fn() },
+    getPoolDetailsUseCase: { execute: vi.fn() },
+    upsertPredictionUseCase: { execute: vi.fn() },
+    getUserPredictionsUseCase: { execute: vi.fn() },
+    getMatchPredictionsUseCase: { execute: vi.fn() },
+  }),
+}))
+
+import { poolsRoutes } from '../pools'
+
 const owner = { id: 'owner-1', name: 'Owner', phoneNumber: '+5511000000000' }
 const nonOwner = { id: 'user-2', name: 'Other', phoneNumber: '+5511111111111' }
 
@@ -92,6 +101,7 @@ describe('Admin endpoints', () => {
   beforeEach(() => {
     app = createTestApp()
     vi.clearAllMocks()
+    mockCancelPoolExecute.mockResolvedValue({ refunds: [] })
   })
 
   it('patchPool_owner_200updated', async () => {

@@ -20,6 +20,11 @@ export type PoolWithDetails = {
   prizeTotal: number
 }
 
+export type PoolMemberInfo = {
+  userId: string
+  name: string | null
+}
+
 export type PoolListItem = {
   id: string
   name: string
@@ -33,6 +38,7 @@ export type PoolListItem = {
 
 export interface PoolRepository {
   findById(id: string): Promise<Pool | null>
+  findByIdWithDetails(id: string): Promise<PoolWithDetails | null>
   findByInviteCode(code: string): Promise<PoolWithDetails | null>
   findActiveByCompetition(competitionId: string): Promise<Pool[]>
   save(pool: Pool): Promise<Pool>
@@ -42,4 +48,5 @@ export interface PoolRepository {
   addMember(poolId: string, userId: string, paymentId: string): Promise<void>
   removeMember(poolId: string, userId: string): Promise<void>
   findUserPools(userId: string): Promise<PoolListItem[]>
+  getMembers(poolId: string): Promise<PoolMemberInfo[]>
 }

@@ -5,25 +5,19 @@ import {
   validateCouponSchema,
   withdrawPrizeSchema,
 } from '@m5nita/shared'
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { getContainer } from '../container'
 import { db } from '../db/client'
 import { user } from '../db/schema/auth'
-import { payment } from '../db/schema/payment'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
+import { PoolError } from '../domain/pool/PoolError'
+import { PrizeWithdrawalError } from '../domain/prize/PrizeWithdrawalError'
 import { requireAuth } from '../middleware/auth'
 import { getEffectiveFeeRate, validateCoupon } from '../services/coupon'
-import { createEntryPayment, createRefund } from '../services/payment'
-import {
-  createPool,
-  getPoolById,
-  getPoolByInviteCode,
-  getUserPools,
-  isPoolMember,
-  PoolError,
-} from '../services/pool'
-import { getPrizeInfo, PrizeWithdrawalError, requestWithdrawal } from '../services/prizeWithdrawal'
+import { createRefund } from '../services/payment'
+import { getPoolById, getPoolByInviteCode, isPoolMember } from '../services/pool'
 import type { AppEnv } from '../types/hono'
 
 const poolsRoutes = new Hono<AppEnv>()
@@ -71,33 +65,38 @@ poolsRoutes.post('/pools', async (c) => {
   }
 
   try {
-    const result = await createPool(
-      currentUser.id,
-      parsed.data.name,
-      parsed.data.entryFee,
-      parsed.data.competitionId,
-      parsed.data.matchdayFrom,
-      parsed.data.matchdayTo,
-      parsed.data.couponCode,
-    )
-    const paymentResult = await createEntryPayment(
-      currentUser.id,
-      result.pool.id,
-      parsed.data.entryFee,
-    )
+    const result = await getContainer().createPoolUseCase.execute({
+      userId: currentUser.id,
+      name: parsed.data.name,
+      entryFee: parsed.data.entryFee,
+      competitionId: parsed.data.competitionId,
+      matchdayFrom: parsed.data.matchdayFrom,
+      matchdayTo: parsed.data.matchdayTo,
+      couponCode: parsed.data.couponCode,
+    })
 
     return c.json(
       {
         pool: {
-          ...result.pool,
+          id: result.pool.id,
+          name: result.pool.name,
+          entryFee: result.pool.entryFee.value.centavos,
+          ownerId: result.pool.ownerId,
+          inviteCode: result.pool.inviteCode.value,
+          competitionId: result.pool.competitionId,
+          matchdayFrom: result.pool.matchdayRange?.from ?? null,
+          matchdayTo: result.pool.matchdayRange?.to ?? null,
+          status: result.pool.status.value,
+          isOpen: result.pool.isOpen,
+          couponId: result.pool.couponId,
           platformFee: result.platformFee,
           originalPlatformFee: result.originalPlatformFee,
           discountPercent: result.discountPercent,
           couponCode: result.couponCode,
         },
         payment: {
-          id: paymentResult.payment.id,
-          checkoutUrl: paymentResult.checkoutUrl,
+          id: result.payment.payment.id,
+          checkoutUrl: result.payment.checkoutUrl,
           amount: parsed.data.entryFee,
         },
       },
@@ -114,7 +113,7 @@ poolsRoutes.post('/pools', async (c) => {
 // GET /api/pools — List user pools
 poolsRoutes.get('/pools', async (c) => {
   const currentUser = c.get('user')
-  const pools = await getUserPools(currentUser.id)
+  const pools = await getContainer().getUserPoolsUseCase.execute({ userId: currentUser.id })
   return c.json({ pools })
 })
 
@@ -158,32 +157,33 @@ poolsRoutes.post('/pools/:poolId/join', async (c) => {
   const { poolId } = c.req.param()
   const currentUser = c.get('user')
 
-  const poolData = await getPoolById(poolId, currentUser.id)
-  if (!poolData) {
-    return c.json({ error: 'NOT_FOUND', message: 'Bolão não encontrado' }, 404)
-  }
+  try {
+    const result = await getContainer().joinPoolUseCase.execute({
+      userId: currentUser.id,
+      poolId,
+    })
 
-  if (!poolData.isOpen) {
-    return c.json({ error: 'POOL_CLOSED', message: 'Este bolão não aceita novas entradas' }, 409)
-  }
-
-  const alreadyMember = await isPoolMember(poolId, currentUser.id)
-  if (alreadyMember) {
-    return c.json({ error: 'ALREADY_MEMBER', message: 'Você já participa deste bolão' }, 409)
-  }
-
-  const paymentResult = await createEntryPayment(currentUser.id, poolId, poolData.entryFee)
-
-  return c.json(
-    {
-      payment: {
-        id: paymentResult.payment.id,
-        checkoutUrl: paymentResult.checkoutUrl,
-        amount: poolData.entryFee,
+    return c.json(
+      {
+        payment: {
+          id: result.payment.payment.id,
+          checkoutUrl: result.payment.checkoutUrl,
+          amount: result.amount,
+        },
       },
-    },
-    201,
-  )
+      201,
+    )
+  } catch (err) {
+    if (err instanceof PoolError) {
+      const statusMap: Record<string, number> = {
+        NOT_FOUND: 404,
+        POOL_CLOSED: 409,
+        ALREADY_MEMBER: 409,
+      }
+      return c.json({ error: err.code, message: err.message }, (statusMap[err.code] ?? 400) as 400)
+    }
+    throw err
+  }
 })
 
 // PATCH /api/pools/:poolId — Update pool (owner only)
@@ -257,7 +257,10 @@ poolsRoutes.get('/pools/:poolId/prize', async (c) => {
   const currentUser = c.get('user')
 
   try {
-    const prizeInfo = await getPrizeInfo(poolId, currentUser.id)
+    const prizeInfo = await getContainer().getPrizeInfoUseCase.execute({
+      poolId,
+      userId: currentUser.id,
+    })
     return c.json(prizeInfo)
   } catch (err) {
     if (err instanceof PrizeWithdrawalError) {
@@ -283,25 +286,12 @@ poolsRoutes.post('/pools/:poolId/prize/withdraw', async (c) => {
   }
 
   try {
-    const withdrawal = await requestWithdrawal(
+    const withdrawal = await getContainer().requestWithdrawalUseCase.execute({
       poolId,
-      currentUser.id,
-      parsed.data.pixKeyType,
-      parsed.data.pixKey,
-    )
-
-    const poolData = await getPoolById(poolId, currentUser.id)
-    import('../lib/telegram')
-      .then(({ notifyAdminWithdrawalRequest }) =>
-        notifyAdminWithdrawalRequest(
-          currentUser.name || 'Anônimo',
-          poolData?.name || poolId,
-          withdrawal.amount,
-          parsed.data.pixKeyType,
-          parsed.data.pixKey,
-        ),
-      )
-      .catch((err) => console.error('[Telegram] Failed to notify admin:', err))
+      userId: currentUser.id,
+      pixKeyType: parsed.data.pixKeyType,
+      pixKey: parsed.data.pixKey,
+    })
 
     return c.json(withdrawal, 201)
   } catch (err) {
@@ -324,52 +314,24 @@ poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
   const { poolId } = c.req.param()
   const currentUser = c.get('user')
 
-  const poolData = await db.query.pool.findFirst({ where: eq(pool.id, poolId) })
-  if (!poolData) return c.json({ error: 'NOT_FOUND' }, 404)
-  if (poolData.ownerId !== currentUser.id) return c.json({ error: 'FORBIDDEN' }, 403)
+  try {
+    const result = await getContainer().cancelPoolUseCase.execute({
+      userId: currentUser.id,
+      poolId,
+    })
 
-  // Check if any prize payment exists (pending or completed)
-  const [prizePayment] = await db
-    .select()
-    .from(payment)
-    .where(and(eq(payment.poolId, poolId), eq(payment.type, 'prize')))
-    .limit(1)
-
-  if (prizePayment) {
-    return c.json(
-      {
-        error: 'PRIZE_WITHDRAWAL_REQUESTED',
-        message: 'Não é possível cancelar o bolão após solicitação de retirada do prêmio.',
-      },
-      409,
-    )
-  }
-
-  // Refund all members
-  const payments = await db.query.payment.findMany({
-    where: and(
-      eq(payment.poolId, poolId),
-      eq(payment.type, 'entry'),
-      eq(payment.status, 'completed'),
-    ),
-  })
-
-  const refunds = []
-  for (const p of payments) {
-    try {
-      await createRefund(p.id)
-      refunds.push({ userId: p.userId, amount: p.amount, status: 'pending' })
-    } catch (_err) {
-      refunds.push({ userId: p.userId, amount: p.amount, status: 'error' })
+    return c.json({ pool: { status: 'cancelled' }, refunds: result.refunds })
+  } catch (err) {
+    if (err instanceof PoolError) {
+      const statusMap: Record<string, number> = {
+        NOT_FOUND: 404,
+        FORBIDDEN: 403,
+        PRIZE_WITHDRAWAL_REQUESTED: 409,
+      }
+      return c.json({ error: err.code, message: err.message }, (statusMap[err.code] ?? 400) as 400)
     }
+    throw err
   }
-
-  await db
-    .update(pool)
-    .set({ status: 'cancelled', updatedAt: new Date() })
-    .where(eq(pool.id, poolId))
-
-  return c.json({ pool: { status: 'cancelled' }, refunds })
 })
 
 export { poolsRoutes }

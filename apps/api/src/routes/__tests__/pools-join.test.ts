@@ -33,6 +33,24 @@ vi.mock('../../db/client', () => ({
   },
 }))
 
+const mockJoinPoolExecute = vi.fn()
+
+vi.mock('../../container', () => ({
+  getContainer: () => ({
+    createPoolUseCase: { execute: vi.fn() },
+    getUserPoolsUseCase: { execute: vi.fn() },
+    joinPoolUseCase: { execute: (...args: unknown[]) => mockJoinPoolExecute(...args) },
+    cancelPoolUseCase: { execute: vi.fn() },
+    getPrizeInfoUseCase: { execute: vi.fn() },
+    requestWithdrawalUseCase: { execute: vi.fn() },
+    getPoolDetailsUseCase: { execute: vi.fn() },
+    upsertPredictionUseCase: { execute: vi.fn() },
+    getUserPredictionsUseCase: { execute: vi.fn() },
+    getMatchPredictionsUseCase: { execute: vi.fn() },
+  }),
+}))
+
+import { PoolError } from '../../domain/pool/PoolError'
 import { poolsRoutes } from '../pools'
 
 vi.mock('../../middleware/auth', () => ({
@@ -50,25 +68,15 @@ vi.mock('../../middleware/auth', () => ({
 const mockGetPoolByInviteCode = vi.fn()
 const mockIsPoolMember = vi.fn()
 const mockGetPoolById = vi.fn()
-const mockCreateEntryPayment = vi.fn()
 
 vi.mock('../../services/pool', () => ({
-  createPool: vi.fn(),
-  getUserPools: vi.fn(() => []),
   getPoolById: (...args: unknown[]) => mockGetPoolById(...args),
   getPoolByInviteCode: (...args: unknown[]) => mockGetPoolByInviteCode(...args),
   isPoolMember: (...args: unknown[]) => mockIsPoolMember(...args),
-  PoolError: class extends Error {
-    code: string
-    constructor(code: string, message: string) {
-      super(message)
-      this.code = code
-    }
-  },
 }))
 
 vi.mock('../../services/payment', () => ({
-  createEntryPayment: (...args: unknown[]) => mockCreateEntryPayment(...args),
+  createEntryPayment: vi.fn(),
 }))
 
 const testUser = { id: 'user-1', name: 'Test', phoneNumber: '+5511999999999' }
@@ -152,15 +160,12 @@ describe('POST /api/pools/:poolId/join', () => {
   })
 
   it('joins_validPool_201withPayment', async () => {
-    mockGetPoolById.mockResolvedValue({
-      id: 'pool-1',
-      entryFee: 5000,
-      isOpen: true,
-    })
-    mockIsPoolMember.mockResolvedValue(false)
-    mockCreateEntryPayment.mockResolvedValue({
-      payment: { id: 'pay-1' },
-      checkoutUrl: 'https://checkout.stripe.com/join',
+    mockJoinPoolExecute.mockResolvedValue({
+      payment: {
+        payment: { id: 'pay-1' },
+        checkoutUrl: 'https://checkout.stripe.com/join',
+      },
+      amount: 5000,
     })
 
     const res = await app.request('/api/pools/pool-1/join', {
@@ -174,11 +179,9 @@ describe('POST /api/pools/:poolId/join', () => {
   })
 
   it('rejects_closedPool_409', async () => {
-    mockGetPoolById.mockResolvedValue({
-      id: 'pool-1',
-      entryFee: 5000,
-      isOpen: false,
-    })
+    mockJoinPoolExecute.mockRejectedValue(
+      new PoolError('POOL_CLOSED', 'Este bolão não aceita novas entradas'),
+    )
 
     const res = await app.request('/api/pools/pool-1/join', {
       method: 'POST',
@@ -189,12 +192,9 @@ describe('POST /api/pools/:poolId/join', () => {
   })
 
   it('rejects_alreadyMember_409', async () => {
-    mockGetPoolById.mockResolvedValue({
-      id: 'pool-1',
-      entryFee: 5000,
-      isOpen: true,
-    })
-    mockIsPoolMember.mockResolvedValue(true)
+    mockJoinPoolExecute.mockRejectedValue(
+      new PoolError('ALREADY_MEMBER', 'Você já participa deste bolão'),
+    )
 
     const res = await app.request('/api/pools/pool-1/join', {
       method: 'POST',

@@ -1,5 +1,32 @@
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mockUpsertPredictionExecute = vi.fn()
+const mockGetUserPredictionsExecute = vi.fn()
+const mockGetMatchPredictionsExecute = vi.fn()
+
+vi.mock('../../container', () => ({
+  getContainer: () => ({
+    createPoolUseCase: { execute: vi.fn() },
+    getUserPoolsUseCase: { execute: vi.fn() },
+    joinPoolUseCase: { execute: vi.fn() },
+    cancelPoolUseCase: { execute: vi.fn() },
+    getPrizeInfoUseCase: { execute: vi.fn() },
+    requestWithdrawalUseCase: { execute: vi.fn() },
+    getPoolDetailsUseCase: { execute: vi.fn() },
+    upsertPredictionUseCase: {
+      execute: (...args: unknown[]) => mockUpsertPredictionExecute(...args),
+    },
+    getUserPredictionsUseCase: {
+      execute: (...args: unknown[]) => mockGetUserPredictionsExecute(...args),
+    },
+    getMatchPredictionsUseCase: {
+      execute: (...args: unknown[]) => mockGetMatchPredictionsExecute(...args),
+    },
+  }),
+}))
+
+import { PredictionError } from '../../domain/prediction/PredictionError'
 import { predictionsRoutes } from '../predictions'
 
 vi.mock('../../middleware/auth', () => ({
@@ -13,28 +40,6 @@ vi.mock('../../middleware/auth', () => ({
     return c.json({ error: 'UNAUTHORIZED' }, 401)
   }),
 }))
-
-const mockUpsertPrediction = vi.fn()
-const mockGetUserPredictions = vi.fn()
-const mockGetMatchPredictions = vi.fn()
-
-vi.mock('../../services/prediction', () => {
-  class PredictionError extends Error {
-    code: string
-    constructor(code: string, message: string) {
-      super(message)
-      this.code = code
-      this.name = 'PredictionError'
-    }
-  }
-
-  return {
-    upsertPrediction: (...args: unknown[]) => mockUpsertPrediction(...args),
-    getUserPredictions: (...args: unknown[]) => mockGetUserPredictions(...args),
-    getMatchPredictions: (...args: unknown[]) => mockGetMatchPredictions(...args),
-    PredictionError,
-  }
-})
 
 const testUser = { id: 'user-1', name: 'Test', phoneNumber: '+5511999999999' }
 const headers = { 'x-test-user': JSON.stringify(testUser) }
@@ -54,7 +59,7 @@ describe('PUT /api/pools/:poolId/predictions/:matchId', () => {
   })
 
   it('saves_validPrediction_200', async () => {
-    mockUpsertPrediction.mockResolvedValue({
+    mockUpsertPredictionExecute.mockResolvedValue({
       id: 'pred-1',
       matchId: 'match-1',
       homeScore: 2,
@@ -72,12 +77,17 @@ describe('PUT /api/pools/:poolId/predictions/:matchId', () => {
     const body = await res.json()
     expect(body.homeScore).toBe(2)
     expect(body.awayScore).toBe(1)
-    expect(mockUpsertPrediction).toHaveBeenCalledWith('user-1', 'pool-1', 'match-1', 2, 1)
+    expect(mockUpsertPredictionExecute).toHaveBeenCalledWith({
+      userId: 'user-1',
+      poolId: 'pool-1',
+      matchId: 'match-1',
+      homeScore: 2,
+      awayScore: 1,
+    })
   })
 
   it('rejects_matchStarted_403', async () => {
-    const { PredictionError } = await import('../../services/prediction')
-    mockUpsertPrediction.mockRejectedValue(
+    mockUpsertPredictionExecute.mockRejectedValue(
       new PredictionError('MATCH_STARTED', 'Não é possível palpitar após o início do jogo'),
     )
 
@@ -93,8 +103,7 @@ describe('PUT /api/pools/:poolId/predictions/:matchId', () => {
   })
 
   it('rejects_notMember_403', async () => {
-    const { PredictionError } = await import('../../services/prediction')
-    mockUpsertPrediction.mockRejectedValue(
+    mockUpsertPredictionExecute.mockRejectedValue(
       new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão'),
     )
 
@@ -137,7 +146,7 @@ describe('GET /api/pools/:poolId/predictions', () => {
   })
 
   it('returns_authenticated_userPredictions', async () => {
-    mockGetUserPredictions.mockResolvedValue([
+    mockGetUserPredictionsExecute.mockResolvedValue([
       { id: 'pred-1', matchId: 'match-1', homeScore: 2, awayScore: 1, points: 5 },
     ])
 
@@ -157,7 +166,7 @@ describe('GET /api/pools/:poolId/matches/:matchId/predictions', () => {
   })
 
   it('returnsShape_lockedFinishedMatch_200', async () => {
-    mockGetMatchPredictions.mockResolvedValue({
+    mockGetMatchPredictionsExecute.mockResolvedValue({
       matchId: 'match-1',
       isLocked: true,
       totalMembers: 4,
@@ -181,12 +190,15 @@ describe('GET /api/pools/:poolId/matches/:matchId/predictions', () => {
     expect(body.viewerDidPredict).toBe(true)
     expect(body.predictors).toHaveLength(3)
     expect(body.predictors.every((p: { userId: string }) => p.userId !== 'user-1')).toBe(true)
-    expect(mockGetMatchPredictions).toHaveBeenCalledWith('user-1', 'pool-1', 'match-1')
+    expect(mockGetMatchPredictionsExecute).toHaveBeenCalledWith({
+      viewerUserId: 'user-1',
+      poolId: 'pool-1',
+      matchId: 'match-1',
+    })
   })
 
   it('rejects_matchNotLocked_409', async () => {
-    const { PredictionError } = await import('../../services/prediction')
-    mockGetMatchPredictions.mockRejectedValue(
+    mockGetMatchPredictionsExecute.mockRejectedValue(
       new PredictionError('MATCH_NOT_LOCKED', 'Este jogo ainda não está bloqueado'),
     )
 
@@ -198,8 +210,7 @@ describe('GET /api/pools/:poolId/matches/:matchId/predictions', () => {
   })
 
   it('rejects_notMember_403', async () => {
-    const { PredictionError } = await import('../../services/prediction')
-    mockGetMatchPredictions.mockRejectedValue(
+    mockGetMatchPredictionsExecute.mockRejectedValue(
       new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão'),
     )
 
@@ -211,8 +222,7 @@ describe('GET /api/pools/:poolId/matches/:matchId/predictions', () => {
   })
 
   it('rejects_matchNotFound_404', async () => {
-    const { PredictionError } = await import('../../services/prediction')
-    mockGetMatchPredictions.mockRejectedValue(
+    mockGetMatchPredictionsExecute.mockRejectedValue(
       new PredictionError('MATCH_NOT_FOUND', 'Jogo não encontrado'),
     )
 
@@ -224,8 +234,7 @@ describe('GET /api/pools/:poolId/matches/:matchId/predictions', () => {
   })
 
   it('rejects_matchNotInPool_404', async () => {
-    const { PredictionError } = await import('../../services/prediction')
-    mockGetMatchPredictions.mockRejectedValue(
+    mockGetMatchPredictionsExecute.mockRejectedValue(
       new PredictionError('MATCH_NOT_IN_POOL', 'Este jogo não pertence ao bolão'),
     )
 
@@ -237,8 +246,7 @@ describe('GET /api/pools/:poolId/matches/:matchId/predictions', () => {
   })
 
   it('rejects_poolNotFound_404', async () => {
-    const { PredictionError } = await import('../../services/prediction')
-    mockGetMatchPredictions.mockRejectedValue(
+    mockGetMatchPredictionsExecute.mockRejectedValue(
       new PredictionError('POOL_NOT_FOUND', 'Bolão não encontrado'),
     )
 
@@ -255,7 +263,7 @@ describe('GET /api/pools/:poolId/matches/:matchId/predictions', () => {
   })
 
   it('allowsPendingPoints_pointsNull_200', async () => {
-    mockGetMatchPredictions.mockResolvedValue({
+    mockGetMatchPredictionsExecute.mockResolvedValue({
       matchId: 'match-1',
       isLocked: true,
       totalMembers: 3,
