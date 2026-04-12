@@ -4,10 +4,11 @@ import { competition } from '../db/schema/competition'
 import { match } from '../db/schema/match'
 import { calcPointsForMatch } from '../jobs/calcPoints'
 import { checkAndClosePools } from '../jobs/closePoolsJob'
+import { extractGroup, mapStageForCompetition, mapStatus } from './matchUtils'
 
 const FOOTBALL_DATA_BASE = 'https://api.football-data.org/v4'
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY || ''
-const RATE_LIMIT_DELAY_MS = 6000
+const RATE_LIMIT_DELAY_MS = 2000
 
 interface FootballDataMatch {
   id: number
@@ -25,64 +26,6 @@ interface FootballDataMatch {
 
 interface FootballDataResponse {
   matches: FootballDataMatch[]
-}
-
-const MATCH_MAX_DURATION_MS = 12 * 60 * 60 * 1000
-
-function mapStatus(
-  apiStatus: string,
-  score?: FootballDataMatch['score'],
-  utcDate?: string,
-): string {
-  if (
-    (apiStatus === 'IN_PLAY' || apiStatus === 'PAUSED') &&
-    utcDate &&
-    score?.fullTime.home !== null &&
-    score?.fullTime.away !== null &&
-    Date.now() - new Date(utcDate).getTime() > MATCH_MAX_DURATION_MS
-  ) {
-    return 'finished'
-  }
-
-  const statusMap: Record<string, string> = {
-    SCHEDULED: 'scheduled',
-    TIMED: 'scheduled',
-    IN_PLAY: 'live',
-    PAUSED: 'live',
-    FINISHED: 'finished',
-    POSTPONED: 'postponed',
-    CANCELLED: 'cancelled',
-    SUSPENDED: 'cancelled',
-    AWARDED: 'finished',
-  }
-  return statusMap[apiStatus] || 'scheduled'
-}
-
-function mapStage(stage: string): string {
-  const stageMap: Record<string, string> = {
-    GROUP_STAGE: 'group',
-    LAST_32: 'round-of-32',
-    ROUND_OF_32: 'round-of-32',
-    LAST_16: 'round-of-16',
-    ROUND_OF_16: 'round-of-16',
-    QUARTER_FINALS: 'quarter',
-    SEMI_FINALS: 'semi',
-    THIRD_PLACE: 'third-place',
-    FINAL: 'final',
-    REGULAR_SEASON: 'league',
-  }
-  return stageMap[stage] || 'group'
-}
-
-export function mapStageForCompetition(stage: string, competitionType: string): string {
-  if (competitionType === 'league') return 'league'
-  return mapStage(stage)
-}
-
-function extractGroup(group: string | null): string | null {
-  if (!group) return null
-  const groupMatch = group.match(/GROUP_([A-L])/i)
-  return groupMatch ? (groupMatch[1]?.toUpperCase() ?? null) : null
 }
 
 async function fetchMatches(endpoint: string): Promise<FootballDataMatch[]> {
@@ -188,12 +131,9 @@ export async function syncLiveScores() {
 
   for (const [i, comp] of activeCompetitions.entries()) {
     try {
-      const liveMatches = await fetchMatches(`/competitions/${comp.externalId}/matches?status=LIVE`)
-      const finishedMatches = await fetchMatches(
-        `/competitions/${comp.externalId}/matches?status=FINISHED&dateFrom=${getTodayDate()}&dateTo=${getTodayDate()}`,
+      const allMatches = await fetchMatches(
+        `/competitions/${comp.externalId}/matches?status=LIVE,PAUSED,FINISHED&dateFrom=${getTodayDate()}&dateTo=${getTodayDate()}`,
       )
-
-      const allMatches = [...liveMatches, ...finishedMatches]
 
       for (const m of allMatches) {
         const existing = await db.query.match.findFirst({

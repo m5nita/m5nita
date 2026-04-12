@@ -106,22 +106,19 @@ serve({ fetch: app.fetch, port }, () => {
     6 * 60 * 60 * 1000,
   )
 
-  // Sync live scores every 5 minutes
-  setInterval(
-    () => {
-      Sentry.withMonitor(
-        'live-score-sync',
-        () =>
-          syncLiveScores().catch((err) => {
-            Sentry.captureException(err)
-            console.error('[Cron] Live sync failed:', err)
-            throw err
-          }),
-        { schedule: { type: 'interval', value: 5, unit: 'minute' } },
-      )
-    },
-    5 * 60 * 1000,
-  )
+  // Sync live scores every minute
+  setInterval(() => {
+    Sentry.withMonitor(
+      'live-score-sync',
+      () =>
+        syncLiveScores().catch((err) => {
+          Sentry.captureException(err)
+          console.error('[Cron] Live sync failed:', err)
+          throw err
+        }),
+      { schedule: { type: 'interval', value: 1, unit: 'minute' } },
+    )
+  }, 60 * 1000)
 
   // Send prediction reminders every 15 minutes
   setInterval(
