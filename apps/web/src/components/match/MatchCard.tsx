@@ -26,7 +26,7 @@ export function MatchCard({ match }: MatchCardProps) {
 
   return (
     <div
-      className={`flex items-center gap-3 border-b border-border py-3 ${isLive ? 'bg-red/[0.03]' : ''}`}
+      className={`flex items-center gap-3 border-b border-border py-3 lg:border-2 lg:border-border lg:p-4 ${isLive ? 'bg-red/[0.03] lg:border-red/30' : ''}`}
     >
       <div className="flex flex-1 flex-col items-center gap-1 min-w-0">
         {match.homeFlag && (

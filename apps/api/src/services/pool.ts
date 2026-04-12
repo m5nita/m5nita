@@ -5,6 +5,7 @@ import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { getCompetitionById } from './competition'
 import { getEffectiveFeeRate, incrementUsage, validateCoupon } from './coupon'
+import { getPoolRanking } from './ranking'
 
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -104,13 +105,19 @@ export async function getUserPools(userId: string) {
 
   const visiblePools = members.filter((m) => m.pool.status !== 'cancelled')
 
-  const counts = await Promise.all(
+  const poolStats = await Promise.all(
     visiblePools.map(async (m) => {
-      const [result] = await db
+      const [countResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(poolMember)
         .where(eq(poolMember.poolId, m.pool.id))
-      return result?.count ?? 0
+      const ranking = await getPoolRanking(m.pool.id, userId)
+      const userEntry = ranking.find((r) => r.userId === userId)
+      return {
+        memberCount: countResult?.count ?? 0,
+        userPosition: userEntry?.position ?? null,
+        userPoints: userEntry?.totalPoints ?? 0,
+      }
     }),
   )
 
@@ -120,9 +127,9 @@ export async function getUserPools(userId: string) {
     entryFee: m.pool.entryFee,
     status: m.pool.status,
     competitionName: m.pool.competition.name,
-    memberCount: counts[i] ?? 0,
-    userPosition: null,
-    userPoints: 0,
+    memberCount: poolStats[i]?.memberCount ?? 0,
+    userPosition: poolStats[i]?.userPosition ?? null,
+    userPoints: poolStats[i]?.userPoints ?? 0,
   }))
 }
 

@@ -13,6 +13,7 @@ function HomePage() {
   const { data: session, isPending: sessionPending } = useSession()
   const navigate = useNavigate()
   const [inviteCode, setInviteCode] = useState('')
+  const [showFinished, setShowFinished] = useState(false)
 
   const { data: poolsData, isPending: poolsPending } = useQuery({
     queryKey: ['pools'],
@@ -38,9 +39,9 @@ function HomePage() {
 
   if (!session) {
     return (
-      <div className="flex min-h-[75vh] flex-col justify-center">
+      <div className="flex min-h-[75vh] flex-col justify-center lg:items-center">
         <div className="text-center mb-8">
-          <h1 className="font-display text-6xl font-black leading-tight text-black">
+          <h1 className="font-display text-6xl font-black leading-tight text-black lg:text-8xl">
             Monte seu
             <br />
             bolão.
@@ -51,7 +52,7 @@ function HomePage() {
           </p>
         </div>
 
-        <div className="flex flex-col mb-7">
+        <div className="flex flex-col mb-7 lg:max-w-[600px] lg:mx-auto lg:w-full">
           <div className="flex gap-3 items-start py-4 border-b border-border">
             <div className="w-8 h-8 bg-black text-white flex items-center justify-center font-display text-sm font-black shrink-0">
               1
@@ -106,7 +107,7 @@ function HomePage() {
           </div>
         </div>
 
-        <Link to="/login">
+        <Link to="/login" className="lg:max-w-[600px] lg:mx-auto lg:w-full">
           <Button size="lg" className="w-full">
             Começar agora
           </Button>
@@ -127,23 +128,25 @@ function HomePage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
+    <div className="flex flex-col gap-8 lg:gap-12">
+      <div className="lg:text-center">
         <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
           Olá, {session.user.name || 'Jogador'}
         </p>
-        <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">Bolões</h1>
-        <div className="mt-3 h-1 w-12 bg-red" />
+        <h1 className="mt-2 font-display text-5xl font-black leading-[0.85] text-black lg:mt-3 lg:text-6xl">
+          Bolões
+        </h1>
+        <div className="mt-3 h-1 w-12 bg-red lg:mx-auto" />
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 lg:justify-center">
         <Link to="/pools/create" className="shrink-0">
           <Button size="lg" className="h-full min-h-[48px]">
             Criar Bolão
           </Button>
         </Link>
         <form
-          className="flex min-w-[180px] flex-1 gap-2"
+          className="flex min-w-[180px] flex-1 gap-2 lg:flex-initial lg:min-w-[300px]"
           onSubmit={(e) => {
             e.preventDefault()
             handleJoinByCode()
@@ -178,7 +181,7 @@ function HomePage() {
         {poolsPending ? (
           <Loading message="Carregando..." />
         ) : activePools.length > 0 ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-5">
             {activePools.map((pool, i) => (
               <PoolCard key={pool.id} pool={pool} index={i + 1} />
             ))}
@@ -197,17 +200,30 @@ function HomePage() {
 
       {finishedPools.length > 0 && (
         <section>
-          <div className="flex items-center gap-3 mb-4">
+          <button
+            type="button"
+            onClick={() => setShowFinished((v) => !v)}
+            aria-expanded={showFinished}
+            className="flex w-full items-center gap-3 cursor-pointer"
+          >
             <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-              Finalizados
+              Finalizados ({finishedPools.length})
             </h2>
             <div className="h-px flex-1 bg-border" />
-          </div>
-          <div className="flex flex-col gap-3">
-            {finishedPools.map((pool, i) => (
-              <PoolCard key={pool.id} pool={pool} index={i + 1} />
-            ))}
-          </div>
+            <span
+              className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted"
+              aria-hidden="true"
+            >
+              {showFinished ? '▴' : '▾'}
+            </span>
+          </button>
+          {showFinished && (
+            <div className="mt-4 flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-5">
+              {finishedPools.map((pool, i) => (
+                <PoolCard key={pool.id} pool={pool} index={i + 1} />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -219,17 +235,19 @@ function HomePage() {
           <div className="h-px flex-1 bg-border" />
         </div>
         {upcomingMatches.length > 0 ? (
-          <div className="flex flex-col">
-            {upcomingMatches.map((m) => (
-              <MatchCard key={m.id} match={m} />
-            ))}
+          <>
+            <div className="flex flex-col lg:grid lg:grid-cols-4 lg:gap-4">
+              {upcomingMatches.map((m) => (
+                <MatchCard key={m.id} match={m} />
+              ))}
+            </div>
             <Link
               to="/matches"
-              className="mt-2 text-center font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted hover:text-black transition-colors"
+              className="mt-3 block text-center font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted hover:text-black transition-colors"
             >
-              Ver todos
+              Ver todos →
             </Link>
-          </div>
+          </>
         ) : (
           <div className="border-2 border-dashed border-border py-10 text-center">
             <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">

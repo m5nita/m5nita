@@ -10,7 +10,8 @@ interface PoolCardProps {
 export function PoolCard({ pool, index }: PoolCardProps) {
   return (
     <Link to="/pools/$poolId" params={{ poolId: pool.id }} className="group cursor-pointer">
-      <div className="flex items-center gap-4 border-b border-border py-4 transition-colors group-hover:border-black">
+      {/* Mobile: horizontal list item */}
+      <div className="flex items-center gap-4 border-b border-border py-4 transition-colors group-hover:border-black lg:hidden">
         <span className="font-display text-3xl font-black text-gray-light group-hover:text-red transition-colors">
           {String(index).padStart(2, '0')}
         </span>
@@ -32,9 +33,9 @@ export function PoolCard({ pool, index }: PoolCardProps) {
           </p>
         </div>
         {pool.userPosition != null ? (
-          <div className="text-right">
+          <div className="shrink-0 text-center">
             <p className="font-display text-2xl font-black text-black">{pool.userPosition}°</p>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-gray-muted">
+            <p className="font-display text-[10px] font-bold uppercase tracking-wider text-gray-muted">
               {pool.userPoints} pts
             </p>
           </div>
@@ -53,6 +54,34 @@ export function PoolCard({ pool, index }: PoolCardProps) {
             <path d="m9 18 6-6-6-6" />
           </svg>
         )}
+      </div>
+      {/* Desktop: editorial card */}
+      <div className="hidden lg:flex flex-col border border-border p-5 transition-colors group-hover:border-black">
+        <div className="flex items-start justify-between">
+          <span className="font-display text-4xl font-black text-gray-light group-hover:text-red transition-colors">
+            {String(index).padStart(2, '0')}
+          </span>
+          {pool.status === 'closed' ? (
+            <span className="bg-gray-muted/20 px-2 py-0.5 font-display text-[9px] font-bold uppercase tracking-wider text-gray-muted">
+              Finalizado
+            </span>
+          ) : pool.userPosition != null ? (
+            <div className="text-right">
+              <p className="font-display text-2xl font-black text-black">{pool.userPosition}°</p>
+              <p className="font-display text-[10px] font-bold uppercase tracking-wider text-gray-muted">
+                {pool.userPoints} pts
+              </p>
+            </div>
+          ) : null}
+        </div>
+        <h3 className="mt-2 font-display text-lg font-black uppercase tracking-wide text-black truncate">
+          {pool.name}
+        </h3>
+        <p className="mt-1 text-xs text-gray-muted">
+          {pool.competitionName && <>{pool.competitionName} · </>}
+          {pool.memberCount} participante{pool.memberCount !== 1 ? 's' : ''} ·{' '}
+          {formatCurrency(pool.entryFee)}
+        </p>
       </div>
     </Link>
   )

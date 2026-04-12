@@ -185,186 +185,188 @@ function CreatePoolPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 min-h-full">
-      <div>
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-          Novo
-        </p>
-        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">
-          Criar Bolao
-        </h1>
-        <div className="mt-3 h-1 w-12 bg-red" />
-      </div>
+    <div className="flex flex-col gap-8 min-h-full lg:items-center">
+      <div className="lg:w-full lg:max-w-[520px] lg:border lg:border-border lg:p-10 flex flex-col gap-8">
+        <div>
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+            Novo
+          </p>
+          <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">
+            Criar Bolao
+          </h1>
+          <div className="mt-3 h-1 w-12 bg-red" />
+        </div>
 
-      <Input
-        label="Nome do bolão"
-        placeholder="Ex: Bolao da Galera"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        maxLength={50}
-      />
+        <Input
+          label="Nome do bolão"
+          placeholder="Ex: Bolao da Galera"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={50}
+        />
 
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="competition-select"
-          className="font-display text-xs font-semibold uppercase tracking-wider text-gray-dark"
-        >
-          Competição
-        </label>
-        <select
-          id="competition-select"
-          value={competitionId}
-          onChange={(e) => {
-            setCompetitionId(e.target.value)
-            setMatchdayFrom('')
-            setMatchdayTo('')
-          }}
-          className="border-b-2 border-border bg-transparent px-0 py-2.5 text-black transition-colors duration-150 focus:border-black focus:outline-none appearance-none"
-        >
-          <option value="" className="text-gray-muted">
-            Selecione uma competicao
-          </option>
-          {competitions.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} ({c.seasonDisplay ?? c.season})
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="competition-select"
+            className="font-display text-xs font-semibold uppercase tracking-wider text-gray-dark"
+          >
+            Competição
+          </label>
+          <select
+            id="competition-select"
+            value={competitionId}
+            onChange={(e) => {
+              setCompetitionId(e.target.value)
+              setMatchdayFrom('')
+              setMatchdayTo('')
+            }}
+            className="border-b-2 border-border bg-transparent px-0 py-2.5 text-black transition-colors duration-150 focus:border-black focus:outline-none appearance-none"
+          >
+            <option value="" className="text-gray-muted">
+              Selecione uma competicao
             </option>
-          ))}
-        </select>
-      </div>
+            {competitions.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.seasonDisplay ?? c.season})
+              </option>
+            ))}
+          </select>
+        </div>
 
-      {isLeague && selectedCompetition?.matchdays && (
+        {isLeague && selectedCompetition?.matchdays && (
+          <div className="flex flex-col gap-2">
+            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+              Rodadas
+            </p>
+            <p className="text-xs text-gray-muted">
+              Rodadas {selectedCompetition.matchdays.nextMatchday} a{' '}
+              {selectedCompetition.matchdays.max} disponiveis
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                label="De"
+                type="number"
+                placeholder={String(selectedCompetition.matchdays.nextMatchday)}
+                value={matchdayFrom}
+                onChange={(e) => {
+                  setMatchdayFrom(e.target.value)
+                  if (!matchdayTo) setMatchdayTo(e.target.value)
+                }}
+                min={selectedCompetition.matchdays.nextMatchday}
+                max={selectedCompetition.matchdays.max}
+              />
+              <Input
+                label="Ate"
+                type="number"
+                placeholder={String(selectedCompetition.matchdays.nextMatchday)}
+                value={matchdayTo}
+                onChange={(e) => setMatchdayTo(e.target.value)}
+                min={matchdayFrom || selectedCompetition.matchdays.nextMatchday}
+                max={selectedCompetition.matchdays.max}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col gap-2">
           <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
-            Rodadas
+            Valor da Entrada
           </p>
-          <p className="text-xs text-gray-muted">
-            Rodadas {selectedCompetition.matchdays.nextMatchday} a{' '}
-            {selectedCompetition.matchdays.max} disponiveis
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              label="De"
-              type="number"
-              placeholder={String(selectedCompetition.matchdays.nextMatchday)}
-              value={matchdayFrom}
-              onChange={(e) => {
-                setMatchdayFrom(e.target.value)
-                if (!matchdayTo) setMatchdayTo(e.target.value)
-              }}
-              min={selectedCompetition.matchdays.nextMatchday}
-              max={selectedCompetition.matchdays.max}
-            />
-            <Input
-              label="Ate"
-              type="number"
-              placeholder={String(selectedCompetition.matchdays.nextMatchday)}
-              value={matchdayTo}
-              onChange={(e) => setMatchdayTo(e.target.value)}
-              min={matchdayFrom || selectedCompetition.matchdays.nextMatchday}
-              max={selectedCompetition.matchdays.max}
-            />
+          <div className="grid grid-cols-4 gap-2">
+            {POOL.QUICK_SELECT_VALUES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  setEntryFee(value)
+                  setCustomFee('')
+                }}
+                className={`font-display text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer ${
+                  !customFee && entryFee === value
+                    ? 'bg-black text-white'
+                    : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+                }`}
+              >
+                {formatCurrency(value)}
+              </button>
+            ))}
           </div>
+          <Input
+            label="Ou valor personalizado (R$)"
+            type="number"
+            placeholder="0"
+            value={customFee}
+            onChange={(e) => setCustomFee(e.target.value)}
+            min={10}
+            max={1000}
+          />
         </div>
-      )}
 
-      <div className="flex flex-col gap-2">
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
-          Valor da Entrada
-        </p>
-        <div className="grid grid-cols-4 gap-2">
-          {POOL.QUICK_SELECT_VALUES.map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setEntryFee(value)
-                setCustomFee('')
-              }}
-              className={`font-display text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer ${
-                !customFee && entryFee === value
-                  ? 'bg-black text-white'
-                  : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
-              }`}
-            >
-              {formatCurrency(value)}
-            </button>
-          ))}
+        <div className="flex flex-col gap-2">
+          <Input
+            label="Cupom de desconto"
+            placeholder="Ex: COPA2026"
+            value={couponCode}
+            onChange={(e) => {
+              setCouponCode(e.target.value)
+              if (!e.target.value.trim()) {
+                setCoupon({ valid: false, discountPercent: 0, loading: false, error: '' })
+              }
+            }}
+            onBlur={() => validateCoupon(couponCode)}
+            maxLength={20}
+            error={coupon.error}
+          />
+          {coupon.valid && (
+            <p className="text-xs font-medium text-green">
+              Cupom aplicado: {coupon.discountPercent}% de desconto na taxa
+            </p>
+          )}
+          {coupon.loading && <p className="text-xs text-gray-muted">Validando cupom...</p>}
         </div>
-        <Input
-          label="Ou valor personalizado (R$)"
-          type="number"
-          placeholder="0"
-          value={customFee}
-          onChange={(e) => setCustomFee(e.target.value)}
-          min={10}
-          max={1000}
-        />
-      </div>
 
-      <div className="flex flex-col gap-2">
-        <Input
-          label="Cupom de desconto"
-          placeholder="Ex: COPA2026"
-          value={couponCode}
-          onChange={(e) => {
-            setCouponCode(e.target.value)
-            if (!e.target.value.trim()) {
-              setCoupon({ valid: false, discountPercent: 0, loading: false, error: '' })
-            }
-          }}
-          onBlur={() => validateCoupon(couponCode)}
-          maxLength={20}
-          error={coupon.error}
-        />
-        {coupon.valid && (
-          <p className="text-xs font-medium text-green">
-            Cupom aplicado: {coupon.discountPercent}% de desconto na taxa
-          </p>
-        )}
-        {coupon.loading && <p className="text-xs text-gray-muted">Validando cupom...</p>}
-      </div>
-
-      <div className="mt-auto flex flex-col gap-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-gray-dark">Entrada</span>
-          <span className="font-medium text-black">{formatCurrency(currentFee)}</span>
-        </div>
-        {coupon.valid ? (
-          <>
-            <div className="flex justify-between">
-              <span className="text-gray-muted line-through">Taxa (5%)</span>
-              <span className="text-gray-muted line-through">{formatCurrency(platformFee)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-green font-medium">
-                Taxa com desconto ({(5 * (1 - coupon.discountPercent / 100)).toFixed(1)}%)
-              </span>
-              <span className="text-green font-medium">{formatCurrency(discountedFee)}</span>
-            </div>
-          </>
-        ) : (
+        <div className="mt-auto flex flex-col gap-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-muted">Taxa (5%)</span>
-            <span className="text-gray-muted">{formatCurrency(platformFee)}</span>
+            <span className="text-gray-dark">Entrada</span>
+            <span className="font-medium text-black">{formatCurrency(currentFee)}</span>
           </div>
+          {coupon.valid ? (
+            <>
+              <div className="flex justify-between">
+                <span className="text-gray-muted line-through">Taxa (5%)</span>
+                <span className="text-gray-muted line-through">{formatCurrency(platformFee)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-green font-medium">
+                  Taxa com desconto ({(5 * (1 - coupon.discountPercent / 100)).toFixed(1)}%)
+                </span>
+                <span className="text-green font-medium">{formatCurrency(discountedFee)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between">
+              <span className="text-gray-muted">Taxa (5%)</span>
+              <span className="text-gray-muted">{formatCurrency(platformFee)}</span>
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <p className="text-xs font-medium text-red" role="alert">
+            {error}
+          </p>
         )}
+
+        <Button
+          onClick={handleCreate}
+          loading={loading}
+          disabled={!isValidFee}
+          className="w-full"
+          size="lg"
+        >
+          Criar e Pagar {formatCurrency(currentFee)}
+        </Button>
       </div>
-
-      {error && (
-        <p className="text-xs font-medium text-red" role="alert">
-          {error}
-        </p>
-      )}
-
-      <Button
-        onClick={handleCreate}
-        loading={loading}
-        disabled={!isValidFee}
-        className="w-full"
-        size="lg"
-      >
-        Criar e Pagar {formatCurrency(currentFee)}
-      </Button>
     </div>
   )
 }
