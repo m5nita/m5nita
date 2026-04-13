@@ -51,7 +51,7 @@ app.post('/api/auth/phone-number/send-otp', otpRateLimit)
 // Better Auth — mounted directly, no auth middleware
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
 
-// Webhooks — no auth middleware (uses Stripe/Telegram signatures)
+// Webhooks — no auth middleware (uses MercadoPago/Telegram signatures)
 app.route('/api', webhooksRoutes)
 app.route('/api', telegramRoutes)
 
