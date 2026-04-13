@@ -1,27 +1,25 @@
 import { and, eq, gt, gte, isNotNull, isNull, lte } from 'drizzle-orm'
+import type { ReminderData } from '../application/ports/NotificationService.port'
+import { getContainer } from '../container'
 import { db } from '../db/client'
 import { user } from '../db/schema/auth'
 import { match } from '../db/schema/match'
-import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
-import { bot, findChatIdByPhone } from '../lib/telegram'
+import { findChatIdByPhone } from '../lib/telegram'
 
 // In-memory dedup: "userId:poolId" — prevents duplicate reminders per user per pool per cycle.
 // Grows monotonically (max ~64K entries for 64 pools x 1000 users ≈ 2MB).
 // Resets on process restart, which may cause a single duplicate — acceptable tradeoff.
 const sentReminders = new Set<string>()
 
-const APP_URL = process.env.APP_URL || ''
-
 export async function sendPredictionReminders(): Promise<void> {
+  const { poolRepo, notificationService } = getContainer()
+
   const now = new Date()
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000)
 
-  // 1. Find all active pools with their competition scope
-  const activePools = await db.query.pool.findMany({
-    where: eq(pool.status, 'active'),
-  })
+  const activePools = await poolRepo.findAllActive()
 
   if (activePools.length === 0) return
 
@@ -38,7 +36,7 @@ export async function sendPredictionReminders(): Promise<void> {
   >()
 
   for (const activePool of activePools) {
-    // 2. Find upcoming matches scoped to this pool's competition and matchday range
+    // Find upcoming matches scoped to this pool's competition and matchday range
     const matchConditions = [
       eq(match.competitionId, activePool.competitionId),
       eq(match.status, 'scheduled'),
@@ -113,32 +111,26 @@ export async function sendPredictionReminders(): Promise<void> {
     }
   }
 
-  // 3. Send one grouped message per user per pool
+  // Resolve chat IDs and build reminder data for notification service
+  const remindersToSend: ReminderData[] = []
+
   for (const [groupKey, reminder] of pendingReminders) {
     if (sentReminders.has(groupKey)) continue
 
     const chatId = await findChatIdByPhone(reminder.phoneNumber)
     if (!chatId) continue
 
-    const matchLines = reminder.matches
-      .map((m) => `⚽ *${m.homeTeam} x ${m.awayTeam}* — em ${m.minutesUntil} min`)
-      .join('\n')
+    remindersToSend.push({
+      chatId: Number(chatId),
+      poolName: reminder.poolName,
+      poolId: reminder.poolId,
+      matches: reminder.matches,
+    })
 
-    const linkLine = APP_URL
-      ? `\n👉 [Fazer palpites](${APP_URL}/pools/${reminder.poolId}/predictions)`
-      : '\nAcesse o app para fazer seus palpites.'
+    sentReminders.add(groupKey)
+  }
 
-    const message =
-      `🎯 *${reminder.poolName}*\n\n` +
-      `Você ainda não fez palpite para:\n\n` +
-      `${matchLines}\n` +
-      linkLine
-
-    try {
-      await bot.api.sendMessage(Number(chatId), message, { parse_mode: 'Markdown' })
-      sentReminders.add(groupKey)
-    } catch (err) {
-      console.error(`[Reminder] Failed to send to chatId ${chatId}:`, err)
-    }
+  if (remindersToSend.length > 0) {
+    await notificationService.sendPredictionReminders(remindersToSend)
   }
 }
