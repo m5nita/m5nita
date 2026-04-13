@@ -19,8 +19,8 @@ vi.mock('../../../../services/pool', () => ({
 }))
 
 vi.mock('../../../../services/payment', () => ({
-  createEntryPayment: vi.fn(),
-  createRefund: vi.fn(),
+  handleCheckoutCompleted: vi.fn(),
+  handleCheckoutExpired: vi.fn(),
 }))
 
 const mockPool = {
@@ -64,6 +64,9 @@ vi.mock('../../../../db/client', () => ({
         })),
       })),
     })),
+    delete: vi.fn(() => ({
+      where: vi.fn(),
+    })),
   },
 }))
 
@@ -101,7 +104,7 @@ describe('Admin endpoints', () => {
   beforeEach(() => {
     app = createTestApp()
     vi.clearAllMocks()
-    mockCancelPoolExecute.mockResolvedValue({ refunds: [] })
+    mockCancelPoolExecute.mockResolvedValue(undefined)
   })
 
   it('patchPool_owner_200updated', async () => {
@@ -138,14 +141,14 @@ describe('Admin endpoints', () => {
     expect(res.status).toBe(403)
   })
 
-  it('removeMember_owner_200refund', async () => {
+  it('removeMember_owner_200removed', async () => {
     const res = await app.request('/api/pools/pool-1/members/member-1', {
       method: 'DELETE',
       headers: { 'x-test-user': JSON.stringify(owner) },
     })
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.refund).toBeDefined()
+    expect(body.removed).toBe(true)
   })
 
   it('cancelPool_owner_200cancelled', async () => {
@@ -155,6 +158,6 @@ describe('Admin endpoints', () => {
     })
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.pool.status).toBe('cancelled')
+    expect(body.cancelled).toBe(true)
   })
 })
