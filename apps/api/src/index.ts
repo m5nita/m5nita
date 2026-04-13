@@ -7,17 +7,17 @@ import * as Sentry from '@sentry/node'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
+import { globalRateLimit, otpRateLimit } from './infrastructure/http/middleware/rateLimit'
+import { competitionsRoutes } from './infrastructure/http/routes/competitions'
+import { matchesRoutes } from './infrastructure/http/routes/matches'
+import { poolsRoutes } from './infrastructure/http/routes/pools'
+import { predictionsRoutes } from './infrastructure/http/routes/predictions'
+import { rankingRoutes } from './infrastructure/http/routes/ranking'
+import { telegramRoutes } from './infrastructure/http/routes/telegram'
+import { usersRoutes } from './infrastructure/http/routes/users'
+import { webhooksRoutes } from './infrastructure/http/routes/webhooks'
 import { sendPredictionReminders } from './jobs/reminderJob'
 import { auth } from './lib/auth'
-import { globalRateLimit, otpRateLimit } from './middleware/rateLimit'
-import { competitionsRoutes } from './routes/competitions'
-import { matchesRoutes } from './routes/matches'
-import { poolsRoutes } from './routes/pools'
-import { predictionsRoutes } from './routes/predictions'
-import { rankingRoutes } from './routes/ranking'
-import { telegramRoutes } from './routes/telegram'
-import { usersRoutes } from './routes/users'
-import { webhooksRoutes } from './routes/webhooks'
 import { syncFixtures, syncLiveScores } from './services/match'
 
 import type { AppEnv } from './types/hono'
@@ -51,7 +51,7 @@ app.post('/api/auth/phone-number/send-otp', otpRateLimit)
 // Better Auth — mounted directly, no auth middleware
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
 
-// Webhooks — no auth middleware (uses Stripe/Telegram signatures)
+// Webhooks — no auth middleware (uses MercadoPago/Telegram signatures)
 app.route('/api', webhooksRoutes)
 app.route('/api', telegramRoutes)
 

@@ -1,13 +1,10 @@
-import { eq } from 'drizzle-orm'
-import { db } from '../db/client'
-import { match } from '../db/schema/match'
-import { prediction } from '../db/schema/prediction'
-import { calculatePoints } from '../services/scoring'
+import { getContainer } from '../container'
+import { Score } from '../domain/scoring/Score'
 
 export async function calcPointsForMatch(matchId: string) {
-  const matchData = await db.query.match.findFirst({
-    where: eq(match.id, matchId),
-  })
+  const { matchRepo, predictionRepo } = getContainer()
+
+  const matchData = await matchRepo.findById(matchId)
 
   if (!matchData || matchData.status !== 'finished') {
     console.log(`[CalcPoints] Match ${matchId} not finished, skipping`)
@@ -19,22 +16,17 @@ export async function calcPointsForMatch(matchId: string) {
     return
   }
 
-  const predictions = await db.query.prediction.findMany({
-    where: eq(prediction.matchId, matchId),
-  })
+  const predictions = await predictionRepo.findByMatch(matchId)
 
   for (const pred of predictions) {
-    const points = calculatePoints(
+    const score = Score.calculate(
       pred.homeScore,
       pred.awayScore,
       matchData.homeScore,
       matchData.awayScore,
     )
 
-    await db
-      .update(prediction)
-      .set({ points, updatedAt: new Date() })
-      .where(eq(prediction.id, pred.id))
+    await predictionRepo.updatePoints(pred.id!, score.points)
   }
 
   console.log(`[CalcPoints] Processed ${predictions.length} predictions for match ${matchId}`)

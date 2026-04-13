@@ -5,13 +5,15 @@ const {
   mockFindChatIdByPhone,
   mockSelect,
   mockSelectDistinctOn,
-  mockPoolFindMany,
+  mockFindAllActive,
+  mockSendPredictionReminders,
 } = vi.hoisted(() => ({
   mockSendMessage: vi.fn(),
   mockFindChatIdByPhone: vi.fn(),
   mockSelect: vi.fn(),
   mockSelectDistinctOn: vi.fn(),
-  mockPoolFindMany: vi.fn(),
+  mockFindAllActive: vi.fn(),
+  mockSendPredictionReminders: vi.fn(),
 }))
 
 vi.mock('../../lib/telegram', () => ({
@@ -24,9 +26,20 @@ vi.mock('../../db/client', () => ({
     select: mockSelect,
     selectDistinctOn: mockSelectDistinctOn,
     query: {
-      pool: { findMany: mockPoolFindMany },
+      pool: { findMany: vi.fn() },
     },
   },
+}))
+
+vi.mock('../../container', () => ({
+  getContainer: () => ({
+    poolRepo: {
+      findAllActive: mockFindAllActive,
+    },
+    notificationService: {
+      sendPredictionReminders: mockSendPredictionReminders,
+    },
+  }),
 }))
 
 vi.mock('../../db/schema/auth', () => ({
@@ -39,6 +52,8 @@ vi.mock('../../db/schema/match', () => ({
     awayTeam: 'match.away_team',
     matchDate: 'match.match_date',
     status: 'match.status',
+    competitionId: 'match.competition_id',
+    matchday: 'match.matchday',
   },
 }))
 vi.mock('../../db/schema/pool', () => ({
@@ -86,6 +101,7 @@ describe('sendPredictionReminders', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-06-15T14:00:00Z'))
     vi.clearAllMocks()
+    mockSendPredictionReminders.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -94,20 +110,36 @@ describe('sendPredictionReminders', () => {
   })
 
   it('noUpcomingMatches_sendsNoReminders', async () => {
-    mockPoolFindMany.mockResolvedValue([
-      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    mockFindAllActive.mockResolvedValue([
+      {
+        id: 'pool-1',
+        name: 'Test Pool',
+        entryFee: 1000,
+        competitionId: 'comp-1',
+        matchdayFrom: null,
+        matchdayTo: null,
+        discountPercent: 0,
+      },
     ])
     mockSelect.mockReturnValue(createChainableMock([]))
 
     const { sendPredictionReminders } = await import('../reminderJob')
     await sendPredictionReminders()
 
-    expect(mockSendMessage).not.toHaveBeenCalled()
+    expect(mockSendPredictionReminders).not.toHaveBeenCalled()
   })
 
   it('userWithPrediction_skipsUser', async () => {
-    mockPoolFindMany.mockResolvedValue([
-      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    mockFindAllActive.mockResolvedValue([
+      {
+        id: 'pool-1',
+        name: 'Test Pool',
+        entryFee: 1000,
+        competitionId: 'comp-1',
+        matchdayFrom: null,
+        matchdayTo: null,
+        discountPercent: 0,
+      },
     ])
     mockSelect.mockReturnValue(
       createChainableMock([
@@ -124,12 +156,20 @@ describe('sendPredictionReminders', () => {
     const { sendPredictionReminders } = await import('../reminderJob')
     await sendPredictionReminders()
 
-    expect(mockSendMessage).not.toHaveBeenCalled()
+    expect(mockSendPredictionReminders).not.toHaveBeenCalled()
   })
 
   it('userWithoutPrediction_sendsReminder', async () => {
-    mockPoolFindMany.mockResolvedValue([
-      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    mockFindAllActive.mockResolvedValue([
+      {
+        id: 'pool-1',
+        name: 'Test Pool',
+        entryFee: 1000,
+        competitionId: 'comp-1',
+        matchdayFrom: null,
+        matchdayTo: null,
+        discountPercent: 0,
+      },
     ])
     mockSelect.mockReturnValue(
       createChainableMock([
@@ -145,23 +185,33 @@ describe('sendPredictionReminders', () => {
       createDistinctChainableMock([{ userId: 'user-1', phoneNumber: '+5511999999999' }]),
     )
     mockFindChatIdByPhone.mockResolvedValue(123456789)
-    mockSendMessage.mockResolvedValue(undefined)
 
     const { sendPredictionReminders } = await import('../reminderJob')
     await sendPredictionReminders()
 
     expect(mockFindChatIdByPhone).toHaveBeenCalledWith('+5511999999999')
-    expect(mockSendMessage).toHaveBeenCalledOnce()
-    expect(mockSendMessage).toHaveBeenCalledWith(
-      123456789,
-      expect.stringContaining('Brasil x Argentina'),
-      { parse_mode: 'Markdown' },
-    )
+    expect(mockSendPredictionReminders).toHaveBeenCalledOnce()
+    expect(mockSendPredictionReminders).toHaveBeenCalledWith([
+      expect.objectContaining({
+        chatId: 123456789,
+        poolName: 'Test Pool',
+        poolId: 'pool-1',
+        matches: [expect.objectContaining({ homeTeam: 'Brasil', awayTeam: 'Argentina' })],
+      }),
+    ])
   })
 
   it('userWithNoTelegramChat_skipsWithoutError', async () => {
-    mockPoolFindMany.mockResolvedValue([
-      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    mockFindAllActive.mockResolvedValue([
+      {
+        id: 'pool-1',
+        name: 'Test Pool',
+        entryFee: 1000,
+        competitionId: 'comp-1',
+        matchdayFrom: null,
+        matchdayTo: null,
+        discountPercent: 0,
+      },
     ])
     mockSelect.mockReturnValue(
       createChainableMock([
@@ -181,12 +231,20 @@ describe('sendPredictionReminders', () => {
     const { sendPredictionReminders } = await import('../reminderJob')
     await sendPredictionReminders()
 
-    expect(mockSendMessage).not.toHaveBeenCalled()
+    expect(mockSendPredictionReminders).not.toHaveBeenCalled()
   })
 
   it('duplicateReminder_skippedByDedupSet', async () => {
-    mockPoolFindMany.mockResolvedValue([
-      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+    mockFindAllActive.mockResolvedValue([
+      {
+        id: 'pool-1',
+        name: 'Test Pool',
+        entryFee: 1000,
+        competitionId: 'comp-1',
+        matchdayFrom: null,
+        matchdayTo: null,
+        discountPercent: 0,
+      },
     ])
     const matchData = [
       {
@@ -201,25 +259,32 @@ describe('sendPredictionReminders', () => {
     mockSelect.mockReturnValue(createChainableMock(matchData))
     mockSelectDistinctOn.mockReturnValue(createDistinctChainableMock(userData))
     mockFindChatIdByPhone.mockResolvedValue(111222333)
-    mockSendMessage.mockResolvedValue(undefined)
 
     const { sendPredictionReminders } = await import('../reminderJob')
 
     await sendPredictionReminders()
-    expect(mockSendMessage).toHaveBeenCalledOnce()
+    expect(mockSendPredictionReminders).toHaveBeenCalledOnce()
 
     // Reset call count but keep module state (sentReminders Set persists)
-    mockSendMessage.mockClear()
+    mockSendPredictionReminders.mockClear()
     mockSelect.mockReturnValue(createChainableMock(matchData))
     mockSelectDistinctOn.mockReturnValue(createDistinctChainableMock(userData))
 
     await sendPredictionReminders()
-    expect(mockSendMessage).not.toHaveBeenCalled()
+    expect(mockSendPredictionReminders).not.toHaveBeenCalled()
   })
 
-  it('telegramApiFailure_continuesProcessing', async () => {
-    mockPoolFindMany.mockResolvedValue([
-      { id: 'pool-1', competitionId: 'comp-1', matchdayFrom: null, matchdayTo: null },
+  it('multipleUsers_sendsAllRemindersToNotificationService', async () => {
+    mockFindAllActive.mockResolvedValue([
+      {
+        id: 'pool-1',
+        name: 'Test Pool',
+        entryFee: 1000,
+        competitionId: 'comp-1',
+        matchdayFrom: null,
+        matchdayTo: null,
+        discountPercent: 0,
+      },
     ])
     mockSelect.mockReturnValue(
       createChainableMock([
@@ -238,20 +303,14 @@ describe('sendPredictionReminders', () => {
       ]),
     )
     mockFindChatIdByPhone.mockResolvedValueOnce(444555666).mockResolvedValueOnce(777888999)
-    mockSendMessage.mockRejectedValueOnce(new Error('Telegram API error'))
-    mockSendMessage.mockResolvedValueOnce(undefined)
-
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { sendPredictionReminders } = await import('../reminderJob')
     await sendPredictionReminders()
 
-    expect(mockSendMessage).toHaveBeenCalledTimes(2)
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[Reminder] Failed to send'),
-      expect.any(Error),
-    )
-
-    consoleSpy.mockRestore()
+    expect(mockSendPredictionReminders).toHaveBeenCalledOnce()
+    expect(mockSendPredictionReminders).toHaveBeenCalledWith([
+      expect.objectContaining({ chatId: 444555666, poolId: 'pool-1' }),
+      expect.objectContaining({ chatId: 777888999, poolId: 'pool-1' }),
+    ])
   })
 })
