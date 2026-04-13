@@ -16,7 +16,7 @@ export const payment = pgTable(
       .references(() => pool.id),
     amount: integer('amount').notNull(),
     platformFee: integer('platform_fee').notNull(),
-    stripePaymentIntentId: text('stripe_payment_intent_id').unique(),
+    externalPaymentId: text('external_payment_id').unique(),
     status: text('status').default('pending').notNull(),
     type: text('type').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
