@@ -43,6 +43,13 @@
       "when": 1775004310435,
       "tag": "0005_nice_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781510400000,
+      "tag": "0006_rename_external_payment_id",
+      "breakpoints": true
     }
   ]
 }

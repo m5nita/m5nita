@@ -15,7 +15,6 @@ import { poolMember } from '../../../db/schema/poolMember'
 import { PoolError } from '../../../domain/pool/PoolError'
 import { PrizeWithdrawalError } from '../../../domain/prize/PrizeWithdrawalError'
 import { getEffectiveFeeRate, validateCoupon } from '../../../services/coupon'
-import { createRefund } from '../../../services/payment'
 import { getPoolById, getPoolByInviteCode, isPoolMember } from '../../../services/pool'
 import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
@@ -235,7 +234,7 @@ poolsRoutes.get('/pools/:poolId/members', async (c) => {
   return c.json({ members })
 })
 
-// DELETE /api/pools/:poolId/members/:memberId — Remove member with refund (owner only)
+// DELETE /api/pools/:poolId/members/:memberId — Remove member (owner only)
 poolsRoutes.delete('/pools/:poolId/members/:memberId', async (c) => {
   const { poolId, memberId } = c.req.param()
   const currentUser = c.get('user')
@@ -247,8 +246,8 @@ poolsRoutes.delete('/pools/:poolId/members/:memberId', async (c) => {
   const member = await db.query.poolMember.findFirst({ where: eq(poolMember.id, memberId) })
   if (!member) return c.json({ error: 'NOT_FOUND', message: 'Membro não encontrado' }, 404)
 
-  await createRefund(member.paymentId)
-  return c.json({ refund: { id: member.paymentId, amount: poolData.entryFee, status: 'pending' } })
+  await db.delete(poolMember).where(eq(poolMember.id, memberId))
+  return c.json({ removed: true })
 })
 
 // GET /api/pools/:poolId/prize — Prize info for finalized pool
@@ -309,18 +308,18 @@ poolsRoutes.post('/pools/:poolId/prize/withdraw', async (c) => {
   }
 })
 
-// POST /api/pools/:poolId/cancel — Cancel pool with full refund (owner only)
+// POST /api/pools/:poolId/cancel — Cancel pool (owner only)
 poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
   const { poolId } = c.req.param()
   const currentUser = c.get('user')
 
   try {
-    const result = await getContainer().cancelPoolUseCase.execute({
+    await getContainer().cancelPoolUseCase.execute({
       userId: currentUser.id,
       poolId,
     })
 
-    return c.json({ pool: { status: 'cancelled' }, refunds: result.refunds })
+    return c.json({ cancelled: true })
   } catch (err) {
     if (err instanceof PoolError) {
       const statusMap: Record<string, number> = {

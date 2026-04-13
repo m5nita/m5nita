@@ -77,7 +77,8 @@ vi.mock('../../../../services/pool', () => ({
 }))
 
 vi.mock('../../../../services/payment', () => ({
-  createEntryPayment: vi.fn(),
+  handleCheckoutCompleted: vi.fn(),
+  handleCheckoutExpired: vi.fn(),
 }))
 
 vi.mock('../../../../services/coupon', () => ({
@@ -117,7 +118,7 @@ describe('POST /api/pools', () => {
       },
       payment: {
         payment: { id: 'pay-1' },
-        checkoutUrl: 'https://checkout.stripe.com/test',
+        checkoutUrl: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=test',
       },
       platformFee: 250,
       originalPlatformFee: 250,
@@ -141,7 +142,9 @@ describe('POST /api/pools', () => {
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.pool.name).toBe('Test Pool')
-    expect(body.payment.checkoutUrl).toBe('https://checkout.stripe.com/test')
+    expect(body.payment.checkoutUrl).toBe(
+      'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=test',
+    )
     expect(mockCreatePoolExecute).toHaveBeenCalledWith({
       userId: 'user-1',
       name: 'Test Pool',

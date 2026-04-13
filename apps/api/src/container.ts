@@ -10,38 +10,23 @@ import { GetUserPredictionsUseCase } from './application/prediction/GetUserPredi
 import { UpsertPredictionUseCase } from './application/prediction/UpsertPredictionUseCase'
 import { GetPrizeInfoUseCase } from './application/prize/GetPrizeInfoUseCase'
 import { RequestWithdrawalUseCase } from './application/prize/RequestWithdrawalUseCase'
+import { db } from './db/client'
+import { payment } from './db/schema/payment'
+import { MercadoPagoPaymentGateway } from './infrastructure/external/MercadoPagoPaymentGateway'
 import { MockPaymentGateway } from './infrastructure/external/MockPaymentGateway'
-import { StripePaymentGateway } from './infrastructure/external/StripePaymentGateway'
 import { TelegramNotificationService } from './infrastructure/external/TelegramNotificationService'
 import { DrizzleMatchRepository } from './infrastructure/persistence/DrizzleMatchRepository'
 import { DrizzlePoolRepository } from './infrastructure/persistence/DrizzlePoolRepository'
 import { DrizzlePredictionRepository } from './infrastructure/persistence/DrizzlePredictionRepository'
 import { DrizzlePrizeWithdrawalRepository } from './infrastructure/persistence/DrizzlePrizeWithdrawalRepository'
 import { DrizzleRankingRepository } from './infrastructure/persistence/DrizzleRankingRepository'
+import { mercadoPagoClient } from './lib/mercadopago'
+import { bot } from './lib/telegram'
 import { getCompetitionById } from './services/competition'
 import { getEffectiveFeeRate, incrementUsage, validateCoupon } from './services/coupon'
 
-function getDb() {
-  return require('./db/client').db
-}
-
-function getStripe() {
-  return require('./lib/stripe').stripe
-}
-
-function getBot() {
-  return require('./lib/telegram').bot
-}
-
-function getPayment() {
-  return require('./db/schema/payment').payment
-}
-
 function buildContainer() {
-  const db = getDb()
-  const stripe = getStripe()
-  const bot = getBot()
-  const payment = getPayment()
+  const mpClient = mercadoPagoClient
 
   const poolRepo = new DrizzlePoolRepository(db)
   const predictionRepo = new DrizzlePredictionRepository(db)
@@ -49,7 +34,9 @@ function buildContainer() {
   const rankingRepo = new DrizzleRankingRepository(db)
   const matchRepo = new DrizzleMatchRepository(db)
 
-  const paymentGateway = stripe ? new StripePaymentGateway(stripe, db) : new MockPaymentGateway(db)
+  const paymentGateway = mpClient
+    ? new MercadoPagoPaymentGateway(mpClient, db)
+    : new MockPaymentGateway(db)
 
   const notificationService = new TelegramNotificationService(bot)
 
@@ -60,21 +47,6 @@ function buildContainer() {
       .where(and(eq(payment.poolId, poolId), eq(payment.type, 'prize')))
       .limit(1)
     return !!row
-  }
-
-  async function getCompletedEntryPayments(poolId: string) {
-    const rows = await db.query.payment.findMany({
-      where: and(
-        eq(payment.poolId, poolId),
-        eq(payment.type, 'entry'),
-        eq(payment.status, 'completed'),
-      ),
-    })
-    return rows.map((r: { id: string; userId: string; amount: number }) => ({
-      id: r.id,
-      userId: r.userId,
-      amount: r.amount,
-    }))
   }
 
   return {
@@ -95,12 +67,7 @@ function buildContainer() {
       POOL.PLATFORM_FEE_RATE,
     ),
     joinPoolUseCase: new JoinPoolUseCase(poolRepo, paymentGateway),
-    cancelPoolUseCase: new CancelPoolUseCase(
-      poolRepo,
-      paymentGateway,
-      hasPrizePayments,
-      getCompletedEntryPayments,
-    ),
+    cancelPoolUseCase: new CancelPoolUseCase(poolRepo, hasPrizePayments),
     getPoolDetailsUseCase: new GetPoolDetailsUseCase(poolRepo),
     getUserPoolsUseCase: new GetUserPoolsUseCase(poolRepo),
     upsertPredictionUseCase: new UpsertPredictionUseCase(predictionRepo, poolRepo, matchRepo),

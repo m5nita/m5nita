@@ -12,6 +12,5 @@ export interface CheckoutResult {
 
 export interface PaymentGateway {
   createCheckoutSession(params: CheckoutParams): Promise<CheckoutResult>
-  refund(paymentId: string): Promise<void>
   isConfigured(): boolean
 }

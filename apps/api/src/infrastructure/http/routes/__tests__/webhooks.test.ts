@@ -1,25 +1,35 @@
+import { createHmac } from 'node:crypto'
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { webhooksRoutes } from '../webhooks'
 
 const mockHandleCheckoutCompleted = vi.fn()
-const mockHandleCheckoutExpired = vi.fn()
 
 vi.mock('../../../../services/payment', () => ({
   handleCheckoutCompleted: (...args: unknown[]) => mockHandleCheckoutCompleted(...args),
-  handleCheckoutExpired: (...args: unknown[]) => mockHandleCheckoutExpired(...args),
 }))
 
-vi.mock('../../../../lib/stripe', () => ({
-  stripe: {
-    webhooks: {
-      constructEventAsync: vi.fn(async (body: string) => {
-        const parsed = JSON.parse(body)
-        return parsed
-      }),
-    },
+vi.mock('../../../../lib/mercadopago', () => ({
+  mercadoPagoClient: { accessToken: 'TEST-token' },
+}))
+
+const mockPaymentGet = vi.fn()
+vi.mock('mercadopago', () => ({
+  Payment: class {
+    get(...args: unknown[]) {
+      return mockPaymentGet(...args)
+    }
   },
 }))
+
+const WEBHOOK_SECRET = 'test-webhook-secret'
+
+function createSignature(dataId: string, requestId: string): string {
+  const ts = String(Date.now())
+  const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`
+  const hmac = createHmac('sha256', WEBHOOK_SECRET).update(manifest).digest('hex')
+  return `ts=${ts},v1=${hmac}`
+}
 
 function createTestApp() {
   const app = new Hono()
@@ -27,60 +37,88 @@ function createTestApp() {
   return app
 }
 
-describe('POST /api/webhooks/stripe', () => {
+describe('POST /api/webhooks/mercadopago', () => {
   let app: Hono
 
   beforeEach(() => {
     app = createTestApp()
     vi.clearAllMocks()
-    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test'
+    process.env.MERCADOPAGO_WEBHOOK_SECRET = WEBHOOK_SECRET
   })
 
-  it('handles_checkoutCompleted_callsHandler', async () => {
-    const event = {
-      type: 'checkout.session.completed',
-      data: { object: { id: 'cs_123' } },
-    }
+  it('approvedPayment_callsHandleCheckoutCompleted', async () => {
+    const dataId = '12345'
+    const requestId = 'req-abc'
 
-    const res = await app.request('/api/webhooks/stripe', {
+    mockPaymentGet.mockResolvedValueOnce({
+      status: 'approved',
+      external_reference: 'payment-uuid-123',
+    })
+
+    const res = await app.request('/api/webhooks/mercadopago', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'stripe-signature': 'test_sig',
+        'x-signature': createSignature(dataId, requestId),
+        'x-request-id': requestId,
       },
-      body: JSON.stringify(event),
+      body: JSON.stringify({ type: 'payment', data: { id: dataId } }),
     })
 
     expect(res.status).toBe(200)
-    expect(mockHandleCheckoutCompleted).toHaveBeenCalledWith('cs_123')
+    expect(mockHandleCheckoutCompleted).toHaveBeenCalledWith('payment-uuid-123')
   })
 
-  it('handles_checkoutExpired_callsHandler', async () => {
-    const event = {
-      type: 'checkout.session.expired',
-      data: { object: { id: 'cs_456' } },
-    }
+  it('pendingPayment_doesNotCallHandler', async () => {
+    const dataId = '12345'
+    const requestId = 'req-abc'
 
-    const res = await app.request('/api/webhooks/stripe', {
+    mockPaymentGet.mockResolvedValueOnce({
+      status: 'pending',
+      external_reference: 'payment-uuid-123',
+    })
+
+    const res = await app.request('/api/webhooks/mercadopago', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'stripe-signature': 'test_sig',
+        'x-signature': createSignature(dataId, requestId),
+        'x-request-id': requestId,
       },
-      body: JSON.stringify(event),
+      body: JSON.stringify({ type: 'payment', data: { id: dataId } }),
     })
 
     expect(res.status).toBe(200)
-    expect(mockHandleCheckoutExpired).toHaveBeenCalledWith('cs_456')
+    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
   })
 
-  it('rejects_missingSignature_400', async () => {
-    const res = await app.request('/api/webhooks/stripe', {
+  it('missingSignatureHeaders_returns400', async () => {
+    const res = await app.request('/api/webhooks/mercadopago', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body: JSON.stringify({ type: 'payment', data: { id: '123' } }),
     })
 
     expect(res.status).toBe(400)
+  })
+
+  it('invalidSignature_logsWarningButProcesses', async () => {
+    mockPaymentGet.mockResolvedValueOnce({
+      status: 'pending',
+      external_reference: 'payment-uuid-123',
+    })
+
+    const res = await app.request('/api/webhooks/mercadopago', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-signature': 'ts=123,v1=invalid-hash',
+        'x-request-id': 'req-abc',
+      },
+      body: JSON.stringify({ type: 'payment', data: { id: '123' } }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
   })
 })

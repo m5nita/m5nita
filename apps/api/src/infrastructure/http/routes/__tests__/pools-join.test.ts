@@ -76,7 +76,8 @@ vi.mock('../../../../services/pool', () => ({
 }))
 
 vi.mock('../../../../services/payment', () => ({
-  createEntryPayment: vi.fn(),
+  handleCheckoutCompleted: vi.fn(),
+  handleCheckoutExpired: vi.fn(),
 }))
 
 const testUser = { id: 'user-1', name: 'Test', phoneNumber: '+5511999999999' }
@@ -163,7 +164,7 @@ describe('POST /api/pools/:poolId/join', () => {
     mockJoinPoolExecute.mockResolvedValue({
       payment: {
         payment: { id: 'pay-1' },
-        checkoutUrl: 'https://checkout.stripe.com/join',
+        checkoutUrl: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=join',
       },
       amount: 5000,
     })
@@ -175,7 +176,9 @@ describe('POST /api/pools/:poolId/join', () => {
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.payment.checkoutUrl).toBe('https://checkout.stripe.com/join')
+    expect(body.payment.checkoutUrl).toBe(
+      'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=join',
+    )
   })
 
   it('rejects_closedPool_409', async () => {

@@ -1,6 +1,6 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-12
+Auto-generated from all feature plans. Last updated: 2026-04-13
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 20) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
@@ -16,6 +16,7 @@ Auto-generated from all feature plans. Last updated: 2026-04-12
 - N/A (no data changes) (010-desktop-layout)
 - TypeScript 5.x (Node.js >= 20) + Hono (HTTP), Drizzle ORM, Better Auth, grammY (Telegram), Stripe SDK (011-hexagonal-architecture)
 - PostgreSQL 16 via Drizzle ORM (011-hexagonal-architecture)
+- TypeScript 5.x (Node.js >= 20) + Hono (HTTP), Drizzle ORM, mercadopago SDK (new), Better Auth, grammY (012-stripe-to-mercadopago)
 
 - TypeScript 5.x (Node.js >= 20) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM, Stripe SDK
@@ -52,10 +53,9 @@ pnpm drizzle-kit push        # Push schema (dev only)
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 012-stripe-to-mercadopago: Added TypeScript 5.x (Node.js >= 20) + Hono (HTTP), Drizzle ORM, mercadopago SDK (new), Better Auth, grammY
 - 011-hexagonal-architecture: Added TypeScript 5.x (Node.js >= 20) + Hono (HTTP), Drizzle ORM, Better Auth, grammY (Telegram), Stripe SDK
 - 010-desktop-layout: Added TypeScript 5.x (Node.js >= 20) + React 19, TanStack Router, TanStack Query, Tailwind CSS v4
-- 009-view-others-predictions: Added TypeScript 5.x, Node.js ≥ 20 + Hono (API), Drizzle ORM, Better Auth (auth middleware), React 19, TanStack Router, TanStack Query, Tailwind CSS v4
-- 008-social-email-auth: Added TypeScript 5.x (Node.js >= 20) + Hono (API), Better Auth 1.2.x (auth), Drizzle ORM, React 19, TanStack Router/Query, resend (new), jose (new)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

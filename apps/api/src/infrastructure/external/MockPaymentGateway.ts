@@ -24,7 +24,7 @@ export class MockPaymentGateway implements PaymentGateway {
         poolId,
         amount,
         platformFee,
-        stripePaymentIntentId: `mock_pi_${crypto.randomUUID()}`,
+        externalPaymentId: `mock_pi_${crypto.randomUUID()}`,
         status: 'completed',
         type: 'entry',
       })
@@ -50,30 +50,6 @@ export class MockPaymentGateway implements PaymentGateway {
       payment: paymentRecord as NonNullable<typeof paymentRecord>,
       checkoutUrl: null,
     }
-  }
-
-  async refund(paymentId: string): Promise<void> {
-    const paymentRecord = await this.db.query.payment.findFirst({
-      where: eq(payment.id, paymentId),
-    })
-
-    if (!paymentRecord || paymentRecord.status !== 'completed') {
-      throw new Error('Payment not found or not completed')
-    }
-
-    await this.db
-      .update(payment)
-      .set({ status: 'refunded', updatedAt: new Date() })
-      .where(eq(payment.id, paymentId))
-
-    await this.db
-      .delete(poolMember)
-      .where(
-        and(
-          eq(poolMember.poolId, paymentRecord.poolId),
-          eq(poolMember.userId, paymentRecord.userId),
-        ),
-      )
   }
 
   isConfigured(): boolean {
