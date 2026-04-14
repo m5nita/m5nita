@@ -6,6 +6,7 @@ import { OtpInput } from '../components/ui/OtpInput'
 import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
 import { consumePendingRedirect, redirectIfAuthenticated } from '../lib/authGuard'
+import { useTurnstile } from '../lib/turnstile'
 
 const TELEGRAM_BOT_USERNAME = 'm5nita_bot'
 
@@ -91,6 +92,26 @@ function LoginPage() {
   const [magicLinkCooldown, setMagicLinkCooldown] = useState(0)
   const verifyingRef = useRef(false)
 
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined
+  const turnstile = useTurnstile(turnstileSiteKey)
+
+  function captchaFetchOptions() {
+    return turnstile.token ? { headers: { 'X-Turnstile-Token': turnstile.token } } : {}
+  }
+
+  function handleCaptchaError(message: string) {
+    setError(message)
+    turnstile.reset()
+  }
+
+  function isCaptchaError(
+    err: { code?: string; message?: string; status?: number } | null | undefined,
+  ) {
+    if (!err) return false
+    const haystack = `${err.code ?? ''} ${err.message ?? ''}`
+    return /captcha_/i.test(haystack)
+  }
+
   function handlePostLogin(userName?: string | null) {
     const pending = consumePendingRedirect()
     if (pending) {
@@ -103,14 +124,21 @@ function LoginPage() {
   }
 
   async function handleSocialSignIn(provider: 'google') {
+    if (!turnstile.token) {
+      setError('Complete a verificação antes de continuar.')
+      return
+    }
     setSocialLoading(provider)
     setError('')
     try {
-      await authClient.signIn.social({
-        provider,
-        callbackURL: window.location.origin,
-        errorCallbackURL: `${window.location.origin}/login?error=social`,
-      })
+      await authClient.signIn.social(
+        {
+          provider,
+          callbackURL: window.location.origin,
+          errorCallbackURL: `${window.location.origin}/login?error=social`,
+        },
+        captchaFetchOptions(),
+      )
     } catch {
       setError('Erro ao iniciar login. Tente novamente.')
       setSocialLoading(null)
@@ -122,14 +150,25 @@ function LoginPage() {
       setError('Informe um email válido')
       return
     }
+    if (!turnstile.token) {
+      setError('Complete a verificação antes de continuar.')
+      return
+    }
     setLoading(true)
     setError('')
     try {
-      const result = await authClient.signIn.magicLink({
-        email,
-        callbackURL: window.location.origin,
-      })
+      const result = await authClient.signIn.magicLink(
+        {
+          email,
+          callbackURL: window.location.origin,
+        },
+        captchaFetchOptions(),
+      )
       if (result.error) {
+        if (isCaptchaError(result.error)) {
+          handleCaptchaError('Verificação expirada. Tente novamente.')
+          return
+        }
         if (result.error.message?.includes('TOO_MANY_REQUESTS')) {
           setError('Muitas tentativas. Aguarde alguns minutos.')
         } else {
@@ -137,6 +176,7 @@ function LoginPage() {
         }
         return
       }
+      turnstile.reset()
       setStep('magic-link-sent')
       setMagicLinkCooldown(30)
       const interval = setInterval(() => {
@@ -160,6 +200,10 @@ function LoginPage() {
       setError('Informe um telefone válido')
       return
     }
+    if (!turnstile.token) {
+      setError('Complete a verificação antes de continuar.')
+      return
+    }
     setLoading(true)
     setError('')
     setShowTelegramHelp(false)
@@ -176,7 +220,19 @@ function LoginPage() {
         setError('Telefone não conectado ao Telegram')
         return
       }
-      await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
+      const result = await authClient.phoneNumber.sendOtp(
+        { phoneNumber: phone },
+        captchaFetchOptions(),
+      )
+      if (result.error) {
+        if (isCaptchaError(result.error)) {
+          handleCaptchaError('Verificação expirada. Tente novamente.')
+          return
+        }
+        setError('Erro ao enviar código. Tente novamente.')
+        return
+      }
+      turnstile.reset()
       setStep('phone-otp')
     } catch {
       setError('Erro ao enviar código. Tente novamente.')
@@ -312,6 +368,8 @@ function LoginPage() {
   }
 
   const isSocialLoading = socialLoading !== null
+  const captchaReady = turnstile.token !== null
+  const captchaDisabled = !captchaReady || turnstile.error !== null
 
   return (
     <div className="flex min-h-[75vh] flex-col justify-center lg:items-center">
@@ -329,7 +387,7 @@ function LoginPage() {
             <button
               type="button"
               onClick={() => handleSocialSignIn('google')}
-              disabled={isSocialLoading}
+              disabled={isSocialLoading || captchaDisabled}
               className="flex w-full items-center justify-center gap-3 border-2 border-black py-3.5 font-display text-sm font-bold uppercase tracking-wider text-black transition-all duration-150 hover:bg-black hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
             >
               {socialLoading === 'google' ? (
@@ -382,7 +440,7 @@ function LoginPage() {
               type="submit"
               variant="secondary"
               loading={loading}
-              disabled={isSocialLoading}
+              disabled={isSocialLoading || captchaDisabled}
               className="w-full"
               size="lg"
             >
@@ -427,7 +485,7 @@ function LoginPage() {
               type="submit"
               variant="secondary"
               loading={loading}
-              disabled={isSocialLoading}
+              disabled={isSocialLoading || captchaDisabled}
               className="w-full"
               size="lg"
             >
@@ -435,6 +493,19 @@ function LoginPage() {
               Entrar com Telegram
             </Button>
           </form>
+
+          <div className="flex flex-col items-center gap-2">
+            <div ref={turnstile.containerRef} />
+            {turnstile.error && (
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="font-display text-xs font-bold uppercase tracking-wider text-red underline underline-offset-4 cursor-pointer"
+              >
+                Falha na verificação. Recarregar
+              </button>
+            )}
+          </div>
 
           {/* Error display */}
           {error && (
