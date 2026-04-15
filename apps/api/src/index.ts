@@ -8,6 +8,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { globalRateLimit, otpRateLimit } from './infrastructure/http/middleware/rateLimit'
+import { turnstileGuard } from './infrastructure/http/middleware/turnstileGuard'
 import { competitionsRoutes } from './infrastructure/http/routes/competitions'
 import { matchesRoutes } from './infrastructure/http/routes/matches'
 import { poolsRoutes } from './infrastructure/http/routes/pools'
@@ -18,6 +19,7 @@ import { usersRoutes } from './infrastructure/http/routes/users'
 import { webhooksRoutes } from './infrastructure/http/routes/webhooks'
 import { sendPredictionReminders } from './jobs/reminderJob'
 import { auth } from './lib/auth'
+import { getCaptchaVerifier } from './lib/turnstile'
 import { syncFixtures, syncLiveScores } from './services/match'
 
 import type { AppEnv } from './types/hono'
@@ -31,6 +33,7 @@ app.use(
   cors({
     origin: [allowedOrigin],
     credentials: true,
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Turnstile-Token'],
   }),
 )
 
@@ -47,6 +50,13 @@ app.post('/api/auth/phone-number/send-otp', async (c, next) => {
   await next()
 })
 app.post('/api/auth/phone-number/send-otp', otpRateLimit)
+
+// Turnstile tokens are single-use; guard only the initial login entry points.
+// verify-otp is already gated by Better Auth's code + attempt limits.
+const captchaGuard = turnstileGuard(getCaptchaVerifier())
+app.use('/api/auth/phone-number/send-otp', captchaGuard)
+app.use('/api/auth/sign-in/magic-link', captchaGuard)
+app.use('/api/auth/sign-in/social', captchaGuard)
 
 // Better Auth — mounted directly, no auth middleware
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
