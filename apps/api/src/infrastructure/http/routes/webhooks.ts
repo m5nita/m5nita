@@ -1,7 +1,9 @@
 import { createHmac } from 'node:crypto'
 import { Hono } from 'hono'
 import { Payment } from 'mercadopago'
+import type Stripe from 'stripe'
 import { mercadoPagoClient } from '../../../lib/mercadopago'
+import { stripe } from '../../../lib/stripe'
 import { handleCheckoutCompleted } from '../../../services/payment'
 
 const webhooksRoutes = new Hono()
@@ -66,6 +68,38 @@ webhooksRoutes.post('/webhooks/mercadopago', async (c) => {
 
   if (mpPayment.status === 'approved' && mpPayment.external_reference) {
     await handleCheckoutCompleted(mpPayment.external_reference)
+  }
+
+  return c.json({ received: true })
+})
+
+webhooksRoutes.post('/webhooks/stripe', async (c) => {
+  const body = await c.req.text()
+  const sig = c.req.header('stripe-signature')
+
+  if (!sig) {
+    return c.json({ error: 'MISSING_SIGNATURE', message: 'Stripe signature missing' }, 400)
+  }
+
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  if (!webhookSecret || !stripe) {
+    return c.json({ error: 'CONFIG_ERROR', message: 'Stripe webhook not configured' }, 500)
+  }
+
+  let event: Stripe.Event
+  try {
+    event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret)
+  } catch (err) {
+    console.error('[Stripe] Webhook signature verification failed:', err)
+    return c.json({ error: 'INVALID_SIGNATURE', message: 'Invalid signature' }, 400)
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object
+    const paymentId = session.metadata?.paymentId
+    if (paymentId) {
+      await handleCheckoutCompleted(paymentId)
+    }
   }
 
   return c.json({ received: true })
