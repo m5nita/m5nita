@@ -494,8 +494,8 @@ function LoginPage() {
             </Button>
           </form>
 
-          <div className="flex flex-col items-center gap-2">
-            <div ref={turnstile.containerRef} />
+          <div className="flex flex-col items-stretch gap-2">
+            <div ref={turnstile.containerRef} className="w-full" />
             {turnstile.error && (
               <button
                 type="button"

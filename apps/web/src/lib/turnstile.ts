@@ -76,6 +76,7 @@ export function useTurnstile(siteKey: string | undefined): UseTurnstileResult {
         apiRef.current = api
         widgetIdRef.current = api.render(containerRef.current, {
           sitekey: siteKey,
+          size: 'flexible',
           callback: (tok) => {
             setToken(tok)
             setError(null)
