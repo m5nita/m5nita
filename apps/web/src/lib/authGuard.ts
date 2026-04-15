@@ -28,6 +28,11 @@ export async function requireAuthGuard() {
     throw redirect({ to: '/login' })
   }
 
+  if (!session.data.user) {
+    await authClient.signOut().catch(() => {})
+    throw redirect({ to: '/login' })
+  }
+
   if (!session.data.user.name) {
     throw redirect({ to: '/complete-profile' })
   }

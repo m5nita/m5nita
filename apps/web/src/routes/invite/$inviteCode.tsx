@@ -159,6 +159,11 @@ export const Route = createFileRoute('/invite/$inviteCode')({
       savePendingRedirect(location.pathname)
       throw redirect({ to: '/login' })
     }
+    if (!session.data.user) {
+      await authClient.signOut().catch(() => {})
+      savePendingRedirect(location.pathname)
+      throw redirect({ to: '/login' })
+    }
     if (!session.data.user.name) {
       throw redirect({ to: '/complete-profile' })
     }
