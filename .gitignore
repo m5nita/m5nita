@@ -19,3 +19,6 @@ apps/web/src/**/*.js
 .devdbrc
 .mcp.json
 .superpowers/
+
+# Local scripts (not versioned)
+scripts/
