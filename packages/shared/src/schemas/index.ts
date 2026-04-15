@@ -100,3 +100,42 @@ export const withdrawPrizeSchema = z.object({
   pixKeyType: pixKeyTypeSchema,
   pixKey: z.string().min(1, 'Chave PIX é obrigatória'),
 })
+
+// Affiliate coupon schemas
+export const createAffiliateCouponSchema = z.object({
+  code: z
+    .string()
+    .min(3)
+    .max(20)
+    .transform((v) => v.trim().toUpperCase())
+    .pipe(z.string().regex(/^[A-Z0-9]+$/, 'Código deve conter apenas letras e números')),
+  discountPercent: z.number().int().min(0).max(99),
+  commissionPercent: z.number().int().min(1).max(99),
+  beneficiary: z.object({
+    name: z
+      .string()
+      .transform((v) => v.trim())
+      .pipe(z.string().min(1, 'Nome é obrigatório').max(100)),
+    pix: z.object({
+      type: pixKeyTypeSchema,
+      value: z.string().min(1, 'Chave PIX é obrigatória'),
+    }),
+  }),
+  expiresAt: z
+    .string()
+    .datetime()
+    .optional()
+    .nullable()
+    .transform((v) => (v ? new Date(v) : null)),
+  maxUses: z.number().int().min(1).optional().nullable(),
+})
+
+export const recordAffiliatePayoutSchema = z.object({
+  amountCentavos: z.number().int().positive(),
+  paidAt: z
+    .string()
+    .datetime()
+    .refine((v) => new Date(v) <= new Date(), 'paidAt não pode estar no futuro')
+    .transform((v) => new Date(v)),
+  externalReference: z.string().max(200).optional().nullable(),
+})
