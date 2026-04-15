@@ -23,7 +23,7 @@
     "@m5nita/shared": "workspace:*",
     "@sentry/node": "^10.48.0",
     "@sentry/profiling-node": "^10.48.0",
-    "better-auth": "^1.2.8",
+    "better-auth": "1.5.5",
     "drizzle-orm": "^0.41.0",
     "grammy": "^1.41.1",
     "hono": "^4.7.6",

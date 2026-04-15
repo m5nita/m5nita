@@ -1,14 +1,26 @@
 import { createRootRoute, Link, Outlet, useLocation, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useSession } from '../lib/auth'
+import { useEffect, useRef, useState } from 'react'
+import { authClient, useSession } from '../lib/auth'
 
 function RootLayout() {
   const router = useRouter()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
-  const { data: session } = useSession()
+  const { data: session, isPending: sessionPending } = useSession()
   const isHome = location.pathname === '/'
   const isLogin = location.pathname === '/login'
+  const orphanCleanupRef = useRef(false)
+
+  useEffect(() => {
+    if (sessionPending) return
+    if (isLogin) return
+    if (!session || session.user) return
+    if (orphanCleanupRef.current) return
+    orphanCleanupRef.current = true
+    authClient.signOut().finally(() => {
+      window.location.assign('/login')
+    })
+  }, [session, sessionPending, isLogin])
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream font-body text-black">
