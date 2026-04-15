@@ -13,6 +13,15 @@ vi.mock('../../../../lib/mercadopago', () => ({
   mercadoPagoClient: { accessToken: 'TEST-token' },
 }))
 
+const mockStripeConstructEvent = vi.fn()
+vi.mock('../../../../lib/stripe', () => ({
+  stripe: {
+    webhooks: {
+      constructEventAsync: (...args: unknown[]) => mockStripeConstructEvent(...args),
+    },
+  },
+}))
+
 const mockPaymentGet = vi.fn()
 vi.mock('mercadopago', () => ({
   Payment: class {
@@ -119,6 +128,85 @@ describe('POST /api/webhooks/mercadopago', () => {
     })
 
     expect(res.status).toBe(200)
+    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /api/webhooks/stripe', () => {
+  let app: Hono
+
+  beforeEach(() => {
+    app = createTestApp()
+    vi.clearAllMocks()
+    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test'
+  })
+
+  it('checkoutCompleted_callsHandleCheckoutCompleted', async () => {
+    mockStripeConstructEvent.mockResolvedValueOnce({
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          metadata: { paymentId: 'payment-uuid-456' },
+        },
+      },
+    })
+
+    const res = await app.request('/api/webhooks/stripe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'stripe-signature': 'test_sig',
+      },
+      body: '{}',
+    })
+
+    expect(res.status).toBe(200)
+    expect(mockHandleCheckoutCompleted).toHaveBeenCalledWith('payment-uuid-456')
+  })
+
+  it('otherEventTypes_doNotCallHandler', async () => {
+    mockStripeConstructEvent.mockResolvedValueOnce({
+      type: 'checkout.session.expired',
+      data: { object: { id: 'cs_456' } },
+    })
+
+    const res = await app.request('/api/webhooks/stripe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'stripe-signature': 'test_sig',
+      },
+      body: '{}',
+    })
+
+    expect(res.status).toBe(200)
+    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+  })
+
+  it('missingSignature_returns400', async () => {
+    const res = await app.request('/api/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+
+    expect(res.status).toBe(400)
+  })
+
+  it('invalidSignature_returns400', async () => {
+    mockStripeConstructEvent.mockRejectedValueOnce(new Error('Invalid signature'))
+
+    const res = await app.request('/api/webhooks/stripe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'stripe-signature': 'bad_sig',
+      },
+      body: '{}',
+    })
+
+    expect(res.status).toBe(400)
     expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
   })
 })

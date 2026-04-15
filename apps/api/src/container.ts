@@ -5,6 +5,7 @@ import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
 import { GetPoolDetailsUseCase } from './application/pool/GetPoolDetailsUseCase'
 import { GetUserPoolsUseCase } from './application/pool/GetUserPoolsUseCase'
 import { JoinPoolUseCase } from './application/pool/JoinPoolUseCase'
+import type { PaymentGateway } from './application/ports/PaymentGateway.port'
 import { GetMatchPredictionsUseCase } from './application/prediction/GetMatchPredictionsUseCase'
 import { GetUserPredictionsUseCase } from './application/prediction/GetUserPredictionsUseCase'
 import { UpsertPredictionUseCase } from './application/prediction/UpsertPredictionUseCase'
@@ -14,6 +15,7 @@ import { db } from './db/client'
 import { payment } from './db/schema/payment'
 import { MercadoPagoPaymentGateway } from './infrastructure/external/MercadoPagoPaymentGateway'
 import { MockPaymentGateway } from './infrastructure/external/MockPaymentGateway'
+import { StripePaymentGateway } from './infrastructure/external/StripePaymentGateway'
 import { TelegramNotificationService } from './infrastructure/external/TelegramNotificationService'
 import { DrizzleMatchRepository } from './infrastructure/persistence/DrizzleMatchRepository'
 import { DrizzlePoolRepository } from './infrastructure/persistence/DrizzlePoolRepository'
@@ -21,22 +23,44 @@ import { DrizzlePredictionRepository } from './infrastructure/persistence/Drizzl
 import { DrizzlePrizeWithdrawalRepository } from './infrastructure/persistence/DrizzlePrizeWithdrawalRepository'
 import { DrizzleRankingRepository } from './infrastructure/persistence/DrizzleRankingRepository'
 import { mercadoPagoClient } from './lib/mercadopago'
+import { stripe } from './lib/stripe'
 import { bot } from './lib/telegram'
 import { getCompetitionById } from './services/competition'
 import { getEffectiveFeeRate, incrementUsage, validateCoupon } from './services/coupon'
 
-function buildContainer() {
-  const mpClient = mercadoPagoClient
+function buildPaymentGateway(): PaymentGateway {
+  const provider = process.env.PAYMENT_GATEWAY ?? 'mercadopago'
+  const isProd = process.env.NODE_ENV === 'production'
 
+  if (provider === 'stripe') {
+    if (stripe) return new StripePaymentGateway(stripe, db)
+    if (isProd) {
+      throw new Error('PAYMENT_GATEWAY=stripe but STRIPE_SECRET_KEY is missing or invalid')
+    }
+    return new MockPaymentGateway(db)
+  }
+
+  if (provider === 'mercadopago') {
+    if (mercadoPagoClient) return new MercadoPagoPaymentGateway(mercadoPagoClient, db)
+    if (isProd) {
+      throw new Error(
+        'PAYMENT_GATEWAY=mercadopago but MERCADOPAGO_ACCESS_TOKEN is missing or invalid',
+      )
+    }
+    return new MockPaymentGateway(db)
+  }
+
+  throw new Error(`Invalid PAYMENT_GATEWAY: "${provider}" (expected "stripe" or "mercadopago")`)
+}
+
+function buildContainer() {
   const poolRepo = new DrizzlePoolRepository(db)
   const predictionRepo = new DrizzlePredictionRepository(db)
   const prizeWithdrawalRepo = new DrizzlePrizeWithdrawalRepository(db)
   const rankingRepo = new DrizzleRankingRepository(db)
   const matchRepo = new DrizzleMatchRepository(db)
 
-  const paymentGateway = mpClient
-    ? new MercadoPagoPaymentGateway(mpClient, db)
-    : new MockPaymentGateway(db)
+  const paymentGateway = buildPaymentGateway()
 
   const notificationService = new TelegramNotificationService(bot)
 
