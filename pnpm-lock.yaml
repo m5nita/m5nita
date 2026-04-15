@@ -27,7 +27,7 @@ importers:
         specifier: ^10.48.0
         version: 10.48.0
       better-auth:
-        specifier: ^1.2.8
+        specifier: 1.5.5
         version: 1.5.5(drizzle-kit@0.31.9)(drizzle-orm@0.41.0(@opentelemetry/api@1.9.1)(@types/pg@8.15.6)(gel@2.2.0)(kysely@0.28.12)(postgres@3.4.8))(mongodb@7.1.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@3.2.4(@types/node@22.19.15)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.1)(tsx@4.21.0))
       drizzle-orm:
         specifier: ^0.41.0
@@ -91,7 +91,7 @@ importers:
         specifier: ^1.114.3
         version: 1.167.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       better-auth:
-        specifier: ^1.2.8
+        specifier: 1.5.5
         version: 1.5.5(drizzle-kit@0.31.9)(drizzle-orm@0.41.0(@opentelemetry/api@1.9.1)(@types/pg@8.15.6)(gel@2.2.0)(kysely@0.28.12)(postgres@3.4.8))(mongodb@7.1.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@3.2.4(@types/node@22.19.15)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.1)(tsx@4.21.0))
       hono:
         specifier: ^4.7.6
