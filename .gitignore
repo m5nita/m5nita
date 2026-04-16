@@ -20,5 +20,9 @@ apps/web/src/**/*.js
 .mcp.json
 .superpowers/
 
+# Worktrees
+.worktrees/
+.claude/worktrees/
+
 # Local scripts (not versioned)
 scripts/
