@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080, height=1080">
+  <title>Post 3 — Antes vs Depois Feed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1080px;
+      height: 1080px;
+      background: #111111;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+    .side {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+    }
+    .side-left {
+      border-right: 4px solid #C4362A;
+      padding-bottom: 96px;
+    }
+    .label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+    }
+    .label-antes { color: #C4362A; }
+    .label-depois { color: #2D6A4F; }
+    .emoji {
+      font-size: 80px;
+      margin: 32px 0;
+    }
+    .side-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 40px;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.15;
+      letter-spacing: 1px;
+    }
+    .title-antes { color: #5C564E; }
+    .title-depois { color: #FAFAF8; }
+    .bullets {
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: #8D8677;
+      text-align: center;
+      line-height: 1.8;
+      margin-top: 24px;
+    }
+    .side-right {
+      padding-bottom: 96px;
+    }
+    .url {
+      position: absolute;
+      bottom: 36px;
+      right: 48px;
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: #C4362A;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- ANTES -->
+  <div class="side side-left">
+    <div class="label label-antes">Antes</div>
+    <div class="emoji">📱</div>
+    <div class="side-title title-antes">
+      Bolão no<br>grupo do<br>WhatsApp
+    </div>
+    <div class="bullets">
+      Planilha confusa<br>
+      Ninguém paga<br>
+      Sem ranking
+    </div>
+  </div>
+
+  <!-- DEPOIS -->
+  <div class="side side-right">
+    <div class="label label-depois">Depois</div>
+    <div class="emoji">🏆</div>
+    <div class="side-title title-depois">
+      Bolão no<br>m5nita
+    </div>
+    <div class="bullets">
+      Ranking automático<br>
+      Pagamento seguro<br>
+      Prêmio via Pix
+    </div>
+  </div>
+
+  <div class="url">m5nita.com</div>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080, height=1920">
+  <title>Post 2 — Como Funciona Story</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1080px;
+      height: 1920px;
+      background: #111111;
+      display: flex;
+      flex-direction: column;
+      padding: 80px 64px;
+      position: relative;
+      overflow: hidden;
+    }
+    .header-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #8D8677;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      flex: 1;
+      margin-top: 60px;
+      justify-content: center;
+    }
+    .step {
+      background: #2A2A2A;
+      border-radius: 20px;
+      padding: 40px 48px;
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      position: relative;
+      border: 1px solid #3a3a3a;
+    }
+    .step-number {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 72px;
+      font-weight: 900;
+      color: #C4362A;
+      opacity: 0.55;
+      line-height: 1;
+      min-width: 90px;
+      text-align: center;
+    }
+    .step-content {
+      flex: 1;
+    }
+    .step-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 40px;
+      font-weight: 900;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      line-height: 1.1;
+    }
+    .step-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 500;
+      color: #C4BDB3;
+      margin-top: 8px;
+      line-height: 1.3;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+    }
+    .footer-text {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #8D8677;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-label">Como funciona</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-number">01</div>
+      <div class="step-content">
+        <div class="step-title">Crie o bolão</div>
+        <div class="step-desc">Escolha a competição e o valor da entrada</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">02</div>
+      <div class="step-content">
+        <div class="step-title">Convide amigos</div>
+        <div class="step-desc">Compartilhe o código do bolão</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">03</div>
+      <div class="step-content">
+        <div class="step-title">Faça seus palpites</div>
+        <div class="step-desc">Antes de cada jogo</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">04</div>
+      <div class="step-content">
+        <div class="step-title">Leve o prêmio</div>
+        <div class="step-desc">1º lugar leva tudo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">M5NITA</div>
+  </div>
+</body>
+</html>

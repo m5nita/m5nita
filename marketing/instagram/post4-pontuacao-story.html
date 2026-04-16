@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080, height=1920">
+  <title>Post 4 — Sistema de Pontos Story</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1080px;
+      height: 1920px;
+      background: #111111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .header-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #8D8677;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+    }
+    .scores {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 48px;
+      margin-top: 80px;
+    }
+    .score-item {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      width: 560px;
+    }
+    .score-number {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 140px;
+      font-weight: 900;
+      line-height: 1;
+      min-width: 200px;
+      text-align: right;
+    }
+    .score-green { color: #2D6A4F; }
+    .score-red { color: #C4362A; }
+    .score-white { color: #FAFAF8; }
+    .score-divider {
+      width: 4px;
+      height: 80px;
+      background: #333;
+      border-radius: 2px;
+    }
+    .score-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 26px;
+      font-weight: 500;
+      color: #8D8677;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      line-height: 1.4;
+    }
+    .accent-bar {
+      width: 100px;
+      height: 7px;
+      background: #C4362A;
+      border-radius: 1px;
+      margin-top: 80px;
+    }
+    .question {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 72px;
+      font-weight: 900;
+      color: #FAFAF8;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.1;
+      margin-top: 48px;
+      letter-spacing: 1px;
+    }
+    .footer-text {
+      position: absolute;
+      bottom: 64px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #8D8677;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-label">Sistema de pontos</div>
+
+  <div class="scores">
+    <div class="score-item">
+      <div class="score-number score-green">10</div>
+      <div class="score-divider"></div>
+      <div class="score-label">Placar<br>exato</div>
+    </div>
+    <div class="score-item">
+      <div class="score-number score-red">7</div>
+      <div class="score-divider"></div>
+      <div class="score-label">Vencedor<br>+ saldo</div>
+    </div>
+    <div class="score-item">
+      <div class="score-number score-white">5</div>
+      <div class="score-divider"></div>
+      <div class="score-label">Vencedor<br>certo</div>
+    </div>
+  </div>
+
+  <div class="accent-bar"></div>
+  <div class="question">Quanto vale<br>seu palpite?</div>
+
+  <div class="footer-text">M5NITA</div>
+</body>
+</html>
