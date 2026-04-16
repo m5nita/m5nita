@@ -25,6 +25,7 @@ ENV VITE_COMMIT_HASH=${SOURCE_COMMIT}
 RUN cd apps/web && npx vite build
 
 FROM nginx:alpine AS runner
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+ENV API_UPSTREAM=http://api:3001
+COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 EXPOSE 80
