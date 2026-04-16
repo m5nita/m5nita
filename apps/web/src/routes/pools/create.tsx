@@ -40,6 +40,7 @@ function CreatePoolPage() {
 
   const selectedCompetition = competitions.find((c) => c.id === competitionId)
   const isLeague = selectedCompetition?.type === 'league'
+  const matchdays = isLeague ? (selectedCompetition?.matchdays ?? null) : null
 
   useEffect(() => {
     apiFetch('/api/competitions')
@@ -233,36 +234,66 @@ function CreatePoolPage() {
           </select>
         </div>
 
-        {isLeague && selectedCompetition?.matchdays && (
+        {matchdays && (
           <div className="flex flex-col gap-2">
             <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
               Rodadas
             </p>
             <p className="text-xs text-gray-muted">
-              Rodadas {selectedCompetition.matchdays.nextMatchday} a{' '}
-              {selectedCompetition.matchdays.max} disponiveis
+              Rodadas {matchdays.nextMatchday} a {matchdays.max} disponiveis
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Input
                 label="De"
                 type="number"
-                placeholder={String(selectedCompetition.matchdays.nextMatchday)}
+                placeholder={String(matchdays.nextMatchday)}
                 value={matchdayFrom}
                 onChange={(e) => {
-                  setMatchdayFrom(e.target.value)
-                  if (!matchdayTo) setMatchdayTo(e.target.value)
+                  const newFrom = e.target.value
+                  setMatchdayFrom(newFrom)
+                  if (!matchdayTo || (newFrom && Number(matchdayTo) < Number(newFrom))) {
+                    setMatchdayTo(newFrom)
+                  }
                 }}
-                min={selectedCompetition.matchdays.nextMatchday}
-                max={selectedCompetition.matchdays.max}
+                onBlur={(e) => {
+                  if (!e.target.value) return
+                  const clamped = Math.min(
+                    Math.max(Number(e.target.value), matchdays.nextMatchday),
+                    matchdays.max,
+                  )
+                  const clampedStr = String(clamped)
+                  if (clampedStr !== e.target.value) {
+                    setMatchdayFrom(clampedStr)
+                  }
+                  if (matchdayTo) {
+                    const toNum = Number(matchdayTo)
+                    if (toNum < clamped || toNum > matchdays.max) {
+                      setMatchdayTo(String(Math.min(Math.max(toNum, clamped), matchdays.max)))
+                    }
+                  }
+                }}
+                min={matchdays.nextMatchday}
+                max={matchdays.max}
               />
               <Input
                 label="Ate"
                 type="number"
-                placeholder={String(selectedCompetition.matchdays.nextMatchday)}
+                placeholder={String(matchdays.nextMatchday)}
                 value={matchdayTo}
                 onChange={(e) => setMatchdayTo(e.target.value)}
-                min={matchdayFrom || selectedCompetition.matchdays.nextMatchday}
-                max={selectedCompetition.matchdays.max}
+                onBlur={(e) => {
+                  if (!e.target.value) return
+                  const minValue = Number(matchdayFrom || matchdays.nextMatchday)
+                  const clamped = Math.min(
+                    Math.max(Number(e.target.value), minValue),
+                    matchdays.max,
+                  )
+                  if (String(clamped) !== e.target.value) {
+                    setMatchdayTo(String(clamped))
+                  }
+                }}
+                min={matchdayFrom || matchdays.nextMatchday}
+                max={matchdays.max}
               />
             </div>
           </div>
