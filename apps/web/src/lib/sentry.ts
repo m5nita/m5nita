@@ -11,7 +11,7 @@ if (dsn) {
     dsn,
     environment: import.meta.env.MODE,
     release: import.meta.env.VITE_COMMIT_HASH,
-    sendDefaultPii: true,
+    sendDefaultPii: false,
 
     integrations: [
       Sentry.browserTracingIntegration(),
