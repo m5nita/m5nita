@@ -37,6 +37,9 @@ function buildPaymentGateway(): PaymentGateway {
     if (isProd) {
       throw new Error('PAYMENT_GATEWAY=stripe but STRIPE_SECRET_KEY is missing or invalid')
     }
+    console.warn(
+      '[Stripe] No valid STRIPE_SECRET_KEY configured. Payment features will use mock mode.',
+    )
     return new MockPaymentGateway(db)
   }
 
@@ -47,6 +50,9 @@ function buildPaymentGateway(): PaymentGateway {
         'PAYMENT_GATEWAY=mercadopago but MERCADOPAGO_ACCESS_TOKEN is missing or invalid',
       )
     }
+    console.warn(
+      '[MercadoPago] No valid MERCADOPAGO_ACCESS_TOKEN configured. Payment features will use mock mode.',
+    )
     return new MockPaymentGateway(db)
   }
 
