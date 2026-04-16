@@ -33,7 +33,7 @@ app.use(
   cors({
     origin: [allowedOrigin],
     credentials: true,
-    allowHeaders: ['Content-Type', 'Authorization', 'X-Turnstile-Token'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Turnstile-Token', 'sentry-trace', 'baggage'],
   }),
 )
 
