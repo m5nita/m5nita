@@ -3,6 +3,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -66,6 +67,15 @@ export default defineConfig({
         ],
       },
     }),
+    process.env.ANALYZE
+      ? visualizer({
+          filename: 'dist/stats.html',
+          template: 'treemap',
+          gzipSize: true,
+          brotliSize: true,
+          open: false,
+        })
+      : null,
     // Must be last so it can pick up the final bundle output.
     sentryAuthToken && sentryOrg && sentryProject
       ? sentryVitePlugin({
