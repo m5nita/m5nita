@@ -201,9 +201,22 @@ describe('GET /api/pools', () => {
     vi.clearAllMocks()
   })
 
-  it('returns_authenticated_userPools', async () => {
+  it('returns_authenticated_userPools_withMatchTimestamps', async () => {
+    const nextDate = new Date('2026-05-01T12:00:00.000Z')
+    const lastDate = new Date('2026-05-10T20:00:00.000Z')
     mockGetUserPoolsExecute.mockResolvedValue([
-      { id: 'pool-1', name: 'Pool A', entryFee: 5000, memberCount: 5, status: 'active' },
+      {
+        id: 'pool-1',
+        name: 'Pool A',
+        entryFee: 5000,
+        status: 'active',
+        competitionName: 'Copa',
+        memberCount: 5,
+        userPosition: null,
+        userPoints: 0,
+        nextMatchAt: nextDate,
+        lastMatchAt: lastDate,
+      },
     ])
 
     const res = await app.request('/api/pools', {
@@ -214,5 +227,7 @@ describe('GET /api/pools', () => {
     const body = await res.json()
     expect(body.pools).toHaveLength(1)
     expect(body.pools[0].name).toBe('Pool A')
+    expect(body.pools[0].nextMatchAt).toBe(nextDate.toISOString())
+    expect(body.pools[0].lastMatchAt).toBe(lastDate.toISOString())
   })
 })

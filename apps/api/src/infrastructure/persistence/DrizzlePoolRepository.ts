@@ -1,7 +1,9 @@
 import { POOL } from '@m5nita/shared'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, ne, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { user } from '../../db/schema/auth'
+import { competition } from '../../db/schema/competition'
+import { match } from '../../db/schema/match'
 import { pool } from '../../db/schema/pool'
 import { poolMember } from '../../db/schema/poolMember'
 import type { Pool } from '../../domain/pool/Pool'
@@ -190,30 +192,66 @@ export class DrizzlePoolRepository implements PoolRepository {
   }
 
   async findUserPools(userId: string): Promise<PoolListItem[]> {
-    const members = await this.db.query.poolMember.findMany({
-      where: eq(poolMember.userId, userId),
-      with: {
-        pool: {
-          with: {
-            competition: true,
-          },
-        },
-      },
-    })
+    const rows = await this.db
+      .select({
+        id: pool.id,
+        name: pool.name,
+        entryFee: pool.entryFee,
+        status: pool.status,
+        competitionName: competition.name,
+        memberCount: sql<number>`(
+        SELECT COUNT(*)::int FROM ${poolMember} pm_inner
+        WHERE pm_inner.pool_id = ${pool.id}
+      )`,
+        nextMatchAt: sql<Date | null>`(
+        SELECT MIN(${match.matchDate})
+        FROM ${match}
+        WHERE ${match.competitionId} = ${pool.competitionId}
+          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+      )`,
+        lastMatchAt: sql<Date | null>`(
+        SELECT MAX(${match.matchDate})
+        FROM ${match}
+        WHERE ${match.competitionId} = ${pool.competitionId}
+          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+      )`,
+      })
+      .from(poolMember)
+      .innerJoin(pool, eq(pool.id, poolMember.poolId))
+      .innerJoin(competition, eq(competition.id, pool.competitionId))
+      .where(and(eq(poolMember.userId, userId), ne(pool.status, 'cancelled')))
+      .orderBy(
+        sql`CASE WHEN ${pool.status} = 'active' THEN 0 ELSE 1 END`,
+        sql`CASE WHEN ${pool.status} = 'active' THEN (
+        SELECT MIN(${match.matchDate})
+        FROM ${match}
+        WHERE ${match.competitionId} = ${pool.competitionId}
+          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+      ) END ASC NULLS LAST`,
+        sql`CASE WHEN ${pool.status} = 'closed' THEN (
+        SELECT MAX(${match.matchDate})
+        FROM ${match}
+        WHERE ${match.competitionId} = ${pool.competitionId}
+          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+      ) END DESC NULLS LAST`,
+        desc(pool.createdAt),
+      )
 
-    const visiblePools = members.filter((m) => m.pool.status !== 'cancelled')
-
-    const counts = await Promise.all(visiblePools.map((m) => this.getMemberCount(m.pool.id)))
-
-    return visiblePools.map((m, i) => ({
-      id: m.pool.id,
-      name: m.pool.name,
-      entryFee: m.pool.entryFee,
-      status: m.pool.status,
-      competitionName: m.pool.competition.name,
-      memberCount: counts[i] ?? 0,
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      entryFee: r.entryFee,
+      status: r.status,
+      competitionName: r.competitionName,
+      memberCount: r.memberCount ?? 0,
       userPosition: null,
       userPoints: 0,
+      nextMatchAt: r.nextMatchAt,
+      lastMatchAt: r.lastMatchAt,
     }))
   }
 }
