@@ -1,6 +1,6 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-14
+Auto-generated from all feature plans. Last updated: 2026-04-16
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 20) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
@@ -19,6 +19,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-14
 - TypeScript 5.x (Node.js >= 20) + Hono (HTTP), Drizzle ORM, mercadopago SDK (new), Better Auth, grammY (012-stripe-to-mercadopago)
 - TypeScript 5.x, Node.js ≥ 20 + Hono (API), Better Auth, React 19, TanStack Router, Tailwind v4, Cloudflare Turnstile (loaded via CDN script + `siteverify` HTTPS call) (013-cloudflare-turnstile)
 - N/A — Turnstile tokens are single-use and never persisted (013-cloudflare-turnstile)
+- TypeScript 5.x, Node.js ≥ 20 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth (auth), grammY (Telegram). New: none — InfinitePay does not publish a TypeScript SDK; integration uses native `fetch`. (014-infinitepay-gateway)
+- PostgreSQL 16 via Drizzle. Reuses existing `payment` table; no schema changes. (014-infinitepay-gateway)
 
 - TypeScript 5.x (Node.js >= 20) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM, Stripe SDK
@@ -55,9 +57,9 @@ pnpm drizzle-kit push        # Push schema (dev only)
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 014-infinitepay-gateway: Added TypeScript 5.x, Node.js ≥ 20 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth (auth), grammY (Telegram). New: none — InfinitePay does not publish a TypeScript SDK; integration uses native `fetch`.
 - 013-cloudflare-turnstile: Added TypeScript 5.x, Node.js ≥ 20 + Hono (API), Better Auth, React 19, TanStack Router, Tailwind v4, Cloudflare Turnstile (loaded via CDN script + `siteverify` HTTPS call)
 - 012-stripe-to-mercadopago: Added TypeScript 5.x (Node.js >= 20) + Hono (HTTP), Drizzle ORM, mercadopago SDK (new), Better Auth, grammY
-- 011-hexagonal-architecture: Added TypeScript 5.x (Node.js >= 20) + Hono (HTTP), Drizzle ORM, Better Auth, grammY (Telegram), Stripe SDK
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
