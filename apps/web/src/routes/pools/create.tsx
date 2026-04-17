@@ -62,10 +62,11 @@ function CreatePoolPage() {
   const isValidFee = currentFee >= POOL.MIN_ENTRY_FEE && currentFee <= POOL.MAX_ENTRY_FEE
 
   const validateCoupon = useCallback(
-    async (code: string) => {
+    async (code: string): Promise<CouponState> => {
       if (!code.trim()) {
-        setCoupon({ valid: false, discountPercent: 0, loading: false, error: '' })
-        return
+        const next = { valid: false, discountPercent: 0, loading: false, error: '' }
+        setCoupon(next)
+        return next
       }
 
       setCoupon((prev) => ({ ...prev, loading: true, error: '' }))
@@ -79,33 +80,38 @@ function CreatePoolPage() {
         const data = await res.json()
 
         if (data.valid) {
-          setCoupon({
+          const next = {
             valid: true,
             discountPercent: data.discountPercent,
             loading: false,
             error: '',
-          })
-        } else {
-          const reasons: Record<string, string> = {
-            not_found: 'Cupom não encontrado',
-            expired: 'Cupom expirado',
-            exhausted: 'Cupom esgotado',
-            inactive: 'Cupom inativo',
           }
-          setCoupon({
-            valid: false,
-            discountPercent: 0,
-            loading: false,
-            error: reasons[data.reason] || 'Cupom inválido',
-          })
+          setCoupon(next)
+          return next
         }
+        const reasons: Record<string, string> = {
+          not_found: 'Cupom não encontrado',
+          expired: 'Cupom expirado',
+          exhausted: 'Cupom esgotado',
+          inactive: 'Cupom inativo',
+        }
+        const next = {
+          valid: false,
+          discountPercent: 0,
+          loading: false,
+          error: reasons[data.reason] || 'Cupom inválido',
+        }
+        setCoupon(next)
+        return next
       } catch {
-        setCoupon({
+        const next = {
           valid: false,
           discountPercent: 0,
           loading: false,
           error: 'Erro ao validar cupom',
-        })
+        }
+        setCoupon(next)
+        return next
       }
     },
     [currentFee],
@@ -127,6 +133,17 @@ function CreatePoolPage() {
     setLoading(true)
     setError('')
     try {
+      const trimmedCoupon = couponCode.trim()
+      let couponValid = coupon.valid
+      if (trimmedCoupon && !coupon.valid) {
+        const result = await validateCoupon(trimmedCoupon)
+        if (!result.valid) {
+          setLoading(false)
+          return
+        }
+        couponValid = true
+      }
+
       const body: Record<string, unknown> = {
         name: name.trim(),
         entryFee: currentFee,
@@ -136,8 +153,8 @@ function CreatePoolPage() {
         body.matchdayFrom = Number(matchdayFrom)
         body.matchdayTo = Number(matchdayTo)
       }
-      if (couponCode.trim() && coupon.valid) {
-        body.couponCode = couponCode.trim()
+      if (trimmedCoupon && couponValid) {
+        body.couponCode = trimmedCoupon
       }
 
       const res = await apiFetch('/api/pools', {
@@ -340,9 +357,7 @@ function CreatePoolPage() {
             value={couponCode}
             onChange={(e) => {
               setCouponCode(e.target.value)
-              if (!e.target.value.trim()) {
-                setCoupon({ valid: false, discountPercent: 0, loading: false, error: '' })
-              }
+              setCoupon({ valid: false, discountPercent: 0, loading: false, error: '' })
             }}
             onBlur={() => validateCoupon(couponCode)}
             maxLength={20}
