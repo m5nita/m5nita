@@ -13,6 +13,7 @@ import { GetPrizeInfoUseCase } from './application/prize/GetPrizeInfoUseCase'
 import { RequestWithdrawalUseCase } from './application/prize/RequestWithdrawalUseCase'
 import { db } from './db/client'
 import { payment } from './db/schema/payment'
+import { InfinitePayPaymentGateway } from './infrastructure/external/InfinitePayPaymentGateway'
 import { MercadoPagoPaymentGateway } from './infrastructure/external/MercadoPagoPaymentGateway'
 import { MockPaymentGateway } from './infrastructure/external/MockPaymentGateway'
 import { StripePaymentGateway } from './infrastructure/external/StripePaymentGateway'
@@ -22,6 +23,7 @@ import { DrizzlePoolRepository } from './infrastructure/persistence/DrizzlePoolR
 import { DrizzlePredictionRepository } from './infrastructure/persistence/DrizzlePredictionRepository'
 import { DrizzlePrizeWithdrawalRepository } from './infrastructure/persistence/DrizzlePrizeWithdrawalRepository'
 import { DrizzleRankingRepository } from './infrastructure/persistence/DrizzleRankingRepository'
+import { infinitePayConfig } from './lib/infinitepay'
 import { mercadoPagoClient } from './lib/mercadopago'
 import { stripe } from './lib/stripe'
 import { bot } from './lib/telegram'
@@ -56,7 +58,20 @@ function buildPaymentGateway(): PaymentGateway {
     return new MockPaymentGateway(db)
   }
 
-  throw new Error(`Invalid PAYMENT_GATEWAY: "${provider}" (expected "stripe" or "mercadopago")`)
+  if (provider === 'infinitepay') {
+    if (infinitePayConfig) return new InfinitePayPaymentGateway(infinitePayConfig.handle, db)
+    if (isProd) {
+      throw new Error('PAYMENT_GATEWAY=infinitepay but INFINITEPAY_HANDLE is missing')
+    }
+    console.warn(
+      '[InfinitePay] No INFINITEPAY_HANDLE configured. Payment features will use mock mode.',
+    )
+    return new MockPaymentGateway(db)
+  }
+
+  throw new Error(
+    `Invalid PAYMENT_GATEWAY: "${provider}" (expected "stripe", "mercadopago", or "infinitepay")`,
+  )
 }
 
 function buildContainer() {
