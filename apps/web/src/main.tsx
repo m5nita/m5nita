@@ -2,7 +2,7 @@
 import './lib/sentry'
 
 import { registerSW } from 'virtual:pwa-register'
-import * as Sentry from '@sentry/react'
+import { ErrorBoundary as SentryErrorBoundary } from '@sentry/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
@@ -48,7 +48,7 @@ const rootElement = document.getElementById('root')
 if (rootElement) {
   createRoot(rootElement).render(
     <StrictMode>
-      <Sentry.ErrorBoundary
+      <SentryErrorBoundary
         fallback={({ resetError }) => (
           <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-cream p-5 text-center">
             <h1 className="font-display text-3xl font-black text-black">Algo deu errado</h1>
@@ -68,7 +68,7 @@ if (rootElement) {
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
         </QueryClientProvider>
-      </Sentry.ErrorBoundary>
+      </SentryErrorBoundary>
     </StrictMode>,
   )
 }
