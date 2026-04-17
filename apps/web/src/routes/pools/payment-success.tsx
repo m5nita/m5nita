@@ -1,23 +1,23 @@
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { apiFetch } from '../../lib/api'
 
 type ConfirmState =
-  | { kind: 'idle' }
   | { kind: 'checking' }
   | { kind: 'completed' }
   | { kind: 'expired' }
   | { kind: 'error'; message: string }
-
-const MAX_ATTEMPTS = 6
-const POLL_INTERVAL_MS = 2000
 
 type ConfirmRequest = {
   orderNsu: string
   invoiceSlug?: string
   transactionNsu?: string
 }
+
+const MAX_ATTEMPTS = 6
+const POLL_INTERVAL_MS = 2000
 
 async function confirmPayment(req: ConfirmRequest): Promise<string> {
   const res = await apiFetch('/api/payments/infinitepay/confirm', {
@@ -43,6 +43,42 @@ function mapStatusToState(status: string, attempt: number): ConfirmState | null 
     }
   }
   return null
+}
+
+function Panel({
+  eyebrow,
+  eyebrowColor,
+  title,
+  barColor,
+  children,
+  action,
+}: {
+  eyebrow: string
+  eyebrowColor: string
+  title: string
+  barColor: string
+  children: ReactNode
+  action?: ReactNode
+}) {
+  return (
+    <div className="flex min-h-[60vh] flex-col justify-center lg:items-center">
+      <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
+        <div className="mb-8">
+          <p
+            className={`font-display text-xs font-semibold uppercase tracking-widest ${eyebrowColor}`}
+          >
+            {eyebrow}
+          </p>
+          <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
+            {title}
+          </h1>
+          <div className={`mt-3 h-1 w-12 ${barColor}`} />
+          <p className="mt-4 text-sm text-gray-dark">{children}</p>
+        </div>
+        {action}
+      </div>
+    </div>
+  )
 }
 
 function PaymentSuccessPage() {
@@ -72,11 +108,8 @@ function PaymentSuccessPage() {
         const status = await confirmPayment(request)
         if (cancelledRef.current) return
         const next = mapStatusToState(status, attempt)
-        if (next) {
-          setState(next)
-        } else {
-          setTimeout(tick, POLL_INTERVAL_MS)
-        }
+        if (next) setState(next)
+        else setTimeout(tick, POLL_INTERVAL_MS)
       } catch (err) {
         if (cancelledRef.current) return
         setState({
@@ -92,99 +125,65 @@ function PaymentSuccessPage() {
     }
   }, [paymentId, search.invoice_slug, search.transaction_nsu])
 
+  const homeButton = (
+    <Button onClick={() => navigate({ to: '/' })} size="lg" className="w-full">
+      Ir para Home
+    </Button>
+  )
+
   if (state.kind === 'checking') {
     return (
-      <div className="flex min-h-[60vh] flex-col justify-center lg:items-center">
-        <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
-            Aguarde
-          </p>
-          <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
-            Confirmando Pagamento
-          </h1>
-          <div className="mt-3 h-1 w-12 bg-black" />
-          <p className="mt-4 text-sm text-gray-dark">
-            Estamos verificando a confirmação do seu pagamento junto à operadora. Isso leva alguns
-            segundos.
-          </p>
-        </div>
-      </div>
+      <Panel
+        eyebrow="Aguarde"
+        eyebrowColor="text-gray-dark"
+        title="Confirmando Pagamento"
+        barColor="bg-black"
+      >
+        Estamos verificando a confirmação do seu pagamento junto à operadora. Isso leva alguns
+        segundos.
+      </Panel>
     )
   }
 
   if (state.kind === 'expired') {
     return (
-      <div className="flex min-h-[60vh] flex-col justify-center lg:items-center">
-        <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
-          <div className="mb-8">
-            <p className="font-display text-xs font-semibold uppercase tracking-widest text-red">
-              Pagamento não concluído
-            </p>
-            <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
-              Pagamento Recusado ou Expirado
-            </h1>
-            <div className="mt-3 h-1 w-12 bg-red" />
-            <p className="mt-4 text-sm text-gray-dark">
-              O pagamento não foi concluído. Você pode tentar novamente a partir da tela do bolão.
-            </p>
-          </div>
-          <Button onClick={() => navigate({ to: '/' })} size="lg" className="w-full">
-            Ir para Home
-          </Button>
-        </div>
-      </div>
+      <Panel
+        eyebrow="Pagamento não concluído"
+        eyebrowColor="text-red"
+        title="Pagamento Recusado ou Expirado"
+        barColor="bg-red"
+        action={homeButton}
+      >
+        O pagamento não foi concluído. Você pode tentar novamente a partir da tela do bolão.
+      </Panel>
     )
   }
 
   if (state.kind === 'error') {
     return (
-      <div className="flex min-h-[60vh] flex-col justify-center lg:items-center">
-        <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
-          <div className="mb-8">
-            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
-              Processando
-            </p>
-            <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
-              Aguardando Confirmação
-            </h1>
-            <div className="mt-3 h-1 w-12 bg-black" />
-            <p className="mt-4 text-sm text-gray-dark">{state.message}</p>
-          </div>
-          <Button onClick={() => navigate({ to: '/' })} size="lg" className="w-full">
-            Ir para Home
-          </Button>
-        </div>
-      </div>
+      <Panel
+        eyebrow="Processando"
+        eyebrowColor="text-gray-dark"
+        title="Aguardando Confirmação"
+        barColor="bg-black"
+        action={homeButton}
+      >
+        {state.message}
+      </Panel>
     )
   }
 
   return (
-    <div className="flex min-h-[60vh] flex-col justify-center lg:items-center">
-      <div className="lg:w-full lg:max-w-[480px] lg:border lg:border-border lg:p-10">
-        <div className="mb-8">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-green">
-            Sucesso
-          </p>
-          <h1 className="mt-1 font-display text-5xl font-black leading-[0.85] text-black">
-            Pagamento Confirmado
-          </h1>
-          <div className="mt-3 h-1 w-12 bg-green" />
-          <p className="mt-4 text-sm text-gray-dark">
-            Seu pagamento foi processado. Você já faz parte do bolão!
-          </p>
-        </div>
-        <Button onClick={() => navigate({ to: '/' })} size="lg" className="w-full">
-          Ir para Home
-        </Button>
-      </div>
-    </div>
+    <Panel
+      eyebrow="Sucesso"
+      eyebrowColor="text-green"
+      title="Pagamento Confirmado"
+      barColor="bg-green"
+      action={homeButton}
+    >
+      Seu pagamento foi processado. Você já faz parte do bolão!
+    </Panel>
   )
-}
-
-type PaymentSuccessSearch = {
-  payment_id?: string
-  invoice_slug?: string
-  transaction_nsu?: string
 }
 
 function pickString(value: unknown): string | undefined {
@@ -193,7 +192,7 @@ function pickString(value: unknown): string | undefined {
 
 export const Route = createFileRoute('/pools/payment-success')({
   component: PaymentSuccessPage,
-  validateSearch: (search: Record<string, unknown>): PaymentSuccessSearch => ({
+  validateSearch: (search: Record<string, unknown>) => ({
     payment_id: pickString(search.payment_id),
     invoice_slug: pickString(search.invoice_slug) ?? pickString(search.slug),
     transaction_nsu: pickString(search.transaction_nsu),
