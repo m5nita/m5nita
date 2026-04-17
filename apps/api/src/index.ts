@@ -14,6 +14,7 @@ import { globalRateLimit, otpRateLimit } from './infrastructure/http/middleware/
 import { turnstileGuard } from './infrastructure/http/middleware/turnstileGuard'
 import { competitionsRoutes } from './infrastructure/http/routes/competitions'
 import { matchesRoutes } from './infrastructure/http/routes/matches'
+import { paymentsRoutes } from './infrastructure/http/routes/payments'
 import { poolsRoutes } from './infrastructure/http/routes/pools'
 import { predictionsRoutes } from './infrastructure/http/routes/predictions'
 import { rankingRoutes } from './infrastructure/http/routes/ranking'
@@ -99,6 +100,7 @@ app.route('/api', poolsRoutes)
 app.route('/api', matchesRoutes)
 app.route('/api', predictionsRoutes)
 app.route('/api', rankingRoutes)
+app.route('/api', paymentsRoutes)
 
 app.get('/api/health', (c) => c.json({ status: 'ok' }))
 
