@@ -31,8 +31,12 @@ import { getCompetitionById } from './services/competition'
 import { getEffectiveFeeRate, incrementUsage, validateCoupon } from './services/coupon'
 
 function buildPaymentGateway(): PaymentGateway {
-  const provider = process.env.PAYMENT_GATEWAY ?? 'mercadopago'
+  const provider = process.env.PAYMENT_GATEWAY
   const isProd = process.env.NODE_ENV === 'production'
+
+  if (!provider && !isProd) {
+    return new MockPaymentGateway(db)
+  }
 
   if (provider === 'stripe') {
     if (stripe) return new StripePaymentGateway(stripe, db)
