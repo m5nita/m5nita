@@ -38,6 +38,8 @@ export type PoolListItem = {
   memberCount: number
   userPosition: number | null
   userPoints: number
+  nextMatchAt: Date | null
+  lastMatchAt: Date | null
 }
 
 export type ActivePoolInfo = {

@@ -214,6 +214,8 @@ export class DrizzlePoolRepository implements PoolRepository {
       memberCount: counts[i] ?? 0,
       userPosition: null,
       userPoints: 0,
+      nextMatchAt: null,
+      lastMatchAt: null,
     }))
   }
 }

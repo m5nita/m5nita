@@ -54,6 +54,8 @@ export interface PoolListItem {
   userPosition: number | null
   userPoints: number
   status: PoolStatus
+  nextMatchAt: string | null
+  lastMatchAt: string | null
 }
 
 export interface PoolDetail extends Pool {
