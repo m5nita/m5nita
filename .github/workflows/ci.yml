@@ -59,13 +59,39 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - name: Build
+        env:
+          # Placeholder DSN so the Sentry code path is kept in the bundle
+          # (otherwise dead-code elimination drops it and the size check
+          # measures a bundle shape that does not match production).
+          VITE_SENTRY_DSN: https://placeholder@sentry.io/0
+        run: pnpm build
       - name: Check bundle size
         run: |
-          MAX_SIZE_KB=600
-          BUNDLE_SIZE=$(du -sk apps/web/dist/assets/*.js | awk '{total += $1} END {print total}')
-          echo "Bundle size: ${BUNDLE_SIZE}KB"
-          if [ "$BUNDLE_SIZE" -gt "$MAX_SIZE_KB" ]; then
-            echo "::error::Bundle size (${BUNDLE_SIZE}KB) exceeds budget (${MAX_SIZE_KB}KB)"
-            exit 1
+          ENTRY_BUDGET_KB=160
+          TOTAL_BUDGET_KB=290
+
+          # Largest index-*.js chunk is the entry (first-load cost).
+          ENTRY_FILE=$(ls -S apps/web/dist/assets/index-*.js | head -1)
+          ENTRY_GZIP_KB=$(( $(gzip -c "$ENTRY_FILE" | wc -c) / 1024 ))
+
+          # Sum of per-file gzip sizes = what a user transfers across all routes.
+          TOTAL_GZIP_BYTES=0
+          for f in apps/web/dist/assets/*.js; do
+            TOTAL_GZIP_BYTES=$(( TOTAL_GZIP_BYTES + $(gzip -c "$f" | wc -c) ))
+          done
+          TOTAL_GZIP_KB=$(( TOTAL_GZIP_BYTES / 1024 ))
+
+          echo "Entry chunk (gzip): ${ENTRY_GZIP_KB}KB / ${ENTRY_BUDGET_KB}KB — $(basename "$ENTRY_FILE")"
+          echo "All chunks  (gzip): ${TOTAL_GZIP_KB}KB / ${TOTAL_BUDGET_KB}KB"
+
+          FAILED=0
+          if [ "$ENTRY_GZIP_KB" -gt "$ENTRY_BUDGET_KB" ]; then
+            echo "::error::Entry chunk gzipped (${ENTRY_GZIP_KB}KB) exceeds budget (${ENTRY_BUDGET_KB}KB)"
+            FAILED=1
           fi
+          if [ "$TOTAL_GZIP_KB" -gt "$TOTAL_BUDGET_KB" ]; then
+            echo "::error::Total gzipped (${TOTAL_GZIP_KB}KB) exceeds budget (${TOTAL_BUDGET_KB}KB)"
+            FAILED=1
+          fi
+          exit $FAILED
