@@ -42,8 +42,8 @@ export default defineConfig({
       manifest: {
         name: 'm5nita — Monte seu bolão',
         short_name: 'm5nita',
-        theme_color: '#111111',
-        background_color: '#F5F0E8',
+        theme_color: '#f5f0e8',
+        background_color: '#f5f0e8',
         display: 'standalone',
         start_url: '/',
         icons: [
