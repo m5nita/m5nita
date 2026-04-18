@@ -1,5 +1,6 @@
 import { createRootRoute, Link, Outlet, useLocation, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import { ThemeSwitcher } from '../components/ui/ThemeSwitcher'
 import { authClient, useSession } from '../lib/auth'
 
 function RootLayout() {
@@ -75,6 +76,7 @@ function RootLayout() {
                     {label}
                   </Link>
                 ))}
+                <ThemeSwitcher size="sm" className="ml-2" />
               </nav>
               <button
                 type="button"
@@ -120,6 +122,8 @@ function RootLayout() {
               </button>
             </>
           )}
+
+          {!session?.user && !sessionPending && <ThemeSwitcher size="sm" />}
         </div>
       </header>
 
@@ -153,6 +157,12 @@ function RootLayout() {
                   </li>
                 ))}
               </ul>
+              <div className="mt-4 border-t border-border pt-4">
+                <p className="mb-2 font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
+                  Tema
+                </p>
+                <ThemeSwitcher size="lg" fullWidth />
+              </div>
             </div>
           </nav>
         </>

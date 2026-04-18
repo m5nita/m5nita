@@ -6,6 +6,7 @@ import { OtpInput } from '../components/ui/OtpInput'
 import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
 import { consumePendingRedirect, redirectIfAuthenticated } from '../lib/authGuard'
+import { useTheme } from '../lib/theme'
 import { useTurnstile } from '../lib/turnstile'
 
 const TELEGRAM_BOT_USERNAME = 'm5nita_bot'
@@ -92,8 +93,10 @@ function LoginPage() {
   const [magicLinkCooldown, setMagicLinkCooldown] = useState(0)
   const verifyingRef = useRef(false)
 
+  const { preference, effective } = useTheme()
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined
-  const turnstile = useTurnstile(turnstileSiteKey)
+  const turnstileTheme = preference === 'system' ? 'auto' : effective
+  const turnstile = useTurnstile(turnstileSiteKey, { theme: turnstileTheme })
 
   function captchaFetchOptions() {
     return turnstile.token ? { headers: { 'X-Turnstile-Token': turnstile.token } } : {}

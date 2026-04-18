@@ -57,12 +57,20 @@ export interface UseTurnstileResult {
   reset: () => void
 }
 
-export function useTurnstile(siteKey: string | undefined): UseTurnstileResult {
+export interface UseTurnstileOptions {
+  theme?: 'light' | 'dark' | 'auto'
+}
+
+export function useTurnstile(
+  siteKey: string | undefined,
+  options: UseTurnstileOptions = {},
+): UseTurnstileResult {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const widgetIdRef = useRef<string | null>(null)
   const apiRef = useRef<TurnstileApi | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const theme = options.theme ?? 'auto'
 
   useEffect(() => {
     let cancelled = false
@@ -77,6 +85,7 @@ export function useTurnstile(siteKey: string | undefined): UseTurnstileResult {
         widgetIdRef.current = api.render(containerRef.current, {
           sitekey: siteKey,
           size: 'flexible',
+          theme,
           callback: (tok) => {
             setToken(tok)
             setError(null)
@@ -95,7 +104,7 @@ export function useTurnstile(siteKey: string | undefined): UseTurnstileResult {
         widgetIdRef.current = null
       }
     }
-  }, [siteKey])
+  }, [siteKey, theme])
 
   const reset = useCallback(() => {
     setToken(null)

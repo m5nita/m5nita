@@ -70,6 +70,9 @@ jobs:
         run: |
           ENTRY_BUDGET_KB=160
           TOTAL_BUDGET_KB=290
+          # Pre-hydration inline script in index.html must stay tiny to preserve FCP
+          # (feature 015 — dark-mode theme). 1KB raw is the hard ceiling.
+          INLINE_SCRIPT_BUDGET_BYTES=1024
 
           # Largest index-*.js chunk is the entry (first-load cost).
           ENTRY_FILE=$(ls -S apps/web/dist/assets/index-*.js | head -1)
@@ -82,8 +85,12 @@ jobs:
           done
           TOTAL_GZIP_KB=$(( TOTAL_GZIP_BYTES / 1024 ))
 
-          echo "Entry chunk (gzip): ${ENTRY_GZIP_KB}KB / ${ENTRY_BUDGET_KB}KB — $(basename "$ENTRY_FILE")"
-          echo "All chunks  (gzip): ${TOTAL_GZIP_KB}KB / ${TOTAL_BUDGET_KB}KB"
+          # Inline theme-bootstrap script size in the built index.html.
+          INLINE_SCRIPT_BYTES=$(awk '/<script>/,/<\/script>/' apps/web/dist/index.html | wc -c | tr -d ' ')
+
+          echo "Entry chunk    (gzip): ${ENTRY_GZIP_KB}KB / ${ENTRY_BUDGET_KB}KB — $(basename "$ENTRY_FILE")"
+          echo "All chunks     (gzip): ${TOTAL_GZIP_KB}KB / ${TOTAL_BUDGET_KB}KB"
+          echo "Inline script  (raw):  ${INLINE_SCRIPT_BYTES}B / ${INLINE_SCRIPT_BUDGET_BYTES}B"
 
           FAILED=0
           if [ "$ENTRY_GZIP_KB" -gt "$ENTRY_BUDGET_KB" ]; then
@@ -92,6 +99,10 @@ jobs:
           fi
           if [ "$TOTAL_GZIP_KB" -gt "$TOTAL_BUDGET_KB" ]; then
             echo "::error::Total gzipped (${TOTAL_GZIP_KB}KB) exceeds budget (${TOTAL_BUDGET_KB}KB)"
+            FAILED=1
+          fi
+          if [ "$INLINE_SCRIPT_BYTES" -gt "$INLINE_SCRIPT_BUDGET_BYTES" ]; then
+            echo "::error::Inline pre-hydration script (${INLINE_SCRIPT_BYTES}B) exceeds budget (${INLINE_SCRIPT_BUDGET_BYTES}B)"
             FAILED=1
           fi
           exit $FAILED
