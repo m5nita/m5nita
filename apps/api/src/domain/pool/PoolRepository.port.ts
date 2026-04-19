@@ -18,6 +18,7 @@ export type PoolWithDetails = {
   coupon: { discountPercent: number } | null
   memberCount: number
   prizeTotal: number
+  hasLiveMatch: boolean
 }
 
 export type PoolMemberInfo = {
@@ -40,6 +41,7 @@ export type PoolListItem = {
   userPoints: number
   nextMatchAt: Date | null
   lastMatchAt: Date | null
+  hasLiveMatch: boolean
 }
 
 export type ActivePoolInfo = {

@@ -47,6 +47,11 @@ export class DrizzlePoolRepository implements PoolRepository {
         ? POOL.PLATFORM_FEE_RATE * (1 - discountPercent / 100)
         : POOL.PLATFORM_FEE_RATE
     const prizeTotal = Math.floor(row.entryFee * memberCount * (1 - effectiveRate))
+    const hasLiveMatch = await this.hasLiveMatchForPool(
+      row.competitionId,
+      row.matchdayFrom,
+      row.matchdayTo,
+    )
 
     return {
       id: row.id,
@@ -65,6 +70,7 @@ export class DrizzlePoolRepository implements PoolRepository {
       coupon: row.coupon ? { discountPercent: row.coupon.discountPercent } : null,
       memberCount,
       prizeTotal,
+      hasLiveMatch,
     }
   }
 
@@ -86,6 +92,11 @@ export class DrizzlePoolRepository implements PoolRepository {
         ? POOL.PLATFORM_FEE_RATE * (1 - discountPercent / 100)
         : POOL.PLATFORM_FEE_RATE
     const prizeTotal = Math.floor(row.entryFee * memberCount * (1 - effectiveRate))
+    const hasLiveMatch = await this.hasLiveMatchForPool(
+      row.competitionId,
+      row.matchdayFrom,
+      row.matchdayTo,
+    )
 
     return {
       id: row.id,
@@ -104,7 +115,27 @@ export class DrizzlePoolRepository implements PoolRepository {
       coupon: row.coupon ? { discountPercent: row.coupon.discountPercent } : null,
       memberCount,
       prizeTotal,
+      hasLiveMatch,
     }
+  }
+
+  private async hasLiveMatchForPool(
+    competitionId: string,
+    matchdayFrom: number | null,
+    matchdayTo: number | null,
+  ): Promise<boolean> {
+    const [row] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(match)
+      .where(
+        and(
+          eq(match.competitionId, competitionId),
+          eq(match.status, 'live'),
+          matchdayFrom != null ? sql`${match.matchday} >= ${matchdayFrom}` : sql`true`,
+          matchdayTo != null ? sql`${match.matchday} <= ${matchdayTo}` : sql`true`,
+        ),
+      )
+    return (row?.count ?? 0) > 0
   }
 
   async findAllActive(): Promise<ActivePoolInfo[]> {
@@ -217,6 +248,13 @@ export class DrizzlePoolRepository implements PoolRepository {
           AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
           AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
       )`,
+        hasLiveMatch: sql<boolean>`EXISTS (
+        SELECT 1 FROM ${match}
+        WHERE ${match.competitionId} = ${pool.competitionId}
+          AND ${match.status} = 'live'
+          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+      )`,
       })
       .from(poolMember)
       .innerJoin(pool, eq(pool.id, poolMember.poolId))
@@ -252,6 +290,7 @@ export class DrizzlePoolRepository implements PoolRepository {
       userPoints: 0,
       nextMatchAt: r.nextMatchAt,
       lastMatchAt: r.lastMatchAt,
+      hasLiveMatch: r.hasLiveMatch ?? false,
     }))
   }
 }

@@ -4,6 +4,7 @@ import { db } from '../../../db/client'
 import { pool } from '../../../db/schema/pool'
 import { poolMember } from '../../../db/schema/poolMember'
 import { getEffectiveFeeRate } from '../../../services/coupon'
+import { poolHasLiveMatch } from '../../../services/pool'
 import { getPoolRanking } from '../../../services/ranking'
 import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
@@ -19,7 +20,6 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
 
   const ranking = await getPoolRanking(poolId, currentUser.id)
 
-  // Calculate prize total
   const poolData = await db.query.pool.findFirst({
     where: eq(pool.id, poolId),
     with: { coupon: true },
@@ -33,8 +33,11 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
   const discountPercent = poolData?.coupon?.discountPercent ?? 0
   const effectiveRate = getEffectiveFeeRate(discountPercent)
   const prizeTotal = poolData ? Math.floor(poolData.entryFee * count * (1 - effectiveRate)) : 0
+  const hasLiveMatch = poolData
+    ? await poolHasLiveMatch(poolData.competitionId, poolData.matchdayFrom, poolData.matchdayTo)
+    : false
 
-  return c.json({ ranking, prizeTotal })
+  return c.json({ ranking, prizeTotal, hasLiveMatch })
 })
 
 export { rankingRoutes }

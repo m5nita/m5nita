@@ -1,6 +1,7 @@
 import { POOL } from '@m5nita/shared'
 import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client'
+import { match } from '../db/schema/match'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { getCompetitionById } from './competition'
@@ -107,6 +108,12 @@ export async function getPoolById(poolId: string, _userId: string) {
     .from(poolMember)
     .where(eq(poolMember.poolId, poolId))
 
+  const hasLiveMatch = await poolHasLiveMatch(
+    poolData.competitionId,
+    poolData.matchdayFrom,
+    poolData.matchdayTo,
+  )
+
   const discountPercent = poolData.coupon?.discountPercent ?? 0
   const effectiveRate = getEffectiveFeeRate(discountPercent)
   const prizeTotal = Math.floor(poolData.entryFee * (memberCount?.count ?? 0) * (1 - effectiveRate))
@@ -117,10 +124,30 @@ export async function getPoolById(poolId: string, _userId: string) {
     competitionName: poolData.competition.name,
     memberCount: memberCount?.count ?? 0,
     prizeTotal,
+    hasLiveMatch,
     discountPercent,
     originalPlatformFee: Math.floor(poolData.entryFee * POOL.PLATFORM_FEE_RATE),
     platformFee: Math.floor(poolData.entryFee * effectiveRate),
   }
+}
+
+export async function poolHasLiveMatch(
+  competitionId: string,
+  matchdayFrom: number | null,
+  matchdayTo: number | null,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(match)
+    .where(
+      and(
+        eq(match.competitionId, competitionId),
+        eq(match.status, 'live'),
+        matchdayFrom != null ? sql`${match.matchday} >= ${matchdayFrom}` : sql`true`,
+        matchdayTo != null ? sql`${match.matchday} <= ${matchdayTo}` : sql`true`,
+      ),
+    )
+  return (row?.count ?? 0) > 0
 }
 
 export async function getPoolByInviteCode(inviteCode: string) {
