@@ -107,42 +107,70 @@ function MatchList({
     [poolId, matches],
   )
 
-  let lastMatchday: number | null = null
+  type SectionItem = { match: Match; originalIndex: number; localIndex: number }
+  const sections: { key: string; header: string | null; items: SectionItem[] }[] = []
+  matches.forEach((match, originalIndex) => {
+    const sectionKey = matchdayHeaders ? String(match.matchday ?? 'none') : 'all'
+    let current = sections[sections.length - 1]
+    if (!current || current.key !== sectionKey) {
+      const header = matchdayHeaders
+        ? match.matchday && match.matchday > 0
+          ? `${match.matchday}ª Rodada`
+          : 'Rodada'
+        : null
+      current = { key: sectionKey, header, items: [] }
+      sections.push(current)
+    }
+    current.items.push({ match, originalIndex, localIndex: current.items.length })
+  })
+
+  function renderCard({ match, originalIndex, localIndex }: SectionItem) {
+    const pred = predictionMap.get(match.id)
+    return (
+      <div key={match.id} style={{ order: localIndex }}>
+        <ScoreInput
+          ref={(el) => {
+            refs.current[originalIndex] = el
+          }}
+          matchId={match.id}
+          homeTeam={match.homeTeam}
+          awayTeam={match.awayTeam}
+          homeFlag={match.homeFlag}
+          awayFlag={match.awayFlag}
+          matchDate={match.matchDate}
+          homeScore={pred?.homeScore ?? null}
+          awayScore={pred?.awayScore ?? null}
+          matchStatus={match.status}
+          points={pred?.points ?? null}
+          actualHomeScore={match.homeScore}
+          actualAwayScore={match.awayScore}
+          onSave={onSave}
+          onAdvance={getOnAdvance(originalIndex)}
+          renderExpandedContent={renderExpandedContent}
+        />
+      </div>
+    )
+  }
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-x-4">
-      {matches.map((m, index) => {
-        const pred = predictionMap.get(m.id)
-        const showHeader = matchdayHeaders && m.matchday !== lastMatchday
-        if (matchdayHeaders) lastMatchday = m.matchday
+    <div className="flex flex-col">
+      {sections.map((section) => {
+        const leftItems = section.items.filter((item) => item.localIndex % 2 === 0)
+        const rightItems = section.items.filter((item) => item.localIndex % 2 === 1)
         return (
-          <div key={m.id} className="contents lg:contents">
-            {showHeader && (
-              <p className="mb-1 mt-4 first:mt-0 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted lg:col-span-2">
-                {m.matchday && m.matchday > 0 ? `${m.matchday}ª Rodada` : 'Rodada'}
+          <div key={section.key}>
+            {section.header && (
+              <p className="mb-1 mt-4 first:mt-0 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+                {section.header}
               </p>
             )}
-            <div>
-              <ScoreInput
-                ref={(el) => {
-                  refs.current[index] = el
-                }}
-                matchId={m.id}
-                homeTeam={m.homeTeam}
-                awayTeam={m.awayTeam}
-                homeFlag={m.homeFlag}
-                awayFlag={m.awayFlag}
-                matchDate={m.matchDate}
-                homeScore={pred?.homeScore ?? null}
-                awayScore={pred?.awayScore ?? null}
-                matchStatus={m.status}
-                points={pred?.points ?? null}
-                actualHomeScore={m.homeScore}
-                actualAwayScore={m.awayScore}
-                onSave={onSave}
-                onAdvance={getOnAdvance(index)}
-                renderExpandedContent={renderExpandedContent}
-              />
+            <div className="flex flex-col lg:flex-row lg:items-start lg:gap-x-4">
+              <div className="contents lg:flex lg:flex-1 lg:flex-col">
+                {leftItems.map(renderCard)}
+              </div>
+              <div className="contents lg:flex lg:flex-1 lg:flex-col">
+                {rightItems.map(renderCard)}
+              </div>
             </div>
           </div>
         )
