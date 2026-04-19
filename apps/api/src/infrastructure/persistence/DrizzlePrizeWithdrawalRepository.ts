@@ -8,6 +8,7 @@ import type {
   PrizeWithdrawal,
   PrizeWithdrawalRepository,
 } from '../../domain/prize/PrizeWithdrawalRepository.port'
+import { decryptPixKey, encryptPixKey } from '../../lib/pixKeyCrypto'
 
 function isUniqueViolation(err: unknown): boolean {
   return (
@@ -34,13 +35,14 @@ export class DrizzlePrizeWithdrawalRepository implements PrizeWithdrawalReposito
       paymentId: row.paymentId,
       amount: row.amount,
       pixKeyType: row.pixKeyType,
-      pixKey: row.pixKey,
+      pixKey: decryptPixKey(row.pixKey),
       status: row.status,
       createdAt: row.createdAt,
     }
   }
 
   async createWithPayment(data: CreateWithdrawalData): Promise<PrizeWithdrawal> {
+    const encryptedPixKey = encryptPixKey(data.pixKey)
     try {
       return await this.db.transaction(async (tx) => {
         const [prizePayment] = await tx
@@ -65,7 +67,7 @@ export class DrizzlePrizeWithdrawalRepository implements PrizeWithdrawalReposito
             paymentId: paymentRecord.id,
             amount: data.amount,
             pixKeyType: data.pixKeyType,
-            pixKey: data.pixKey,
+            pixKey: encryptedPixKey,
           })
           .returning()
 
@@ -78,7 +80,7 @@ export class DrizzlePrizeWithdrawalRepository implements PrizeWithdrawalReposito
           paymentId: row.paymentId,
           amount: row.amount,
           pixKeyType: row.pixKeyType,
-          pixKey: row.pixKey,
+          pixKey: data.pixKey,
           status: row.status,
           createdAt: row.createdAt,
         }

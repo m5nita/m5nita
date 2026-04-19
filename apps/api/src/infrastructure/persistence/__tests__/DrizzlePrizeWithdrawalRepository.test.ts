@@ -1,6 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { randomBytes } from 'node:crypto'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PrizeWithdrawalError } from '../../../domain/prize/PrizeWithdrawalError'
+import { resetPixKeyCache } from '../../../lib/pixKeyCrypto'
 import { DrizzlePrizeWithdrawalRepository } from '../DrizzlePrizeWithdrawalRepository'
+
+const ORIGINAL_KEY = process.env.PIX_ENCRYPTION_KEY
+
+beforeAll(() => {
+  process.env.PIX_ENCRYPTION_KEY = randomBytes(32).toString('base64')
+  resetPixKeyCache()
+})
+
+afterAll(() => {
+  process.env.PIX_ENCRYPTION_KEY = ORIGINAL_KEY
+  resetPixKeyCache()
+})
 
 const mockTransaction = vi.fn()
 

@@ -24,5 +24,6 @@ apps/web/src/**/*.js
 .worktrees/
 .claude/worktrees/
 
-# Local scripts (not versioned)
+# Local scripts (not versioned) — exception: apps' src/scripts are deployed alongside code
 scripts/
+!apps/*/src/scripts/

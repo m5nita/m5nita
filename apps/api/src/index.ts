@@ -35,6 +35,7 @@ const requiredEnvVars = [
   'BETTER_AUTH_SECRET',
   'BETTER_AUTH_URL',
   'ALLOWED_ORIGIN',
+  'PIX_ENCRYPTION_KEY',
 ] as const
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
