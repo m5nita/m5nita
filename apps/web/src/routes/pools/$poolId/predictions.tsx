@@ -13,7 +13,15 @@ import { ScoreInput, type ScoreInputHandle } from '../../../components/predictio
 import { Loading } from '../../../components/ui/Loading'
 import { apiFetch } from '../../../lib/api'
 
-function MatchPredictionsAccordion({ poolId, matchId }: { poolId: string; matchId: string }) {
+function MatchPredictionsAccordion({
+  poolId,
+  matchId,
+  isLive,
+}: {
+  poolId: string
+  matchId: string
+  isLive: boolean
+}) {
   const { data, isPending, isError } = useQuery({
     queryKey: ['match-predictions', poolId, matchId],
     queryFn: async (): Promise<MatchPredictionsResponse> => {
@@ -22,12 +30,12 @@ function MatchPredictionsAccordion({ poolId, matchId }: { poolId: string; matchI
       return res.json()
     },
     staleTime: 30_000,
-    refetchOnWindowFocus: false,
+    refetchInterval: isLive ? 30_000 : false,
   })
 
   if (isPending) {
     return (
-      <div className="-mx-5 mt-3 border-t border-border bg-black/[0.02] px-5 py-4 text-center lg:mx-0 lg:px-4">
+      <div className="-mx-5 mt-3 border-t border-border bg-black/2 px-5 py-4 text-center lg:mx-0 lg:px-4">
         <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
           Carregando palpites...
         </p>
@@ -37,7 +45,7 @@ function MatchPredictionsAccordion({ poolId, matchId }: { poolId: string; matchI
 
   if (isError || !data) {
     return (
-      <div className="-mx-5 mt-3 border-t border-border bg-black/[0.02] px-5 py-4 text-center lg:mx-0 lg:px-4">
+      <div className="-mx-5 mt-3 border-t border-border bg-black/2 px-5 py-4 text-center lg:mx-0 lg:px-4">
         <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
           Erro ao carregar palpites
         </p>
@@ -86,8 +94,17 @@ function MatchList({
   }
 
   const renderExpandedContent = useCallback(
-    (matchId: string) => <MatchPredictionsAccordion poolId={poolId} matchId={matchId} />,
-    [poolId],
+    (matchId: string) => {
+      const match = matches.find((x) => x.id === matchId)
+      return (
+        <MatchPredictionsAccordion
+          poolId={poolId}
+          matchId={matchId}
+          isLive={match?.status === 'live'}
+        />
+      )
+    },
+    [poolId, matches],
   )
 
   let lastMatchday: number | null = null
@@ -161,7 +178,13 @@ function PredictionsPage() {
       return res.json()
     },
     enabled: !!poolDetail,
+    refetchInterval: (query) => {
+      const matches = query.state.data?.matches
+      return matches?.some((m) => m.status === 'live') ? 30_000 : false
+    },
   })
+
+  const hasLiveMatch = (matchesData?.matches ?? []).some((m) => m.status === 'live')
 
   const { data: predictionsData, isPending: predictionsPending } = useQuery({
     queryKey: ['predictions', poolId],
@@ -170,6 +193,7 @@ function PredictionsPage() {
       if (!res.ok) throw new Error('Erro ao carregar palpites')
       return res.json()
     },
+    refetchInterval: hasLiveMatch ? 30_000 : false,
   })
 
   const saveMutation = useMutation({
