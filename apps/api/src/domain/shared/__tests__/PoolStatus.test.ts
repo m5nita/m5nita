@@ -60,24 +60,6 @@ describe('PoolStatus', () => {
     })
   })
 
-  describe('canCancel()', () => {
-    it('returns true for active', () => {
-      expect(PoolStatus.Active.canCancel()).toBe(true)
-    })
-
-    it('returns true for pending', () => {
-      expect(PoolStatus.Pending.canCancel()).toBe(true)
-    })
-
-    it('returns false for closed', () => {
-      expect(PoolStatus.Closed.canCancel()).toBe(false)
-    })
-
-    it('returns false for cancelled', () => {
-      expect(PoolStatus.Cancelled.canCancel()).toBe(false)
-    })
-  })
-
   describe('canJoin()', () => {
     it('returns true for active', () => {
       expect(PoolStatus.Active.canJoin()).toBe(true)

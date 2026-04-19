@@ -1,6 +1,4 @@
 import { POOL } from '@m5nita/shared'
-import { and, eq } from 'drizzle-orm'
-import { CancelPoolUseCase } from './application/pool/CancelPoolUseCase'
 import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
 import { GetPoolDetailsUseCase } from './application/pool/GetPoolDetailsUseCase'
 import { GetUserPoolsUseCase } from './application/pool/GetUserPoolsUseCase'
@@ -12,7 +10,6 @@ import { UpsertPredictionUseCase } from './application/prediction/UpsertPredicti
 import { GetPrizeInfoUseCase } from './application/prize/GetPrizeInfoUseCase'
 import { RequestWithdrawalUseCase } from './application/prize/RequestWithdrawalUseCase'
 import { db } from './db/client'
-import { payment } from './db/schema/payment'
 import { InfinitePayPaymentGateway } from './infrastructure/external/InfinitePayPaymentGateway'
 import { MercadoPagoPaymentGateway } from './infrastructure/external/MercadoPagoPaymentGateway'
 import { MockPaymentGateway } from './infrastructure/external/MockPaymentGateway'
@@ -89,15 +86,6 @@ function buildContainer() {
 
   const notificationService = new TelegramNotificationService(bot)
 
-  async function hasPrizePayments(poolId: string): Promise<boolean> {
-    const [row] = await db
-      .select()
-      .from(payment)
-      .where(and(eq(payment.poolId, poolId), eq(payment.type, 'prize')))
-      .limit(1)
-    return !!row
-  }
-
   return {
     // Repos & services (used by jobs and other infrastructure entry points)
     poolRepo,
@@ -116,7 +104,6 @@ function buildContainer() {
       POOL.PLATFORM_FEE_RATE,
     ),
     joinPoolUseCase: new JoinPoolUseCase(poolRepo, paymentGateway),
-    cancelPoolUseCase: new CancelPoolUseCase(poolRepo, hasPrizePayments),
     getPoolDetailsUseCase: new GetPoolDetailsUseCase(poolRepo),
     getUserPoolsUseCase: new GetUserPoolsUseCase(poolRepo),
     upsertPredictionUseCase: new UpsertPredictionUseCase(predictionRepo, poolRepo, matchRepo),

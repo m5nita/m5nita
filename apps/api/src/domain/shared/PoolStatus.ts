@@ -29,10 +29,6 @@ export class PoolStatus {
     return this.value === 'active'
   }
 
-  canCancel(): boolean {
-    return this.value === 'active' || this.value === 'pending'
-  }
-
   canJoin(): boolean {
     return this.value === 'active'
   }

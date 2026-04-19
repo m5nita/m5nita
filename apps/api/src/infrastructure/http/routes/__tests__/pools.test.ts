@@ -50,7 +50,6 @@ vi.mock('../../middleware/auth', () => ({
 const mockCreatePoolExecute = vi.fn()
 const mockGetUserPoolsExecute = vi.fn()
 const mockJoinPoolExecute = vi.fn()
-const mockCancelPoolExecute = vi.fn()
 const mockGetPrizeInfoExecute = vi.fn()
 const mockRequestWithdrawalExecute = vi.fn()
 
@@ -59,7 +58,6 @@ vi.mock('../../../../container', () => ({
     createPoolUseCase: { execute: (...args: unknown[]) => mockCreatePoolExecute(...args) },
     getUserPoolsUseCase: { execute: (...args: unknown[]) => mockGetUserPoolsExecute(...args) },
     joinPoolUseCase: { execute: (...args: unknown[]) => mockJoinPoolExecute(...args) },
-    cancelPoolUseCase: { execute: (...args: unknown[]) => mockCancelPoolExecute(...args) },
     getPrizeInfoUseCase: { execute: (...args: unknown[]) => mockGetPrizeInfoExecute(...args) },
     requestWithdrawalUseCase: {
       execute: (...args: unknown[]) => mockRequestWithdrawalExecute(...args),

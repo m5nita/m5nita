@@ -40,7 +40,6 @@ vi.mock('../../../../container', () => ({
     createPoolUseCase: { execute: vi.fn() },
     getUserPoolsUseCase: { execute: vi.fn() },
     joinPoolUseCase: { execute: (...args: unknown[]) => mockJoinPoolExecute(...args) },
-    cancelPoolUseCase: { execute: vi.fn() },
     getPrizeInfoUseCase: { execute: vi.fn() },
     requestWithdrawalUseCase: { execute: vi.fn() },
     getPoolDetailsUseCase: { execute: vi.fn() },

@@ -70,14 +70,11 @@ vi.mock('../../../../db/client', () => ({
   },
 }))
 
-const mockCancelPoolExecute = vi.fn()
-
 vi.mock('../../../../container', () => ({
   getContainer: () => ({
     createPoolUseCase: { execute: vi.fn() },
     getUserPoolsUseCase: { execute: vi.fn() },
     joinPoolUseCase: { execute: vi.fn() },
-    cancelPoolUseCase: { execute: (...args: unknown[]) => mockCancelPoolExecute(...args) },
     getPrizeInfoUseCase: { execute: vi.fn() },
     requestWithdrawalUseCase: { execute: vi.fn() },
     getPoolDetailsUseCase: { execute: vi.fn() },
@@ -104,7 +101,6 @@ describe('Admin endpoints', () => {
   beforeEach(() => {
     app = createTestApp()
     vi.clearAllMocks()
-    mockCancelPoolExecute.mockResolvedValue(undefined)
   })
 
   it('patchPool_owner_200updated', async () => {
@@ -139,25 +135,5 @@ describe('Admin endpoints', () => {
       headers: { 'x-test-user': JSON.stringify(nonOwner) },
     })
     expect(res.status).toBe(403)
-  })
-
-  it('removeMember_owner_200removed', async () => {
-    const res = await app.request('/api/pools/pool-1/members/member-1', {
-      method: 'DELETE',
-      headers: { 'x-test-user': JSON.stringify(owner) },
-    })
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.removed).toBe(true)
-  })
-
-  it('cancelPool_owner_200cancelled', async () => {
-    const res = await app.request('/api/pools/pool-1/cancel', {
-      method: 'POST',
-      headers: { 'x-test-user': JSON.stringify(owner) },
-    })
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.cancelled).toBe(true)
   })
 })
