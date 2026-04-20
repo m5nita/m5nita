@@ -1,7 +1,10 @@
 import { eq } from 'drizzle-orm'
 import { Bot } from 'grammy'
+import { getContainer } from '../container'
 import { db } from '../db/client'
 import { telegramChat } from '../db/schema/telegram'
+import { PrizeWithdrawalError } from '../domain/prize/PrizeWithdrawalError'
+import { WITHDRAWAL_PAY_CALLBACK_PREFIX } from '../infrastructure/external/telegramCallbacks'
 import {
   CompetitionError,
   createCompetition,
@@ -373,6 +376,63 @@ bot.command('competicao_destacar', async (ctx) => {
   }
 })
 
+bot.callbackQuery(new RegExp(`^${WITHDRAWAL_PAY_CALLBACK_PREFIX}(.+)$`), async (ctx) => {
+  if (!ctx.from || !isAdmin(ctx.from.id)) {
+    await ctx.answerCallbackQuery({ text: 'Sem permissão', show_alert: true })
+    return
+  }
+
+  const withdrawalId = ctx.match?.[1]
+  if (!withdrawalId) {
+    await ctx.answerCallbackQuery({ text: 'Callback inválido', show_alert: true })
+    return
+  }
+
+  try {
+    const { markWithdrawalPaidUseCase } = getContainer()
+    await markWithdrawalPaidUseCase.execute({ withdrawalId })
+
+    const originalText = ctx.callbackQuery.message?.text ?? ''
+    const handle = ctx.from.username ? `@${ctx.from.username}` : (ctx.from.first_name ?? 'admin')
+    const paidAt = new Date().toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const footer = `\n\n✅ Pago em ${paidAt} por ${handle}`
+
+    await ctx.editMessageText(originalText + footer, {
+      reply_markup: { inline_keyboard: [] },
+    })
+    await ctx.answerCallbackQuery({ text: 'Marcado como pago' })
+  } catch (error) {
+    if (error instanceof PrizeWithdrawalError) {
+      if (error.code === 'WITHDRAWAL_ALREADY_COMPLETED') {
+        await ctx.answerCallbackQuery({
+          text: 'Já foi marcado como pago',
+          show_alert: true,
+        })
+        return
+      }
+      if (error.code === 'WITHDRAWAL_NOT_FOUND') {
+        console.error('[Telegram] markAsCompleted: withdrawal not found', withdrawalId)
+        await ctx.answerCallbackQuery({
+          text: 'Erro ao processar. Tente novamente.',
+          show_alert: true,
+        })
+        return
+      }
+    }
+    console.error('[Telegram] callbackQuery wd:pay failed:', error)
+    await ctx.answerCallbackQuery({
+      text: 'Erro ao processar. Tente novamente.',
+      show_alert: true,
+    })
+  }
+})
+
 bot.on('message:text', async (ctx) => {
   if (ctx.message.text.startsWith('/')) return
 
@@ -399,70 +459,6 @@ export async function sendOtpViaTelegram(chatId: number, code: string): Promise<
   } catch (error) {
     console.error('[Telegram] Failed to send OTP:', error)
     throw new Error('Falha ao enviar código. Tente novamente.')
-  }
-}
-
-export async function notifyWinners(
-  poolName: string,
-  winners: { userId: string; name: string | null; phoneNumber: string | null }[],
-  prizeShare: number,
-): Promise<void> {
-  const formattedPrize = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(prizeShare / 100)
-
-  for (const winner of winners) {
-    if (!winner.phoneNumber) continue
-
-    try {
-      const chatId = await findChatIdByPhone(winner.phoneNumber)
-      if (!chatId) continue
-
-      const message =
-        `🏆 *Parabéns, ${winner.name || 'Campeão'}!*\n\n` +
-        `Você venceu o bolão *${poolName}*!\n` +
-        `Seu prêmio: *${formattedPrize}*\n\n` +
-        `Acesse o app para solicitar a retirada do seu prêmio.`
-
-      await bot.api.sendMessage(chatId, message, { parse_mode: 'Markdown' })
-    } catch (error) {
-      console.error(`[Telegram] Failed to notify winner ${winner.userId}:`, error)
-    }
-  }
-}
-
-export async function notifyAdminWithdrawalRequest(
-  userName: string,
-  poolName: string,
-  amount: number,
-  pixKeyType: string,
-  pixKey: string,
-): Promise<void> {
-  const adminIds = (process.env.ADMIN_USER_IDS ?? '')
-    .split(',')
-    .map((id) => id.trim())
-    .filter(Boolean)
-  if (adminIds.length === 0) return
-
-  const formattedAmount = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(amount / 100)
-
-  const message =
-    `💸 *Solicitação de retirada*\n\n` +
-    `Jogador: *${userName}*\n` +
-    `Bolão: *${poolName}*\n` +
-    `Valor: *${formattedAmount}*\n` +
-    `Chave PIX (${pixKeyType}): \`${pixKey}\``
-
-  for (const adminId of adminIds) {
-    try {
-      await bot.api.sendMessage(Number(adminId), message, { parse_mode: 'Markdown' })
-    } catch (error) {
-      console.error(`[Telegram] Failed to notify admin ${adminId}:`, error)
-    }
   }
 }
 
