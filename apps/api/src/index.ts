@@ -94,6 +94,10 @@ app.use('/api/auth/phone-number/send-otp', captchaGuard)
 app.use('/api/auth/sign-in/magic-link', captchaGuard)
 app.use('/api/auth/sign-in/social', captchaGuard)
 
+// Health check — registered before the sub-apps so it bypasses requireAuth
+// middleware applied inside the `/*` scope of protected route modules.
+app.get('/api/health', (c) => c.json({ status: 'ok' }))
+
 // Better Auth — mounted directly, no auth middleware
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
 
@@ -109,8 +113,6 @@ app.route('/api', matchesRoutes)
 app.route('/api', predictionsRoutes)
 app.route('/api', rankingRoutes)
 app.route('/api', paymentsRoutes)
-
-app.get('/api/health', (c) => c.json({ status: 'ok' }))
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
