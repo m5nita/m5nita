@@ -4,6 +4,7 @@ import './lib/instrument'
 
 import type { ServerType } from '@hono/node-server'
 import { serve } from '@hono/node-server'
+import { phoneSchema } from '@m5nita/shared'
 import * as Sentry from '@sentry/node'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
@@ -67,14 +68,20 @@ app.use('/api/*', async (c, next) => {
 
 app.use('/api/*', globalRateLimit)
 
-// OTP rate limit — parse body to extract phone number for per-phone limiting
+// OTP rate limit — reject early if phone is missing/invalid so the limiter
+// always keys on a validated phone (prevents IP-bucket abuse).
 app.post('/api/auth/phone-number/send-otp', async (c, next) => {
+  let body: unknown
   try {
-    const body = await c.req.raw.clone().json()
-    c.set('parsedBody', body)
+    body = await c.req.raw.clone().json()
   } catch {
-    // Falls back to IP-based rate limiting
+    return c.json({ error: 'INVALID_BODY', message: 'Corpo inválido' }, 400)
   }
+  const parsed = phoneSchema.safeParse((body as { phoneNumber?: unknown })?.phoneNumber)
+  if (!parsed.success) {
+    return c.json({ error: 'INVALID_PHONE', message: 'Telefone inválido' }, 400)
+  }
+  c.set('parsedBody', { phoneNumber: parsed.data })
   await next()
 })
 app.post('/api/auth/phone-number/send-otp', otpRateLimit)

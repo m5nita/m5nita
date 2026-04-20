@@ -1,9 +1,17 @@
 import { z } from 'zod'
 
+// Strips HTML tags/entities and trims. Pool names are rendered in email
+// templates and Telegram messages where React's auto-escape doesn't help.
+const safePoolName = z
+  .string()
+  .trim()
+  .transform((v) => v.replace(/<[^>]*>/g, '').replace(/&[a-z#0-9]+;/gi, ''))
+  .pipe(z.string().min(3, 'Nome muito curto').max(50, 'Nome muito longo'))
+
 // Pool schemas
 export const createPoolSchema = z
   .object({
-    name: z.string().min(3).max(50),
+    name: safePoolName,
     entryFee: z.number().int().min(100).max(100000),
     competitionId: z.string().uuid('ID da competicao invalido'),
     matchdayFrom: z.number().int().min(1).optional(),
@@ -46,7 +54,7 @@ export const validateCouponSchema = z.object({
 })
 
 export const updatePoolSchema = z.object({
-  name: z.string().min(3).max(50).optional(),
+  name: safePoolName.optional(),
   isOpen: z.boolean().optional(),
 })
 
