@@ -65,7 +65,13 @@ jobs:
 
   notify:
     needs: [deploy-api, deploy-web]
-    if: always() && (needs.deploy-api.result == 'failure' || needs.deploy-web.result == 'failure')
+    if: >-
+      always() && (
+        needs.deploy-api.result == 'failure' ||
+        needs.deploy-web.result == 'failure' ||
+        needs.deploy-api.result == 'cancelled' ||
+        needs.deploy-web.result == 'cancelled'
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Notify failure (placeholder)

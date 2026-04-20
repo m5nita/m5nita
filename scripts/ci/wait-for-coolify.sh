@@ -19,6 +19,13 @@ UUID="${1:?application UUID is required}"
 
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-300}"
 INTERVAL_SECONDS="${INTERVAL_SECONDS:-10}"
+# Give Coolify time to transition the app out of its previous "running" state
+# after the deploy trigger — otherwise the first poll can race and report
+# success on the stale container. 20s is enough for build+deploy to start.
+INITIAL_DELAY_SECONDS="${INITIAL_DELAY_SECONDS:-20}"
+
+echo "Waiting ${INITIAL_DELAY_SECONDS}s for Coolify to start the deployment..."
+sleep "$INITIAL_DELAY_SECONDS"
 
 start=$(date +%s)
 while :; do
