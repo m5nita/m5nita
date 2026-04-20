@@ -95,7 +95,10 @@ export class TelegramNotificationService implements NotificationService {
   async sendPredictionReminders(reminders: ReminderData[]): Promise<void> {
     for (const reminder of reminders) {
       const matchLines = reminder.matches
-        .map((m) => `⚽ *${m.homeTeam} x ${m.awayTeam}* — em ${m.minutesUntil} min`)
+        .map(
+          (m) =>
+            `⚽ *${escapeMarkdown(m.homeTeam)} x ${escapeMarkdown(m.awayTeam)}* — em ${m.minutesUntil} min`,
+        )
         .join('\n')
 
       const linkLine = APP_URL
@@ -103,7 +106,7 @@ export class TelegramNotificationService implements NotificationService {
         : '\nAcesse o app para fazer seus palpites.'
 
       const message =
-        `🎯 *${reminder.poolName}*\n\n` +
+        `🎯 *${escapeMarkdown(reminder.poolName)}*\n\n` +
         `Você ainda não fez palpite para:\n\n` +
         `${matchLines}\n` +
         linkLine
