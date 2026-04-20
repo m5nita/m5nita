@@ -19,6 +19,7 @@ apps/web/src/**/*.js
 .devdbrc
 .mcp.json
 .superpowers/
+docs/superpowers/
 
 # Worktrees
 .worktrees/
