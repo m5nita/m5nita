@@ -1,5 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { Bot } from 'grammy'
+// Cycle with ../container (which imports `bot` from this file). Only safe because
+// getContainer() is invoked lazily inside handlers — never hoist to module scope.
 import { getContainer } from '../container'
 import { db } from '../db/client'
 import { telegramChat } from '../db/schema/telegram'
