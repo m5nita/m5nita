@@ -65,18 +65,31 @@ jobs:
 
   notify:
     needs: [deploy-api, deploy-web]
-    if: >-
-      always() && (
-        needs.deploy-api.result == 'failure' ||
-        needs.deploy-web.result == 'failure' ||
-        needs.deploy-api.result == 'cancelled' ||
-        needs.deploy-web.result == 'cancelled'
-      )
+    if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Notify failure (placeholder)
+      - name: Notify Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_DEPLOY_CHAT_ID }}
+          API_RESULT: ${{ needs.deploy-api.result }}
+          WEB_RESULT: ${{ needs.deploy-web.result }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          echo "::warning::Deploy failed."
-          echo "api: ${{ needs.deploy-api.result }}"
-          echo "web: ${{ needs.deploy-web.result }}"
-          echo "Wire Telegram/Slack integration in a future iteration."
+          if [[ "$API_RESULT" == "success" && "$WEB_RESULT" == "success" ]]; then
+            title="✅ Deploy successful"
+          else
+            title="🚨 Deploy failed"
+          fi
+
+          text="${title}
+          api: \`${API_RESULT}\`
+          web: \`${WEB_RESULT}\`
+          commit: \`${SHA:0:7}\`
+          [ver logs](${RUN_URL})"
+
+          curl -fsS -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d chat_id="${CHAT_ID}" \
+            -d parse_mode=Markdown \
+            --data-urlencode text="${text}"
