@@ -1,12 +1,18 @@
 import type { Bot } from 'grammy'
 import type {
+  AdminWithdrawalRequestNotification,
   NotificationService,
   ReminderData,
   WinnerInfo,
 } from '../../application/ports/NotificationService.port'
 import { findChatIdByPhone } from '../../lib/telegram'
+import { WITHDRAWAL_PAY_CALLBACK_PREFIX } from './telegramCallbacks'
 
 const APP_URL = process.env.APP_URL || ''
+
+function escapeMarkdown(text: string): string {
+  return text.replace(/([_*`[\]])/g, '\\$1')
+}
 
 export class TelegramNotificationService implements NotificationService {
   constructor(private bot: Bot) {}
@@ -25,8 +31,8 @@ export class TelegramNotificationService implements NotificationService {
         if (!chatId) continue
 
         const message =
-          `🏆 *Parabéns, ${winner.name || 'Campeão'}!*\n\n` +
-          `Você venceu o bolão *${poolName}*!\n` +
+          `🏆 *Parabéns, ${escapeMarkdown(winner.name || 'Campeão')}!*\n\n` +
+          `Você venceu o bolão *${escapeMarkdown(poolName)}*!\n` +
           `Seu prêmio: *${formattedPrize}*\n\n` +
           `Acesse o app para solicitar a retirada do seu prêmio.`
 
@@ -39,15 +45,7 @@ export class TelegramNotificationService implements NotificationService {
     }
   }
 
-  async notifyAdminWithdrawalRequest(params: {
-    userName: string
-    poolName: string
-    poolCode: string
-    withdrawalId: string
-    amount: number
-    pixKeyType: string
-    pixKey: string
-  }): Promise<void> {
+  async notifyAdminWithdrawalRequest(params: AdminWithdrawalRequestNotification): Promise<void> {
     const adminIds = (process.env.ADMIN_USER_IDS ?? '')
       .split(',')
       .map((id) => id.trim())
@@ -61,11 +59,11 @@ export class TelegramNotificationService implements NotificationService {
 
     const message =
       `💸 *Solicitação de retirada*\n\n` +
-      `Jogador: *${params.userName}*\n` +
-      `Bolão: *${params.poolName}*\n` +
-      `Código: \`${params.poolCode}\`\n` +
+      `Jogador: *${escapeMarkdown(params.userName)}*\n` +
+      `Bolão: *${escapeMarkdown(params.poolName)}*\n` +
+      `Código: \`${escapeMarkdown(params.poolCode)}\`\n` +
       `Valor: *${formattedAmount}*\n` +
-      `Chave PIX (${params.pixKeyType}): \`${params.pixKey}\``
+      `Chave PIX (${escapeMarkdown(params.pixKeyType)}): \`${escapeMarkdown(params.pixKey)}\``
 
     const replyMarkup = {
       inline_keyboard: [
@@ -73,7 +71,12 @@ export class TelegramNotificationService implements NotificationService {
           { text: '📋 Copiar código', copy_text: { text: params.poolCode } },
           { text: '📋 Copiar chave PIX', copy_text: { text: params.pixKey } },
         ],
-        [{ text: '✅ Marcar como pago', callback_data: `wd:pay:${params.withdrawalId}` }],
+        [
+          {
+            text: '✅ Marcar como pago',
+            callback_data: `${WITHDRAWAL_PAY_CALLBACK_PREFIX}${params.withdrawalId}`,
+          },
+        ],
       ],
     }
 
