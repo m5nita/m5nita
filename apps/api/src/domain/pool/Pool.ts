@@ -61,14 +61,6 @@ export class Pool {
     this._isOpen = false
   }
 
-  cancel(): void {
-    if (!this._status.canCancel()) {
-      throw new PoolError('INVALID_STATE', 'Pool cannot be cancelled')
-    }
-    this._status = PoolStatus.Cancelled
-    this._isOpen = false
-  }
-
   canJoin(): boolean {
     return this._status.canJoin() && this._isOpen
   }

@@ -234,22 +234,6 @@ poolsRoutes.get('/pools/:poolId/members', async (c) => {
   return c.json({ members })
 })
 
-// DELETE /api/pools/:poolId/members/:memberId — Remove member (owner only)
-poolsRoutes.delete('/pools/:poolId/members/:memberId', async (c) => {
-  const { poolId, memberId } = c.req.param()
-  const currentUser = c.get('user')
-
-  const poolData = await db.query.pool.findFirst({ where: eq(pool.id, poolId) })
-  if (!poolData) return c.json({ error: 'NOT_FOUND' }, 404)
-  if (poolData.ownerId !== currentUser.id) return c.json({ error: 'FORBIDDEN' }, 403)
-
-  const member = await db.query.poolMember.findFirst({ where: eq(poolMember.id, memberId) })
-  if (!member) return c.json({ error: 'NOT_FOUND', message: 'Membro não encontrado' }, 404)
-
-  await db.delete(poolMember).where(eq(poolMember.id, memberId))
-  return c.json({ removed: true })
-})
-
 // GET /api/pools/:poolId/prize — Prize info for finalized pool
 poolsRoutes.get('/pools/:poolId/prize', async (c) => {
   const { poolId } = c.req.param()
@@ -301,31 +285,6 @@ poolsRoutes.post('/pools/:poolId/prize/withdraw', async (c) => {
         WITHDRAWAL_ALREADY_REQUESTED: 409,
         POOL_NOT_CLOSED: 400,
         INVALID_PIX_KEY: 400,
-      }
-      return c.json({ error: err.code, message: err.message }, (statusMap[err.code] ?? 400) as 400)
-    }
-    throw err
-  }
-})
-
-// POST /api/pools/:poolId/cancel — Cancel pool (owner only)
-poolsRoutes.post('/pools/:poolId/cancel', async (c) => {
-  const { poolId } = c.req.param()
-  const currentUser = c.get('user')
-
-  try {
-    await getContainer().cancelPoolUseCase.execute({
-      userId: currentUser.id,
-      poolId,
-    })
-
-    return c.json({ cancelled: true })
-  } catch (err) {
-    if (err instanceof PoolError) {
-      const statusMap: Record<string, number> = {
-        NOT_FOUND: 404,
-        FORBIDDEN: 403,
-        PRIZE_WITHDRAWAL_REQUESTED: 409,
       }
       return c.json({ error: err.code, message: err.message }, (statusMap[err.code] ?? 400) as 400)
     }

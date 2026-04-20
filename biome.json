@@ -52,7 +52,8 @@
       "!**/*.gen.ts",
       "!**/drizzle",
       "!**/.worktrees",
-      "!**/.claude/worktrees"
+      "!**/.claude/worktrees",
+      "!**/.superpowers"
     ]
   }
 }

@@ -52,19 +52,6 @@ describe('Pool', () => {
     expect(() => pool.close()).toThrow('Pool cannot be closed')
   })
 
-  it('cancel() on active pool succeeds', () => {
-    const pool = createPool({ status: PoolStatus.Active, isOpen: true })
-    pool.cancel()
-    expect(pool.status).toBe(PoolStatus.Cancelled)
-    expect(pool.isOpen).toBe(false)
-  })
-
-  it('cancel() on closed pool throws PoolError', () => {
-    const pool = createPool({ status: PoolStatus.Closed })
-    expect(() => pool.cancel()).toThrow(PoolError)
-    expect(() => pool.cancel()).toThrow('Pool cannot be cancelled')
-  })
-
   it('canJoin() returns true when active and open', () => {
     const pool = createPool({ status: PoolStatus.Active, isOpen: true })
     expect(pool.canJoin()).toBe(true)
