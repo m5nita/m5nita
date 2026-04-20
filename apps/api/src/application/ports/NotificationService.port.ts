@@ -12,12 +12,14 @@ export interface ReminderData {
 
 export interface NotificationService {
   notifyWinners(poolName: string, winners: WinnerInfo[], prizeShare: number): Promise<void>
-  notifyAdminWithdrawalRequest(
-    userName: string,
-    poolName: string,
-    amount: number,
-    pixKeyType: string,
-    pixKey: string,
-  ): Promise<void>
+  notifyAdminWithdrawalRequest(params: {
+    userName: string
+    poolName: string
+    poolCode: string
+    withdrawalId: string
+    amount: number
+    pixKeyType: string
+    pixKey: string
+  }): Promise<void>
   sendPredictionReminders(reminders: ReminderData[]): Promise<void>
 }

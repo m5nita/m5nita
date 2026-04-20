@@ -74,13 +74,15 @@ export class RequestWithdrawalUseCase {
     })
 
     const winner = winners.find((w) => w.userId === input.userId)
-    await this.notificationService.notifyAdminWithdrawalRequest(
-      winner?.name ?? 'Usuário',
-      poolDetails.name,
-      winnerShare.centavos,
-      pixKey.type,
-      pixKey.value,
-    )
+    await this.notificationService.notifyAdminWithdrawalRequest({
+      userName: winner?.name ?? 'Usuário',
+      poolName: poolDetails.name,
+      poolCode: poolDetails.inviteCode,
+      withdrawalId: withdrawal.id,
+      amount: winnerShare.centavos,
+      pixKeyType: pixKey.type,
+      pixKey: pixKey.value,
+    })
 
     return withdrawal
   }
