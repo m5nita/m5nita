@@ -39,13 +39,15 @@ export class TelegramNotificationService implements NotificationService {
     }
   }
 
-  async notifyAdminWithdrawalRequest(
-    userName: string,
-    poolName: string,
-    amount: number,
-    pixKeyType: string,
-    pixKey: string,
-  ): Promise<void> {
+  async notifyAdminWithdrawalRequest(params: {
+    userName: string
+    poolName: string
+    poolCode: string
+    withdrawalId: string
+    amount: number
+    pixKeyType: string
+    pixKey: string
+  }): Promise<void> {
     const adminIds = (process.env.ADMIN_USER_IDS ?? '')
       .split(',')
       .map((id) => id.trim())
@@ -55,19 +57,31 @@ export class TelegramNotificationService implements NotificationService {
     const formattedAmount = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    }).format(amount / 100)
+    }).format(params.amount / 100)
 
     const message =
       `💸 *Solicitação de retirada*\n\n` +
-      `Jogador: *${userName}*\n` +
-      `Bolão: *${poolName}*\n` +
+      `Jogador: *${params.userName}*\n` +
+      `Bolão: *${params.poolName}*\n` +
+      `Código: \`${params.poolCode}\`\n` +
       `Valor: *${formattedAmount}*\n` +
-      `Chave PIX (${pixKeyType}): \`${pixKey}\``
+      `Chave PIX (${params.pixKeyType}): \`${params.pixKey}\``
+
+    const replyMarkup = {
+      inline_keyboard: [
+        [
+          { text: '📋 Copiar código', copy_text: { text: params.poolCode } },
+          { text: '📋 Copiar chave PIX', copy_text: { text: params.pixKey } },
+        ],
+        [{ text: '✅ Marcar como pago', callback_data: `wd:pay:${params.withdrawalId}` }],
+      ],
+    }
 
     for (const adminId of adminIds) {
       try {
         await this.bot.api.sendMessage(Number(adminId), message, {
           parse_mode: 'Markdown',
+          reply_markup: replyMarkup,
         })
       } catch (error) {
         console.error(`[Telegram] Failed to notify admin ${adminId}:`, error)
