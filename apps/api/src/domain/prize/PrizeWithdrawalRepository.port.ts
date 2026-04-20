@@ -21,4 +21,5 @@ export type CreateWithdrawalData = {
 export interface PrizeWithdrawalRepository {
   findByPoolAndUser(poolId: string, userId: string): Promise<PrizeWithdrawal | null>
   createWithPayment(data: CreateWithdrawalData): Promise<PrizeWithdrawal>
+  markAsCompleted(id: string): Promise<PrizeWithdrawal>
 }
