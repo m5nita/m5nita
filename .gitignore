@@ -25,6 +25,9 @@ docs/superpowers/
 .worktrees/
 .claude/worktrees/
 
-# Local scripts (not versioned) — exception: apps' src/scripts are deployed alongside code
+# Local scripts (not versioned) — exceptions: apps' src/scripts are deployed alongside code,
+# and scripts/ci/ is used by GitHub Actions and must be versioned.
 scripts/
 !apps/*/src/scripts/
+!scripts/ci/
+!scripts/ci/**
