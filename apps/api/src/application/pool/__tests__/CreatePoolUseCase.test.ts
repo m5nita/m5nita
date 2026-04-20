@@ -45,9 +45,9 @@ const baseInput = {
 }
 
 describe('CreatePoolUseCase', () => {
-  it('does not consume coupon or save pool when gateway fails', async () => {
+  it('does not consume coupon when gateway fails', async () => {
     const incrementUsage = vi.fn(async () => true)
-    const save = vi.fn()
+    const save = vi.fn(async (p) => p)
     const createCheckoutSession = vi.fn(async () => {
       throw new Error('gateway 502')
     })
@@ -72,12 +72,12 @@ describe('CreatePoolUseCase', () => {
       'gateway 502',
     )
 
+    expect(save).toHaveBeenCalledTimes(1)
     expect(createCheckoutSession).toHaveBeenCalledTimes(1)
     expect(incrementUsage).not.toHaveBeenCalled()
-    expect(save).not.toHaveBeenCalled()
   })
 
-  it('calls gateway before incrementing coupon and saving pool', async () => {
+  it('saves pool before gateway so the payment FK resolves, increments coupon after', async () => {
     const calls: string[] = []
     const incrementUsage = vi.fn(async () => {
       calls.push('increment')
@@ -113,12 +113,12 @@ describe('CreatePoolUseCase', () => {
 
     await useCase.execute({ ...baseInput, couponCode: 'FREE' })
 
-    expect(calls).toEqual(['gateway', 'increment', 'save'])
+    expect(calls).toEqual(['save', 'gateway', 'increment'])
   })
 
-  it('throws COUPON_EXHAUSTED and skips save when coupon race-exhausts after gateway', async () => {
+  it('throws COUPON_EXHAUSTED when coupon race-exhausts after gateway succeeds', async () => {
     const incrementUsage = vi.fn(async () => false)
-    const save = vi.fn()
+    const save = vi.fn(async (p) => p)
 
     const useCase = new CreatePoolUseCase(
       makeRepo({ save }),
@@ -139,7 +139,7 @@ describe('CreatePoolUseCase', () => {
     await expect(useCase.execute({ ...baseInput, couponCode: 'FREE' })).rejects.toMatchObject({
       code: 'COUPON_EXHAUSTED',
     })
-    expect(save).not.toHaveBeenCalled()
+    expect(save).toHaveBeenCalledTimes(1)
   })
 
   it('creates pool without coupon flow when couponCode is absent', async () => {
