@@ -8,6 +8,7 @@ import { GetMatchPredictionsUseCase } from './application/prediction/GetMatchPre
 import { GetUserPredictionsUseCase } from './application/prediction/GetUserPredictionsUseCase'
 import { UpsertPredictionUseCase } from './application/prediction/UpsertPredictionUseCase'
 import { GetPrizeInfoUseCase } from './application/prize/GetPrizeInfoUseCase'
+import { MarkWithdrawalPaidUseCase } from './application/prize/MarkWithdrawalPaidUseCase'
 import { RequestWithdrawalUseCase } from './application/prize/RequestWithdrawalUseCase'
 import { db } from './db/client'
 import { InfinitePayPaymentGateway } from './infrastructure/external/InfinitePayPaymentGateway'
@@ -122,6 +123,7 @@ function buildContainer() {
       notificationService,
       getEffectiveFeeRate,
     ),
+    markWithdrawalPaidUseCase: new MarkWithdrawalPaidUseCase(prizeWithdrawalRepo),
   }
 }
 

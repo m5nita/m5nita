@@ -1,12 +1,18 @@
 import type { Bot } from 'grammy'
 import type {
+  AdminWithdrawalRequestNotification,
   NotificationService,
   ReminderData,
   WinnerInfo,
 } from '../../application/ports/NotificationService.port'
 import { findChatIdByPhone } from '../../lib/telegram'
+import { WITHDRAWAL_PAY_CALLBACK_PREFIX } from './telegramCallbacks'
 
 const APP_URL = process.env.APP_URL || ''
+
+function escapeMarkdown(text: string): string {
+  return text.replace(/([_*`[\]])/g, '\\$1')
+}
 
 export class TelegramNotificationService implements NotificationService {
   constructor(private bot: Bot) {}
@@ -25,8 +31,8 @@ export class TelegramNotificationService implements NotificationService {
         if (!chatId) continue
 
         const message =
-          `🏆 *Parabéns, ${winner.name || 'Campeão'}!*\n\n` +
-          `Você venceu o bolão *${poolName}*!\n` +
+          `🏆 *Parabéns, ${escapeMarkdown(winner.name || 'Campeão')}!*\n\n` +
+          `Você venceu o bolão *${escapeMarkdown(poolName)}*!\n` +
           `Seu prêmio: *${formattedPrize}*\n\n` +
           `Acesse o app para solicitar a retirada do seu prêmio.`
 
@@ -39,13 +45,7 @@ export class TelegramNotificationService implements NotificationService {
     }
   }
 
-  async notifyAdminWithdrawalRequest(
-    userName: string,
-    poolName: string,
-    amount: number,
-    pixKeyType: string,
-    pixKey: string,
-  ): Promise<void> {
+  async notifyAdminWithdrawalRequest(params: AdminWithdrawalRequestNotification): Promise<void> {
     const adminIds = (process.env.ADMIN_USER_IDS ?? '')
       .split(',')
       .map((id) => id.trim())
@@ -55,19 +55,36 @@ export class TelegramNotificationService implements NotificationService {
     const formattedAmount = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    }).format(amount / 100)
+    }).format(params.amount / 100)
 
     const message =
       `💸 *Solicitação de retirada*\n\n` +
-      `Jogador: *${userName}*\n` +
-      `Bolão: *${poolName}*\n` +
+      `Jogador: *${escapeMarkdown(params.userName)}*\n` +
+      `Bolão: *${escapeMarkdown(params.poolName)}*\n` +
+      `Código: \`${escapeMarkdown(params.poolCode)}\`\n` +
       `Valor: *${formattedAmount}*\n` +
-      `Chave PIX (${pixKeyType}): \`${pixKey}\``
+      `Chave PIX (${escapeMarkdown(params.pixKeyType)}): \`${escapeMarkdown(params.pixKey)}\``
+
+    const replyMarkup = {
+      inline_keyboard: [
+        [
+          { text: '📋 Copiar código', copy_text: { text: params.poolCode } },
+          { text: '📋 Copiar chave PIX', copy_text: { text: params.pixKey } },
+        ],
+        [
+          {
+            text: '✅ Marcar como pago',
+            callback_data: `${WITHDRAWAL_PAY_CALLBACK_PREFIX}${params.withdrawalId}`,
+          },
+        ],
+      ],
+    }
 
     for (const adminId of adminIds) {
       try {
         await this.bot.api.sendMessage(Number(adminId), message, {
           parse_mode: 'Markdown',
+          reply_markup: replyMarkup,
         })
       } catch (error) {
         console.error(`[Telegram] Failed to notify admin ${adminId}:`, error)
@@ -78,7 +95,10 @@ export class TelegramNotificationService implements NotificationService {
   async sendPredictionReminders(reminders: ReminderData[]): Promise<void> {
     for (const reminder of reminders) {
       const matchLines = reminder.matches
-        .map((m) => `⚽ *${m.homeTeam} x ${m.awayTeam}* — em ${m.minutesUntil} min`)
+        .map(
+          (m) =>
+            `⚽ *${escapeMarkdown(m.homeTeam)} x ${escapeMarkdown(m.awayTeam)}* — em ${m.minutesUntil} min`,
+        )
         .join('\n')
 
       const linkLine = APP_URL
@@ -86,7 +106,7 @@ export class TelegramNotificationService implements NotificationService {
         : '\nAcesse o app para fazer seus palpites.'
 
       const message =
-        `🎯 *${reminder.poolName}*\n\n` +
+        `🎯 *${escapeMarkdown(reminder.poolName)}*\n\n` +
         `Você ainda não fez palpite para:\n\n` +
         `${matchLines}\n` +
         linkLine

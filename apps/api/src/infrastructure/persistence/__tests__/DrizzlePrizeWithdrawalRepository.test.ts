@@ -84,3 +84,58 @@ describe('DrizzlePrizeWithdrawalRepository.createWithPayment', () => {
     })
   })
 })
+
+describe('DrizzlePrizeWithdrawalRepository.markAsCompleted', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns the updated withdrawal on the happy path', async () => {
+    const createdAt = new Date('2026-04-20T12:00:00.000Z')
+    mockTransaction.mockResolvedValueOnce({
+      id: 'w-1',
+      poolId: 'pool-1',
+      userId: 'user-1',
+      paymentId: 'pay-1',
+      amount: 9500,
+      pixKeyType: 'cpf',
+      pixKey: '12345678909',
+      status: 'completed',
+      createdAt,
+    })
+
+    const result = await createRepo().markAsCompleted('w-1')
+
+    expect(result).toEqual({
+      id: 'w-1',
+      poolId: 'pool-1',
+      userId: 'user-1',
+      paymentId: 'pay-1',
+      amount: 9500,
+      pixKeyType: 'cpf',
+      pixKey: '12345678909',
+      status: 'completed',
+      createdAt,
+    })
+  })
+
+  it('propagates WITHDRAWAL_NOT_FOUND raised inside the transaction', async () => {
+    mockTransaction.mockRejectedValue(new PrizeWithdrawalError('WITHDRAWAL_NOT_FOUND', 'not found'))
+
+    await expect(createRepo().markAsCompleted('missing')).rejects.toMatchObject({
+      name: 'PrizeWithdrawalError',
+      code: 'WITHDRAWAL_NOT_FOUND',
+    })
+  })
+
+  it('propagates WITHDRAWAL_ALREADY_COMPLETED raised inside the transaction', async () => {
+    mockTransaction.mockRejectedValue(
+      new PrizeWithdrawalError('WITHDRAWAL_ALREADY_COMPLETED', 'already paid'),
+    )
+
+    await expect(createRepo().markAsCompleted('w-1')).rejects.toMatchObject({
+      name: 'PrizeWithdrawalError',
+      code: 'WITHDRAWAL_ALREADY_COMPLETED',
+    })
+  })
+})

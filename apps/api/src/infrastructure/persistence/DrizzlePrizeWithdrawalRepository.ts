@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { payment } from '../../db/schema/payment'
 import { prizeWithdrawal } from '../../db/schema/prizeWithdrawal'
@@ -97,5 +97,51 @@ export class DrizzlePrizeWithdrawalRepository implements PrizeWithdrawalReposito
       }
       throw err
     }
+  }
+
+  async markAsCompleted(id: string): Promise<PrizeWithdrawal> {
+    return await this.db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(prizeWithdrawal)
+        .where(eq(prizeWithdrawal.id, id))
+        .for('update')
+
+      if (!existing) {
+        throw new PrizeWithdrawalError(
+          'WITHDRAWAL_NOT_FOUND',
+          'Solicitação de retirada não encontrada.',
+        )
+      }
+
+      if (existing.status === 'completed') {
+        throw new PrizeWithdrawalError(
+          'WITHDRAWAL_ALREADY_COMPLETED',
+          'Esta retirada já foi marcada como paga.',
+        )
+      }
+
+      await tx
+        .update(prizeWithdrawal)
+        .set({ status: 'completed', updatedAt: sql`NOW()` })
+        .where(eq(prizeWithdrawal.id, id))
+
+      await tx
+        .update(payment)
+        .set({ status: 'completed', updatedAt: sql`NOW()` })
+        .where(eq(payment.id, existing.paymentId))
+
+      return {
+        id: existing.id,
+        poolId: existing.poolId,
+        userId: existing.userId,
+        paymentId: existing.paymentId,
+        amount: existing.amount,
+        pixKeyType: existing.pixKeyType,
+        pixKey: decryptPixKey(existing.pixKey),
+        status: 'completed',
+        createdAt: existing.createdAt,
+      }
+    })
   }
 }

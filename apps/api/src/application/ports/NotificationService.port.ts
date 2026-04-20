@@ -10,14 +10,18 @@ export interface ReminderData {
   matches: Array<{ homeTeam: string; awayTeam: string; minutesUntil: number }>
 }
 
+export interface AdminWithdrawalRequestNotification {
+  userName: string
+  poolName: string
+  poolCode: string
+  withdrawalId: string
+  amount: number
+  pixKeyType: string
+  pixKey: string
+}
+
 export interface NotificationService {
   notifyWinners(poolName: string, winners: WinnerInfo[], prizeShare: number): Promise<void>
-  notifyAdminWithdrawalRequest(
-    userName: string,
-    poolName: string,
-    amount: number,
-    pixKeyType: string,
-    pixKey: string,
-  ): Promise<void>
+  notifyAdminWithdrawalRequest(params: AdminWithdrawalRequestNotification): Promise<void>
   sendPredictionReminders(reminders: ReminderData[]): Promise<void>
 }
