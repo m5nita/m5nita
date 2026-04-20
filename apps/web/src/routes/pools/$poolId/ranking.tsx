@@ -20,8 +20,13 @@ function RankingPage() {
     queryFn: async () => {
       const res = await apiFetch(`/api/pools/${poolId}/ranking`)
       if (!res.ok) throw new Error('Erro ao carregar ranking')
-      return res.json() as Promise<{ ranking: RankingEntry[]; prizeTotal: number }>
+      return res.json() as Promise<{
+        ranking: RankingEntry[]
+        prizeTotal: number
+        hasLiveMatch: boolean
+      }>
     },
+    refetchInterval: (query) => (query.state.data?.hasLiveMatch ? 30_000 : false),
   })
 
   if (isPending) return <Loading />

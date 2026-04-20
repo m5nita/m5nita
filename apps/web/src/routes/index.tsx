@@ -23,6 +23,10 @@ function HomePage() {
       return res.json() as Promise<{ pools: PoolListItem[] }>
     },
     enabled: !!session,
+    refetchInterval: (query) => {
+      const pools = query.state.data?.pools
+      return pools?.some((p) => p.hasLiveMatch) ? 30_000 : false
+    },
   })
 
   const { data: matchesData } = useQuery({

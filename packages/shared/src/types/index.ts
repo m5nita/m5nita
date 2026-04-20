@@ -56,6 +56,7 @@ export interface PoolListItem {
   status: PoolStatus
   nextMatchAt: string | null
   lastMatchAt: string | null
+  hasLiveMatch: boolean
 }
 
 export interface PoolDetail extends Pool {
@@ -63,6 +64,7 @@ export interface PoolDetail extends Pool {
   owner: { id: string; name: string | null }
   memberCount: number
   prizeTotal: number
+  hasLiveMatch: boolean
   userStats: {
     position: number | null
     totalPoints: number

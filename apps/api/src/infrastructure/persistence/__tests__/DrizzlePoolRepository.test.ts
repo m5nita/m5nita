@@ -43,6 +43,7 @@ describe('DrizzlePoolRepository.findUserPools', () => {
         userPoints: 0,
         nextMatchAt: nextDate,
         lastMatchAt: lastDate,
+        hasLiveMatch: false,
       },
     ])
   })

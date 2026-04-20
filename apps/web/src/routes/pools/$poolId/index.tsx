@@ -24,6 +24,7 @@ function PoolDetailPage() {
       if (!res.ok) throw new Error('Bolão não encontrado')
       return res.json()
     },
+    refetchInterval: (query) => (query.state.data?.hasLiveMatch ? 30_000 : false),
   })
 
   if (isPending) return <Loading />
