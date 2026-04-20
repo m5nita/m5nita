@@ -1,0 +1,82 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  # Allow manual re-trigger from the Actions UI without re-running CI
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-api:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Trigger Coolify deploy (api)
+        env:
+          COOLIFY_API_URL: ${{ secrets.COOLIFY_API_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          COOLIFY_API_UUID: ${{ secrets.COOLIFY_API_UUID }}
+        run: |
+          curl -fsS -X GET \
+            "${COOLIFY_API_URL}/api/v1/deploy?uuid=${COOLIFY_API_UUID}&force=false" \
+            -H "Authorization: Bearer ${COOLIFY_API_TOKEN}"
+
+      - name: Wait for api to be running
+        env:
+          COOLIFY_API_URL: ${{ secrets.COOLIFY_API_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: ./scripts/ci/wait-for-coolify.sh "${{ secrets.COOLIFY_API_UUID }}"
+
+  deploy-web:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Trigger Coolify deploy (web)
+        env:
+          COOLIFY_API_URL: ${{ secrets.COOLIFY_API_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          COOLIFY_WEB_UUID: ${{ secrets.COOLIFY_WEB_UUID }}
+        run: |
+          curl -fsS -X GET \
+            "${COOLIFY_API_URL}/api/v1/deploy?uuid=${COOLIFY_WEB_UUID}&force=false" \
+            -H "Authorization: Bearer ${COOLIFY_API_TOKEN}"
+
+      - name: Wait for web to be running
+        env:
+          COOLIFY_API_URL: ${{ secrets.COOLIFY_API_URL }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: ./scripts/ci/wait-for-coolify.sh "${{ secrets.COOLIFY_WEB_UUID }}"
+
+  notify:
+    needs: [deploy-api, deploy-web]
+    if: >-
+      always() && (
+        needs.deploy-api.result == 'failure' ||
+        needs.deploy-web.result == 'failure' ||
+        needs.deploy-api.result == 'cancelled' ||
+        needs.deploy-web.result == 'cancelled'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify failure (placeholder)
+        run: |
+          echo "::warning::Deploy failed."
+          echo "api: ${{ needs.deploy-api.result }}"
+          echo "web: ${{ needs.deploy-web.result }}"
+          echo "Wire Telegram/Slack integration in a future iteration."

@@ -25,6 +25,8 @@ docs/superpowers/
 .worktrees/
 .claude/worktrees/
 
-# Local scripts (not versioned) — exception: apps' src/scripts are deployed alongside code
-scripts/
-!apps/*/src/scripts/
+# Local scripts (not versioned) — exception: scripts/ci/ is used by GitHub Actions
+# and must be versioned. Using `/scripts/*` (not `scripts/`) so that subdirectory
+# re-inclusion works — git doesn't descend into excluded directories.
+/scripts/*
+!/scripts/ci/
