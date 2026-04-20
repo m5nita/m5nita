@@ -394,6 +394,11 @@ bot.callbackQuery(new RegExp(`^${WITHDRAWAL_PAY_CALLBACK_PREFIX}(.+)$`), async (
     const { markWithdrawalPaidUseCase } = getContainer()
     await markWithdrawalPaidUseCase.execute({ withdrawalId })
 
+    // message.text is already-rendered plaintext (markdown entities stripped).
+    // We edit without parse_mode on purpose — re-parsing as Markdown would treat
+    // stray `_`/`*`/`` ` `` (e.g. in an email PIX key) as formatting syntax.
+    // Notification is currently always text; if it ever becomes a caption, also
+    // check `message.caption`.
     const originalText = ctx.callbackQuery.message?.text ?? ''
     const handle = ctx.from.username ? `@${ctx.from.username}` : (ctx.from.first_name ?? 'admin')
     const paidAt = new Date().toLocaleString('pt-BR', {
