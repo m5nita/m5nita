@@ -68,8 +68,15 @@ describe('InfinitePayPaymentGateway', () => {
     vi.unstubAllGlobals()
   })
 
-  function buildGateway(mock: ReturnType<typeof createMockDb>) {
-    return new InfinitePayPaymentGateway(HANDLE, mock.db as unknown as typeof DbClient)
+  function buildGateway(
+    mock: ReturnType<typeof createMockDb>,
+    options: { maxAttempts?: number } = {},
+  ) {
+    return new InfinitePayPaymentGateway(HANDLE, mock.db as unknown as typeof DbClient, {
+      maxAttempts: options.maxAttempts ?? 3,
+      initialDelayMs: 0,
+      sleep: async () => {},
+    })
   }
 
   function mockSuccessResponse(url = 'https://checkout.infinitepay.io/test?lenc=abc.v1.xyz') {
@@ -172,13 +179,101 @@ describe('InfinitePayPaymentGateway', () => {
     expect(body.customer.phone_number).toBeUndefined()
   })
 
-  it('createCheckoutSession_throwsAndDeletesLocalRowOnNon2xxResponse', async () => {
+  it('createCheckoutSession_throwsAndDeletesLocalRowAfterMaxRetriesOnRetryableStatus', async () => {
+    const mock = createMockDb()
+    const serverErrorResponse = {
+      ok: false,
+      status: 502,
+      json: async () => ({}),
+      text: async () => '502 server error',
+    }
+    fetchSpy.mockResolvedValue(serverErrorResponse)
+
+    await expect(
+      buildGateway(mock).createCheckoutSession({
+        userId: 'user-1',
+        poolId: 'pool-1',
+        amount: 2000,
+        platformFee: 100,
+      }),
+    ).rejects.toThrow('InfinitePay checkout creation failed')
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(mock.db.delete).toHaveBeenCalled()
+    expect(mock.deleteWhere).toHaveBeenCalled()
+  })
+
+  it('createCheckoutSession_throwsAndDeletesLocalRowAfterMaxRetriesOnNetworkError', async () => {
+    const mock = createMockDb()
+    fetchSpy.mockRejectedValue(new Error('ECONNREFUSED'))
+
+    await expect(
+      buildGateway(mock).createCheckoutSession({
+        userId: 'user-1',
+        poolId: 'pool-1',
+        amount: 2000,
+        platformFee: 100,
+      }),
+    ).rejects.toThrow('InfinitePay checkout creation failed')
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(mock.db.delete).toHaveBeenCalled()
+  })
+
+  it('createCheckoutSession_retriesOn502AndSucceedsOnSecondAttempt', async () => {
+    const mock = createMockDb()
+    fetchSpy
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: async () => ({}),
+        text: async () => '502',
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ url: 'https://checkout.example/ok' }),
+      })
+
+    const result = await buildGateway(mock).createCheckoutSession({
+      userId: 'user-1',
+      poolId: 'pool-1',
+      amount: 2000,
+      platformFee: 100,
+    })
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(result.checkoutUrl).toBe('https://checkout.example/ok')
+    expect(mock.db.delete).not.toHaveBeenCalled()
+  })
+
+  it('createCheckoutSession_retriesOnNetworkErrorAndSucceedsOnSecondAttempt', async () => {
+    const mock = createMockDb()
+    fetchSpy.mockRejectedValueOnce(new Error('ECONNRESET')).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ url: 'https://checkout.example/ok' }),
+    })
+
+    const result = await buildGateway(mock).createCheckoutSession({
+      userId: 'user-1',
+      poolId: 'pool-1',
+      amount: 2000,
+      platformFee: 100,
+    })
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(result.checkoutUrl).toBe('https://checkout.example/ok')
+    expect(mock.db.delete).not.toHaveBeenCalled()
+  })
+
+  it('createCheckoutSession_doesNotRetryOnNonRetryableClientError', async () => {
     const mock = createMockDb()
     fetchSpy.mockResolvedValueOnce({
       ok: false,
-      status: 500,
+      status: 400,
       json: async () => ({}),
-      text: async () => '{"error":"server error"}',
+      text: async () => 'bad request',
     })
 
     await expect(
@@ -190,23 +285,7 @@ describe('InfinitePayPaymentGateway', () => {
       }),
     ).rejects.toThrow('InfinitePay checkout creation failed')
 
-    expect(mock.db.delete).toHaveBeenCalled()
-    expect(mock.deleteWhere).toHaveBeenCalled()
-  })
-
-  it('createCheckoutSession_throwsAndDeletesLocalRowOnNetworkError', async () => {
-    const mock = createMockDb()
-    fetchSpy.mockRejectedValueOnce(new Error('ECONNREFUSED'))
-
-    await expect(
-      buildGateway(mock).createCheckoutSession({
-        userId: 'user-1',
-        poolId: 'pool-1',
-        amount: 2000,
-        platformFee: 100,
-      }),
-    ).rejects.toThrow('InfinitePay checkout creation failed')
-
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(mock.db.delete).toHaveBeenCalled()
   })
 

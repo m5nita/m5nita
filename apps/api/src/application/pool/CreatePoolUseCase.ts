@@ -59,9 +59,6 @@ export class CreatePoolUseCase {
     if (input.couponCode) {
       const result = await this.coupon.validateCoupon(input.couponCode)
       if (!result.valid) throw new PoolError('INVALID_COUPON', `Cupom inválido: ${result.reason}`)
-      if (!(await this.coupon.incrementUsage(result.couponId))) {
-        throw new PoolError('COUPON_EXHAUSTED', 'Cupom atingiu o limite de utilizações')
-      }
       couponId = result.couponId
       discountPercent = result.discountPercent
     }
@@ -84,14 +81,21 @@ export class CreatePoolUseCase {
       couponId,
     )
 
-    const saved = await this.poolRepo.save(pool)
-
+    // Create checkout before any DB side-effects so a gateway failure leaves
+    // no orphan pool or consumed coupon. The generated checkout link is
+    // inert if never paid.
     const payment = await this.paymentGateway.createCheckoutSession({
       userId: input.userId,
-      poolId: saved.id,
+      poolId: pool.id,
       amount: input.entryFee,
       platformFee,
     })
+
+    if (couponId && !(await this.coupon.incrementUsage(couponId))) {
+      throw new PoolError('COUPON_EXHAUSTED', 'Cupom atingiu o limite de utilizações')
+    }
+
+    const saved = await this.poolRepo.save(pool)
 
     return {
       pool: saved,

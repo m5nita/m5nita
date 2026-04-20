@@ -41,11 +41,33 @@ function buildCustomer(
   return Object.keys(customer).length > 0 ? customer : undefined
 }
 
+export interface InfinitePayGatewayOptions {
+  maxAttempts?: number
+  initialDelayMs?: number
+  sleep?: (ms: number) => Promise<void>
+}
+
+const DEFAULT_MAX_ATTEMPTS = 3
+const DEFAULT_INITIAL_DELAY_MS = 300
+
+function isRetryableStatus(status: number): boolean {
+  return status === 408 || status === 429 || (status >= 500 && status <= 599)
+}
+
 export class InfinitePayPaymentGateway implements PaymentGateway {
+  private readonly maxAttempts: number
+  private readonly initialDelayMs: number
+  private readonly sleep: (ms: number) => Promise<void>
+
   constructor(
     private handle: string,
     private db: typeof DbClient,
-  ) {}
+    options: InfinitePayGatewayOptions = {},
+  ) {
+    this.maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS
+    this.initialDelayMs = options.initialDelayMs ?? DEFAULT_INITIAL_DELAY_MS
+    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
+  }
 
   async createCheckoutSession(params: CheckoutParams): Promise<CheckoutResult> {
     const paymentRecord = await this.insertPendingRow(params)
@@ -86,17 +108,7 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
     const customerRecord = await this.db.query.user.findFirst({ where: eq(user.id, userId) })
     const body = this.buildRequestBody(paymentId, amount, buildCustomer(customerRecord ?? null))
 
-    const response = await fetch(CREATE_LINK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(body),
-    })
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '<unreadable>')
-      throw new Error(
-        `InfinitePay create-link returned ${response.status}: ${errorText.slice(0, 500)}`,
-      )
-    }
+    const response = await this.fetchWithRetry(body)
 
     const rawResponse = await response.json()
     const parsed = CreateLinkResponseSchema.parse(rawResponse)
@@ -113,6 +125,42 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
 
     console.info(`[InfinitePay] checkout link created (order_nsu=${paymentId})`)
     return checkoutUrl
+  }
+
+  private async fetchWithRetry(body: unknown): Promise<Response> {
+    for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
+      const isLast = attempt === this.maxAttempts
+
+      let response: Response
+      try {
+        response = await fetch(CREATE_LINK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(body),
+        })
+      } catch (networkErr) {
+        if (isLast) throw networkErr
+        await this.backoff(attempt)
+        continue
+      }
+
+      if (response.ok) return response
+
+      const errorText = await response.text().catch(() => '<unreadable>')
+      const err = new Error(
+        `InfinitePay create-link returned ${response.status}: ${errorText.slice(0, 500)}`,
+      )
+      if (!isRetryableStatus(response.status) || isLast) throw err
+
+      await this.backoff(attempt)
+    }
+    throw new Error('InfinitePay retry loop exited without result')
+  }
+
+  private async backoff(attempt: number): Promise<void> {
+    const base = this.initialDelayMs * 2 ** (attempt - 1)
+    const jitter = base * (0.7 + Math.random() * 0.6)
+    await this.sleep(jitter)
   }
 
   private buildRequestBody(paymentId: string, amount: number, customer: CustomerInfo | undefined) {
