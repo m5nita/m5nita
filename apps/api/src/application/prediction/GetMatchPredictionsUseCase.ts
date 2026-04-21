@@ -3,6 +3,7 @@ import type { MatchRepository } from '../../domain/match/MatchRepository.port'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import { PredictionError } from '../../domain/prediction/PredictionError'
 import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
+import type { Clock } from '../../domain/shared/Clock'
 
 type Input = {
   viewerUserId: string
@@ -15,6 +16,7 @@ export class GetMatchPredictionsUseCase {
     private readonly predictionRepo: PredictionRepository,
     private readonly poolRepo: PoolRepository,
     private readonly matchRepo: MatchRepository,
+    private readonly clock: Clock,
   ) {}
 
   async execute(input: Input): Promise<MatchPredictionsResponse> {
@@ -40,7 +42,7 @@ export class GetMatchPredictionsUseCase {
     const isLocked =
       match.status === 'live' ||
       match.status === 'finished' ||
-      match.matchDate.getTime() <= Date.now()
+      match.matchDate.getTime() <= this.clock.now().getTime()
     if (!isLocked) {
       throw new PredictionError('MATCH_NOT_LOCKED', 'Este jogo ainda não está bloqueado')
     }

@@ -36,7 +36,7 @@ export class Prediction {
     this._points = score.points
   }
 
-  static canSubmit(matchDate: Date): boolean {
-    return matchDate > new Date()
+  static canSubmit(matchDate: Date, now: Date): boolean {
+    return matchDate > now
   }
 }

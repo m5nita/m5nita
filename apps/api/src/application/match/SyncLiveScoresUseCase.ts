@@ -1,4 +1,5 @@
 import type { MatchRepository } from '../../domain/match/MatchRepository.port'
+import type { Clock } from '../../domain/shared/Clock'
 import { mapStatus } from '../../infrastructure/persistence/mappers/MatchMapper'
 import type { FootballDataApi } from '../ports/FootballDataApi.port'
 
@@ -11,6 +12,7 @@ export type CompetitionInfo = {
 export type SyncLiveScoresDeps = {
   footballApi: FootballDataApi
   matchRepo: MatchRepository
+  clock: Clock
   findActiveCompetitions: () => Promise<CompetitionInfo[]>
   onMatchFinished?: (matchId: string) => Promise<void>
   onAllMatchesChecked?: () => Promise<void>
@@ -21,7 +23,7 @@ export class SyncLiveScoresUseCase {
 
   async execute(): Promise<void> {
     const competitions = await this.deps.findActiveCompetitions()
-    const today = new Date().toISOString().split('T')[0] as string
+    const today = this.deps.clock.now().toISOString().split('T')[0] as string
 
     for (const comp of competitions) {
       try {

@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Nightly flake check — 06:00 UTC (03:00 BRT)
+    - cron: '0 6 * * *'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -12,6 +15,7 @@ concurrency:
 
 jobs:
   lint-and-typecheck:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,7 +29,9 @@ jobs:
       - run: pnpm typecheck
 
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:16-alpine
@@ -51,8 +57,23 @@ jobs:
       - run: pnpm test
         env:
           DATABASE_URL: postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test
+      - name: Integration tests (wall-clock-budgeted)
+        run: apps/api/tests/integration/scripts/run-with-budget.sh
+        env:
+          DATABASE_URL: postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test
+          NODE_ENV: test
+          INTEGRATION_BUDGET_SECONDS: '180'
+      - name: Upload integration failure bundles
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-failures
+          path: apps/api/tests/integration/.artifacts/**
+          if-no-files-found: ignore
+          retention-days: 7
 
   build:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     needs: [lint-and-typecheck, test]
     steps:
@@ -110,3 +131,57 @@ jobs:
             FAILED=1
           fi
           exit $FAILED
+
+  # Runs the integration suite 10 times back-to-back to catch
+  # flaky tests before they erode trust in the suite. Fires on every push to
+  # main (catches flakes introduced by the commit that just merged) and on a
+  # nightly cron (catches environmental flakes unrelated to any commit).
+  # Does NOT run on PR — PR latency matters more than catching flakes the
+  # nightly run will surface anyway.
+  integration-flake-check:
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: m5nita_test
+          POSTGRES_PASSWORD: m5nita_test
+          POSTGRES_DB: m5nita_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run integration suite 10x
+        env:
+          DATABASE_URL: postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test
+          NODE_ENV: test
+        run: |
+          for i in $(seq 1 10); do
+            echo "::group::Integration run $i/10"
+            if ! pnpm --filter @m5nita/api test:integration; then
+              echo "::error::Flake detected on run $i/10"
+              exit 1
+            fi
+            echo "::endgroup::"
+          done
+      - name: Upload failure bundles
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flake-check-failures
+          path: apps/api/tests/integration/.artifacts/**
+          if-no-files-found: ignore
+          retention-days: 14
