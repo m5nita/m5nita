@@ -52,11 +52,12 @@ jobs:
       - run: pnpm test
         env:
           DATABASE_URL: postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test
-      - name: Integration tests
-        run: pnpm --filter @m5nita/api test:integration
+      - name: Integration tests (wall-clock-budgeted)
+        run: apps/api/tests/integration/scripts/run-with-budget.sh
         env:
           DATABASE_URL: postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test
           NODE_ENV: test
+          INTEGRATION_BUDGET_SECONDS: '180'
       - name: Upload integration failure bundles
         if: failure()
         uses: actions/upload-artifact@v4
