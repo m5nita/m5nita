@@ -24,8 +24,9 @@ process.env.BETTER_AUTH_SECRET =
   process.env.BETTER_AUTH_SECRET ?? 'test-secret-0000000000000000000000'
 process.env.BETTER_AUTH_URL = process.env.BETTER_AUTH_URL ?? 'http://localhost:3001'
 process.env.ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? 'http://localhost:5173'
+// Must decode (base64) to exactly 32 bytes — see apps/api/src/lib/pixKeyCrypto.ts.
 process.env.PIX_ENCRYPTION_KEY =
-  process.env.PIX_ENCRYPTION_KEY ?? 'test-pix-key-000000000000000000000000'
+  process.env.PIX_ENCRYPTION_KEY ?? 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
 process.env.RESEND_API_KEY = process.env.RESEND_API_KEY ?? 're_test_000000000000000000000000'
 process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? 'google-client-id-test'
 process.env.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? 'google-client-secret-test'
@@ -36,6 +37,9 @@ process.env.TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? 'test_b
 // InfinitePay is the only gateway exercised by the integration suite (spec 016 US5).
 process.env.PAYMENT_GATEWAY = process.env.PAYMENT_GATEWAY ?? 'infinitepay'
 process.env.INFINITEPAY_HANDLE = process.env.INFINITEPAY_HANDLE ?? 'm5nita-test'
+// Any non-empty value routes notifyAdminWithdrawalRequest through the bot
+// stub; an empty value causes the notification path to short-circuit.
+process.env.ADMIN_USER_IDS = process.env.ADMIN_USER_IDS ?? '99999999'
 
 async function withAdminClient<T>(
   fn: (sql: ReturnType<typeof postgres>) => Promise<T>,
