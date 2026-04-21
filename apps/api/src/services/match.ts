@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { getContainer } from '../container'
 import { db } from '../db/client'
 import { competition } from '../db/schema/competition'
 import { match } from '../db/schema/match'
@@ -174,5 +175,5 @@ export async function syncLiveScores() {
 }
 
 function getTodayDate(): string {
-  return new Date().toISOString().split('T')[0] as string
+  return getContainer().clock.now().toISOString().split('T')[0] as string
 }

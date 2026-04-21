@@ -42,12 +42,14 @@ describe('Prediction', () => {
   })
 
   it('canSubmit returns true for future date', () => {
-    const future = new Date(Date.now() + 60_000)
-    expect(Prediction.canSubmit(future)).toBe(true)
+    const now = new Date('2026-06-11T12:00:00.000Z')
+    const future = new Date(now.getTime() + 60_000)
+    expect(Prediction.canSubmit(future, now)).toBe(true)
   })
 
   it('canSubmit returns false for past date', () => {
-    const past = new Date(Date.now() - 60_000)
-    expect(Prediction.canSubmit(past)).toBe(false)
+    const now = new Date('2026-06-11T12:00:00.000Z')
+    const past = new Date(now.getTime() - 60_000)
+    expect(Prediction.canSubmit(past, now)).toBe(false)
   })
 })

@@ -33,6 +33,11 @@ export const auth = betterAuth({
   plugins: [
     phoneNumber({
       sendOTP: async ({ phoneNumber: phone, code }) => {
+        if (process.env.NODE_ENV === 'test') {
+          const { testOtpInbox } = await import('./testHooks')
+          testOtpInbox.set(phone, code)
+          return
+        }
         if (process.env.NODE_ENV !== 'production') {
           console.log(`[DEV] OTP for ${phone}: ${code}`)
           return

@@ -3,6 +3,7 @@ import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import { Prediction } from '../../domain/prediction/Prediction'
 import { PredictionError } from '../../domain/prediction/PredictionError'
 import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
+import type { Clock } from '../../domain/shared/Clock'
 
 type Input = {
   userId: string
@@ -17,6 +18,7 @@ export class UpsertPredictionUseCase {
     private readonly predictionRepo: PredictionRepository,
     private readonly poolRepo: PoolRepository,
     private readonly matchRepo: MatchRepository,
+    private readonly clock: Clock,
   ) {}
 
   async execute(input: Input): Promise<Prediction> {
@@ -37,7 +39,7 @@ export class UpsertPredictionUseCase {
     if (!match) {
       throw new PredictionError('MATCH_NOT_FOUND', 'Jogo não encontrado')
     }
-    if (!Prediction.canSubmit(match.matchDate)) {
+    if (!Prediction.canSubmit(match.matchDate, this.clock.now())) {
       throw new PredictionError('MATCH_STARTED', 'Não é possível palpitar após o início do jogo')
     }
 

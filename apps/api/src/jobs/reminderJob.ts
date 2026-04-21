@@ -14,9 +14,9 @@ import { findChatIdByPhone } from '../lib/telegram'
 const sentReminders = new Set<string>()
 
 export async function sendPredictionReminders(): Promise<void> {
-  const { poolRepo, notificationService } = getContainer()
+  const { poolRepo, notificationService, clock } = getContainer()
 
-  const now = new Date()
+  const now = clock.now()
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000)
 
   const activePools = await poolRepo.findAllActive()

@@ -39,6 +39,9 @@ vi.mock('../../container', () => ({
     notificationService: {
       sendPredictionReminders: mockSendPredictionReminders,
     },
+    clock: {
+      now: () => new Date(),
+    },
   }),
 }))
 
