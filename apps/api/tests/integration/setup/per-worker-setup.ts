@@ -33,6 +33,9 @@ process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? '000000:test-
 process.env.TELEGRAM_WEBHOOK_SECRET =
   process.env.TELEGRAM_WEBHOOK_SECRET ?? 'test-telegram-webhook-secret'
 process.env.TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? 'test_bot'
+// InfinitePay is the only gateway exercised by the integration suite (spec 016 US5).
+process.env.PAYMENT_GATEWAY = process.env.PAYMENT_GATEWAY ?? 'infinitepay'
+process.env.INFINITEPAY_HANDLE = process.env.INFINITEPAY_HANDLE ?? 'm5nita-test'
 
 async function withAdminClient<T>(
   fn: (sql: ReturnType<typeof postgres>) => Promise<T>,
