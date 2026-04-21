@@ -167,6 +167,10 @@ export class DrizzlePoolRepository implements PoolRepository {
     return poolToDomain(row)
   }
 
+  async delete(id: string): Promise<void> {
+    await this.db.delete(pool).where(eq(pool.id, id))
+  }
+
   async updateStatus(id: string, status: PoolStatus): Promise<void> {
     const update: Record<string, unknown> = { status: status.value, updatedAt: new Date() }
     if (status.value === 'closed' || status.value === 'cancelled') {

@@ -82,17 +82,24 @@ export class CreatePoolUseCase {
     )
 
     // Pool must be persisted before the gateway runs: every gateway inserts a
-    // payment row with FK to pool.id as part of createCheckoutSession. Coupon
-    // usage is still incremented only after the gateway succeeds, so a gateway
-    // failure leaves the coupon untouched (pool stays 'pending' and inert).
+    // payment row with FK to pool.id as part of createCheckoutSession. If the
+    // gateway fails, we compensate by deleting the pool — otherwise a retry
+    // would leave an orphan row. The adapter is responsible for cleaning up
+    // its own payment row on failure.
     const saved = await this.poolRepo.save(pool)
 
-    const payment = await this.paymentGateway.createCheckoutSession({
-      userId: input.userId,
-      poolId: saved.id,
-      amount: input.entryFee,
-      platformFee,
-    })
+    let payment: CheckoutResult
+    try {
+      payment = await this.paymentGateway.createCheckoutSession({
+        userId: input.userId,
+        poolId: saved.id,
+        amount: input.entryFee,
+        platformFee,
+      })
+    } catch (err) {
+      await this.poolRepo.delete(saved.id)
+      throw err
+    }
 
     if (couponId && !(await this.coupon.incrementUsage(couponId))) {
       throw new PoolError('COUPON_EXHAUSTED', 'Cupom atingiu o limite de utilizações')

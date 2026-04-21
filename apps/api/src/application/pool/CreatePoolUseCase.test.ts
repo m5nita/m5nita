@@ -11,6 +11,7 @@ function makeRepo(overrides: Partial<PoolRepository> = {}): PoolRepository {
     findActiveByCompetition: vi.fn(),
     findAllActive: vi.fn(),
     save: vi.fn(async (p) => p),
+    delete: vi.fn(),
     updateStatus: vi.fn(),
     getMemberCount: vi.fn(),
     isMember: vi.fn(),

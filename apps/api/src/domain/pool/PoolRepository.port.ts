@@ -61,6 +61,7 @@ export interface PoolRepository {
   findActiveByCompetition(competitionId: string): Promise<Pool[]>
   findAllActive(): Promise<ActivePoolInfo[]>
   save(pool: Pool): Promise<Pool>
+  delete(id: string): Promise<void>
   updateStatus(id: string, status: PoolStatus): Promise<void>
   getMemberCount(poolId: string): Promise<number>
   isMember(poolId: string, userId: string): Promise<boolean>
