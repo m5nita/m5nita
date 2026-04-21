@@ -26,6 +26,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:16-alpine
@@ -51,6 +52,19 @@ jobs:
       - run: pnpm test
         env:
           DATABASE_URL: postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test
+      - name: Integration tests
+        run: pnpm --filter @m5nita/api test:integration
+        env:
+          DATABASE_URL: postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test
+          NODE_ENV: test
+      - name: Upload integration failure bundles
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-failures
+          path: apps/api/tests/integration/.artifacts/**
+          if-no-files-found: ignore
+          retention-days: 7
 
   build:
     runs-on: ubuntu-latest

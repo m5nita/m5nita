@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config tests/integration/vitest.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -38,6 +39,7 @@
   "devDependencies": {
     "@types/node": "^22.13.10",
     "drizzle-kit": "^0.31.4",
+    "msw": "^2.13.4",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^3.1.1"
