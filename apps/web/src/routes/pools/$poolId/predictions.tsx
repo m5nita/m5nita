@@ -180,33 +180,22 @@ function MatchList({
   )
 }
 
-function PredictionsPage() {
-  const { poolId } = Route.useParams()
+function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string }) {
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<Tab>('groups')
   const [activeGroup, setActiveGroup] = useState('A')
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
   const [activeKnockoutStage, setActiveKnockoutStage] = useState<string | null>(null)
 
-  const { data: poolDetail, isPending: poolPending } = useQuery({
-    queryKey: ['pool', poolId],
-    queryFn: async (): Promise<PoolDetail> => {
-      const res = await apiFetch(`/api/pools/${poolId}`)
-      if (!res.ok) throw new Error('Erro ao carregar bolão')
-      return res.json()
-    },
-  })
-
   const { data: matchesData, isPending: matchesPending } = useQuery({
-    queryKey: ['matches', poolDetail?.competitionId],
+    queryKey: ['matches', pool.competitionId],
     queryFn: async (): Promise<{ matches: Match[] }> => {
       const params = new URLSearchParams()
-      if (poolDetail?.competitionId) params.set('competitionId', poolDetail.competitionId)
+      if (pool.competitionId) params.set('competitionId', pool.competitionId)
       const res = await apiFetch(`/api/matches?${params}`)
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json()
     },
-    enabled: !!poolDetail,
     refetchInterval: (query) => {
       const matches = query.state.data?.matches
       return matches?.some((m) => m.status === 'live') ? 30_000 : false
@@ -255,13 +244,12 @@ function PredictionsPage() {
     [saveMutation],
   )
 
-  if (poolPending || (!!poolDetail && matchesPending) || predictionsPending)
-    return <Loading message="Carregando palpites..." />
+  if (matchesPending || predictionsPending) return <Loading message="Carregando palpites..." />
 
   const rawMatches = matchesData?.matches ?? []
   const allMatches = rawMatches.filter((m) => {
-    if (poolDetail?.matchdayFrom != null && poolDetail?.matchdayTo != null && m.matchday != null) {
-      return m.matchday >= poolDetail.matchdayFrom && m.matchday <= poolDetail.matchdayTo
+    if (pool.matchdayFrom != null && pool.matchdayTo != null && m.matchday != null) {
+      return m.matchday >= pool.matchdayFrom && m.matchday <= pool.matchdayTo
     }
     return true
   })
@@ -275,7 +263,7 @@ function PredictionsPage() {
   const filteredGroupMatches = groupMatches.filter((m) => m.group === activeGroup)
 
   return (
-    <PoolHub poolId={poolId} activeTab="predictions">
+    <>
       {hasLeagueMatches ? (
         (() => {
           const byMatchday = new Map<number, Match[]>()
@@ -445,6 +433,15 @@ function PredictionsPage() {
             </>
           )
         })()}
+    </>
+  )
+}
+
+function PredictionsPage() {
+  const { poolId } = Route.useParams()
+  return (
+    <PoolHub poolId={poolId} activeTab="predictions">
+      {(pool) => <PredictionsContent pool={pool} poolId={poolId} />}
     </PoolHub>
   )
 }

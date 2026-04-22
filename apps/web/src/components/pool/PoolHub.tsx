@@ -13,7 +13,7 @@ import { InviteTicket } from './InviteTicket'
 interface PoolHubProps {
   poolId: string
   activeTab: 'predictions' | 'ranking'
-  children: ReactNode
+  children: (pool: PoolDetail) => ReactNode
 }
 
 export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
@@ -171,7 +171,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         </Link>
       </div>
 
-      {children}
+      {children(pool)}
 
       {canInvite && pool.inviteCode && (
         <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} ariaLabel="Convidar amigos">
