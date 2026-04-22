@@ -146,6 +146,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         <Link
           to="/pools/$poolId/predictions"
           params={{ poolId }}
+          replace
           role="tab"
           aria-selected={activeTab === 'predictions'}
           className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-colors cursor-pointer ${
@@ -159,6 +160,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         <Link
           to="/pools/$poolId/ranking"
           params={{ poolId }}
+          replace
           role="tab"
           aria-selected={activeTab === 'ranking'}
           className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-colors cursor-pointer ${
