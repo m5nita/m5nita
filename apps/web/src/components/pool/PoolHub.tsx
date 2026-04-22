@@ -175,7 +175,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
 
       {canInvite && pool.inviteCode && (
         <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} ariaLabel="Convidar amigos">
-          <div className="px-6 pt-12 pb-6">
+          <div className="px-6 pb-6">
             <InviteTicket poolName={pool.name} inviteCode={pool.inviteCode} />
           </div>
         </Modal>

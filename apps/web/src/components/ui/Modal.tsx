@@ -45,28 +45,30 @@ export function Modal({ open, onClose, children, ariaLabel }: ModalProps) {
         aria-modal="true"
         aria-label={ariaLabel}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 h-8 w-8 flex items-center justify-center border-2 border-border bg-cream hover:bg-black/5 cursor-pointer text-black"
-          aria-label="Fechar"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        <div className="flex justify-end px-3 pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center hover:bg-black/5 cursor-pointer text-black"
+            aria-label="Fechar"
           >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
         {children}
       </div>
     </div>,
