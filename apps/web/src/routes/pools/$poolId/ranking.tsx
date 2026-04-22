@@ -1,10 +1,11 @@
-import type { RankingEntry } from '@m5nita/shared'
+import type { PoolDetail, RankingEntry } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { PoolHub } from '../../../components/pool/PoolHub'
+import { PrizeWithdrawal } from '../../../components/pool/PrizeWithdrawal'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import { Loading } from '../../../components/ui/Loading'
 import { apiFetch } from '../../../lib/api'
-import { formatCurrency } from '../../../lib/utils'
 
 function positionColor(position: number): string {
   if (position === 1) return 'text-red'
@@ -12,9 +13,7 @@ function positionColor(position: number): string {
   return 'text-gray-light'
 }
 
-function RankingPage() {
-  const { poolId } = Route.useParams()
-
+function RankingContent({ pool, poolId }: { pool: PoolDetail; poolId: string }) {
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['ranking', poolId],
     queryFn: async () => {
@@ -30,31 +29,13 @@ function RankingPage() {
   })
 
   if (isPending) return <Loading />
-  if (error) return <ErrorMessage message={error.message} onRetry={() => refetch()} />
+  if (error) return <ErrorMessage message={(error as Error).message} onRetry={() => refetch()} />
 
   const ranking = data?.ranking ?? []
-  const prizeTotal = data?.prizeTotal ?? 0
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-          Classificação
-        </p>
-        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Ranking</h1>
-        <div className="mt-3 h-1 w-12 bg-red" />
-      </div>
-
-      {prizeTotal > 0 && (
-        <div className="border-2 border-green bg-green/5 p-5 text-center">
-          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-            Prêmio Total
-          </p>
-          <p className="font-display text-4xl font-black text-green">
-            {formatCurrency(prizeTotal)}
-          </p>
-        </div>
-      )}
+      {pool.status === 'closed' && <PrizeWithdrawal poolId={poolId} />}
 
       {ranking.length === 0 ? (
         <div className="border-2 border-dashed border-border py-12 text-center">
@@ -106,6 +87,15 @@ function RankingPage() {
         Atualizar ranking
       </button>
     </div>
+  )
+}
+
+function RankingPage() {
+  const { poolId } = Route.useParams()
+  return (
+    <PoolHub poolId={poolId} activeTab="ranking">
+      {(pool) => <RankingContent pool={pool} poolId={poolId} />}
+    </PoolHub>
   )
 }
 
