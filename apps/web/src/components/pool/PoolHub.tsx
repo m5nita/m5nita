@@ -142,16 +142,16 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         </div>
       </div>
 
-      <div className="flex gap-2" role="tablist">
+      <div className="flex flex-col gap-3 lg:flex-row lg:gap-4" role="tablist">
         <Link
           to="/pools/$poolId/predictions"
           params={{ poolId }}
           role="tab"
           aria-selected={activeTab === 'predictions'}
-          className={`flex-1 py-2.5 text-center font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+          className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-colors cursor-pointer ${
             activeTab === 'predictions'
-              ? 'bg-black text-white'
-              : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+              ? 'bg-black text-white border-black'
+              : 'bg-transparent text-black border-black hover:bg-black hover:text-white'
           }`}
         >
           Palpites
@@ -161,10 +161,10 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
           params={{ poolId }}
           role="tab"
           aria-selected={activeTab === 'ranking'}
-          className={`flex-1 py-2.5 text-center font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+          className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-colors cursor-pointer ${
             activeTab === 'ranking'
-              ? 'bg-black text-white'
-              : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+              ? 'bg-black text-white border-black'
+              : 'bg-transparent text-black border-black hover:bg-black hover:text-white'
           }`}
         >
           Ranking
