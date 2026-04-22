@@ -48,7 +48,7 @@ export function Modal({ open, onClose, children, ariaLabel }: ModalProps) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center rounded-full hover:bg-black/5 cursor-pointer text-black"
+          className="absolute top-3 right-3 z-10 h-8 w-8 flex items-center justify-center border-2 border-border bg-cream hover:bg-black/5 cursor-pointer text-black"
           aria-label="Fechar"
         >
           <svg

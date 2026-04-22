@@ -142,7 +142,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         </div>
       </div>
 
-      <div className="flex gap-2 lg:max-w-[320px]" role="tablist">
+      <div className="flex gap-2" role="tablist">
         <Link
           to="/pools/$poolId/predictions"
           params={{ poolId }}
@@ -175,7 +175,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
 
       {canInvite && pool.inviteCode && (
         <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} ariaLabel="Convidar amigos">
-          <div className="p-6">
+          <div className="px-6 pt-12 pb-6">
             <InviteTicket poolName={pool.name} inviteCode={pool.inviteCode} />
           </div>
         </Modal>
