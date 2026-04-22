@@ -8,6 +8,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useRef, useState } from 'react'
+import { PoolHub } from '../../../components/pool/PoolHub'
 import { MatchPredictionsList } from '../../../components/prediction/MatchPredictionsList'
 import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
 import { Loading } from '../../../components/ui/Loading'
@@ -274,16 +275,7 @@ function PredictionsPage() {
   const filteredGroupMatches = groupMatches.filter((m) => m.group === activeGroup)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-          Seus palpites
-        </p>
-        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">Palpites</h1>
-        <div className="mt-3 h-1 w-12 bg-red" />
-      </div>
-
-      {/* Main tabs */}
+    <PoolHub poolId={poolId} activeTab="predictions">
       {hasLeagueMatches ? (
         (() => {
           const byMatchday = new Map<number, Match[]>()
@@ -453,7 +445,7 @@ function PredictionsPage() {
             </>
           )
         })()}
-    </div>
+    </PoolHub>
   )
 }
 
