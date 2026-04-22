@@ -5,6 +5,7 @@ export const Route = createFileRoute('/pools/$poolId/')({
     throw redirect({
       to: '/pools/$poolId/predictions',
       params: { poolId: params.poolId },
+      replace: true,
     })
   },
 })
