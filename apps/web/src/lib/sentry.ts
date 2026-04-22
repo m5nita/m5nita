@@ -13,6 +13,14 @@ if (dsn) {
     release: import.meta.env.VITE_COMMIT_HASH,
     sendDefaultPii: false,
 
+    // Meta (FB/IG/Messenger) in-app browser injects native bridge scripts that throw
+    // when the Android WebView is torn down. Not our code; filter out.
+    ignoreErrors: [
+      /Java object is gone/i,
+      /enableDidUserTypeOnKeyboardLogging/i,
+      /hxp-chat-suppression/i,
+    ],
+
     integrations: [],
 
     tracesSampleRate: 0.1,
