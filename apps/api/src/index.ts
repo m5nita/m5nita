@@ -27,6 +27,48 @@ const app = buildApp()
 
 const port = Number(process.env.PORT) || 3001
 
+type CronSpec = {
+  slug: string
+  intervalMs: number
+  schedule: { value: number; unit: 'minute' | 'hour' }
+  // Minutes the Sentry monitor tolerates a late check-in before marking "missed".
+  checkinMargin: number
+  // Minutes a check-in can remain "in_progress" before the monitor marks "timeout".
+  maxRuntime: number
+  run: () => Promise<void>
+}
+
+function scheduleCron(spec: CronSpec): void {
+  let running = false
+  setInterval(() => {
+    if (running) {
+      // Previous tick still in flight — skip rather than stacking parallel runs.
+      // `checkinMargin` covers the resulting gap for the Sentry monitor.
+      console.warn(`[Cron] ${spec.slug} skipped (previous run in flight)`)
+      return
+    }
+    running = true
+    Sentry.withMonitor(
+      spec.slug,
+      async () => {
+        try {
+          await spec.run()
+        } catch (err) {
+          console.error(`[Cron] ${spec.slug} failed:`, err)
+          throw err
+        } finally {
+          running = false
+        }
+      },
+      {
+        schedule: { type: 'interval', value: spec.schedule.value, unit: spec.schedule.unit },
+        checkinMargin: spec.checkinMargin,
+        maxRuntime: spec.maxRuntime,
+      },
+    )
+  }, spec.intervalMs)
+}
+
 const server: ServerType = serve({ fetch: app.fetch, port }, () => {
   console.log(`m5nita API running on http://localhost:${port}`)
 
@@ -36,53 +78,32 @@ const server: ServerType = serve({ fetch: app.fetch, port }, () => {
     console.error('[Startup] Fixture sync failed:', err)
   })
 
-  // Sync fixtures every 6 hours
-  setInterval(
-    () => {
-      Sentry.withMonitor(
-        'fixture-sync',
-        () =>
-          syncFixtures().catch((err) => {
-            Sentry.captureException(err)
-            console.error('[Cron] Fixture sync failed:', err)
-            throw err
-          }),
-        { schedule: { type: 'interval', value: 6, unit: 'hour' } },
-      )
-    },
-    6 * 60 * 60 * 1000,
-  )
+  scheduleCron({
+    slug: 'fixture-sync',
+    intervalMs: 6 * 60 * 60 * 1000,
+    schedule: { value: 6, unit: 'hour' },
+    checkinMargin: 15,
+    maxRuntime: 30,
+    run: syncFixtures,
+  })
 
-  // Sync live scores every minute
-  setInterval(() => {
-    Sentry.withMonitor(
-      'live-score-sync',
-      () =>
-        syncLiveScores().catch((err) => {
-          Sentry.captureException(err)
-          console.error('[Cron] Live sync failed:', err)
-          throw err
-        }),
-      { schedule: { type: 'interval', value: 1, unit: 'minute' } },
-    )
-  }, 60 * 1000)
+  scheduleCron({
+    slug: 'live-score-sync',
+    intervalMs: 60 * 1000,
+    schedule: { value: 1, unit: 'minute' },
+    checkinMargin: 2,
+    maxRuntime: 5,
+    run: syncLiveScores,
+  })
 
-  // Send prediction reminders every 15 minutes
-  setInterval(
-    () => {
-      Sentry.withMonitor(
-        'prediction-reminders',
-        () =>
-          sendPredictionReminders().catch((err) => {
-            Sentry.captureException(err)
-            console.error('[Cron] Reminder job failed:', err)
-            throw err
-          }),
-        { schedule: { type: 'interval', value: 15, unit: 'minute' } },
-      )
-    },
-    15 * 60 * 1000,
-  )
+  scheduleCron({
+    slug: 'prediction-reminders',
+    intervalMs: 15 * 60 * 1000,
+    schedule: { value: 15, unit: 'minute' },
+    checkinMargin: 5,
+    maxRuntime: 10,
+    run: sendPredictionReminders,
+  })
 })
 
 // Graceful shutdown — finish in-flight requests before exiting
