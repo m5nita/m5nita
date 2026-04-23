@@ -251,12 +251,14 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
             Salvando...
           </span>
         )}
-        {matchStatus === 'finished' && (
-          <span
-            className={`font-display text-xs font-black ${(points ?? 0) > 0 ? 'text-green' : 'text-gray-muted'}`}
-          >
-            +{points ?? 0} pts
+        {matchStatus === 'live' && hasPrediction && points != null && (
+          <span className="flex items-center gap-1 font-display text-xs font-black text-red">
+            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
+            {points} pts
           </span>
+        )}
+        {matchStatus === 'finished' && (
+          <span className="font-display text-xs font-black text-green">+{points ?? 0} pts</span>
         )}
       </div>
       {renderExpandedContent && (
