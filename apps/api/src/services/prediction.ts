@@ -172,6 +172,7 @@ export async function getMatchPredictions(
 
   return {
     matchId,
+    matchStatus: matchData.status as MatchPredictionsResponse['matchStatus'],
     isLocked: true,
     totalMembers: members.length,
     viewerIncluded: true,

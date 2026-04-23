@@ -136,6 +136,7 @@ export interface MatchNonPredictor {
 
 export interface MatchPredictionsResponse {
   matchId: string
+  matchStatus: MatchStatus
   isLocked: true
   totalMembers: number
   viewerIncluded: boolean

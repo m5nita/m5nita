@@ -4,6 +4,7 @@ import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import { PredictionError } from '../../domain/prediction/PredictionError'
 import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
+import { computeLivePoints } from './computeLivePoints'
 
 type Input = {
   viewerUserId: string
@@ -62,8 +63,13 @@ export class GetMatchPredictionsUseCase {
         name: p.name,
         homeScore: p.homeScore,
         awayScore: p.awayScore,
-        points: p.points,
+        points: computeLivePoints(
+          { homeScore: p.homeScore, awayScore: p.awayScore },
+          { status: match.status, homeScore: match.homeScore, awayScore: match.awayScore },
+          p.points,
+        ),
       }))
+      .sort((a, b) => (b.points ?? -1) - (a.points ?? -1))
 
     const nonPredictors = members
       .filter((m) => m.userId !== input.viewerUserId && !predictorIds.has(m.userId))
@@ -72,6 +78,7 @@ export class GetMatchPredictionsUseCase {
 
     return {
       matchId: input.matchId,
+      matchStatus: match.status as MatchPredictionsResponse['matchStatus'],
       isLocked: true,
       totalMembers: members.length,
       viewerIncluded: true,
