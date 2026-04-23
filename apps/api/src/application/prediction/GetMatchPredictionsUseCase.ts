@@ -69,7 +69,11 @@ export class GetMatchPredictionsUseCase {
           p.points,
         ),
       }))
-      .sort((a, b) => (b.points ?? -1) - (a.points ?? -1))
+      .sort((a, b) => {
+        const diff = (b.points ?? -1) - (a.points ?? -1)
+        if (diff !== 0) return diff
+        return (a.name ?? '').localeCompare(b.name ?? '')
+      })
 
     const nonPredictors = members
       .filter((m) => m.userId !== input.viewerUserId && !predictorIds.has(m.userId))

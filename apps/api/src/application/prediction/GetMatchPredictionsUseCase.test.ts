@@ -103,4 +103,33 @@ describe('GetMatchPredictionsUseCase — live scoring', () => {
     expect(res.matchStatus).toBe('finished')
     expect(res.predictors.map((p) => p.userId)).toEqual(['u-hi', 'u-mid', 'u-low'])
   })
+
+  it('breaks ties by name asc when multiple predictors have the same points', async () => {
+    const uc = makeUseCase({
+      match: {
+        id: 'm-1',
+        status: 'live',
+        homeScore: 0,
+        awayScore: 0,
+        competitionId: 'comp-1',
+        matchDate: new Date('2026-04-23T20:00:00Z'),
+      },
+      predictions: [
+        // three wrong guesses, all score 0 → tie → sort by name asc
+        { userId: 'u-c', name: 'Carlos', homeScore: 2, awayScore: 0, points: null },
+        { userId: 'u-a', name: 'Ana', homeScore: 3, awayScore: 1, points: null },
+        { userId: 'u-b', name: 'Bia', homeScore: 4, awayScore: 2, points: null },
+      ],
+      members: [
+        { userId: 'u-viewer', name: 'V' },
+        { userId: 'u-a', name: 'Ana' },
+        { userId: 'u-b', name: 'Bia' },
+        { userId: 'u-c', name: 'Carlos' },
+      ],
+    })
+
+    const res = await uc.execute({ viewerUserId: 'u-viewer', poolId: 'pool-1', matchId: 'm-1' })
+
+    expect(res.predictors.map((p) => p.userId)).toEqual(['u-a', 'u-b', 'u-c'])
+  })
 })
