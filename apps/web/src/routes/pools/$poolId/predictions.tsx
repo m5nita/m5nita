@@ -273,7 +273,12 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
             byMatchday.get(md)?.push(m)
           }
           const sortedMatchdays = [...byMatchday.keys()].sort((a, b) => a - b)
-          const currentMatchday = activeMatchday ?? sortedMatchdays[0] ?? 0
+          const firstUnfinishedMatchday = sortedMatchdays.find((md) =>
+            (byMatchday.get(md) ?? []).some((m) => m.status !== 'finished'),
+          )
+          const defaultMatchday =
+            firstUnfinishedMatchday ?? sortedMatchdays[sortedMatchdays.length - 1] ?? 0
+          const currentMatchday = activeMatchday ?? defaultMatchday
           const currentMatches = byMatchday.get(currentMatchday) ?? []
 
           return (
