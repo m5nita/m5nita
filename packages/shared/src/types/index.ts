@@ -150,6 +150,7 @@ export interface RankingEntry {
   userId: string
   name: string | null
   totalPoints: number
+  livePoints: number
   exactMatches: number
   isCurrentUser: boolean
 }
