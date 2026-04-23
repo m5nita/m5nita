@@ -40,7 +40,7 @@ function PredictorRow({
       </div>
       {points && (
         <span
-          className={`shrink-0 flex min-w-[64px] items-center gap-1 font-display text-xs font-black ${points.className}`}
+          className={`shrink-0 flex min-w-[64px] items-center justify-end gap-1 font-display text-xs font-black ${points.className}`}
         >
           {points.pulse && (
             <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
