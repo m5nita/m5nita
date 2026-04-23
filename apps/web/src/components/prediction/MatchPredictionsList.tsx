@@ -1,23 +1,29 @@
-import type { MatchPredictionsResponse, MatchPredictor } from '@m5nita/shared'
+import type { MatchPredictionsResponse, MatchPredictor, MatchStatus } from '@m5nita/shared'
 import { useState } from 'react'
 
 interface MatchPredictionsListProps {
   data: MatchPredictionsResponse
 }
 
-function formatPoints(points: number | null) {
+function formatPoints(points: number | null, matchStatus: MatchStatus) {
   if (points === null) return null
-  if (points === 0) return { label: '+0 pts', className: 'text-gray-muted' }
-  if (points === 1) return { label: '+1 pt', className: 'text-green' }
-  return { label: `+${points} pts`, className: 'text-green' }
+  const label = points === 1 ? '+1 pt' : `+${points} pts`
+  const className = matchStatus === 'live' ? 'text-red' : 'text-green'
+  return { label, className, pulse: matchStatus === 'live' }
 }
 
 function displayName(name: string | null) {
   return name && name.trim().length > 0 ? name : 'Sem nome'
 }
 
-function PredictorRow({ predictor }: { predictor: MatchPredictor }) {
-  const points = formatPoints(predictor.points)
+function PredictorRow({
+  predictor,
+  matchStatus,
+}: {
+  predictor: MatchPredictor
+  matchStatus: MatchStatus
+}) {
+  const points = formatPoints(predictor.points, matchStatus)
   return (
     <div className="flex items-center gap-2 py-2">
       <span className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black">
@@ -33,7 +39,12 @@ function PredictorRow({ predictor }: { predictor: MatchPredictor }) {
         </div>
       </div>
       {points && (
-        <span className={`shrink-0 font-display text-xs font-black ${points.className}`}>
+        <span
+          className={`shrink-0 flex items-center gap-1 font-display text-xs font-black ${points.className}`}
+        >
+          {points.pulse && (
+            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+          )}
           {points.label}
         </span>
       )}
@@ -52,7 +63,11 @@ export function MatchPredictionsList({ data }: MatchPredictionsListProps) {
       {hasPredictors ? (
         <div className="divide-y divide-border/60">
           {data.predictors.map((predictor) => (
-            <PredictorRow key={predictor.userId} predictor={predictor} />
+            <PredictorRow
+              key={predictor.userId}
+              predictor={predictor}
+              matchStatus={data.matchStatus}
+            />
           ))}
         </div>
       ) : (
