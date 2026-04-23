@@ -37,6 +37,18 @@ function RankingContent({ pool, poolId }: { pool: PoolDetail; poolId: string }) 
     <div className="flex flex-col gap-8">
       {pool.status === 'closed' && <PrizeWithdrawal poolId={poolId} />}
 
+      {data?.hasLiveMatch && (
+        <div className="flex flex-col gap-1 -mt-4">
+          <span className="flex items-center gap-1.5 font-display text-[10px] font-bold uppercase tracking-widest text-red">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red" aria-hidden="true" />
+            Jogos ao vivo
+          </span>
+          <span className="font-display text-[10px] text-gray-muted">
+            Pontos em vermelho são provisórios
+          </span>
+        </div>
+      )}
+
       {ranking.length === 0 ? (
         <div className="border-2 border-dashed border-border py-12 text-center">
           <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
@@ -68,8 +80,13 @@ function RankingContent({ pool, poolId }: { pool: PoolDetail; poolId: string }) 
                   {entry.exactMatches !== 1 ? 's' : ''}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="font-display text-2xl font-black text-black">{entry.totalPoints}</p>
+              <div className="text-right flex flex-col items-end gap-0.5">
+                <p className="font-display text-2xl font-black text-black">
+                  {entry.totalPoints}
+                  {entry.livePoints > 0 && (
+                    <span className="ml-2 text-lg text-red animate-pulse">+{entry.livePoints}</span>
+                  )}
+                </p>
                 <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
                   pts
                 </p>
