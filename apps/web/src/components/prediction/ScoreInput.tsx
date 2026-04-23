@@ -61,7 +61,7 @@ function ExpandPredictionsControl({
           isExpanded ? 'text-black' : 'text-gray-muted hover:text-black'
         }`}
       >
-        {isExpanded ? 'Ocultar palpites' : 'Ver palpites'}
+        {isExpanded ? 'Ocultar palpites dos oponentes' : 'Ver palpites dos oponentes'}
         <span aria-hidden="true">{isExpanded ? '▴' : '▾'}</span>
       </button>
       {isExpanded && renderExpandedContent(matchId)}
@@ -155,17 +155,29 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
       <p className="mb-1.5 text-center font-display text-[10px] text-gray-muted">
         {formatDate(matchDate)}
       </p>
-      {isLocked && hasActualScore && (
-        <div className="mb-1 flex items-center justify-center gap-1.5">
-          <span className="font-display text-[10px] font-bold uppercase tracking-wider text-gray-muted">
-            {actualHomeScore}
-          </span>
-          <span className="font-display text-[9px] text-gray-muted">x</span>
-          <span className="font-display text-[10px] font-bold uppercase tracking-wider text-gray-muted">
-            {actualAwayScore}
-          </span>
+      {(isLocked && hasActualScore) || matchStatus === 'live' ? (
+        <div
+          className={`mb-1 flex items-center justify-center gap-2 font-display text-[10px] font-bold uppercase leading-none tracking-widest ${
+            matchStatus === 'live' ? 'text-red' : 'text-gray-muted'
+          }`}
+        >
+          {matchStatus === 'live' ? (
+            <span className="flex items-center gap-1">
+              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+              Ao Vivo
+            </span>
+          ) : (
+            <span>Resultado oficial</span>
+          )}
+          {hasActualScore && (
+            <span className="flex items-center gap-1.5">
+              <span>{actualHomeScore}</span>
+              <span>x</span>
+              <span>{actualAwayScore}</span>
+            </span>
+          )}
         </div>
-      )}
+      ) : null}
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
           <span
@@ -229,17 +241,6 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         </div>
       </div>
       <div className="mt-1 flex items-center justify-center gap-2">
-        {matchStatus === 'live' && (
-          <span className="flex items-center gap-1 font-display text-[9px] font-bold uppercase tracking-widest text-red">
-            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-            Ao Vivo
-          </span>
-        )}
-        {isLocked && !hasPrediction && (
-          <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
-            Sem palpite
-          </span>
-        )}
         {status === 'saved' && (
           <span className="font-display text-[9px] font-bold uppercase tracking-widest text-green">
             Salvo
@@ -250,8 +251,14 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
             Salvando...
           </span>
         )}
-        {points != null && matchStatus === 'finished' && (
-          <span className="font-display text-xs font-black text-green">+{points} pts</span>
+        {matchStatus === 'live' && hasPrediction && points != null && (
+          <span className="flex items-center gap-1 font-display text-xs font-black text-red">
+            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
+            {points} pts
+          </span>
+        )}
+        {matchStatus === 'finished' && (
+          <span className="font-display text-xs font-black text-green">+{points ?? 0} pts</span>
         )}
       </div>
       {renderExpandedContent && (

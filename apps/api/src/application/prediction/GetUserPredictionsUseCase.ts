@@ -3,6 +3,7 @@ import type {
   PredictionRepository,
   PredictionWithMatch,
 } from '../../domain/prediction/PredictionRepository.port'
+import { computeLivePoints } from './computeLivePoints'
 
 type Input = {
   userId: string
@@ -20,9 +21,18 @@ export class GetUserPredictionsUseCase {
 
     const predictions = await this.predictionRepo.findByUserPool(input.userId, input.poolId)
 
-    if (!pool) return predictions
+    const withLivePoints = predictions.map((p) => ({
+      ...p,
+      points: computeLivePoints(
+        { homeScore: p.homeScore, awayScore: p.awayScore },
+        { status: p.match.status, homeScore: p.match.homeScore, awayScore: p.match.awayScore },
+        p.points,
+      ),
+    }))
 
-    return predictions.filter((p) => {
+    if (!pool) return withLivePoints
+
+    return withLivePoints.filter((p) => {
       if (p.match.competitionId !== pool.competitionId) return false
 
       if (pool.matchdayRange !== null && p.match.matchday !== null) {

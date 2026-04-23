@@ -59,6 +59,7 @@ describe('GET /api/pools/:poolId/ranking', () => {
         userId: 'user-2',
         name: 'Alice',
         totalPoints: 50,
+        livePoints: 0,
         exactMatches: 3,
         isCurrentUser: false,
       },
@@ -67,6 +68,7 @@ describe('GET /api/pools/:poolId/ranking', () => {
         userId: 'user-1',
         name: 'Test',
         totalPoints: 40,
+        livePoints: 0,
         exactMatches: 2,
         isCurrentUser: true,
       },
@@ -75,6 +77,7 @@ describe('GET /api/pools/:poolId/ranking', () => {
         userId: 'user-3',
         name: 'Bob',
         totalPoints: 30,
+        livePoints: 0,
         exactMatches: 1,
         isCurrentUser: false,
       },
@@ -97,6 +100,7 @@ describe('GET /api/pools/:poolId/ranking', () => {
         userId: 'user-2',
         name: 'Alice',
         totalPoints: 40,
+        livePoints: 0,
         exactMatches: 3,
         isCurrentUser: false,
       },
@@ -105,6 +109,7 @@ describe('GET /api/pools/:poolId/ranking', () => {
         userId: 'user-1',
         name: 'Test',
         totalPoints: 40,
+        livePoints: 0,
         exactMatches: 2,
         isCurrentUser: true,
       },
@@ -117,6 +122,27 @@ describe('GET /api/pools/:poolId/ranking', () => {
     expect(body.ranking[1].exactMatches).toBe(2)
     expect(body.ranking[0].position).toBe(1)
     expect(body.ranking[1].position).toBe(2)
+  })
+
+  it('returns_livePoints_field_on_each_entry', async () => {
+    mockGetPoolRanking.mockResolvedValue([
+      {
+        position: 1,
+        userId: 'u-1',
+        name: 'Ana',
+        totalPoints: 30,
+        livePoints: 25,
+        exactMatches: 3,
+        isCurrentUser: false,
+      },
+    ])
+
+    const res = await app.request('/api/pools/pool-1/ranking', { headers })
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+    expect(body.ranking).toHaveLength(1)
+    expect(body.ranking[0].livePoints).toBe(25)
   })
 
   it('returns_prizeTotal', async () => {

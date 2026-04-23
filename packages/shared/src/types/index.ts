@@ -136,6 +136,7 @@ export interface MatchNonPredictor {
 
 export interface MatchPredictionsResponse {
   matchId: string
+  matchStatus: MatchStatus
   isLocked: true
   totalMembers: number
   viewerIncluded: boolean
@@ -149,6 +150,7 @@ export interface RankingEntry {
   userId: string
   name: string | null
   totalPoints: number
+  livePoints: number
   exactMatches: number
   isCurrentUser: boolean
 }
