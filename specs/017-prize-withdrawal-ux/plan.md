@@ -54,8 +54,8 @@ Insert at the end of the file (or right after `PrizeInfo`):
 export interface PendingPrize {
   poolId: string
   poolName: string
-  amount: number
-  winnersCount: number
+  winnerShare: number
+  winnerCount: number
 }
 
 export interface PendingPrizesResponse {
@@ -174,7 +174,7 @@ describe('GetPendingPrizesUseCase', () => {
     const result = await useCase.execute({ userId: 'user-1' })
 
     expect(result.items).toEqual([
-      { poolId: 'p1', poolName: 'Bolão Um', amount: 14000, winnersCount: 1 },
+      { poolId: 'p1', poolName: 'Bolão Um', winnerShare: 14000, winnerCount: 1 },
     ])
   })
 
@@ -265,8 +265,8 @@ describe('GetPendingPrizesUseCase', () => {
     const result = await useCase.execute({ userId: 'user-1' })
 
     expect(result.items).toEqual([
-      { poolId: 'p1', poolName: 'Bolão A', amount: 10000, winnersCount: 1 },
-      { poolId: 'p3', poolName: 'Bolão C', amount: 10000, winnersCount: 2 },
+      { poolId: 'p1', poolName: 'Bolão A', winnerShare: 10000, winnerCount: 1 },
+      { poolId: 'p3', poolName: 'Bolão C', winnerShare: 10000, winnerCount: 2 },
     ])
   })
 })
@@ -299,8 +299,8 @@ type Input = {
 type PendingPrizeItem = {
   poolId: string
   poolName: string
-  amount: number
-  winnersCount: number
+  winnerShare: number
+  winnerCount: number
 }
 
 type Output = {
@@ -324,8 +324,8 @@ export class GetPendingPrizesUseCase {
         items.push({
           poolId: pool.id,
           poolName: pool.name,
-          amount: info.winnerShare,
-          winnersCount: info.winnerCount,
+          winnerShare: info.winnerShare,
+          winnerCount: info.winnerCount,
         })
       }
     }
@@ -438,7 +438,7 @@ vi.mock('../../../container', () => ({
     getPendingPrizesUseCase: {
       execute: vi.fn(async () => ({
         items: [
-          { poolId: 'pool-a', poolName: 'Bolão A', amount: 10000, winnersCount: 1 },
+          { poolId: 'pool-a', poolName: 'Bolão A', winnerShare: 10000, winnerCount: 1 },
         ],
       })),
     },
@@ -465,7 +465,7 @@ describe('GET /api/users/me/pending-prizes', () => {
     const body = await res.json()
     expect(body).toEqual({
       items: [
-        { poolId: 'pool-a', poolName: 'Bolão A', amount: 10000, winnersCount: 1 },
+        { poolId: 'pool-a', poolName: 'Bolão A', winnerShare: 10000, winnerCount: 1 },
       ],
     })
   })
@@ -1012,7 +1012,7 @@ export function PendingPrizesSection() {
           key={item.poolId}
           poolId={item.poolId}
           poolName={item.poolName}
-          amount={item.amount}
+          winnerShare={item.winnerShare}
           onSuccess={() => {
             queryClient.invalidateQueries({ queryKey: ['pending-prizes'] })
             queryClient.invalidateQueries({ queryKey: ['prize', item.poolId] })
@@ -1026,12 +1026,12 @@ export function PendingPrizesSection() {
 function PendingPrizeCard({
   poolId,
   poolName,
-  amount,
+  winnerShare,
   onSuccess,
 }: {
   poolId: string
   poolName: string
-  amount: number
+  winnerShare: number
   onSuccess: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -1044,7 +1044,7 @@ function PendingPrizeCard({
           </p>
           <p className="text-[11px] text-gray-muted">Prêmio disponível</p>
         </div>
-        <p className="font-display text-lg font-black text-green">{formatCurrency(amount)}</p>
+        <p className="font-display text-lg font-black text-green">{formatCurrency(winnerShare)}</p>
       </div>
       <button
         type="button"

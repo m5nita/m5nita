@@ -194,3 +194,14 @@ export interface PrizeInfo {
     exactMatches: number
   }[]
 }
+
+export interface PendingPrize {
+  poolId: string
+  poolName: string
+  winnerShare: number
+  winnerCount: number
+}
+
+export interface PendingPrizesResponse {
+  items: PendingPrize[]
+}
