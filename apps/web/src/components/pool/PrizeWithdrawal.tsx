@@ -1,12 +1,9 @@
-import type { PixKeyType, PrizeInfo } from '@m5nita/shared'
-import { validatePixKey } from '@m5nita/shared'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import type { PrizeInfo } from '@m5nita/shared'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../lib/api'
 import { formatCurrency } from '../../lib/utils'
-import { Button } from '../ui/Button'
 import { Loading } from '../ui/Loading'
-import { PixKeyInput } from './PixKeyInput'
+import { PrizeWithdrawalForm } from './PrizeWithdrawalForm'
 
 interface PrizeWithdrawalProps {
   poolId: string
@@ -14,8 +11,6 @@ interface PrizeWithdrawalProps {
 
 export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
   const queryClient = useQueryClient()
-  const [pixKeyType, setPixKeyType] = useState<PixKeyType>('cpf')
-  const [pixKey, setPixKey] = useState('')
 
   const {
     data: prize,
@@ -30,34 +25,14 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
     },
   })
 
-  const withdrawMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiFetch(`/api/pools/${poolId}/prize/withdraw`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pixKeyType, pixKey }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.message || 'Erro ao solicitar retirada')
-      }
-      return res.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['prize', poolId] })
-    },
-  })
-
   if (isPending) return <Loading />
   if (error || !prize) return null
-
-  const canSubmit = pixKey.length > 0 && validatePixKey(pixKeyType, pixKey).success
 
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
         <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-          {prize.winnerCount > 1 ? 'Vencedores' : 'Vencedor'}
+          Bolão finalizado
         </h2>
         <div className="h-px flex-1 bg-border" />
       </div>
@@ -83,29 +58,18 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
         ))}
       </div>
 
-      {/* Withdrawal form or status */}
       {prize.isWinner && !prize.withdrawal && (
         <div className="flex flex-col gap-4 border-l-4 border-green bg-green/5 p-4">
           <p className="text-sm font-medium text-gray-dark">
             Parabéns! Informe sua chave PIX para solicitar a retirada.
           </p>
-          <PixKeyInput
-            pixKeyType={pixKeyType}
-            pixKey={pixKey}
-            onTypeChange={setPixKeyType}
-            onKeyChange={setPixKey}
+          <PrizeWithdrawalForm
+            poolId={poolId}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['prize', poolId] })
+              queryClient.invalidateQueries({ queryKey: ['pending-prizes'] })
+            }}
           />
-          <Button
-            onClick={() => withdrawMutation.mutate()}
-            loading={withdrawMutation.isPending}
-            disabled={!canSubmit}
-            className="w-full"
-          >
-            Solicitar Retirada
-          </Button>
-          {withdrawMutation.error && (
-            <p className="text-xs font-medium text-red">{withdrawMutation.error.message}</p>
-          )}
         </div>
       )}
 
