@@ -144,8 +144,6 @@ function HomePage() {
         <div className="mt-3 h-1 w-12 bg-red lg:mx-auto" />
       </div>
 
-      <PendingPrizesSection />
-
       <div className="flex flex-wrap gap-3 lg:justify-center">
         <Link to="/pools/create" className="shrink-0">
           <Button size="lg" className="h-full min-h-[48px]">
@@ -177,6 +175,8 @@ function HomePage() {
           </Button>
         </form>
       </div>
+
+      <PendingPrizesSection />
 
       <section>
         <div className="flex items-center gap-3 mb-4">
