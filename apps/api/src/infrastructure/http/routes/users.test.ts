@@ -31,6 +31,16 @@ vi.mock('../../../db/client', () => ({
   },
 }))
 
+vi.mock('../../../container', () => ({
+  getContainer: vi.fn(() => ({
+    getPendingPrizesUseCase: {
+      execute: vi.fn(async () => ({
+        items: [{ poolId: 'pool-a', poolName: 'Bolão A', winnerShare: 10000, winnerCount: 1 }],
+      })),
+    },
+  })),
+}))
+
 function createTestApp() {
   const app = new Hono()
   app.route('/api', usersRoutes)
@@ -114,6 +124,31 @@ describe('PATCH /api/users/me', () => {
       body: JSON.stringify({ name: 'New Name' }),
     })
 
+    expect(res.status).toBe(401)
+  })
+})
+
+describe('GET /api/users/me/pending-prizes', () => {
+  let app: Hono
+
+  beforeEach(() => {
+    app = createTestApp()
+  })
+
+  it('returns_authenticatedUser_listOfPendingPrizes', async () => {
+    const res = await app.request('/api/users/me/pending-prizes', {
+      headers: { 'x-test-user': JSON.stringify(testUser) },
+    })
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({
+      items: [{ poolId: 'pool-a', poolName: 'Bolão A', winnerShare: 10000, winnerCount: 1 }],
+    })
+  })
+
+  it('rejects_noAuth_401unauthorized', async () => {
+    const res = await app.request('/api/users/me/pending-prizes')
     expect(res.status).toBe(401)
   })
 })
