@@ -117,6 +117,23 @@ No other Telegram content is in scope.
 **Non-winner member:**
 1. Opens pool home → "Bolão finalizado" block lists winner(s) and amount(s). No form, no status of other people's withdrawals.
 
+## Seed data (local dev)
+
+Extend `apps/api/src/db/seed.ts` with a new "Prize scenarios" section that creates additional closed pools so every branch of the new UI can be exercised against a local database. All scenarios use the existing seed users (Igor = `user-1`, Maria = `user-2`, Pedro = `user-3`).
+
+Scenarios to seed:
+
+1. **Igor won, no withdrawal yet.** Closed pool, Igor is sole winner. No `prize_withdrawal` row. Exercises: `/me/pending-prizes` returns this pool; pool home shows inline form; app home shows card.
+2. **Igor won, withdrawal pending.** Closed pool, Igor is sole winner. `prize_withdrawal` row exists with status `pending`. Exercises: `/me/pending-prizes` excludes this pool; pool home shows "Retirada solicitada" status; app home has no card for it.
+3. **Maria won, Igor did not.** Closed pool with all three members. Maria is sole winner. Exercises: non-winner view on pool home (Igor sees result but no form); no card on Igor's app home.
+4. **Tie between Igor and Pedro.** Closed pool, two winners split the prize, no withdrawals yet. Exercises: multi-winner rendering on pool home and app home; prize-split math.
+
+Scenarios 1 and 4 together mean Igor has ≥2 pending prizes, which is what's needed to exercise the "multiple cards" layout on the app home.
+
+Each seeded closed pool requires: `pool.status = 'closed'`, a competition (reuse the existing one or add lightweight new ones), matches all with `status = 'finished'` and final scores, predictions per member that produce the intended ranking, and an entry `payment` + `poolMember` per member. Keep each scenario minimal (1–2 matches is enough to drive the ranking).
+
+Seed script remains non-idempotent, same as today — developers re-running the seed hit duplicate-key errors (out of scope to fix here).
+
 ## Testing
 
 **API**
