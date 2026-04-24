@@ -1,8 +1,7 @@
-import type { PoolDetail, RankingEntry } from '@m5nita/shared'
+import type { RankingEntry } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { PoolHub } from '../../../components/pool/PoolHub'
-import { PrizeWithdrawal } from '../../../components/pool/PrizeWithdrawal'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import { Loading } from '../../../components/ui/Loading'
 import { apiFetch } from '../../../lib/api'
@@ -13,7 +12,7 @@ function positionColor(position: number): string {
   return 'text-gray-light'
 }
 
-function RankingContent({ pool, poolId }: { pool: PoolDetail; poolId: string }) {
+function RankingContent({ poolId }: { poolId: string }) {
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['ranking', poolId],
     queryFn: async () => {
@@ -35,8 +34,6 @@ function RankingContent({ pool, poolId }: { pool: PoolDetail; poolId: string }) 
 
   return (
     <div className="flex flex-col gap-8">
-      {pool.status === 'closed' && <PrizeWithdrawal poolId={poolId} />}
-
       {data?.hasLiveMatch && (
         <div className="flex flex-col gap-1 -mt-4">
           <span className="flex items-center gap-1.5 font-display text-[10px] font-bold uppercase tracking-widest text-red">
@@ -111,7 +108,7 @@ function RankingPage() {
   const { poolId } = Route.useParams()
   return (
     <PoolHub poolId={poolId} activeTab="ranking">
-      {(pool) => <RankingContent pool={pool} poolId={poolId} />}
+      {() => <RankingContent poolId={poolId} />}
     </PoolHub>
   )
 }
