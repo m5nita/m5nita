@@ -30,11 +30,13 @@ export class TelegramNotificationService implements NotificationService {
         const chatId = await findChatIdByPhone(winner.phoneNumber)
         if (!chatId) continue
 
+        const linkLine = APP_URL ? `\n\nAcesse para solicitar a retirada:\n${APP_URL}` : ''
+
         const message =
           `🏆 *Parabéns, ${escapeMarkdown(winner.name || 'Campeão')}!*\n\n` +
           `Você venceu o bolão *${escapeMarkdown(poolName)}*!\n` +
-          `Seu prêmio: *${formattedPrize}*\n\n` +
-          `Acesse o app para solicitar a retirada do seu prêmio.`
+          `Seu prêmio: *${formattedPrize}*` +
+          linkLine
 
         await this.bot.api.sendMessage(chatId, message, {
           parse_mode: 'Markdown',
