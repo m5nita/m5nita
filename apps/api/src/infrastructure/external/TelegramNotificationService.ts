@@ -30,7 +30,13 @@ export class TelegramNotificationService implements NotificationService {
         const chatId = await findChatIdByPhone(winner.phoneNumber)
         if (!chatId) continue
 
-        const linkLine = APP_URL ? `\n\nAcesse para solicitar a retirada:\n${APP_URL}` : ''
+        const linkLine = APP_URL
+          ? `\n\nAcesse para solicitar a retirada:\n${APP_URL}`
+          : `\n\nAcesse o app para solicitar a retirada do seu prêmio.`
+
+        if (!APP_URL) {
+          console.warn('[Telegram] APP_URL not set — winner message will not include link')
+        }
 
         const message =
           `🏆 *Parabéns, ${escapeMarkdown(winner.name || 'Campeão')}!*\n\n` +

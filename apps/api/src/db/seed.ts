@@ -283,10 +283,8 @@ async function seed() {
         })
         .returning()
 
-      // NOTE: pixKey is stored as ciphertext in production via encryptPixKey().
-      // Seeding with a plaintext value is intentional for local dev — the masked
-      // value on the UI hides the raw content. Regenerate with an encrypted value
-      // if decryptPixKey() throws during manual testing.
+      // Seed stores the PIX key as plaintext. decryptPixKey() passes values
+      // without the 'v1:' prefix through unchanged, so this loads fine in dev.
       await db.insert(prizeWithdrawal).values({
         poolId,
         userId: options.requestWithdrawalFor,

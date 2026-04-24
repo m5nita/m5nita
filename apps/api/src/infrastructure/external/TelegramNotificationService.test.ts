@@ -44,5 +44,6 @@ describe('TelegramNotificationService.notifyWinners', () => {
     const message = calls[0]?.[1] as string
     expect(message).not.toContain('http')
     expect(message).toContain('Bolão Teste')
+    expect(message).toContain('Acesse o app para solicitar')
   })
 })
