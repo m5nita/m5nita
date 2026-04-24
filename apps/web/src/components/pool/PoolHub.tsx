@@ -9,6 +9,7 @@ import { ErrorMessage } from '../ui/ErrorMessage'
 import { Loading } from '../ui/Loading'
 import { Modal } from '../ui/Modal'
 import { InviteTicket } from './InviteTicket'
+import { PrizeWithdrawal } from './PrizeWithdrawal'
 
 interface PoolHubProps {
   poolId: string
@@ -172,6 +173,8 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
           Ranking
         </Link>
       </div>
+
+      {pool.status === 'closed' && <PrizeWithdrawal poolId={poolId} />}
 
       {children(pool)}
 

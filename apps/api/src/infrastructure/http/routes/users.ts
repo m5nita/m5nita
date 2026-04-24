@@ -1,6 +1,7 @@
 import { phoneSchema, updateUserSchema } from '@m5nita/shared'
 import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { getContainer } from '../../../container'
 import { db } from '../../../db/client'
 import { user } from '../../../db/schema/auth'
 import type { AppEnv } from '../../../types/hono'
@@ -18,6 +19,14 @@ usersRoutes.get('/users/me', async (c) => {
     name: currentUser.name,
     phoneNumber: currentUser.phoneNumber,
   })
+})
+
+usersRoutes.get('/users/me/pending-prizes', async (c) => {
+  const currentUser = c.get('user')
+  const result = await getContainer().getPendingPrizesUseCase.execute({
+    userId: currentUser.id,
+  })
+  return c.json(result)
 })
 
 usersRoutes.patch('/users/me', async (c) => {

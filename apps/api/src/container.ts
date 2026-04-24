@@ -8,6 +8,7 @@ import type { PaymentGateway } from './application/ports/PaymentGateway.port'
 import { GetMatchPredictionsUseCase } from './application/prediction/GetMatchPredictionsUseCase'
 import { GetUserPredictionsUseCase } from './application/prediction/GetUserPredictionsUseCase'
 import { UpsertPredictionUseCase } from './application/prediction/UpsertPredictionUseCase'
+import { GetPendingPrizesUseCase } from './application/prize/GetPendingPrizesUseCase'
 import { GetPrizeInfoUseCase } from './application/prize/GetPrizeInfoUseCase'
 import { MarkWithdrawalPaidUseCase } from './application/prize/MarkWithdrawalPaidUseCase'
 import { RequestWithdrawalUseCase } from './application/prize/RequestWithdrawalUseCase'
@@ -104,6 +105,14 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const paymentGateway = overrides.paymentGateway ?? buildPaymentGateway(db)
   const notificationService = overrides.notificationService ?? new TelegramNotificationService(bot)
 
+  const getPrizeInfoUseCase = new GetPrizeInfoUseCase(
+    poolRepo,
+    prizeWithdrawalRepo,
+    rankingRepo,
+    getEffectiveFeeRate,
+  )
+  const getPendingPrizesUseCase = new GetPendingPrizesUseCase(poolRepo, getPrizeInfoUseCase)
+
   return {
     db,
     clock,
@@ -138,12 +147,8 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
       matchRepo,
       clock,
     ),
-    getPrizeInfoUseCase: new GetPrizeInfoUseCase(
-      poolRepo,
-      prizeWithdrawalRepo,
-      rankingRepo,
-      getEffectiveFeeRate,
-    ),
+    getPrizeInfoUseCase,
+    getPendingPrizesUseCase,
     requestWithdrawalUseCase: new RequestWithdrawalUseCase(
       poolRepo,
       prizeWithdrawalRepo,

@@ -2,6 +2,7 @@ import type { Match, PoolListItem } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { PendingPrizesSection } from '../components/home/PendingPrizesSection'
 import { MatchCard } from '../components/match/MatchCard'
 import { PoolCard } from '../components/pool/PoolCard'
 import { Button } from '../components/ui/Button'
@@ -174,6 +175,8 @@ function HomePage() {
           </Button>
         </form>
       </div>
+
+      <PendingPrizesSection />
 
       <section>
         <div className="flex items-center gap-3 mb-4">
