@@ -30,7 +30,7 @@ const tiers = [
 
 export function ScoringMini() {
   return (
-    <section className="flex flex-col gap-6 pt-4 pb-16">
+    <section className="flex flex-col gap-6 pt-2 pb-16">
       <div>
         <p className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
           Pontuação
