@@ -14,6 +14,8 @@
   --color-gray-muted: #a39e96;
   --color-surface: #ffffff;
   --color-border: #e5e0d8;
+  --color-row-highlight: rgba(17, 17, 17, 0.03);
+  --color-panel-tint: rgba(17, 17, 17, 0.02);
 
   --color-bg: #f5f0e8;
   --color-surface-raised: #ffffff;
@@ -50,6 +52,8 @@
   --color-green: #4fa67b;
   --color-accent-red: #e55344;
   --color-accent-green: #4fa67b;
+  --color-row-highlight: rgba(245, 240, 232, 0.04);
+  --color-panel-tint: rgba(245, 240, 232, 0.03);
 }
 
 html[data-theme="light"] {
