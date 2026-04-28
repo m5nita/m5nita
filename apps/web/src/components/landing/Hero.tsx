@@ -7,7 +7,7 @@ export function Hero() {
       <p className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
         Bolão entre amigos
       </p>
-      <h1 className="font-display text-6xl font-black leading-[0.85] text-black lg:text-8xl">
+      <h1 className="font-display text-6xl font-black leading-[1.05] text-black lg:text-8xl">
         Monte seu
         <br />
         bolão.

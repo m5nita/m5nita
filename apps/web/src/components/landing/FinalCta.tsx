@@ -4,7 +4,7 @@ import { Button } from '../ui/Button'
 export function FinalCta() {
   return (
     <section className="flex flex-col items-center gap-6 py-20 text-center lg:py-28">
-      <h2 className="font-display text-5xl font-black leading-[0.85] uppercase text-black lg:text-7xl">
+      <h2 className="font-display text-5xl font-black leading-[1.05] uppercase text-black lg:text-7xl">
         Em 30 segundos,
         <br />
         você tá no jogo.

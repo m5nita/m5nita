@@ -105,8 +105,21 @@
      Animation hides at start of loop and shows at the right moment. */
   opacity: 1;
 }
+/* Both labels share the same grid cell so wrapper width = max(both texts).
+   Prevents "Ocultar..." (longer) from wrapping when "Ver..." (shorter) is in flow. */
+.demo-d2 .d2-toggle .d2-toggle-label {
+  display: inline-grid;
+  grid-template-columns: 1fr;
+  white-space: nowrap;
+}
+.demo-d2 .d2-toggle .label-collapsed,
+.demo-d2 .d2-toggle .label-expanded {
+  grid-column: 1;
+  grid-row: 1;
+  white-space: nowrap;
+}
 .demo-d2 .d2-toggle .label-collapsed { opacity: 1; }
-.demo-d2 .d2-toggle .label-expanded  { opacity: 0; position: absolute; left: 0; top: 0; }
+.demo-d2 .d2-toggle .label-expanded  { opacity: 0; }
 /* M2 default = expanded (final state). Animation collapses then re-opens. */
 .demo-d2 .d2-toggle.m2-toggle                    { color: var(--color-black); }
 .demo-d2 .d2-toggle.m2-toggle .d2-toggle-arrow   { transform: rotate(180deg); }
