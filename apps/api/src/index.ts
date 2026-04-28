@@ -29,8 +29,14 @@ const port = Number(process.env.PORT) || 3001
 
 type CronSpec = {
   slug: string
+  // Crontab expression (UTC). Sent to the Sentry monitor so missed/timeout windows
+  // are computed against the wall clock instead of process boot time — restarts
+  // no longer drift the schedule and trigger spurious "missed check-in" alerts.
+  crontab: string
+  // Alignment interval for the next wall-clock tick. Must match the crontab's
+  // frequency (e.g. '*/15 * * * *' → 15 * 60_000). Works for any interval that
+  // divides 24h, since the Unix epoch is aligned to 00:00 UTC.
   intervalMs: number
-  schedule: { value: number; unit: 'minute' | 'hour' }
   // Minutes the Sentry monitor tolerates a late check-in before marking "missed".
   checkinMargin: number
   // Minutes a check-in can remain "in_progress" before the monitor marks "timeout".
@@ -40,48 +46,48 @@ type CronSpec = {
 
 function scheduleCron(spec: CronSpec): void {
   let running = false
-  setInterval(() => {
+
+  const scheduleNext = () => {
+    const now = Date.now()
+    const next = Math.ceil((now + 1) / spec.intervalMs) * spec.intervalMs
+    setTimeout(tick, next - now).unref()
+  }
+
+  const tick = async () => {
     if (running) {
       // Previous tick still in flight — skip rather than stacking parallel runs.
       // `checkinMargin` covers the resulting gap for the Sentry monitor.
       console.warn(`[Cron] ${spec.slug} skipped (previous run in flight)`)
+      scheduleNext()
       return
     }
     running = true
-    Sentry.withMonitor(
-      spec.slug,
-      async () => {
-        try {
-          await spec.run()
-        } catch (err) {
-          console.error(`[Cron] ${spec.slug} failed:`, err)
-          throw err
-        } finally {
-          running = false
-        }
-      },
-      {
-        schedule: { type: 'interval', value: spec.schedule.value, unit: spec.schedule.unit },
+    try {
+      await Sentry.withMonitor(spec.slug, () => spec.run(), {
+        schedule: { type: 'crontab', value: spec.crontab },
         checkinMargin: spec.checkinMargin,
         maxRuntime: spec.maxRuntime,
-      },
-    )
-  }, spec.intervalMs)
+      })
+    } catch (err) {
+      console.error(`[Cron] ${spec.slug} failed:`, err)
+    } finally {
+      running = false
+      scheduleNext()
+    }
+  }
+
+  // Run immediately on boot so a restart still produces a check-in and refreshes
+  // data right away. Subsequent runs align to wall-clock crontab boundaries.
+  void tick()
 }
 
 const server: ServerType = serve({ fetch: app.fetch, port }, () => {
   console.log(`m5nita API running on http://localhost:${port}`)
 
-  // Run fixture sync on startup
-  syncFixtures().catch((err) => {
-    Sentry.captureException(err)
-    console.error('[Startup] Fixture sync failed:', err)
-  })
-
   scheduleCron({
     slug: 'fixture-sync',
+    crontab: '0 */6 * * *',
     intervalMs: 6 * 60 * 60 * 1000,
-    schedule: { value: 6, unit: 'hour' },
     checkinMargin: 15,
     maxRuntime: 30,
     run: syncFixtures,
@@ -89,8 +95,8 @@ const server: ServerType = serve({ fetch: app.fetch, port }, () => {
 
   scheduleCron({
     slug: 'live-score-sync',
+    crontab: '* * * * *',
     intervalMs: 60 * 1000,
-    schedule: { value: 1, unit: 'minute' },
     checkinMargin: 2,
     maxRuntime: 5,
     run: syncLiveScores,
@@ -98,8 +104,8 @@ const server: ServerType = serve({ fetch: app.fetch, port }, () => {
 
   scheduleCron({
     slug: 'prediction-reminders',
+    crontab: '*/15 * * * *',
     intervalMs: 15 * 60 * 1000,
-    schedule: { value: 15, unit: 'minute' },
     checkinMargin: 5,
     maxRuntime: 10,
     run: sendPredictionReminders,
