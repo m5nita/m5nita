@@ -130,7 +130,7 @@ Visible elements:
 - Eyebrow "Novo", H1 "Criar Bolão", red bar
 - "Nome do bolão" input — `border-b-2`, `bg-transparent` (matches real `<Input>`)
 - "Competição" custom dropdown — closed-state mirrors the native `<select>` look; open-state shows four options: "Premier League 2025/26", "La Liga 2025/26", "Copa do Mundo 2026", "Brasileirão 2026" (uses `var(--color-bg)` background to blend with the form, no shadow)
-- "Valor da entrada" 4-button quick-select grid (R$ 10 / R$ 20 / R$ 50 / R$ 100)
+- "Valor da entrada" 4-button quick-select grid using `POOL.QUICK_SELECT_VALUES` from `@m5nita/shared` (R$ 20 / R$ 50 / R$ 100 / R$ 200) — R$ 50 is the highlighted option
 - Primary button "Criar e Pagar R$ 50,00"
 
 Animation timeline:
@@ -148,7 +148,7 @@ Replica of `/pools/:id/predictions` showing four match rows in four states. Loop
 | Row | State | Match | Score | Points |
 |---|---|---|---|---|
 | 1 | finished | 21/06 — Barcelona × Real Madrid | actual 2×1, my prediction 2×1 | +10 (green, "Resultado oficial") |
-| 2 | live + expanded predictors | 22/06 — Brasil × Argentina | actual 1×0, my prediction 2×1 | +5 (red, pulsing) |
+| 2 | live + expanded predictors | 22/06 — Brasil × Argentina | actual 1×0, my prediction 2×1 | +7 (red, pulsing) — winner + same goal-difference |
 | 3 | pending (animated) | 23/06 — Flamengo × Palmeiras | predicted 1×0 in this loop | "Salvo" (green) |
 | 4 | pending (animated) | 24/06 — Liverpool × Manchester City | predicted 1×1 in this loop | "Salvo" (green) |
 
@@ -172,7 +172,7 @@ Animation timeline:
 5. ~95–100%: Reset (digits fade, panel closes back to collapsed, toggle reverts).
 
 Predictors panel (the open state for M2) replicates `MatchPredictionsList`:
-- Three rows: João 1×0 +10, Maria 2×1 +5, Carlos 0×0 +0 — all with red pulsing dot (live)
+- Three rows: João 1×0 +10 (exact), Maria 2×1 +7 (winner+diff), Carlos 0×0 +0 (miss) — all with red pulsing dot (live)
 - `bg: rgba(17,17,17,0.02)` (Tokenized as `--color-panel-tint` — see Theming)
 - Negative horizontal margin so it spans edge-to-edge of the parent's padding (matches real `MatchPredictionsList` `-mx-5 px-5`)
 
@@ -347,13 +347,13 @@ Final CTA: H1 "Em 30 segundos, você tá no jogo." / button "Criar minha conta" 
 - `LandingPage.test.tsx` — renders with no session; primary CTA link points to `/login`; floating "Entrar" link points to `/login`; `/how-it-works` link present in footer and ScoringMini.
 - `DemoPredict.test.tsx` — renders 4 match rows; each `<img>` has `alt=""` (decorative); the M2 row contains the predictors panel markup (visibility controlled by CSS animation, not state).
 
-### Smoke (Playwright)
-- One scenario: visit `/` without a session → assert the landing renders (`<h1>` "Monte seu bolão.") and that clicking "Começar agora" navigates to `/login`.
+### Manual smoke (browser)
+- Playwright is not currently set up in `apps/web`. The smoke pass is manual: run `pnpm dev`, visit `/` without a session, verify the landing renders, click "Começar agora" and confirm `/login` loads. Then sign in and confirm the dashboard renders unchanged at `/`.
 - No screenshot regression (animations are too noisy for diffs).
 
 ### Accessibility
-- Run `axe-core` against `/` in the smoke test; fail on any violation.
-- Manual check with `prefers-reduced-motion: reduce` enabled: all three demos display their final state, copy is fully readable, no information is lost.
+- Manual: visit `/` with the system's "Reduce Motion" preference enabled and confirm all three demos display their final state and the copy reads naturally. Tab through the page and confirm focus order makes sense.
+- (Adding axe-core or Playwright a11y testing is out of scope for this spec — open follow-up.)
 
 ## Out of scope
 
