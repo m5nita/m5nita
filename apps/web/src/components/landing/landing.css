@@ -1,0 +1,244 @@
+/* ===========================================================
+   landing.css — keyframes + reduced-motion fallback for the
+   landing page demos. Imported by LandingPage.tsx.
+   =========================================================== */
+
+/* ----- Demo 1: Criar bolão -----
+   The .typed element uses border-right as the typewriter caret.
+   Width is animated 0 → var(--typed-width) (set by useTextWidth).
+   Color tokens come from app.css (--color-black, --color-red, etc).
+   ----------------------------------------------------------- */
+
+.demo-d1.is-running .d1-name-input {
+  animation: d1-name-focus 8s infinite;
+}
+.demo-d1.is-running .d1-name-typed {
+  animation:
+    d1-name-type 8s infinite,
+    d1-caret-blink 0.8s step-end infinite;
+}
+.demo-d1.is-running .d1-select-row {
+  animation: d1-comp-focus 8s infinite;
+}
+.demo-d1.is-running .d1-select-row .placeholder {
+  animation: d1-placeholder 8s infinite;
+}
+.demo-d1.is-running .d1-select-row .selected {
+  animation: d1-selected 8s infinite;
+}
+.demo-d1.is-running .d1-select-arrow {
+  animation: d1-arrow 8s infinite;
+}
+.demo-d1.is-running .d1-select-panel {
+  animation: d1-panel 8s infinite;
+}
+.demo-d1.is-running .d1-option-highlight {
+  animation: d1-opt-highlight 8s infinite;
+}
+.demo-d1.is-running .d1-quick-selected {
+  animation: d1-quick-select 8s infinite;
+}
+.demo-d1.is-running .d1-cta {
+  animation: d1-cta-pulse 8s infinite;
+}
+
+@keyframes d1-caret-blink {
+  50% { border-right-color: transparent; }
+}
+@keyframes d1-name-focus {
+  0%, 4%   { border-bottom-color: var(--color-border); }
+  6%, 24%  { border-bottom-color: var(--color-black); }
+  26%, 100%{ border-bottom-color: var(--color-border); }
+}
+@keyframes d1-name-type {
+  0%, 4%   { width: 0;                       opacity: 1; }
+  20%, 78% { width: var(--typed-width, 130px); opacity: 1; }
+  84%      { width: var(--typed-width, 130px); opacity: 1; }
+  90%      { width: var(--typed-width, 130px); opacity: 0; }
+  100%     { width: 0;                       opacity: 0; }
+}
+@keyframes d1-comp-focus {
+  0%, 26%  { border-bottom-color: var(--color-border); }
+  28%, 48% { border-bottom-color: var(--color-black); }
+  50%, 100%{ border-bottom-color: var(--color-border); }
+}
+@keyframes d1-arrow {
+  0%, 26%  { transform: rotate(0deg); }
+  30%, 46% { transform: rotate(180deg); }
+  50%, 100%{ transform: rotate(0deg); }
+}
+@keyframes d1-panel {
+  0%, 28%  { opacity: 0; transform: translateY(-4px); }
+  32%, 44% { opacity: 1; transform: translateY(0); }
+  48%, 100%{ opacity: 0; transform: translateY(-4px); }
+}
+@keyframes d1-opt-highlight {
+  0%, 36%  { background-color: transparent; }
+  40%, 46% { background-color: rgba(17, 17, 17, 0.06); }
+  50%, 100%{ background-color: transparent; }
+}
+@keyframes d1-placeholder {
+  0%, 46%  { opacity: 1; }
+  48%, 100%{ opacity: 0; }
+}
+@keyframes d1-selected {
+  0%, 46%  { opacity: 0; }
+  48%, 84% { opacity: 1; }
+  90%, 100%{ opacity: 0; }
+}
+@keyframes d1-quick-select {
+  0%, 54%  { background: transparent;        color: var(--color-gray-dark); border-color: var(--color-border); }
+  58%, 84% { background: var(--color-black); color: var(--color-white);     border-color: var(--color-black); }
+  90%, 100%{ background: transparent;        color: var(--color-gray-dark); border-color: var(--color-border); }
+}
+@keyframes d1-cta-pulse {
+  0%, 64%  { transform: scale(1);    background: var(--color-black); }
+  68%      { transform: scale(0.97); background: var(--color-red); border-color: var(--color-red); }
+  72%, 88% { transform: scale(1);    background: var(--color-black); border-color: var(--color-black); }
+  92%, 100%{ opacity: 0.7; }
+}
+
+/* ----- Demo 2: Predict (M2 panel + M3/M4 palpite) ----- */
+
+.demo-d2 .d2-status > span {
+  /* default state for "Salvo" — visible (final state for reduced-motion).
+     Animation hides at start of loop and shows at the right moment. */
+  opacity: 1;
+}
+.demo-d2 .d2-toggle .label-collapsed { opacity: 1; }
+.demo-d2 .d2-toggle .label-expanded  { opacity: 0; position: absolute; left: 0; top: 0; }
+/* M2 default = expanded (final state). Animation collapses then re-opens. */
+.demo-d2 .d2-toggle.m2-toggle                    { color: var(--color-black); }
+.demo-d2 .d2-toggle.m2-toggle .d2-toggle-arrow   { transform: rotate(180deg); }
+.demo-d2 .d2-toggle.m2-toggle .label-collapsed   { opacity: 0; }
+.demo-d2 .d2-toggle.m2-toggle .label-expanded    { opacity: 1; }
+.demo-d2 .d2-predictors.m2-panel {
+  max-height: 320px; opacity: 1;
+  padding: 8px 24px 4px;
+  margin-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.demo-d2.is-running .d2-row.m2 .m2-toggle                  { animation: m2-toggle-color  10s infinite; }
+.demo-d2.is-running .d2-row.m2 .m2-toggle .d2-toggle-arrow { animation: m2-toggle-arrow  10s infinite; }
+.demo-d2.is-running .d2-row.m2 .m2-toggle .label-collapsed { animation: m2-label-collapsed 10s infinite; }
+.demo-d2.is-running .d2-row.m2 .m2-toggle .label-expanded  { animation: m2-label-expanded  10s infinite; }
+.demo-d2.is-running .d2-row.m2 .m2-panel                   { animation: m2-panel-open    10s infinite; }
+
+@keyframes m2-toggle-color {
+  0%, 12%  { color: var(--color-gray-muted); }
+  16%, 92% { color: var(--color-black); }
+  96%, 100%{ color: var(--color-gray-muted); }
+}
+@keyframes m2-toggle-arrow {
+  0%, 12%  { transform: rotate(0deg); }
+  16%, 92% { transform: rotate(180deg); }
+  96%, 100%{ transform: rotate(0deg); }
+}
+@keyframes m2-label-collapsed {
+  0%, 12%  { opacity: 1; }
+  16%, 92% { opacity: 0; }
+  96%, 100%{ opacity: 1; }
+}
+@keyframes m2-label-expanded {
+  0%, 12%  { opacity: 0; }
+  16%, 92% { opacity: 1; }
+  96%, 100%{ opacity: 0; }
+}
+@keyframes m2-panel-open {
+  0%, 12%  { max-height: 0;     opacity: 0; padding-top: 0;  padding-bottom: 0; margin-top: 0;  border-top-width: 0; }
+  20%, 92% { max-height: 320px; opacity: 1; padding-top: 8px; padding-bottom: 4px; margin-top: 12px; border-top-width: 1px; }
+  96%, 100%{ max-height: 0;     opacity: 0; padding-top: 0;  padding-bottom: 0; margin-top: 0;  border-top-width: 0; }
+}
+
+/* M3: 25–52% (palpita 1-0) */
+.demo-d2.is-running .d2-row.m3 .d2-home-input { animation: m3-home-focus 10s infinite; }
+.demo-d2.is-running .d2-row.m3 .d2-home-digit { animation: m3-home-digit 10s infinite; }
+.demo-d2.is-running .d2-row.m3 .d2-away-input { animation: m3-away-focus 10s infinite; }
+.demo-d2.is-running .d2-row.m3 .d2-away-digit { animation: m3-away-digit 10s infinite; }
+.demo-d2.is-running .d2-row.m3 .saved          { animation: m3-saved      10s infinite; }
+
+@keyframes m3-home-focus { 0%,22%{border-color:var(--color-border);}25%,30%{border-color:var(--color-black);}32%,100%{border-color:var(--color-border);} }
+@keyframes m3-home-digit { 0%,28%{opacity:0;transform:scale(.6);}31%,95%{opacity:1;transform:scale(1);}98%,100%{opacity:0;} }
+@keyframes m3-away-focus { 0%,30%{border-color:var(--color-border);}33%,38%{border-color:var(--color-black);}40%,100%{border-color:var(--color-border);} }
+@keyframes m3-away-digit { 0%,36%{opacity:0;transform:scale(.6);}39%,95%{opacity:1;transform:scale(1);}98%,100%{opacity:0;} }
+@keyframes m3-saved      { 0%,42%{opacity:0;}44%,52%{opacity:1;}55%,100%{opacity:0;} }
+
+/* M4: 58–87% (palpita 1-1) */
+.demo-d2.is-running .d2-row.m4 .d2-home-input { animation: m4-home-focus 10s infinite; }
+.demo-d2.is-running .d2-row.m4 .d2-home-digit { animation: m4-home-digit 10s infinite; }
+.demo-d2.is-running .d2-row.m4 .d2-away-input { animation: m4-away-focus 10s infinite; }
+.demo-d2.is-running .d2-row.m4 .d2-away-digit { animation: m4-away-digit 10s infinite; }
+.demo-d2.is-running .d2-row.m4 .saved          { animation: m4-saved      10s infinite; }
+
+@keyframes m4-home-focus { 0%,55%{border-color:var(--color-border);}58%,63%{border-color:var(--color-black);}65%,100%{border-color:var(--color-border);} }
+@keyframes m4-home-digit { 0%,61%{opacity:0;transform:scale(.6);}63%,95%{opacity:1;transform:scale(1);}98%,100%{opacity:0;} }
+@keyframes m4-away-focus { 0%,63%{border-color:var(--color-border);}65%,70%{border-color:var(--color-black);}72%,100%{border-color:var(--color-border);} }
+@keyframes m4-away-digit { 0%,68%{opacity:0;transform:scale(.6);}70%,95%{opacity:1;transform:scale(1);}98%,100%{opacity:0;} }
+@keyframes m4-saved      { 0%,74%{opacity:0;}76%,84%{opacity:1;}87%,100%{opacity:0;} }
+
+/* Live dot + predictor live dots — ambient pulse, runs always (cheap, no JS) */
+.live-pulse {
+  animation: live-pulse 1.2s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+/* ----- Demo 3: Live ranking ----- */
+
+/* Default = initial state (rows in initial slots, +6 visible — coherent frame for reduced-motion) */
+.demo-d3 .d3-row             { transform: translateY(calc(var(--initial-slot, 0) * 48px)); }
+.demo-d3 .d3-pos-after       { opacity: 0; }
+.demo-d3 .d3-pos-initial     { opacity: 1; }
+.demo-d3 .d3-delta {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: baseline;
+  font-size: 16px;
+  color: var(--color-red);
+  max-width: 40px;
+  margin-left: 6px;
+  opacity: 1;
+}
+.demo-d3 .d3-delta-inner {
+  display: inline-block;
+  animation: live-pulse 1.2s ease-in-out infinite;
+}
+
+/* Animations */
+.demo-d3.is-running .d3-row             { animation: d3-row-move    8s infinite; }
+.demo-d3.is-running .d3-pos-initial     { animation: d3-pos-initial 8s infinite; }
+.demo-d3.is-running .d3-pos-after       { animation: d3-pos-after   8s infinite; }
+.demo-d3.is-running .row-voce .d3-delta { animation: d3-delta-voce  8s infinite; }
+
+@keyframes d3-row-move {
+  0%,   26%  { transform: translateY(calc(var(--initial-slot) * 48px)); }
+  36%,  84%  { transform: translateY(calc(var(--final-slot)   * 48px)); }
+  90%,  100% { transform: translateY(calc(var(--initial-slot) * 48px)); }
+}
+@keyframes d3-pos-initial {
+  0%,  30%  { opacity: 1; }
+  34%, 86%  { opacity: 0; }
+  90%, 100% { opacity: 1; }
+}
+@keyframes d3-pos-after {
+  0%,  30%  { opacity: 0; }
+  34%, 86%  { opacity: 1; }
+  90%, 100% { opacity: 0; }
+}
+@keyframes d3-delta-voce {
+  0%,  18%  { opacity: 0; max-width: 0;    margin-left: 0; }
+  22%, 86%  { opacity: 1; max-width: 40px; margin-left: 6px; }
+  90%, 100% { opacity: 0; max-width: 0;    margin-left: 0; }
+}
+
+/* ----- Reduced motion override ----- */
+@media (prefers-reduced-motion: reduce) {
+  .stage,
+  .stage * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
