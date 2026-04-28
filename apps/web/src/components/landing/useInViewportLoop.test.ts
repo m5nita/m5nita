@@ -34,14 +34,15 @@ describe('useInViewportLoop', () => {
     expect(result.current.isRunning).toBe(false)
   })
 
-  it('observes the ref node when attached', () => {
-    const { result } = renderHook(() => useInViewportLoop<HTMLDivElement>())
+  it('observes the ref node when attached at render time', () => {
     const node = document.createElement('div')
-    act(() => {
-      result.current.ref.current = node
+    renderHook(() => {
+      const value = useInViewportLoop<HTMLDivElement>()
+      value.ref.current = node
+      return value
     })
-    // Re-render to trigger effect with the attached ref
-    expect(observerInstances.length).toBeGreaterThanOrEqual(0)
+    expect(observerInstances).toHaveLength(1)
+    expect(observerInstances[0]?.observe).toHaveBeenCalledWith(node)
   })
 
   it('toggles isRunning when entry intersects/leaves viewport', () => {
