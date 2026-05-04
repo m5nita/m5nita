@@ -132,7 +132,14 @@ poolsRoutes.get('/pools/invite/:inviteCode', async (c) => {
 
   const alreadyMember = await isPoolMember(poolInfo.id, currentUser.id)
   if (alreadyMember) {
-    return c.json({ error: 'ALREADY_MEMBER', message: 'Você já participa deste bolão' }, 409)
+    return c.json(
+      {
+        error: 'ALREADY_MEMBER',
+        message: 'Você já participa deste bolão',
+        poolId: poolInfo.id,
+      },
+      409,
+    )
   }
 
   return c.json(poolInfo)
