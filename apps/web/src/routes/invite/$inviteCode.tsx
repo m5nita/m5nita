@@ -1,7 +1,7 @@
 import type { PoolInviteInfo } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { Loading } from '../../components/ui/Loading'
@@ -17,7 +17,7 @@ function InvitePage() {
   const [loading, setLoading] = useState(false)
 
   const {
-    data: poolInfo,
+    data: inviteResult,
     isPending,
     error: fetchError,
   } = useQuery({
@@ -26,13 +26,23 @@ function InvitePage() {
       const res = await apiFetch(`/api/pools/invite/${inviteCode}`)
       if (res.status === 404) throw new Error('Convite inválido')
       if (res.status === 409) {
-        const data = await res.json()
+        const data = (await res.json()) as { error: string; message: string; poolId?: string }
+        if (data.error === 'ALREADY_MEMBER' && data.poolId) {
+          return { alreadyMember: true as const, poolId: data.poolId }
+        }
         throw new Error(data.message)
       }
       if (!res.ok) throw new Error('Erro ao carregar convite')
-      return res.json() as Promise<PoolInviteInfo>
+      const info = (await res.json()) as PoolInviteInfo
+      return { alreadyMember: false as const, info }
     },
   })
+
+  useEffect(() => {
+    if (inviteResult?.alreadyMember) {
+      navigate({ to: '/pools/$poolId', params: { poolId: inviteResult.poolId }, replace: true })
+    }
+  }, [inviteResult, navigate])
 
   if (isPending) return <Loading message="Carregando convite..." />
 
@@ -46,7 +56,9 @@ function InvitePage() {
     )
   }
 
-  if (!poolInfo) return null
+  if (!inviteResult || inviteResult.alreadyMember) return <Loading message="Carregando bolão..." />
+
+  const poolInfo = inviteResult.info
 
   async function handleJoin() {
     setLoading(true)
