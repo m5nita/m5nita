@@ -316,7 +316,7 @@ describe('POST /api/webhooks/infinitepay', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     const [url, init] = fetchSpy.mock.calls[0] ?? []
-    expect(url).toBe('https://api.infinitepay.io/invoices/public/checkout/payment_check')
+    expect(url).toBe('https://api.checkout.infinitepay.io/payment_check')
     const body = JSON.parse(init?.body as string)
     // NOTE: InfinitePay's payment_check API expects "slug" (not "invoice_slug") as the field
     // name — even though the webhook body and redirect URL use "invoice_slug" for the same value.

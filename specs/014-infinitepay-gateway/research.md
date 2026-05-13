@@ -13,8 +13,8 @@ This document records the research conducted to resolve open technical questions
 
 | Purpose | Method | URL | Notes |
 |---|---|---|---|
-| Create checkout link | `POST` | `https://api.infinitepay.io/invoices/public/checkout/links` | Returns the customer-facing checkout URL plus identifiers (order_nsu, transaction_nsu, slug) used later to query payment status. |
-| Verify payment status | `POST` | `https://api.infinitepay.io/invoices/public/checkout/payment_check` | Authoritative status lookup. Used both during webhook handling (active confirmation) and from operator-driven recovery scripts. |
+| Create checkout link | `POST` | `https://api.checkout.infinitepay.io/links` | Returns the customer-facing checkout URL plus identifiers (order_nsu, transaction_nsu, slug) used later to query payment status. |
+| Verify payment status | `POST` | `https://api.checkout.infinitepay.io/payment_check` | Authoritative status lookup. Used both during webhook handling (active confirmation) and from operator-driven recovery scripts. |
 
 **Rationale**: These are the documented public Checkout endpoints. They cover both halves of the flow (outbound link creation, inbound status verification). They do not require an OAuth token or signed JWT — the operator's "Handle" (InfiniteTag) acts as the merchant identifier; the `payment_check` request also requires the `slug` and `order_nsu` returned by the create-link call, which constitute the de-facto secret material binding the verification call to a specific local payment.
 

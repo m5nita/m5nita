@@ -6,7 +6,7 @@ import { infinitePayConfig } from '../lib/infinitepay'
 import { handleCheckoutCompleted } from './payment'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const PAYMENT_CHECK_URL = 'https://api.infinitepay.io/invoices/public/checkout/payment_check'
+const PAYMENT_CHECK_URL = 'https://api.checkout.infinitepay.io/payment_check'
 
 const PaymentCheckResponseSchema = z
   .object({

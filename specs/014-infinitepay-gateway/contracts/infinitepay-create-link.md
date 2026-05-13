@@ -1,7 +1,7 @@
 # Contract: InfinitePay — Create Checkout Link (outbound)
 
 **Direction**: Outbound (platform → InfinitePay)
-**Endpoint**: `POST https://api.infinitepay.io/invoices/public/checkout/links`
+**Endpoint**: `POST https://api.checkout.infinitepay.io/links`
 **Caller**: `InfinitePayPaymentGateway.createCheckoutSession()`
 
 ## Request
