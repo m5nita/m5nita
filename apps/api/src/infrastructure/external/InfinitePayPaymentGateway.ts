@@ -9,7 +9,7 @@ import type { db as DbClient } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { payment } from '../../db/schema/payment'
 
-const CREATE_LINK_URL = 'https://api.infinitepay.io/invoices/public/checkout/links'
+const CREATE_LINK_URL = 'https://api.checkout.infinitepay.io/links'
 
 const CreateLinkResponseSchema = z
   .object({

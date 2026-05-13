@@ -1,7 +1,7 @@
 # Contract: InfinitePay — Payment Check (outbound)
 
 **Direction**: Outbound (platform → InfinitePay)
-**Endpoint**: `POST https://api.infinitepay.io/invoices/public/checkout/payment_check`
+**Endpoint**: `POST https://api.checkout.infinitepay.io/payment_check`
 **Caller**: webhook route after extracting the reference from an inbound notification.
 
 ## Request

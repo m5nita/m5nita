@@ -102,7 +102,7 @@ describe('InfinitePayPaymentGateway', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     const [url, init] = fetchSpy.mock.calls[0] ?? []
-    expect(url).toBe('https://api.infinitepay.io/invoices/public/checkout/links')
+    expect(url).toBe('https://api.checkout.infinitepay.io/links')
     expect(init?.method).toBe('POST')
     const body = JSON.parse(init?.body as string)
     expect(body).toMatchObject({
