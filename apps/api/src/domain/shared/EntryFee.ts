@@ -8,8 +8,8 @@ export class EntryFee {
   }
 
   static of(centavos: number): EntryFee {
-    if (centavos < 100 || centavos > 100000) {
-      throw new Error('Entry fee must be between 100 and 100000 centavos')
+    if (centavos < 500 || centavos > 100000) {
+      throw new Error('Entry fee must be between 500 and 100000 centavos')
     }
     return new EntryFee(Money.of(centavos))
   }

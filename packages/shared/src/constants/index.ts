@@ -6,7 +6,7 @@ export const SCORING = {
 } as const
 
 export const POOL = {
-  MIN_ENTRY_FEE: 100,
+  MIN_ENTRY_FEE: 500,
   MAX_ENTRY_FEE: 100000,
   MIN_NAME_LENGTH: 3,
   MAX_NAME_LENGTH: 50,

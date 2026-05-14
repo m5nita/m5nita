@@ -1,0 +1,65 @@
+map $http_user_agent $m5nita_is_bot {
+    default 0;
+    "~*facebookexternalhit"     1;
+    "~*WhatsApp"                1;
+    "~*Twitterbot"              1;
+    "~*LinkedInBot"             1;
+    "~*TelegramBot"             1;
+    "~*Slackbot"                1;
+    "~*Discordbot"              1;
+    "~*Pinterest"               1;
+    "~*Embedly"                 1;
+    "~*SkypeUriPreview"         1;
+    "~*Googlebot"               1;
+    "~*Applebot"                1;
+    "~*redditbot"               1;
+}
+
+server {
+    listen 80;
+    resolver 127.0.0.11 ipv6=off valid=30s;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    set $og_backend "${OG_BACKEND}";
+
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /sw.js {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
+        add_header Service-Worker-Allowed "/";
+        types { application/javascript js; }
+        expires off;
+    }
+
+    location /registerSW.js {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
+        expires off;
+    }
+
+    location ~ ^/invite/([^/]+)/?$ {
+        set $og_path /og/invite/$1;
+        if ($m5nita_is_bot) {
+            proxy_pass $og_backend$og_path;
+        }
+        add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
+        try_files $uri /index.html;
+    }
+
+    location ~ ^/pools/([^/]+)(/.*)?$ {
+        set $og_path /og/pool/$1;
+        if ($m5nita_is_bot) {
+            proxy_pass $og_backend$og_path;
+        }
+        add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
+        try_files $uri /index.html;
+    }
+
+    location / {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0";
+        try_files $uri $uri/ /index.html;
+    }
+}

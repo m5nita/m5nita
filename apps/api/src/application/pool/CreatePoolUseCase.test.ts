@@ -39,7 +39,7 @@ const activeCompetition = async (id: string) => ({ id, status: 'active' })
 const baseInput = {
   userId: 'user-1',
   name: 'La Liga 33ª',
-  entryFee: 100,
+  entryFee: 500,
   competitionId: 'comp-1',
   matchdayFrom: 33,
   matchdayTo: 33,

@@ -65,6 +65,7 @@ export interface PoolDetail extends Pool {
   memberCount: number
   prizeTotal: number
   hasLiveMatch: boolean
+  isMember: boolean
   userStats: {
     position: number | null
     totalPoints: number

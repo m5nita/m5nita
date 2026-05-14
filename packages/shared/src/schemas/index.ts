@@ -12,7 +12,7 @@ const safePoolName = z
 export const createPoolSchema = z
   .object({
     name: safePoolName,
-    entryFee: z.number().int().min(100).max(100000),
+    entryFee: z.number().int().min(500).max(100000),
     competitionId: z.string().uuid('ID da competicao invalido'),
     matchdayFrom: z.number().int().min(1).optional(),
     matchdayTo: z.number().int().min(1).optional(),
@@ -50,7 +50,7 @@ export const validateCouponSchema = z.object({
     .max(20)
     .transform((v) => v.trim().toUpperCase())
     .pipe(z.string().regex(/^[A-Z0-9]+$/, 'Código deve conter apenas letras e números')),
-  entryFee: z.number().int().min(100).max(100000),
+  entryFee: z.number().int().min(500).max(100000),
 })
 
 export const updatePoolSchema = z.object({

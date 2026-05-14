@@ -9,6 +9,7 @@ import { globalRateLimit, otpRateLimit } from './infrastructure/http/middleware/
 import { turnstileGuard } from './infrastructure/http/middleware/turnstileGuard'
 import { competitionsRoutes } from './infrastructure/http/routes/competitions'
 import { matchesRoutes } from './infrastructure/http/routes/matches'
+import { ogRoutes } from './infrastructure/http/routes/og'
 import { paymentsRoutes } from './infrastructure/http/routes/payments'
 import { poolsRoutes } from './infrastructure/http/routes/pools'
 import { predictionsRoutes } from './infrastructure/http/routes/predictions'
@@ -74,6 +75,10 @@ export function buildApp(): Hono<AppEnv> {
   app.use('/api/auth/sign-in/social', captchaGuard)
 
   app.get('/api/health', (c) => c.json({ status: 'ok' }))
+
+  // Public OG preview routes for social crawlers (WhatsApp, Facebook, Twitter etc).
+  // Not under /api so they're not subject to CORS/CSRF and can be proxied by nginx.
+  app.route('/', ogRoutes)
 
   app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
 

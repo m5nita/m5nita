@@ -91,7 +91,7 @@ export async function createPool(
   }
 }
 
-export async function getPoolById(poolId: string, _userId: string) {
+export async function getPoolById(poolId: string, userId: string) {
   const poolData = await db.query.pool.findFirst({
     where: eq(pool.id, poolId),
     with: {
@@ -114,6 +114,8 @@ export async function getPoolById(poolId: string, _userId: string) {
     poolData.matchdayTo,
   )
 
+  const isMember = await isPoolMember(poolId, userId)
+
   const discountPercent = poolData.coupon?.discountPercent ?? 0
   const effectiveRate = getEffectiveFeeRate(discountPercent)
   const prizeTotal = Math.floor(poolData.entryFee * (memberCount?.count ?? 0) * (1 - effectiveRate))
@@ -125,6 +127,7 @@ export async function getPoolById(poolId: string, _userId: string) {
     memberCount: memberCount?.count ?? 0,
     prizeTotal,
     hasLiveMatch,
+    isMember,
     discountPercent,
     originalPlatformFee: Math.floor(poolData.entryFee * POOL.PLATFORM_FEE_RATE),
     platformFee: Math.floor(poolData.entryFee * effectiveRate),
