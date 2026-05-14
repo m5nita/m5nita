@@ -9,7 +9,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --filter @m5nita/web...
+    pnpm install --frozen-lockfile --prod=false --filter @m5nita/web...
 
 FROM base AS build
 WORKDIR /app

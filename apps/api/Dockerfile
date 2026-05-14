@@ -11,7 +11,8 @@ COPY packages/shared/package.json packages/shared/
 # child-concurrency=1 keeps memory use bounded while @resvg/resvg-js and
 # satori install — Coolify hosts run multiple builds on the same VPS.
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --filter @m5nita/api... --child-concurrency=1
+    pnpm install --frozen-lockfile --prod=false --filter @m5nita/api... \
+      --child-concurrency=1
 
 FROM base AS runner
 # curl is used by the Coolify healthcheck inside the container
