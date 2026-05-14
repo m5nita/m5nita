@@ -132,7 +132,7 @@ The API registers Telegram webhook routes under `/api/telegram/*`. Set `TELEGRAM
 
 ## Deployment
 
-CI runs on GitHub Actions (`.github/workflows/ci.yml`) — lint, typecheck and test on every PR. The deploy pipeline (`deploy.yml`) builds both Docker images (`apps/api/Dockerfile`, `apps/web/Dockerfile`) and notifies via Telegram on success or failure. The web image is served by Nginx (`apps/web/nginx.conf`); the API exposes `/api/health` for container healthchecks.
+CI runs on GitHub Actions (`.github/workflows/ci.yml`) — lint, typecheck and test on every PR. The deploy pipeline (`deploy.yml`) builds both Docker images (`apps/api/Dockerfile`, `apps/web/Dockerfile`) and notifies via Telegram on success or failure. The web image is served by Nginx (`apps/web/nginx.conf.template` — set `OG_BACKEND` env at runtime to the API origin so social-crawler previews on `/invite/:code` and `/pools/:id/*` get pool-specific OG tags); the API exposes `/api/health` for container healthchecks.
 
 > [!NOTE]
 > Live scores sync every minute, fixtures every 6 hours, and prediction reminders fire every 15 minutes — all driven by in-process intervals wrapped in Sentry cron monitors. No external scheduler is required.

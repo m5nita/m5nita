@@ -13,9 +13,9 @@ describe('Pool validation rules', () => {
     expect('A'.repeat(51).length <= POOL.MAX_NAME_LENGTH).toBe(false)
   })
 
-  it('validates_minEntryFee_100centavos', () => {
-    expect(99 >= POOL.MIN_ENTRY_FEE).toBe(false)
-    expect(100 >= POOL.MIN_ENTRY_FEE).toBe(true)
+  it('validates_minEntryFee_500centavos', () => {
+    expect(499 >= POOL.MIN_ENTRY_FEE).toBe(false)
+    expect(500 >= POOL.MIN_ENTRY_FEE).toBe(true)
   })
 
   it('validates_maxEntryFee_100000centavos', () => {

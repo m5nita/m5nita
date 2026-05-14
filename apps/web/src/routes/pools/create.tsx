@@ -123,11 +123,11 @@ function CreatePoolPage() {
       return
     }
     if (!isValidFee) {
-      setError('Valor deve ser entre R$ 10 e R$ 1.000')
+      setError('Valor deve ser entre R$ 5 e R$ 1.000')
       return
     }
     if (!competitionId) {
-      setError('Selecione uma competicao')
+      setError('Selecione uma competição')
       return
     }
     setLoading(true)
@@ -176,7 +176,7 @@ function CreatePoolPage() {
         setStep('invite')
       }
     } catch {
-      setError('Erro de conexao.')
+      setError('Erro de conexão.')
     } finally {
       setLoading(false)
     }
@@ -190,7 +190,7 @@ function CreatePoolPage() {
             Sucesso
           </p>
           <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">
-            Bolao Criado
+            Bolão Criado
           </h1>
           <div className="mt-3 h-1 w-12 bg-green" />
         </div>
@@ -210,14 +210,14 @@ function CreatePoolPage() {
             Novo
           </p>
           <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">
-            Criar Bolao
+            Criar Bolão
           </h1>
           <div className="mt-3 h-1 w-12 bg-red" />
         </div>
 
         <Input
           label="Nome do bolão"
-          placeholder="Ex: Bolao da Galera"
+          placeholder="Ex: Bolão da Galera"
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={50}
@@ -241,7 +241,7 @@ function CreatePoolPage() {
             className="border-b-2 border-border bg-transparent px-0 py-2.5 text-black transition-colors duration-150 focus:border-black focus:outline-none appearance-none"
           >
             <option value="" className="text-gray-muted">
-              Selecione uma competicao
+              Selecione uma competição
             </option>
             {competitions.map((c) => (
               <option key={c.id} value={c.id}>
@@ -257,13 +257,13 @@ function CreatePoolPage() {
               Rodadas
             </p>
             <p className="text-xs text-gray-muted">
-              Rodadas {matchdays.nextMatchday} a {matchdays.max} disponiveis
+              Rodadas {matchdays.nextMatchday} a {matchdays.max} disponíveis. Deixe em branco para
+              incluir todo o campeonato.
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Input
                 label="De"
                 type="number"
-                placeholder={String(matchdays.nextMatchday)}
                 value={matchdayFrom}
                 onChange={(e) => {
                   const newFrom = e.target.value
@@ -293,9 +293,8 @@ function CreatePoolPage() {
                 max={matchdays.max}
               />
               <Input
-                label="Ate"
+                label="Até"
                 type="number"
-                placeholder={String(matchdays.nextMatchday)}
                 value={matchdayTo}
                 onChange={(e) => setMatchdayTo(e.target.value)}
                 onBlur={(e) => {
@@ -340,12 +339,12 @@ function CreatePoolPage() {
             ))}
           </div>
           <Input
-            label="Ou valor personalizado (R$)"
+            label="Ou valor personalizado (R$ 5 a R$ 1.000)"
             type="number"
             placeholder="0"
             value={customFee}
             onChange={(e) => setCustomFee(e.target.value)}
-            min={10}
+            min={5}
             max={1000}
           />
         </div>

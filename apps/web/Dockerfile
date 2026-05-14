@@ -26,6 +26,10 @@ ENV VITE_COMMIT_HASH=${SOURCE_COMMIT}
 RUN cd apps/web && npx vite build
 
 FROM nginx:alpine AS runner
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+# OG_BACKEND is the internal URL of the API used to serve social-crawler previews.
+# Set it at runtime (e.g., http://api:3001) so crawlers hitting /invite/:code or
+# /pools/:id get pool-specific OG tags. Leave empty to disable dynamic previews.
+ENV OG_BACKEND=""
 EXPOSE 80
