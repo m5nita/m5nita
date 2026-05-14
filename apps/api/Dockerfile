@@ -3,11 +3,15 @@ RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 FROM base AS deps
 WORKDIR /app
+# Scope the install to the API slice so workspace siblings (apps/web) and
+# their dev deps don't get fetched here.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/
 COPY packages/shared/package.json packages/shared/
+# child-concurrency=1 keeps memory use bounded while @resvg/resvg-js and
+# satori install — Coolify hosts run multiple builds on the same VPS.
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prod=false
+    pnpm install --frozen-lockfile --filter @m5nita/api... --child-concurrency=1
 
 FROM base AS runner
 # curl is used by the Coolify healthcheck inside the container
