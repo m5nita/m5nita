@@ -3,26 +3,27 @@ RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 FROM base AS deps
 WORKDIR /app
+# Only the web slice of the workspace — skip apps/api/ so the API's heavy
+# native deps (satori, @resvg/resvg-js) don't get pulled into the web build.
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/
-COPY apps/api/package.json apps/api/
 COPY packages/shared/package.json packages/shared/
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --filter @m5nita/web...
 
 FROM base AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY package.json pnpm-workspace.yaml tsconfig.json ./
 COPY apps/web/ ./apps/web/
-COPY apps/api/ ./apps/api/
 COPY packages/shared/ ./packages/shared/
 ARG VITE_API_URL
 ARG SOURCE_COMMIT=unknown
 ENV VITE_COMMIT_HASH=${SOURCE_COMMIT}
+# Cap memory so vite/esbuild won't compete with sibling builds on the host.
+ENV NODE_OPTIONS=--max-old-space-size=1024
 RUN cd apps/web && npx vite build
 
 FROM nginx:alpine AS runner
