@@ -85,12 +85,12 @@ function poolDescription(opts: {
   prizeCentavos: number
   ownerName?: string | null
 }): string {
-  const playerLabel = opts.memberCount === 1 ? 'jogador' : 'jogadores'
-  const owner = opts.ownerName ? `Criado por ${opts.ownerName}. ` : ''
+  const participantLabel = opts.memberCount === 1 ? 'participante' : 'participantes'
+  const author = opts.ownerName ? ` criado por ${opts.ownerName}` : ''
   return (
-    `${owner}Participe do bolão "${opts.poolName}" do ${opts.competitionName} no m5nita: ` +
-    `entrada ${formatBRL(opts.entryFeeCentavos)}, ${opts.memberCount} ${playerLabel} ` +
-    `e prêmio acumulado de ${formatBRL(opts.prizeCentavos)} pago via Pix.`
+    `Participe do bolão "${opts.poolName}"${author} do ${opts.competitionName}: ` +
+    `entrada de ${formatBRL(opts.entryFeeCentavos)}, possui ${opts.memberCount} ` +
+    `${participantLabel} e o prêmio acumulado já está em ${formatBRL(opts.prizeCentavos)}.`
   )
 }
 

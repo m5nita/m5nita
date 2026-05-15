@@ -44,6 +44,8 @@ function statCell(label: string, value: string, color: string = COLORS.dark): El
       style: {
         display: 'flex',
         flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         flex: 1,
         padding: '32px 28px',
         backgroundColor: COLORS.cream,
