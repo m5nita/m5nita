@@ -89,9 +89,19 @@ type Element = {
   props: { style?: Record<string, unknown>; children?: unknown }
 }
 
+function fitTitleFontSize(name: string): number {
+  const len = name.length
+  if (len <= 14) return 132
+  if (len <= 20) return 112
+  if (len <= 28) return 92
+  if (len <= 36) return 76
+  return 64
+}
+
 function template(input: PoolOgImageInput): Element {
   const cta = (input.cta ?? 'Entre no bolão · m5nita.com').toUpperCase()
-  const poolName = input.poolName.length > 36 ? `${input.poolName.slice(0, 35)}…` : input.poolName
+  const poolName = input.poolName.length > 48 ? `${input.poolName.slice(0, 47)}…` : input.poolName
+  const titleFontSize = fitTitleFontSize(poolName)
 
   return {
     type: 'div',
@@ -186,6 +196,7 @@ function template(input: PoolOgImageInput): Element {
               padding: '12px 60px 32px',
               gap: 10,
               flex: 1,
+              overflow: 'hidden',
             },
             children: [
               {
@@ -207,9 +218,9 @@ function template(input: PoolOgImageInput): Element {
                 props: {
                   style: {
                     fontFamily: 'BarlowCondensed',
-                    fontSize: 132,
+                    fontSize: titleFontSize,
                     color: COLORS.dark,
-                    lineHeight: 0.9,
+                    lineHeight: 0.95,
                     letterSpacing: -2,
                     display: 'flex',
                   },
