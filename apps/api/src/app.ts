@@ -25,13 +25,23 @@ export function buildApp(): Hono<AppEnv> {
   const app = new Hono<AppEnv>()
 
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173'
+  const allowedOrigins = Array.from(
+    new Set(
+      [
+        allowedOrigin,
+        ...(process.env.NODE_ENV === 'production'
+          ? ['https://m5nita.com', 'https://www.m5nita.com']
+          : []),
+      ].filter(Boolean),
+    ),
+  )
 
   app.use('/api/*', secureHeaders())
 
   app.use(
     '/api/*',
     cors({
-      origin: [allowedOrigin],
+      origin: allowedOrigins,
       credentials: true,
       allowHeaders: [
         'Content-Type',
