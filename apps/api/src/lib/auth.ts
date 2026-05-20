@@ -13,7 +13,17 @@ export const auth = betterAuth({
   basePath: '/api/auth',
   baseURL: process.env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, { provider: 'pg' }),
-  trustedOrigins: [process.env.ALLOWED_ORIGIN || 'http://localhost:5173'],
+  trustedOrigins: [
+    process.env.ALLOWED_ORIGIN || 'http://localhost:5173',
+    'https://m5nita.com',
+    'https://www.m5nita.com',
+  ],
+  ...(process.env.NODE_ENV === 'production' && {
+    advanced: {
+      crossSubDomainCookies: { enabled: true, domain: '.m5nita.com' },
+      defaultCookieAttributes: { sameSite: 'lax', secure: true },
+    },
+  }),
   session: {
     expiresIn: AUTH.SESSION_EXPIRY_SECONDS,
     updateAge: AUTH.SESSION_UPDATE_AGE_SECONDS,
