@@ -7,19 +7,17 @@ describe('useTextWidth', () => {
 
   beforeEach(() => {
     originalGetBoundingClientRect = Element.prototype.getBoundingClientRect
-    Element.prototype.getBoundingClientRect = function () {
-      return {
-        width: 137.4,
-        height: 16,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        x: 0,
-        y: 0,
-        toJSON: () => ({}),
-      }
-    }
+    Element.prototype.getBoundingClientRect = () => ({
+      width: 137.4,
+      height: 16,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    })
     Object.defineProperty(document, 'fonts', {
       configurable: true,
       value: { ready: Promise.resolve() },

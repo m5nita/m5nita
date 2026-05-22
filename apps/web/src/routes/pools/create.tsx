@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { InviteTicket } from '../../components/pool/InviteTicket'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
+import { type PoolScopeMode, PoolScopeToggle } from '../../features/pools/PoolScopeToggle'
+import { UpcomingMatchPicker } from '../../features/pools/UpcomingMatchPicker'
 import { apiFetch } from '../../lib/api'
 import { calculateDiscountedFee, calculatePlatformFee, formatCurrency } from '../../lib/utils'
 
@@ -27,6 +29,8 @@ function CreatePoolPage() {
   const [competitionId, setCompetitionId] = useState('')
   const [matchdayFrom, setMatchdayFrom] = useState('')
   const [matchdayTo, setMatchdayTo] = useState('')
+  const [scopeMode, setScopeMode] = useState<PoolScopeMode>('range')
+  const [matchId, setMatchId] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponState>({
     valid: false,
@@ -149,7 +153,14 @@ function CreatePoolPage() {
         entryFee: currentFee,
         competitionId,
       }
-      if (isLeague && matchdayFrom && matchdayTo) {
+      if (scopeMode === 'single') {
+        if (!matchId) {
+          setError('Selecione o jogo do bolão.')
+          setLoading(false)
+          return
+        }
+        body.matchId = matchId
+      } else if (isLeague && matchdayFrom && matchdayTo) {
         body.matchdayFrom = Number(matchdayFrom)
         body.matchdayTo = Number(matchdayTo)
       }
@@ -251,67 +262,101 @@ function CreatePoolPage() {
           </select>
         </div>
 
-        {matchdays && (
-          <div className="flex flex-col gap-2">
-            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
-              Rodadas
-            </p>
-            <p className="text-xs text-gray-muted">
-              Rodadas {matchdays.nextMatchday} a {matchdays.max} disponíveis. Deixe em branco para
-              incluir todo o campeonato.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                label="De"
-                type="number"
-                value={matchdayFrom}
-                onChange={(e) => {
-                  const newFrom = e.target.value
-                  setMatchdayFrom(newFrom)
-                  if (!matchdayTo || (newFrom && Number(matchdayTo) < Number(newFrom))) {
-                    setMatchdayTo(newFrom)
-                  }
-                }}
-                onBlur={(e) => {
-                  if (!e.target.value) return
-                  const clamped = Math.min(
-                    Math.max(Number(e.target.value), matchdays.nextMatchday),
-                    matchdays.max,
-                  )
-                  const clampedStr = String(clamped)
-                  if (clampedStr !== e.target.value) {
-                    setMatchdayFrom(clampedStr)
-                  }
-                  if (matchdayTo) {
-                    const toNum = Number(matchdayTo)
-                    if (toNum < clamped || toNum > matchdays.max) {
-                      setMatchdayTo(String(Math.min(Math.max(toNum, clamped), matchdays.max)))
-                    }
-                  }
-                }}
-                min={matchdays.nextMatchday}
-                max={matchdays.max}
+        {competitionId && (
+          <div className="flex flex-col gap-3">
+            <PoolScopeToggle
+              value={scopeMode}
+              onChange={(next) => {
+                setScopeMode(next)
+                if (next === 'range') setMatchId('')
+                if (next === 'single') {
+                  setMatchdayFrom('')
+                  setMatchdayTo('')
+                }
+              }}
+            />
+
+            {scopeMode === 'single' && (
+              <UpcomingMatchPicker
+                competitionId={competitionId}
+                value={matchId}
+                onChange={setMatchId}
               />
-              <Input
-                label="Até"
-                type="number"
-                value={matchdayTo}
-                onChange={(e) => setMatchdayTo(e.target.value)}
-                onBlur={(e) => {
-                  if (!e.target.value) return
-                  const minValue = Number(matchdayFrom || matchdays.nextMatchday)
-                  const clamped = Math.min(
-                    Math.max(Number(e.target.value), minValue),
-                    matchdays.max,
-                  )
-                  if (String(clamped) !== e.target.value) {
-                    setMatchdayTo(String(clamped))
-                  }
-                }}
-                min={matchdayFrom || matchdays.nextMatchday}
-                max={matchdays.max}
-              />
-            </div>
+            )}
+
+            {!matchdays && scopeMode === 'range' && (
+              <p className="text-xs text-gray-muted">
+                Este bolão cobrirá todos os jogos da competição.
+              </p>
+            )}
+
+            {matchdays && scopeMode === 'range' && (
+              <div className="flex flex-col gap-2">
+                <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+                  Rodadas
+                </p>
+                <p className="text-xs text-gray-muted">
+                  Rodadas {matchdays.nextMatchday} a {matchdays.max} disponíveis. Deixe em branco
+                  para incluir todo o campeonato.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    label="De"
+                    type="number"
+                    inputMode="numeric"
+                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={matchdayFrom}
+                    onChange={(e) => {
+                      const newFrom = e.target.value
+                      setMatchdayFrom(newFrom)
+                      if (!matchdayTo || (newFrom && Number(matchdayTo) < Number(newFrom))) {
+                        setMatchdayTo(newFrom)
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (!e.target.value) return
+                      const clamped = Math.min(
+                        Math.max(Number(e.target.value), matchdays.nextMatchday),
+                        matchdays.max,
+                      )
+                      const clampedStr = String(clamped)
+                      if (clampedStr !== e.target.value) {
+                        setMatchdayFrom(clampedStr)
+                      }
+                      if (matchdayTo) {
+                        const toNum = Number(matchdayTo)
+                        if (toNum < clamped || toNum > matchdays.max) {
+                          setMatchdayTo(String(Math.min(Math.max(toNum, clamped), matchdays.max)))
+                        }
+                      }
+                    }}
+                    min={matchdays.nextMatchday}
+                    max={matchdays.max}
+                  />
+                  <Input
+                    label="Até"
+                    type="number"
+                    inputMode="numeric"
+                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={matchdayTo}
+                    onChange={(e) => setMatchdayTo(e.target.value)}
+                    onBlur={(e) => {
+                      if (!e.target.value) return
+                      const minValue = Number(matchdayFrom || matchdays.nextMatchday)
+                      const clamped = Math.min(
+                        Math.max(Number(e.target.value), minValue),
+                        matchdays.max,
+                      )
+                      if (String(clamped) !== e.target.value) {
+                        setMatchdayTo(String(clamped))
+                      }
+                    }}
+                    min={matchdayFrom || matchdays.nextMatchday}
+                    max={matchdays.max}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -405,7 +450,7 @@ function CreatePoolPage() {
         <Button
           onClick={handleCreate}
           loading={loading}
-          disabled={!isValidFee}
+          disabled={!isValidFee || (scopeMode === 'single' && !matchId)}
           className="w-full"
           size="lg"
         >
