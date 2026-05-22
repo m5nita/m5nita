@@ -51,6 +51,7 @@ export class DrizzlePoolRepository implements PoolRepository {
       row.competitionId,
       row.matchdayFrom,
       row.matchdayTo,
+      row.matchId,
     )
 
     return {
@@ -62,6 +63,7 @@ export class DrizzlePoolRepository implements PoolRepository {
       competitionId: row.competitionId,
       matchdayStart: row.matchdayFrom,
       matchdayEnd: row.matchdayTo,
+      matchId: row.matchId,
       status: row.status,
       isOpen: row.isOpen,
       couponId: row.couponId,
@@ -96,6 +98,7 @@ export class DrizzlePoolRepository implements PoolRepository {
       row.competitionId,
       row.matchdayFrom,
       row.matchdayTo,
+      row.matchId,
     )
 
     return {
@@ -107,6 +110,7 @@ export class DrizzlePoolRepository implements PoolRepository {
       competitionId: row.competitionId,
       matchdayStart: row.matchdayFrom,
       matchdayEnd: row.matchdayTo,
+      matchId: row.matchId,
       status: row.status,
       isOpen: row.isOpen,
       couponId: row.couponId,
@@ -123,7 +127,16 @@ export class DrizzlePoolRepository implements PoolRepository {
     competitionId: string,
     matchdayFrom: number | null,
     matchdayTo: number | null,
+    matchId: string | null,
   ): Promise<boolean> {
+    // Single-match scope: only the chosen match counts as "live for this pool".
+    if (matchId !== null) {
+      const [row] = await this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(match)
+        .where(and(eq(match.id, matchId), eq(match.status, 'live')))
+      return (row?.count ?? 0) > 0
+    }
     const [row] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(match)
@@ -150,6 +163,7 @@ export class DrizzlePoolRepository implements PoolRepository {
       competitionId: r.competitionId,
       matchdayFrom: r.matchdayFrom,
       matchdayTo: r.matchdayTo,
+      matchId: r.matchId,
       discountPercent: r.coupon?.discountPercent ?? 0,
     }))
   }
@@ -241,23 +255,41 @@ export class DrizzlePoolRepository implements PoolRepository {
         nextMatchAt: sql<Date | null>`(
         SELECT MIN(${match.matchDate})
         FROM ${match}
-        WHERE ${match.competitionId} = ${pool.competitionId}
-          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
-          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+        WHERE (
+          (${pool.matchId} IS NOT NULL AND ${match.id} = ${pool.matchId})
+          OR (
+            ${pool.matchId} IS NULL
+            AND ${match.competitionId} = ${pool.competitionId}
+            AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+            AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+          )
+        )
       )`,
         lastMatchAt: sql<Date | null>`(
         SELECT MAX(${match.matchDate})
         FROM ${match}
-        WHERE ${match.competitionId} = ${pool.competitionId}
-          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
-          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+        WHERE (
+          (${pool.matchId} IS NOT NULL AND ${match.id} = ${pool.matchId})
+          OR (
+            ${pool.matchId} IS NULL
+            AND ${match.competitionId} = ${pool.competitionId}
+            AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+            AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+          )
+        )
       )`,
         hasLiveMatch: sql<boolean>`EXISTS (
         SELECT 1 FROM ${match}
-        WHERE ${match.competitionId} = ${pool.competitionId}
-          AND ${match.status} = 'live'
-          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
-          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+        WHERE ${match.status} = 'live'
+          AND (
+            (${pool.matchId} IS NOT NULL AND ${match.id} = ${pool.matchId})
+            OR (
+              ${pool.matchId} IS NULL
+              AND ${match.competitionId} = ${pool.competitionId}
+              AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+              AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+            )
+          )
       )`,
       })
       .from(poolMember)
@@ -269,16 +301,28 @@ export class DrizzlePoolRepository implements PoolRepository {
         sql`CASE WHEN ${pool.status} = 'active' THEN (
         SELECT MIN(${match.matchDate})
         FROM ${match}
-        WHERE ${match.competitionId} = ${pool.competitionId}
-          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
-          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+        WHERE (
+          (${pool.matchId} IS NOT NULL AND ${match.id} = ${pool.matchId})
+          OR (
+            ${pool.matchId} IS NULL
+            AND ${match.competitionId} = ${pool.competitionId}
+            AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+            AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+          )
+        )
       ) END ASC NULLS LAST`,
         sql`CASE WHEN ${pool.status} = 'closed' THEN (
         SELECT MAX(${match.matchDate})
         FROM ${match}
-        WHERE ${match.competitionId} = ${pool.competitionId}
-          AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
-          AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+        WHERE (
+          (${pool.matchId} IS NOT NULL AND ${match.id} = ${pool.matchId})
+          OR (
+            ${pool.matchId} IS NULL
+            AND ${match.competitionId} = ${pool.competitionId}
+            AND (${pool.matchdayFrom} IS NULL OR ${match.matchday} >= ${pool.matchdayFrom})
+            AND (${pool.matchdayTo} IS NULL OR ${match.matchday} <= ${pool.matchdayTo})
+          )
+        )
       ) END DESC NULLS LAST`,
         desc(pool.createdAt),
       )

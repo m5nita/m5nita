@@ -50,6 +50,13 @@
       "when": 1781510400000,
       "tag": "0006_rename_external_payment_id",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781510500000,
+      "tag": "0007_pool_single_match",
+      "breakpoints": true
     }
   ]
 }

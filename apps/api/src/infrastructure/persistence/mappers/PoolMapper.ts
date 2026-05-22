@@ -1,7 +1,7 @@
 import { Pool } from '../../../domain/pool/Pool'
 import { EntryFee } from '../../../domain/shared/EntryFee'
 import { InviteCode } from '../../../domain/shared/InviteCode'
-import { MatchdayRange } from '../../../domain/shared/MatchdayRange'
+import { PoolScope } from '../../../domain/shared/PoolScope'
 import { PoolStatus } from '../../../domain/shared/PoolStatus'
 
 export type PoolRow = {
@@ -13,6 +13,7 @@ export type PoolRow = {
   competitionId: string
   matchdayFrom: number | null
   matchdayTo: number | null
+  matchId: string | null
   couponId: string | null
   status: string
   isOpen: boolean
@@ -28,7 +29,11 @@ export function poolToDomain(row: PoolRow): Pool {
     row.ownerId,
     InviteCode.from(row.inviteCode),
     row.competitionId,
-    MatchdayRange.create(row.matchdayFrom, row.matchdayTo),
+    PoolScope.fromRow({
+      matchdayFrom: row.matchdayFrom,
+      matchdayTo: row.matchdayTo,
+      matchId: row.matchId,
+    }),
     PoolStatus.from(row.status),
     row.isOpen,
     row.couponId,
@@ -36,6 +41,7 @@ export function poolToDomain(row: PoolRow): Pool {
 }
 
 export function poolToPersistence(entity: Pool): PoolRow {
+  const scope = entity.scope
   return {
     id: entity.id,
     name: entity.name,
@@ -43,8 +49,9 @@ export function poolToPersistence(entity: Pool): PoolRow {
     ownerId: entity.ownerId,
     inviteCode: entity.inviteCode.value,
     competitionId: entity.competitionId,
-    matchdayFrom: entity.matchdayRange?.from ?? null,
-    matchdayTo: entity.matchdayRange?.to ?? null,
+    matchdayFrom: scope.range?.from ?? null,
+    matchdayTo: scope.range?.to ?? null,
+    matchId: scope.matchId,
     couponId: entity.couponId,
     status: entity.status.value,
     isOpen: entity.isOpen,
