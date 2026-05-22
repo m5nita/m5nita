@@ -81,6 +81,17 @@ export interface PoolInviteInfo {
   competitionName: string
   matchdayFrom: number | null
   matchdayTo: number | null
+  matchId: string | null
+  singleMatch: {
+    id: string
+    homeTeam: string
+    awayTeam: string
+    homeFlag: string
+    awayFlag: string
+    kickoffAt: string
+    stage: string | null
+    matchday: number | null
+  } | null
   platformFee: number
   originalPlatformFee: number
   discountPercent: number

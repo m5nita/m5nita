@@ -71,6 +71,7 @@ poolsRoutes.post('/pools', async (c) => {
       competitionId: parsed.data.competitionId,
       matchdayFrom: parsed.data.matchdayFrom,
       matchdayTo: parsed.data.matchdayTo,
+      matchId: parsed.data.matchId,
       couponCode: parsed.data.couponCode,
     })
 
@@ -83,8 +84,9 @@ poolsRoutes.post('/pools', async (c) => {
           ownerId: result.pool.ownerId,
           inviteCode: result.pool.inviteCode.value,
           competitionId: result.pool.competitionId,
-          matchdayFrom: result.pool.matchdayRange?.from ?? null,
-          matchdayTo: result.pool.matchdayRange?.to ?? null,
+          matchdayFrom: result.pool.scope.range?.from ?? null,
+          matchdayTo: result.pool.scope.range?.to ?? null,
+          matchId: result.pool.scope.matchId,
           status: result.pool.status.value,
           isOpen: result.pool.isOpen,
           couponId: result.pool.couponId,

@@ -34,7 +34,11 @@ function basePwm(): PredictionWithMatch {
 }
 
 function makeUseCase(predictions: PredictionWithMatch[]) {
-  const pool = { id: 'pool-1', competitionId: 'comp-1', matchdayRange: null }
+  const pool = {
+    id: 'pool-1',
+    competitionId: 'comp-1',
+    scope: { kind: 'whole-competition', contains: () => true },
+  }
   const poolRepo = { findById: async () => pool } as unknown as PoolRepository
   const predictionRepo = {
     findByUserPool: async () => predictions,
@@ -95,5 +99,32 @@ describe('GetUserPredictionsUseCase — live scoring', () => {
     const res = await uc.execute({ userId: 'u-1', poolId: 'pool-1' })
 
     expect(res[0]?.points).toBeNull()
+  })
+
+  it('single-match scope filters out predictions for any other match', async () => {
+    const a = basePwm()
+    a.id = 'pred-a'
+    a.matchId = 'm-1'
+    a.match.id = 'm-1'
+
+    const b = basePwm()
+    b.id = 'pred-b'
+    b.matchId = 'm-2'
+    b.match.id = 'm-2'
+
+    const singleMatchScope = {
+      kind: 'single-match' as const,
+      contains: (m: { id: string }) => m.id === 'm-1',
+    }
+    const pool = { id: 'pool-1', competitionId: 'comp-1', scope: singleMatchScope }
+    const poolRepo = { findById: async () => pool } as unknown as PoolRepository
+    const predictionRepo = {
+      findByUserPool: async () => [a, b],
+    } as unknown as PredictionRepository
+    const uc = new GetUserPredictionsUseCase(predictionRepo, poolRepo)
+
+    const res = await uc.execute({ userId: 'u-1', poolId: 'pool-1' })
+    expect(res).toHaveLength(1)
+    expect(res[0]?.id).toBe('pred-a')
   })
 })

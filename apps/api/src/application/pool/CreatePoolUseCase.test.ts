@@ -1,7 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
+import type { Clock } from '../../domain/shared/Clock'
 import type { PaymentGateway } from '../ports/PaymentGateway.port'
-import { CreatePoolUseCase } from './CreatePoolUseCase'
+import { CreatePoolUseCase, type MatchFinder } from './CreatePoolUseCase'
+
+const FIXED_NOW = new Date('2026-05-22T12:00:00Z')
+const fixedClock: Clock = { now: () => FIXED_NOW }
+const noMatchFinder: MatchFinder = vi.fn(async () => null)
+const upcomingMatchFinder = (
+  overrides: Partial<{ id: string; competitionId: string; kickoffAt: Date }> = {},
+): MatchFinder =>
+  vi.fn(async () => ({
+    id: overrides.id ?? '11111111-1111-4111-8111-111111111111',
+    competitionId: overrides.competitionId ?? 'comp-1',
+    kickoffAt: overrides.kickoffAt ?? new Date('2026-05-25T18:00:00Z'),
+  }))
 
 function makeRepo(overrides: Partial<PoolRepository> = {}): PoolRepository {
   const base: Partial<PoolRepository> = {
@@ -67,6 +80,8 @@ describe('CreatePoolUseCase', () => {
       },
       activeCompetition,
       0.05,
+      noMatchFinder,
+      fixedClock,
     )
 
     await expect(useCase.execute({ ...baseInput, couponCode: 'FREE' })).rejects.toThrow(
@@ -110,6 +125,8 @@ describe('CreatePoolUseCase', () => {
       },
       activeCompetition,
       0.05,
+      noMatchFinder,
+      fixedClock,
     )
 
     await useCase.execute({ ...baseInput, couponCode: 'FREE' })
@@ -135,12 +152,137 @@ describe('CreatePoolUseCase', () => {
       },
       activeCompetition,
       0.05,
+      noMatchFinder,
+      fixedClock,
     )
 
     await expect(useCase.execute({ ...baseInput, couponCode: 'FREE' })).rejects.toMatchObject({
       code: 'COUPON_EXHAUSTED',
     })
     expect(save).toHaveBeenCalledTimes(1)
+  })
+
+  it('creates single-match pool when matchId is provided', async () => {
+    const save = vi.fn(async (p) => p)
+    const findMatch = upcomingMatchFinder()
+    const useCase = new CreatePoolUseCase(
+      makeRepo({ save }),
+      makeGateway(),
+      {
+        validateCoupon: vi.fn(),
+        incrementUsage: vi.fn(),
+        getEffectiveFeeRate: () => 0.05,
+      },
+      activeCompetition,
+      0.05,
+      findMatch,
+      fixedClock,
+    )
+
+    const result = await useCase.execute({
+      userId: 'user-1',
+      name: 'Final La Liga',
+      entryFee: 500,
+      competitionId: 'comp-1',
+      matchId: '11111111-1111-4111-8111-111111111111',
+    })
+
+    expect(findMatch).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111')
+    expect(result.pool.scope.kind).toBe('single-match')
+    expect(result.pool.scope.matchId).toBe('11111111-1111-4111-8111-111111111111')
+    expect(save).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects MATCH_UNAVAILABLE when matchId does not exist', async () => {
+    const useCase = new CreatePoolUseCase(
+      makeRepo(),
+      makeGateway(),
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn(), getEffectiveFeeRate: () => 0.05 },
+      activeCompetition,
+      0.05,
+      vi.fn(async () => null),
+      fixedClock,
+    )
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        name: 'Bad',
+        entryFee: 500,
+        competitionId: 'comp-1',
+        matchId: '11111111-1111-4111-8111-111111111111',
+      }),
+    ).rejects.toMatchObject({ code: 'MATCH_UNAVAILABLE' })
+  })
+
+  it('rejects MATCH_UNAVAILABLE when match belongs to a different competition', async () => {
+    const findMatch = upcomingMatchFinder({ competitionId: 'other-comp' })
+    const useCase = new CreatePoolUseCase(
+      makeRepo(),
+      makeGateway(),
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn(), getEffectiveFeeRate: () => 0.05 },
+      activeCompetition,
+      0.05,
+      findMatch,
+      fixedClock,
+    )
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        name: 'Bad',
+        entryFee: 500,
+        competitionId: 'comp-1',
+        matchId: '11111111-1111-4111-8111-111111111111',
+      }),
+    ).rejects.toMatchObject({ code: 'MATCH_UNAVAILABLE' })
+  })
+
+  it('rejects MATCH_UNAVAILABLE when kickoff has already passed', async () => {
+    const findMatch = upcomingMatchFinder({ kickoffAt: new Date('2026-05-22T11:59:59Z') })
+    const useCase = new CreatePoolUseCase(
+      makeRepo(),
+      makeGateway(),
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn(), getEffectiveFeeRate: () => 0.05 },
+      activeCompetition,
+      0.05,
+      findMatch,
+      fixedClock,
+    )
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        name: 'Bad',
+        entryFee: 500,
+        competitionId: 'comp-1',
+        matchId: '11111111-1111-4111-8111-111111111111',
+      }),
+    ).rejects.toMatchObject({ code: 'MATCH_UNAVAILABLE' })
+  })
+
+  it('rejects INVALID_SCOPE when both matchId and matchdayFrom are present', async () => {
+    const useCase = new CreatePoolUseCase(
+      makeRepo(),
+      makeGateway(),
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn(), getEffectiveFeeRate: () => 0.05 },
+      activeCompetition,
+      0.05,
+      upcomingMatchFinder(),
+      fixedClock,
+    )
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        name: 'Mixed',
+        entryFee: 500,
+        competitionId: 'comp-1',
+        matchId: '11111111-1111-4111-8111-111111111111',
+        matchdayFrom: 30,
+        matchdayTo: 30,
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_SCOPE' })
   })
 
   it('creates pool without coupon flow when couponCode is absent', async () => {
@@ -154,6 +296,8 @@ describe('CreatePoolUseCase', () => {
       { validateCoupon, incrementUsage, getEffectiveFeeRate: () => 0.05 },
       activeCompetition,
       0.05,
+      noMatchFinder,
+      fixedClock,
     )
 
     const result = await useCase.execute(baseInput)

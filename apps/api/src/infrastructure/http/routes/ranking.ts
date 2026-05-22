@@ -34,7 +34,12 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
   const effectiveRate = getEffectiveFeeRate(discountPercent)
   const prizeTotal = poolData ? Math.floor(poolData.entryFee * count * (1 - effectiveRate)) : 0
   const hasLiveMatch = poolData
-    ? await poolHasLiveMatch(poolData.competitionId, poolData.matchdayFrom, poolData.matchdayTo)
+    ? await poolHasLiveMatch(
+        poolData.competitionId,
+        poolData.matchdayFrom,
+        poolData.matchdayTo,
+        poolData.matchId,
+      )
     : false
 
   return c.json({ ranking, prizeTotal, hasLiveMatch })

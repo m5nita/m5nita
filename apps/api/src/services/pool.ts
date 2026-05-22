@@ -4,92 +4,7 @@ import { db } from '../db/client'
 import { match } from '../db/schema/match'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
-import { getCompetitionById } from './competition'
-import { getEffectiveFeeRate, incrementUsage, validateCoupon } from './coupon'
-
-function generateInviteCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let code = ''
-  for (let i = 0; i < POOL.INVITE_CODE_LENGTH; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return code
-}
-
-export async function createPool(
-  userId: string,
-  name: string,
-  entryFee: number,
-  competitionId: string,
-  matchdayFrom?: number,
-  matchdayTo?: number,
-  couponCode?: string,
-) {
-  if (name.length < POOL.MIN_NAME_LENGTH || name.length > POOL.MAX_NAME_LENGTH) {
-    throw new PoolError('VALIDATION_ERROR', 'Nome deve ter entre 3 e 50 caracteres')
-  }
-  if (entryFee < POOL.MIN_ENTRY_FEE || entryFee > POOL.MAX_ENTRY_FEE) {
-    throw new PoolError('VALIDATION_ERROR', 'Valor deve ser entre R$ 10 e R$ 1.000')
-  }
-
-  const comp = await getCompetitionById(competitionId)
-  if (!comp) {
-    throw new PoolError('INVALID_COMPETITION', 'Competição não encontrada')
-  }
-  if (comp.status !== 'active') {
-    throw new PoolError('INVALID_COMPETITION', 'Competição não está ativa')
-  }
-
-  let couponId: string | null = null
-  let discountPercent = 0
-
-  if (couponCode) {
-    const result = await validateCoupon(couponCode)
-    if (!result.valid) {
-      const messages: Record<string, string> = {
-        not_found: 'Cupom inválido ou expirado',
-        expired: 'Cupom inválido ou expirado',
-        exhausted: 'Cupom atingiu o limite de utilizações',
-        inactive: 'Cupom inválido ou expirado',
-      }
-      throw new PoolError('INVALID_COUPON', messages[result.reason] ?? 'Cupom inválido')
-    }
-    const incremented = await incrementUsage(result.couponId)
-    if (!incremented) {
-      throw new PoolError('COUPON_EXHAUSTED', 'Cupom atingiu o limite de utilizações')
-    }
-    couponId = result.couponId
-    discountPercent = result.discountPercent
-  }
-
-  const effectiveRate = getEffectiveFeeRate(discountPercent)
-  const platformFee = Math.floor(entryFee * effectiveRate)
-  const originalPlatformFee = Math.floor(entryFee * POOL.PLATFORM_FEE_RATE)
-  const inviteCode = generateInviteCode()
-
-  const [newPool] = await db
-    .insert(pool)
-    .values({
-      name,
-      entryFee,
-      ownerId: userId,
-      inviteCode,
-      competitionId,
-      matchdayFrom: matchdayFrom ?? null,
-      matchdayTo: matchdayTo ?? null,
-      couponId,
-      status: 'pending',
-    })
-    .returning()
-
-  return {
-    pool: newPool as NonNullable<typeof newPool>,
-    platformFee,
-    originalPlatformFee,
-    discountPercent,
-    couponCode: couponCode?.trim().toUpperCase() ?? null,
-  }
-}
+import { getEffectiveFeeRate } from './coupon'
 
 export async function getPoolById(poolId: string, userId: string) {
   const poolData = await db.query.pool.findFirst({
@@ -112,6 +27,7 @@ export async function getPoolById(poolId: string, userId: string) {
     poolData.competitionId,
     poolData.matchdayFrom,
     poolData.matchdayTo,
+    poolData.matchId,
   )
 
   const isMember = await isPoolMember(poolId, userId)
@@ -138,7 +54,16 @@ export async function poolHasLiveMatch(
   competitionId: string,
   matchdayFrom: number | null,
   matchdayTo: number | null,
+  matchId: string | null = null,
 ): Promise<boolean> {
+  // Single-match scope: only the chosen match counts as "live for this pool".
+  if (matchId !== null) {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(match)
+      .where(and(eq(match.id, matchId), eq(match.status, 'live')))
+    return (row?.count ?? 0) > 0
+  }
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(match)
@@ -177,6 +102,45 @@ export async function getPoolByInviteCode(inviteCode: string) {
   const platformFee = Math.floor(poolData.entryFee * effectiveRate)
   const prizeTotal = Math.floor(poolData.entryFee * count * (1 - effectiveRate))
 
+  let singleMatch: {
+    id: string
+    homeTeam: string
+    awayTeam: string
+    homeFlag: string
+    awayFlag: string
+    kickoffAt: string
+    stage: string | null
+    matchday: number | null
+  } | null = null
+  if (poolData.matchId) {
+    const [m] = await db
+      .select({
+        id: match.id,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        homeFlag: match.homeFlag,
+        awayFlag: match.awayFlag,
+        matchDate: match.matchDate,
+        stage: match.stage,
+        matchday: match.matchday,
+      })
+      .from(match)
+      .where(eq(match.id, poolData.matchId))
+      .limit(1)
+    if (m) {
+      singleMatch = {
+        id: m.id,
+        homeTeam: m.homeTeam,
+        awayTeam: m.awayTeam,
+        homeFlag: m.homeFlag ?? '',
+        awayFlag: m.awayFlag ?? '',
+        kickoffAt: m.matchDate.toISOString(),
+        stage: m.stage ?? null,
+        matchday: m.matchday,
+      }
+    }
+  }
+
   return {
     id: poolData.id,
     name: poolData.name,
@@ -187,6 +151,8 @@ export async function getPoolByInviteCode(inviteCode: string) {
     competitionName: poolData.competition.name,
     matchdayFrom: poolData.matchdayFrom,
     matchdayTo: poolData.matchdayTo,
+    matchId: poolData.matchId,
+    singleMatch,
     owner: { name: poolData.owner.name },
     memberCount: count,
     prizeTotal,

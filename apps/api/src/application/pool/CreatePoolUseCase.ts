@@ -1,9 +1,11 @@
 import { Pool } from '../../domain/pool/Pool'
 import { PoolError } from '../../domain/pool/PoolError'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
+import type { Clock } from '../../domain/shared/Clock'
 import { EntryFee } from '../../domain/shared/EntryFee'
 import { InviteCode } from '../../domain/shared/InviteCode'
 import { MatchdayRange } from '../../domain/shared/MatchdayRange'
+import { PoolScope } from '../../domain/shared/PoolScope'
 import { PoolStatus } from '../../domain/shared/PoolStatus'
 import type { CheckoutResult, PaymentGateway } from '../ports/PaymentGateway.port'
 
@@ -19,6 +21,9 @@ type CouponDeps = {
 
 type CompetitionFinder = (id: string) => Promise<{ id: string; status: string } | null>
 
+export type MatchSummary = { id: string; competitionId: string; kickoffAt: Date }
+export type MatchFinder = (id: string) => Promise<MatchSummary | null>
+
 type Input = {
   userId: string
   name: string
@@ -26,6 +31,7 @@ type Input = {
   competitionId: string
   matchdayFrom?: number
   matchdayTo?: number
+  matchId?: string
   couponCode?: string
 }
 
@@ -38,6 +44,35 @@ type Output = {
   couponCode: string | null
 }
 
+function buildRangeScope(matchdayFrom: number | null, matchdayTo: number | null): PoolScope {
+  const range = MatchdayRange.create(matchdayFrom, matchdayTo)
+  return range === null ? PoolScope.wholeCompetition() : PoolScope.fromRange(range)
+}
+
+function rejectIfBothScopes(input: Input): void {
+  const hasRange = input.matchdayFrom != null || input.matchdayTo != null
+  if (input.matchId != null && hasRange) {
+    throw new PoolError('INVALID_SCOPE', 'Escolha um único jogo OU uma faixa de rodadas, não ambos')
+  }
+}
+
+async function resolveSingleMatchScope(
+  matchId: string,
+  competitionId: string,
+  findMatch: MatchFinder,
+  clock: Clock,
+): Promise<PoolScope> {
+  const match = await findMatch(matchId)
+  if (!match) throw new PoolError('MATCH_UNAVAILABLE', 'Jogo não encontrado')
+  if (match.competitionId !== competitionId) {
+    throw new PoolError('MATCH_UNAVAILABLE', 'Jogo não pertence à competição informada')
+  }
+  if (match.kickoffAt.getTime() <= clock.now().getTime()) {
+    throw new PoolError('MATCH_UNAVAILABLE', 'Jogo já começou ou terminou')
+  }
+  return PoolScope.singleMatch(matchId)
+}
+
 export class CreatePoolUseCase {
   constructor(
     private readonly poolRepo: PoolRepository,
@@ -45,26 +80,27 @@ export class CreatePoolUseCase {
     private readonly coupon: CouponDeps,
     private readonly findCompetition: CompetitionFinder,
     private readonly baseFeeRate: number,
+    private readonly findMatch: MatchFinder,
+    private readonly clock: Clock,
   ) {}
 
   async execute(input: Input): Promise<Output> {
-    const comp = await this.findCompetition(input.competitionId)
-    if (!comp) throw new PoolError('INVALID_COMPETITION', 'Competição não encontrada')
-    if (comp.status !== 'active')
-      throw new PoolError('INVALID_COMPETITION', 'Competição não está ativa')
+    rejectIfBothScopes(input)
+    await this.ensureCompetitionActive(input.competitionId)
 
-    let couponId: string | null = null
-    let discountPercent = 0
+    const scope =
+      input.matchId != null
+        ? await resolveSingleMatchScope(
+            input.matchId,
+            input.competitionId,
+            this.findMatch,
+            this.clock,
+          )
+        : buildRangeScope(input.matchdayFrom ?? null, input.matchdayTo ?? null)
 
-    if (input.couponCode) {
-      const result = await this.coupon.validateCoupon(input.couponCode)
-      if (!result.valid) throw new PoolError('INVALID_COUPON', `Cupom inválido: ${result.reason}`)
-      couponId = result.couponId
-      discountPercent = result.discountPercent
-    }
-
+    const couponState = await this.resolveCoupon(input.couponCode)
     const entryFee = EntryFee.of(input.entryFee)
-    const effectiveRate = this.coupon.getEffectiveFeeRate(discountPercent)
+    const effectiveRate = this.coupon.getEffectiveFeeRate(couponState.discountPercent)
     const platformFee = Math.floor(input.entryFee * effectiveRate)
     const originalPlatformFee = Math.floor(input.entryFee * this.baseFeeRate)
 
@@ -75,17 +111,15 @@ export class CreatePoolUseCase {
       input.userId,
       InviteCode.generate(),
       input.competitionId,
-      MatchdayRange.create(input.matchdayFrom ?? null, input.matchdayTo ?? null),
+      scope,
       PoolStatus.Pending,
       true,
-      couponId,
+      couponState.couponId,
     )
 
     // Pool must be persisted before the gateway runs: every gateway inserts a
     // payment row with FK to pool.id as part of createCheckoutSession. If the
-    // gateway fails, we compensate by deleting the pool — otherwise a retry
-    // would leave an orphan row. The adapter is responsible for cleaning up
-    // its own payment row on failure.
+    // gateway fails, we compensate by deleting the pool.
     const saved = await this.poolRepo.save(pool)
 
     let payment: CheckoutResult
@@ -101,17 +135,45 @@ export class CreatePoolUseCase {
       throw err
     }
 
-    if (couponId && !(await this.coupon.incrementUsage(couponId))) {
+    if (couponState.couponId && !(await this.coupon.incrementUsage(couponState.couponId))) {
       throw new PoolError('COUPON_EXHAUSTED', 'Cupom atingiu o limite de utilizações')
     }
+
+    // T031c: structured log carrying scope.kind for SC-005/SC-006 measurement.
+    console.log(
+      JSON.stringify({
+        event: 'pool.created',
+        poolId: saved.id,
+        scopeKind: saved.scope.kind,
+        matchId: saved.scope.matchId,
+        competitionId: saved.competitionId,
+      }),
+    )
 
     return {
       pool: saved,
       payment,
       platformFee,
       originalPlatformFee,
-      discountPercent,
+      discountPercent: couponState.discountPercent,
       couponCode: input.couponCode?.trim().toUpperCase() ?? null,
     }
+  }
+
+  private async ensureCompetitionActive(competitionId: string): Promise<void> {
+    const comp = await this.findCompetition(competitionId)
+    if (!comp) throw new PoolError('INVALID_COMPETITION', 'Competição não encontrada')
+    if (comp.status !== 'active') {
+      throw new PoolError('INVALID_COMPETITION', 'Competição não está ativa')
+    }
+  }
+
+  private async resolveCoupon(
+    couponCode: string | undefined,
+  ): Promise<{ couponId: string | null; discountPercent: number }> {
+    if (!couponCode) return { couponId: null, discountPercent: 0 }
+    const result = await this.coupon.validateCoupon(couponCode)
+    if (!result.valid) throw new PoolError('INVALID_COUPON', `Cupom inválido: ${result.reason}`)
+    return { couponId: result.couponId, discountPercent: result.discountPercent }
   }
 }

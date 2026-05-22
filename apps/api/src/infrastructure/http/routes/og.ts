@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { db } from '../../../db/client'
 import { user as userTable } from '../../../db/schema/auth'
 import { competition as competitionTable } from '../../../db/schema/competition'
+import { match as matchTable } from '../../../db/schema/match'
 import { pool as poolTable } from '../../../db/schema/pool'
 import { poolMember } from '../../../db/schema/poolMember'
 import { renderPoolOgPng } from '../../../lib/ogImage'
@@ -118,6 +119,7 @@ async function loadPoolForOg(poolId: string) {
       id: poolTable.id,
       name: poolTable.name,
       entryFee: poolTable.entryFee,
+      matchId: poolTable.matchId,
       ownerName: userTable.name,
       competitionName: competitionTable.name,
     })
@@ -137,7 +139,36 @@ async function loadPoolForOg(poolId: string) {
 
   const memberCount = memberCountRow?.count ?? 0
   const prizeTotal = Math.floor(data.entryFee * memberCount * 0.95)
-  return { ...data, memberCount, prizeTotal }
+
+  let singleMatch: {
+    homeTeam: string
+    awayTeam: string
+    kickoffAt: Date
+    stageLabel: string | null
+  } | null = null
+  if (data.matchId) {
+    const [m] = await db
+      .select({
+        homeTeam: matchTable.homeTeam,
+        awayTeam: matchTable.awayTeam,
+        matchDate: matchTable.matchDate,
+        stage: matchTable.stage,
+        matchday: matchTable.matchday,
+      })
+      .from(matchTable)
+      .where(eq(matchTable.id, data.matchId))
+      .limit(1)
+    if (m) {
+      singleMatch = {
+        homeTeam: m.homeTeam,
+        awayTeam: m.awayTeam,
+        kickoffAt: m.matchDate,
+        stageLabel: m.matchday != null ? `Rodada ${m.matchday}` : (m.stage ?? null),
+      }
+    }
+  }
+
+  return { ...data, memberCount, prizeTotal, singleMatch }
 }
 
 // HTML preview routes -------------------------------------------------------
@@ -229,6 +260,7 @@ ogRoutes.get('/og/pool/:poolId/image.png', async (c) => {
       memberCount: data.memberCount,
       prizeCentavos: data.prizeTotal,
       cta: 'Faça seus palpites · m5nita.com',
+      singleMatch: data.singleMatch ?? undefined,
     })
     return pngResponse(png)
   } catch (err) {
@@ -242,6 +274,17 @@ ogRoutes.get('/og/invite/:inviteCode/image.png', async (c) => {
   try {
     const data = await getPoolByInviteCode(inviteCode)
     if (!data) return c.notFound()
+    const singleMatch = data.singleMatch
+      ? {
+          homeTeam: data.singleMatch.homeTeam,
+          awayTeam: data.singleMatch.awayTeam,
+          kickoffAt: new Date(data.singleMatch.kickoffAt),
+          stageLabel:
+            data.singleMatch.matchday != null
+              ? `Rodada ${data.singleMatch.matchday}`
+              : (data.singleMatch.stage ?? null),
+        }
+      : undefined
     const png = await renderPoolOgPng({
       poolName: data.name,
       competitionName: data.competitionName,
@@ -250,6 +293,7 @@ ogRoutes.get('/og/invite/:inviteCode/image.png', async (c) => {
       memberCount: data.memberCount,
       prizeCentavos: data.prizeTotal,
       cta: 'Entre no bolão · m5nita.com',
+      singleMatch,
     })
     return pngResponse(png)
   } catch (err) {
