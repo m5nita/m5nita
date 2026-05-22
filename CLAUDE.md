@@ -1,6 +1,6 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-20
+Auto-generated from all feature plans. Last updated: 2026-05-22
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 22) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
@@ -25,6 +25,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-20
 - Browser `localStorage` (key: `m5nita.theme`). No database changes. No server-side storage, no user-table columns. (015-dark-light-theme)
 - TypeScript 5.x, Node.js ≥ 22 (monorepo root `.nvmrc`) + Vitest 3.1 (existing), Hono 4.7, Drizzle ORM 0.41, postgres.js 3.4, Better Auth 1.5 (with phone-number plugin), grammY 1.41, Resend 6, mercadopago 2, stripe 22, `undici` (already bundled via Node 22 for `fetch` interception). **New**: `msw` 2.x (network-level stub library) — chosen to intercept `fetch`/`undici` calls to InfinitePay, Google OAuth, Resend, Turnstile and football-data at the HTTP boundary without touching application code. (016-integration-tests-real-db)
 - PostgreSQL 16 — the existing `postgres-test` service in `docker-compose.yml` (port 5433) and the same image already used by CI (`ci.yml` > `services.postgres`). Template-database cloning (`CREATE DATABASE x TEMPLATE t`) is the reset mechanism. (016-integration-tests-real-db)
+- TypeScript 5.x, Node.js ≥ 22 + Hono (API), Drizzle ORM, Better Auth, grammY (Telegram), React 19, TanStack Router, TanStack Query, Tailwind CSS v4. No new runtime dependencies. (019-single-match-pool)
+- PostgreSQL 16 — adds a nullable `match_id uuid` column to `pool` table, FK to `match.id`, with a CHECK constraint enforcing mutual exclusivity with `matchday_from`/`matchday_to`. (019-single-match-pool)
 
 - TypeScript 5.x (Node.js >= 22) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM, Stripe SDK
@@ -61,9 +63,9 @@ pnpm drizzle-kit push        # Push schema (dev only)
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 019-single-match-pool: Added TypeScript 5.x, Node.js ≥ 22 + Hono (API), Drizzle ORM, Better Auth, grammY (Telegram), React 19, TanStack Router, TanStack Query, Tailwind CSS v4. No new runtime dependencies.
 - 016-integration-tests-real-db: Added TypeScript 5.x, Node.js ≥ 22 (monorepo root `.nvmrc`) + Vitest 3.1 (existing), Hono 4.7, Drizzle ORM 0.41, postgres.js 3.4, Better Auth 1.5 (with phone-number plugin), grammY 1.41, Resend 6, mercadopago 2, stripe 22, `undici` (already bundled via Node 22 for `fetch` interception). **New**: `msw` 2.x (network-level stub library) — chosen to intercept `fetch`/`undici` calls to InfinitePay, Google OAuth, Resend, Turnstile and football-data at the HTTP boundary without touching application code.
 - 015-dark-light-theme: Added TypeScript 5.x, Node.js ≥ 22 + React 19, TanStack Router, TanStack Query, Tailwind CSS v4 (with `@theme` inline tokens in `apps/web/src/styles/app.css`). No new runtime dependencies.
-- 014-infinitepay-gateway: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth (auth), grammY (Telegram). New: none — InfinitePay does not publish a TypeScript SDK; integration uses native `fetch`.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
