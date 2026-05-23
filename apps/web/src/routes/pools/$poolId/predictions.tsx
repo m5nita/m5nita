@@ -248,6 +248,9 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
 
   const rawMatches = matchesData?.matches ?? []
   const allMatches = rawMatches.filter((m) => {
+    if (pool.matchId != null) {
+      return m.id === pool.matchId
+    }
     if (pool.matchdayFrom != null && pool.matchdayTo != null && m.matchday != null) {
       return m.matchday >= pool.matchdayFrom && m.matchday <= pool.matchdayTo
     }
@@ -264,7 +267,14 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
 
   return (
     <>
-      {hasLeagueMatches ? (
+      {pool.matchId != null ? (
+        <MatchList
+          poolId={poolId}
+          matches={allMatches}
+          predictionMap={predictionMap}
+          onSave={handleSave}
+        />
+      ) : hasLeagueMatches ? (
         (() => {
           const byMatchday = new Map<number, Match[]>()
           for (const m of leagueMatches) {

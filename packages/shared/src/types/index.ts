@@ -41,6 +41,7 @@ export interface Pool {
   competitionId: string
   matchdayFrom: number | null
   matchdayTo: number | null
+  matchId: string | null
   isOpen: boolean
   status: PoolStatus
 }
