@@ -1,3 +1,4 @@
+import type { SQL } from 'drizzle-orm'
 import { and, eq, gt, gte, isNotNull, isNull, lte } from 'drizzle-orm'
 import type { ReminderData } from '../application/ports/NotificationService.port'
 import { getContainer } from '../container'
@@ -36,19 +37,24 @@ export async function sendPredictionReminders(): Promise<void> {
   >()
 
   for (const activePool of activePools) {
-    // Find upcoming matches scoped to this pool's competition and matchday range
-    const matchConditions = [
-      eq(match.competitionId, activePool.competitionId),
+    // Find upcoming matches scoped to this pool's PoolScope (single-match takes
+    // priority over the matchday range when set).
+    const matchConditions: SQL[] = [
       eq(match.status, 'scheduled'),
       gt(match.matchDate, now),
       lte(match.matchDate, oneHourLater),
     ]
 
-    if (activePool.matchdayFrom != null) {
-      matchConditions.push(gte(match.matchday, activePool.matchdayFrom))
-    }
-    if (activePool.matchdayTo != null) {
-      matchConditions.push(lte(match.matchday, activePool.matchdayTo))
+    if (activePool.matchId != null) {
+      matchConditions.push(eq(match.id, activePool.matchId))
+    } else {
+      matchConditions.push(eq(match.competitionId, activePool.competitionId))
+      if (activePool.matchdayFrom != null) {
+        matchConditions.push(gte(match.matchday, activePool.matchdayFrom))
+      }
+      if (activePool.matchdayTo != null) {
+        matchConditions.push(lte(match.matchday, activePool.matchdayTo))
+      }
     }
 
     const upcomingMatches = await db

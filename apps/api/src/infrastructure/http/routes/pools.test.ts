@@ -1,3 +1,4 @@
+import { updatePoolSchema } from '@m5nita/shared'
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -109,7 +110,7 @@ describe('POST /api/pools', () => {
         ownerId: 'user-1',
         inviteCode: { value: 'ABC123' },
         competitionId: '00000000-0000-0000-0000-000000000001',
-        matchdayRange: null,
+        scope: { kind: 'whole-competition', range: null, matchId: null },
         status: { value: 'pending' },
         isOpen: true,
         couponId: null,
@@ -150,8 +151,77 @@ describe('POST /api/pools', () => {
       competitionId: '00000000-0000-0000-0000-000000000001',
       matchdayFrom: undefined,
       matchdayTo: undefined,
+      matchId: undefined,
       couponCode: undefined,
     })
+  })
+
+  it('creates_singleMatchScope_passesMatchIdThrough', async () => {
+    const matchId = '22222222-2222-4222-8222-222222222222'
+    mockCreatePoolExecute.mockResolvedValue({
+      pool: {
+        id: 'pool-2',
+        name: 'Final',
+        entryFee: { value: { centavos: 5000 } },
+        ownerId: 'user-1',
+        inviteCode: { value: 'XYZ987' },
+        competitionId: '00000000-0000-0000-0000-000000000001',
+        scope: { kind: 'single-match', range: null, matchId },
+        status: { value: 'pending' },
+        isOpen: true,
+        couponId: null,
+      },
+      payment: {
+        payment: { id: 'pay-2' },
+        checkoutUrl: 'https://checkout.example/2',
+      },
+      platformFee: 250,
+      originalPlatformFee: 250,
+      discountPercent: 0,
+      couponCode: null,
+    })
+
+    const res = await app.request('/api/pools', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-user': JSON.stringify(testUser),
+      },
+      body: JSON.stringify({
+        name: 'Final',
+        entryFee: 5000,
+        competitionId: '00000000-0000-0000-0000-000000000001',
+        matchId,
+      }),
+    })
+
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.pool.matchId).toBe(matchId)
+    expect(mockCreatePoolExecute).toHaveBeenCalledWith(
+      expect.objectContaining({ matchId, matchdayFrom: undefined, matchdayTo: undefined }),
+    )
+  })
+
+  it('rejects_bothMatchIdAndMatchdayRange_400invalidScope', async () => {
+    const res = await app.request('/api/pools', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-user': JSON.stringify(testUser),
+      },
+      body: JSON.stringify({
+        name: 'Mixed',
+        entryFee: 5000,
+        competitionId: '00000000-0000-0000-0000-000000000001',
+        matchId: '22222222-2222-4222-8222-222222222222',
+        matchdayFrom: 30,
+        matchdayTo: 30,
+      }),
+    })
+
+    expect(res.status).toBe(400)
+    expect(mockCreatePoolExecute).not.toHaveBeenCalled()
   })
 
   it('rejects_shortName_400validation', async () => {
@@ -227,5 +297,21 @@ describe('GET /api/pools', () => {
     expect(body.pools[0].name).toBe('Pool A')
     expect(body.pools[0].nextMatchAt).toBe(nextDate.toISOString())
     expect(body.pools[0].lastMatchAt).toBe(lastDate.toISOString())
+  })
+})
+
+describe('updatePoolSchema — FR-014 scope immutability via PATCH /api/pools/:poolId', () => {
+  it('strips any scope-related fields a caller tries to smuggle in', () => {
+    const parsed = updatePoolSchema.safeParse({
+      name: 'Renamed',
+      isOpen: false,
+      matchId: '22222222-2222-4222-8222-222222222222',
+      matchdayFrom: 30,
+      matchdayTo: 30,
+      competitionId: '99999999-9999-4999-8999-999999999999',
+    })
+    expect(parsed.success).toBe(true)
+    if (!parsed.success) return
+    expect(Object.keys(parsed.data).sort()).toEqual(['isOpen', 'name'])
   })
 })

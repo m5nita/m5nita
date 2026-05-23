@@ -1,7 +1,7 @@
 import type { EntryFee } from '../shared/EntryFee'
 import type { InviteCode } from '../shared/InviteCode'
-import type { MatchdayRange } from '../shared/MatchdayRange'
 import { Money } from '../shared/Money'
+import type { PoolScope } from '../shared/PoolScope'
 import { PoolStatus } from '../shared/PoolStatus'
 import { PoolError } from './PoolError'
 
@@ -12,7 +12,7 @@ export class Pool {
   readonly ownerId: string
   readonly inviteCode: InviteCode
   readonly competitionId: string
-  readonly matchdayRange: MatchdayRange | null
+  readonly scope: PoolScope
   readonly couponId: string | null
   private _status: PoolStatus
   private _isOpen: boolean
@@ -24,7 +24,7 @@ export class Pool {
     ownerId: string,
     inviteCode: InviteCode,
     competitionId: string,
-    matchdayRange: MatchdayRange | null,
+    scope: PoolScope,
     status: PoolStatus,
     isOpen: boolean,
     couponId: string | null,
@@ -35,7 +35,7 @@ export class Pool {
     this.ownerId = ownerId
     this.inviteCode = inviteCode
     this.competitionId = competitionId
-    this.matchdayRange = matchdayRange
+    this.scope = scope
     this._status = status
     this._isOpen = isOpen
     this.couponId = couponId

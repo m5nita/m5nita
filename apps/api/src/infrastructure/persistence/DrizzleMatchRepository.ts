@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, ne } from 'drizzle-orm'
+import { and, asc, eq, gt, gte, inArray, lte, ne } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { match } from '../../db/schema/match'
 import type {
@@ -38,6 +38,21 @@ export class DrizzleMatchRepository implements MatchRepository {
     })
     if (!row) return null
     return toMatchData(row)
+  }
+
+  async findUpcomingByCompetition(competitionId: string, now: Date): Promise<MatchData[]> {
+    const rows = await this.db
+      .select()
+      .from(match)
+      .where(
+        and(
+          eq(match.competitionId, competitionId),
+          gt(match.matchDate, now),
+          inArray(match.status, ['scheduled', 'timed', 'postponed']),
+        ),
+      )
+      .orderBy(asc(match.matchDate), asc(match.id))
+    return rows.map(toMatchData)
   }
 
   async findByCompetition(competitionId: string, filters?: MatchFilters): Promise<MatchData[]> {

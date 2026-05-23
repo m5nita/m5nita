@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { Loading } from '../../components/ui/Loading'
+import { stageLabel } from '../../features/competitions/stageLabels'
 import { apiFetch } from '../../lib/api'
 import { authClient } from '../../lib/auth'
 import { savePendingRedirect } from '../../lib/authGuard'
@@ -103,6 +104,31 @@ function InvitePage() {
                   ? ` · Rodadas ${poolInfo.matchdayFrom} a ${poolInfo.matchdayTo}`
                   : ` · Rodada ${poolInfo.matchdayFrom}`)}
             </p>
+          )}
+          {poolInfo.singleMatch && (
+            <div className="mt-4 border-2 border-border bg-cream p-3">
+              <div className="flex items-center gap-2">
+                <span className="bg-black px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-widest text-cream">
+                  Jogo único
+                </span>
+                <span className="text-xs text-gray-muted">
+                  {poolInfo.singleMatch.matchday != null
+                    ? `Rodada ${poolInfo.singleMatch.matchday}`
+                    : stageLabel(poolInfo.singleMatch.stage)}
+                </span>
+              </div>
+              <p className="mt-2 text-sm font-semibold text-black">
+                {poolInfo.singleMatch.homeTeam} × {poolInfo.singleMatch.awayTeam}
+              </p>
+              <p className="mt-1 text-xs text-gray-muted">
+                {new Date(poolInfo.singleMatch.kickoffAt).toLocaleString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </p>
+            </div>
           )}
         </div>
 

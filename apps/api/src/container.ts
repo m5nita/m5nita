@@ -130,6 +130,11 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
       { validateCoupon, incrementUsage, getEffectiveFeeRate },
       getCompetitionById,
       POOL.PLATFORM_FEE_RATE,
+      async (id) => {
+        const m = await matchRepo.findById(id)
+        return m ? { id: m.id, competitionId: m.competitionId, kickoffAt: m.matchDate } : null
+      },
+      clock,
     ),
     joinPoolUseCase: new JoinPoolUseCase(poolRepo, paymentGateway),
     getPoolDetailsUseCase: new GetPoolDetailsUseCase(poolRepo),

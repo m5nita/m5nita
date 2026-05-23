@@ -33,15 +33,13 @@ export class GetUserPredictionsUseCase {
     if (!pool) return withLivePoints
 
     return withLivePoints.filter((p) => {
-      if (p.match.competitionId !== pool.competitionId) return false
-
-      if (pool.matchdayRange !== null && p.match.matchday !== null) {
-        if (!pool.matchdayRange.contains(p.match.matchday)) {
-          return false
-        }
+      // Single-match scope: only the chosen match counts; the competition
+      // check is implicit because scope.contains() requires id match.
+      if (pool.scope.kind === 'single-match') {
+        return pool.scope.contains({ id: p.match.id, matchday: p.match.matchday })
       }
-
-      return true
+      if (p.match.competitionId !== pool.competitionId) return false
+      return pool.scope.contains({ id: p.match.id, matchday: p.match.matchday })
     })
   }
 }

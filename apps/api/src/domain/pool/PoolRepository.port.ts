@@ -10,6 +10,7 @@ export type PoolWithDetails = {
   competitionId: string
   matchdayStart: number | null
   matchdayEnd: number | null
+  matchId: string | null
   status: string
   isOpen: boolean
   couponId: string | null
@@ -51,6 +52,7 @@ export type ActivePoolInfo = {
   competitionId: string
   matchdayFrom: number | null
   matchdayTo: number | null
+  matchId: string | null
   discountPercent: number
 }
 

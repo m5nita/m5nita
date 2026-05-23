@@ -1,7 +1,9 @@
-import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { boolean, check, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
 import { competition } from './competition'
 import { coupon } from './coupon'
+import { match } from './match'
 
 export const pool = pgTable(
   'pool',
@@ -21,6 +23,7 @@ export const pool = pgTable(
     couponId: uuid('coupon_id').references(() => coupon.id),
     matchdayFrom: integer('matchday_from'),
     matchdayTo: integer('matchday_to'),
+    matchId: uuid('match_id').references(() => match.id),
     isOpen: boolean('is_open').default(true).notNull(),
     status: text('status').default('active').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -30,5 +33,13 @@ export const pool = pgTable(
     index('pool_owner_id_idx').on(table.ownerId),
     index('pool_competition_id_idx').on(table.competitionId),
     index('pool_coupon_id_idx').on(table.couponId),
+    index('pool_match_id_idx').on(table.matchId),
+    check(
+      'pool_scope_exclusivity_chk',
+      sql`(
+        (${table.matchId} IS NOT NULL)::int
+        + ((${table.matchdayFrom} IS NOT NULL) OR (${table.matchdayTo} IS NOT NULL))::int
+      ) <= 1`,
+    ),
   ],
 )

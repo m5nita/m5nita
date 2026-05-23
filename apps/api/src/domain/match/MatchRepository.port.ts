@@ -27,6 +27,7 @@ export type UpsertMatchData = Omit<MatchData, 'id'>
 export interface MatchRepository {
   findById(id: string): Promise<MatchData | null>
   findByCompetition(competitionId: string, filters?: MatchFilters): Promise<MatchData[]>
+  findUpcomingByCompetition(competitionId: string, now: Date): Promise<MatchData[]>
   findLive(): Promise<MatchData[]>
   upsertMany(matches: UpsertMatchData[]): Promise<MatchData[]>
   updateScores(id: string, homeScore: number, awayScore: number, status: string): Promise<void>

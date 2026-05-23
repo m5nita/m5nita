@@ -16,6 +16,7 @@ export const createPoolSchema = z
     competitionId: z.string().uuid('ID da competicao invalido'),
     matchdayFrom: z.number().int().min(1).optional(),
     matchdayTo: z.number().int().min(1).optional(),
+    matchId: z.string().uuid('ID do jogo inválido').optional(),
     couponCode: z
       .string()
       .min(2)
@@ -40,6 +41,15 @@ export const createPoolSchema = z
       return true
     },
     { message: 'matchdayFrom deve ser menor ou igual a matchdayTo', path: ['matchdayFrom'] },
+  )
+  .refine(
+    (data) => {
+      // FR-001 / FR-002: matchId is mutually exclusive with the matchday range.
+      if (data.matchId != null && (data.matchdayFrom != null || data.matchdayTo != null))
+        return false
+      return true
+    },
+    { message: 'Escolha um único jogo OU uma faixa de rodadas, não ambos', path: ['matchId'] },
   )
 
 // Coupon schemas

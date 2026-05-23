@@ -27,6 +27,27 @@ interface PoolOgImageInput {
   memberCount: number
   prizeCentavos: number
   cta?: string
+  /**
+   * When the pool is scoped to a single match, this object carries the
+   * matchup so the OG image can show the "Jogo único — TeamA vs TeamB"
+   * banner per FR-010.
+   */
+  singleMatch?: {
+    homeTeam: string
+    awayTeam: string
+    kickoffAt: Date
+    stageLabel: string | null
+  }
+}
+
+function formatKickoffPtBR(date: Date): string {
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  })
 }
 
 function brl(centavos: number): string {
@@ -213,6 +234,56 @@ function template(input: PoolOgImageInput): Element {
                   children: input.competitionName,
                 },
               },
+              ...(input.singleMatch
+                ? [
+                    {
+                      type: 'div',
+                      props: {
+                        style: {
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          marginTop: 8,
+                          fontFamily: 'Inter',
+                          fontWeight: 700,
+                          fontSize: 22,
+                          color: COLORS.dark,
+                        },
+                        children: [
+                          {
+                            type: 'span',
+                            props: {
+                              style: {
+                                backgroundColor: COLORS.dark,
+                                color: COLORS.cream,
+                                padding: '4px 10px',
+                                fontSize: 16,
+                                letterSpacing: 2,
+                                textTransform: 'uppercase',
+                              },
+                              children: 'Jogo único',
+                            },
+                          },
+                          `${input.singleMatch.homeTeam} × ${input.singleMatch.awayTeam}`,
+                        ],
+                      },
+                    } as Element,
+                    {
+                      type: 'div',
+                      props: {
+                        style: {
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          color: COLORS.muted,
+                          marginTop: 2,
+                        },
+                        children: `${input.singleMatch.stageLabel ?? ''} · ${formatKickoffPtBR(
+                          input.singleMatch.kickoffAt,
+                        )}`,
+                      },
+                    } as Element,
+                  ]
+                : []),
               {
                 type: 'div',
                 props: {
