@@ -6,6 +6,14 @@ import type {
 } from '../../domain/prediction/PredictionRepository.port'
 import { GetUserPredictionsUseCase } from './GetUserPredictionsUseCase'
 
+function makeSingleMatchPool() {
+  return {
+    id: 'pool-1',
+    competitionId: 'comp-1',
+    scope: { kind: 'single-match' as const, matchId: 'm-1', contains: () => true },
+  }
+}
+
 function basePwm(): PredictionWithMatch {
   return {
     id: 'pred-1',
@@ -101,7 +109,7 @@ describe('GetUserPredictionsUseCase — live scoring', () => {
     expect(res[0]?.points).toBeNull()
   })
 
-  it('single-match scope filters out predictions for any other match', async () => {
+  it('single-match scope filters out predictions for any other match (legacy test)', async () => {
     const a = basePwm()
     a.id = 'pred-a'
     a.matchId = 'm-1'
@@ -126,5 +134,67 @@ describe('GetUserPredictionsUseCase — live scoring', () => {
     const res = await uc.execute({ userId: 'u-1', poolId: 'pool-1' })
     expect(res).toHaveLength(1)
     expect(res[0]?.id).toBe('pred-a')
+  })
+})
+
+describe('GetUserPredictionsUseCase — single-match pool decomposition', () => {
+  it('includes category/bonus when pool is single-match and match is live', async () => {
+    const pred = basePwm()
+    pred.homeScore = 3
+    pred.awayScore = 2
+    pred.points = null
+    pred.match.status = 'live'
+    pred.match.homeScore = 2
+    pred.match.awayScore = 1
+
+    const pool = makeSingleMatchPool()
+    const poolRepo = { findById: async () => pool } as unknown as PoolRepository
+    const predictionRepo = {
+      findByUserPool: async () => [pred],
+    } as unknown as PredictionRepository
+    const uc = new GetUserPredictionsUseCase(predictionRepo, poolRepo)
+
+    const res = await uc.execute({ userId: 'u-1', poolId: 'pool-1' })
+    expect(res[0]?.points).toBe(9)
+    expect(res[0]?.category).toBe(7)
+    expect(res[0]?.bonus).toBe(2)
+  })
+
+  it('includes category/bonus when pool is single-match and match is finished (recomputed)', async () => {
+    const pred = basePwm()
+    pred.homeScore = 3
+    pred.awayScore = 2
+    pred.points = 9 // stored
+    pred.match.status = 'finished'
+    pred.match.homeScore = 2
+    pred.match.awayScore = 1
+
+    const pool = makeSingleMatchPool()
+    const poolRepo = { findById: async () => pool } as unknown as PoolRepository
+    const predictionRepo = {
+      findByUserPool: async () => [pred],
+    } as unknown as PredictionRepository
+    const uc = new GetUserPredictionsUseCase(predictionRepo, poolRepo)
+
+    const res = await uc.execute({ userId: 'u-1', poolId: 'pool-1' })
+    expect(res[0]?.points).toBe(9)
+    expect(res[0]?.category).toBe(7)
+    expect(res[0]?.bonus).toBe(2)
+  })
+
+  it('omits category/bonus for multi-match (range/competition) pools', async () => {
+    const pred = basePwm()
+    pred.homeScore = 3
+    pred.awayScore = 2
+    pred.points = null
+    pred.match.status = 'live'
+    pred.match.homeScore = 2
+    pred.match.awayScore = 1
+
+    const uc = makeUseCase([pred]) // existing helper uses 'whole-competition' scope
+    const res = await uc.execute({ userId: 'u-1', poolId: 'pool-1' })
+    expect(res[0]?.points).toBe(7)
+    expect(res[0]?.category).toBeUndefined()
+    expect(res[0]?.bonus).toBeUndefined()
   })
 })
