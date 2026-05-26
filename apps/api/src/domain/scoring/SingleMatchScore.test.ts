@@ -38,12 +38,21 @@ describe('SingleMatchScore', () => {
       expect(s.total).toBe(7)
     })
 
-    it('caps bonus at 4 for very small distances on correct outcome', () => {
+    it('awards 3 bonus for distance=1 on winner-only outcome', () => {
       const s = SingleMatchScore.calculate(4, 0, 3, 0)
       expect(s.category).toBe(5)
       expect(s.distance).toBe(1)
       expect(s.bonus).toBe(3)
       expect(s.total).toBe(8)
+    })
+
+    it('awards 5 + 0 bonus for correct winner with distance >= 4', () => {
+      // real 4x2 (home wins), pred 1x0 (home wins) → category 5, dist=5, bonus 0
+      const s = SingleMatchScore.calculate(1, 0, 4, 2)
+      expect(s.category).toBe(5)
+      expect(s.distance).toBe(5)
+      expect(s.bonus).toBe(0)
+      expect(s.total).toBe(5)
     })
   })
 
@@ -68,11 +77,24 @@ describe('SingleMatchScore', () => {
       expect(s.total).toBe(0)
     })
 
-    it('inversion always zeros bonus (gap of 5 between categories preserved)', () => {
-      // real 2x1, pred 0x1 (away wins, inverted)
-      // home: |2-0|=2, away: 1+1=2, total=4 → bonus 0
+    it('inversion with high enough distance zeros bonus', () => {
+      // real 2x1 (home wins), pred 0x1 (away wins, inverted)
+      // home: |0-2|=2, away: 1+1=2, total dist=4 → bonus 0
       const s = SingleMatchScore.calculate(0, 1, 2, 1)
+      expect(s.category).toBe(0)
+      expect(s.distance).toBe(4)
+      expect(s.bonus).toBe(0)
       expect(s.total).toBe(0)
+    })
+
+    it('inversion with small goal counts can still earn a small bonus', () => {
+      // real 1x0 (home wins), pred 0x1 (away wins, inverted)
+      // home: |0-1|=1, away: 1+0=1, total dist=2 → bonus 2, total 2
+      const s = SingleMatchScore.calculate(0, 1, 1, 0)
+      expect(s.category).toBe(0)
+      expect(s.distance).toBe(2)
+      expect(s.bonus).toBe(2)
+      expect(s.total).toBe(2)
     })
 
     it('high-scoring inversion has large distance', () => {

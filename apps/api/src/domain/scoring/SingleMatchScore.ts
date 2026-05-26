@@ -9,20 +9,18 @@ export type SingleMatchScoreBreakdown = {
   total: number
 }
 
-export function calculateSingleMatchScore(
-  predictedHome: number,
-  predictedAway: number,
-  actualHome: number,
-  actualAway: number,
-): SingleMatchScoreBreakdown {
-  const category = categoryPoints(predictedHome, predictedAway, actualHome, actualAway)
-  const distance = computeDistance(predictedHome, predictedAway, actualHome, actualAway)
-  const bonus = Math.max(0, BONUS_CAP - distance)
-  return { category, bonus, distance, total: category + bonus }
-}
-
 export const SingleMatchScore = {
-  calculate: calculateSingleMatchScore,
+  calculate(
+    predictedHome: number,
+    predictedAway: number,
+    actualHome: number,
+    actualAway: number,
+  ): SingleMatchScoreBreakdown {
+    const category = categoryPoints(predictedHome, predictedAway, actualHome, actualAway)
+    const distance = computeDistance(predictedHome, predictedAway, actualHome, actualAway)
+    const bonus = Math.max(0, BONUS_CAP - distance)
+    return { category, bonus, distance, total: category + bonus }
+  },
 }
 
 function categoryPoints(pH: number, pA: number, rH: number, rA: number): number {
