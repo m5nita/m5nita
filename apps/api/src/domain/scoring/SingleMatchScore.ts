@@ -1,4 +1,4 @@
-import { SCORING } from '@m5nita/shared'
+import { Score } from './Score'
 
 const BONUS_CAP = 4
 
@@ -16,20 +16,11 @@ export const SingleMatchScore = {
     actualHome: number,
     actualAway: number,
   ): SingleMatchScoreBreakdown {
-    const category = categoryPoints(predictedHome, predictedAway, actualHome, actualAway)
+    const category = Score.calculate(predictedHome, predictedAway, actualHome, actualAway).points
     const distance = computeDistance(predictedHome, predictedAway, actualHome, actualAway)
     const bonus = Math.max(0, BONUS_CAP - distance)
     return { category, bonus, distance, total: category + bonus }
   },
-}
-
-function categoryPoints(pH: number, pA: number, rH: number, rA: number): number {
-  if (pH === rH && pA === rA) return SCORING.EXACT_MATCH
-  const pDiff = pH - pA
-  const rDiff = rH - rA
-  if (pDiff === rDiff && pDiff !== 0) return SCORING.WINNER_AND_DIFF
-  if (Math.sign(pDiff) === Math.sign(rDiff)) return SCORING.OUTCOME_CORRECT
-  return SCORING.MISS
 }
 
 function computeDistance(pH: number, pA: number, rH: number, rA: number): number {
