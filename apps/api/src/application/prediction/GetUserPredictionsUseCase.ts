@@ -3,6 +3,7 @@ import type {
   PredictionRepository,
   PredictionWithMatch,
 } from '../../domain/prediction/PredictionRepository.port'
+import { SingleMatchScore } from '../../domain/scoring/SingleMatchScore'
 import { computeLivePoints } from './computeLivePoints'
 
 type Input = {
@@ -16,19 +17,56 @@ export class GetUserPredictionsUseCase {
     private readonly poolRepo: PoolRepository,
   ) {}
 
-  async execute(input: Input): Promise<PredictionWithMatch[]> {
+  async execute(
+    input: Input,
+  ): Promise<Array<PredictionWithMatch & { category?: number; bonus?: number }>> {
     const pool = await this.poolRepo.findById(input.poolId)
 
     const predictions = await this.predictionRepo.findByUserPool(input.userId, input.poolId)
 
-    const withLivePoints = predictions.map((p) => ({
-      ...p,
-      points: computeLivePoints(
-        { homeScore: p.homeScore, awayScore: p.awayScore },
-        { status: p.match.status, homeScore: p.match.homeScore, awayScore: p.match.awayScore },
-        p.points,
-      ),
-    }))
+    const isSingleMatchPool = pool?.scope.kind === 'single-match'
+
+    const withLivePoints = predictions.map((p) => {
+      const predScores = { homeScore: p.homeScore, awayScore: p.awayScore }
+      const matchState = {
+        status: p.match.status,
+        homeScore: p.match.homeScore,
+        awayScore: p.match.awayScore,
+      }
+
+      const live = isSingleMatchPool
+        ? computeLivePoints(predScores, matchState, p.points, { isSingleMatchPool: true })
+        : computeLivePoints(predScores, matchState, p.points)
+
+      let points: number | null
+      let category: number | undefined
+      let bonus: number | undefined
+
+      if (typeof live === 'object' && live !== null) {
+        points = live.total
+        category = live.category
+        bonus = live.bonus
+      } else {
+        points = live
+        if (
+          isSingleMatchPool &&
+          points !== null &&
+          p.match.homeScore !== null &&
+          p.match.awayScore !== null
+        ) {
+          const s = SingleMatchScore.calculate(
+            p.homeScore,
+            p.awayScore,
+            p.match.homeScore,
+            p.match.awayScore,
+          )
+          category = s.category
+          bonus = s.bonus
+        }
+      }
+
+      return { ...p, points, category, bonus }
+    })
 
     if (!pool) return withLivePoints
 

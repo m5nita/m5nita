@@ -5,11 +5,16 @@ interface MatchPredictionsListProps {
   data: MatchPredictionsResponse
 }
 
-function formatPoints(points: number | null, matchStatus: MatchStatus) {
-  if (points === null) return null
-  const label = points === 1 ? '+1 pt' : `+${points} pts`
-  const className = matchStatus === 'live' ? 'text-red' : 'text-green'
-  return { label, className, pulse: matchStatus === 'live' }
+function formatPoints(predictor: MatchPredictor, matchStatus: MatchStatus) {
+  if (predictor.points === null) return null
+  const baseClass = matchStatus === 'live' ? 'text-red' : 'text-green'
+  const pulse = matchStatus === 'live'
+
+  return {
+    total: predictor.points === 1 ? '+1 pt' : `+${predictor.points} pts`,
+    className: baseClass,
+    pulse,
+  }
 }
 
 function displayName(name: string | null) {
@@ -23,7 +28,7 @@ function PredictorRow({
   predictor: MatchPredictor
   matchStatus: MatchStatus
 }) {
-  const points = formatPoints(predictor.points, matchStatus)
+  const points = formatPoints(predictor, matchStatus)
   return (
     <div className="flex items-center gap-2 py-2">
       <span className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black">
@@ -45,7 +50,7 @@ function PredictorRow({
           {points.pulse && (
             <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
           )}
-          {points.label}
+          {points.total}
         </span>
       )}
     </div>

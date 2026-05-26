@@ -72,3 +72,26 @@ describe('computeLivePoints', () => {
     ).toBeNull()
   })
 })
+
+describe('computeLivePoints — single-match pool', () => {
+  it('returns category + bonus for live single-match pool', () => {
+    // real 2x1, pred 3x2 → category 7, dist 2, bonus 2 → total 9
+    const result = computeLivePoints(
+      { homeScore: 3, awayScore: 2 },
+      { status: 'live', homeScore: 2, awayScore: 1 },
+      null,
+      { isSingleMatchPool: true },
+    )
+    expect(result).toEqual({ total: 9, category: 7, bonus: 2 })
+  })
+
+  it('returns plain number for multi-match pool (default behavior)', () => {
+    const result = computeLivePoints(
+      { homeScore: 3, awayScore: 2 },
+      { status: 'live', homeScore: 2, awayScore: 1 },
+      null,
+      { isSingleMatchPool: false },
+    )
+    expect(result).toBe(7) // unchanged Score formula: winner+diff
+  })
+})

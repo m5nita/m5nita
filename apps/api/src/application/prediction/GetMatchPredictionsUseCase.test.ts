@@ -23,8 +23,13 @@ function makeUseCase(overrides: {
   }[]
   members: { userId: string; name: string }[]
   viewerIsMember?: boolean
+  poolMatchId?: string | null
 }) {
-  const pool = { id: 'pool-1', competitionId: 'comp-1' }
+  const pool = {
+    id: 'pool-1',
+    competitionId: 'comp-1',
+    scope: { matchId: overrides.poolMatchId ?? null },
+  }
   const poolRepo = {
     findById: async () => pool,
     isMember: async () => overrides.viewerIsMember ?? true,
@@ -131,5 +136,100 @@ describe('GetMatchPredictionsUseCase — live scoring', () => {
     const res = await uc.execute({ viewerUserId: 'u-viewer', poolId: 'pool-1', matchId: 'm-1' })
 
     expect(res.predictors.map((p) => p.userId)).toEqual(['u-a', 'u-b', 'u-c'])
+  })
+})
+
+describe('GetMatchPredictionsUseCase — single-match pool decomposition', () => {
+  it('returns category + bonus on each predictor when pool is single-match and match is live', async () => {
+    const uc = makeUseCase({
+      poolMatchId: 'm-1',
+      match: {
+        id: 'm-1',
+        status: 'live',
+        homeScore: 2,
+        awayScore: 1,
+        competitionId: 'comp-1',
+        matchDate: new Date('2026-04-23T20:00:00Z'),
+      },
+      predictions: [
+        // real 2x1
+        { userId: 'u-ana', name: 'Ana', homeScore: 2, awayScore: 1, points: null }, // exact: 10+4=14
+        { userId: 'u-ped', name: 'Ped', homeScore: 3, awayScore: 2, points: null }, // winner+diff: 7+2=9
+      ],
+      members: [
+        { userId: 'u-viewer', name: 'Viewer' },
+        { userId: 'u-ana', name: 'Ana' },
+        { userId: 'u-ped', name: 'Ped' },
+      ],
+    })
+
+    const res = await uc.execute({ viewerUserId: 'u-viewer', poolId: 'pool-1', matchId: 'm-1' })
+
+    const ana = res.predictors.find((p) => p.userId === 'u-ana')
+    expect(ana).toBeDefined()
+    expect(ana?.points).toBe(14)
+    expect(ana?.category).toBe(10)
+    expect(ana?.bonus).toBe(4)
+
+    const ped = res.predictors.find((p) => p.userId === 'u-ped')
+    expect(ped).toBeDefined()
+    expect(ped?.points).toBe(9)
+    expect(ped?.category).toBe(7)
+    expect(ped?.bonus).toBe(2)
+  })
+
+  it('returns category + bonus for finished single-match pool by recomputing from match scores', async () => {
+    const uc = makeUseCase({
+      poolMatchId: 'm-1',
+      match: {
+        id: 'm-1',
+        status: 'finished',
+        homeScore: 2,
+        awayScore: 1,
+        competitionId: 'comp-1',
+        matchDate: new Date('2026-04-23T18:00:00Z'),
+      },
+      predictions: [
+        // points stored may be from legacy 10/7/5/0; we recompute decomposition from match scores
+        { userId: 'u-ped', name: 'Ped', homeScore: 3, awayScore: 2, points: 9 },
+      ],
+      members: [
+        { userId: 'u-viewer', name: 'Viewer' },
+        { userId: 'u-ped', name: 'Ped' },
+      ],
+    })
+
+    const res = await uc.execute({ viewerUserId: 'u-viewer', poolId: 'pool-1', matchId: 'm-1' })
+    const ped = res.predictors.find((p) => p.userId === 'u-ped')
+    expect(ped).toBeDefined()
+    expect(ped?.points).toBe(9)
+    expect(ped?.category).toBe(7)
+    expect(ped?.bonus).toBe(2)
+  })
+
+  it('omits category and bonus for range (multi-match) pools', async () => {
+    const uc = makeUseCase({
+      // poolMatchId omitted → null
+      match: {
+        id: 'm-1',
+        status: 'live',
+        homeScore: 2,
+        awayScore: 1,
+        competitionId: 'comp-1',
+        matchDate: new Date('2026-04-23T20:00:00Z'),
+      },
+      predictions: [{ userId: 'u-ped', name: 'Ped', homeScore: 3, awayScore: 2, points: null }],
+      members: [
+        { userId: 'u-viewer', name: 'Viewer' },
+        { userId: 'u-ped', name: 'Ped' },
+      ],
+    })
+
+    const res = await uc.execute({ viewerUserId: 'u-viewer', poolId: 'pool-1', matchId: 'm-1' })
+    const ped = res.predictors.find((p) => p.userId === 'u-ped')
+    expect(ped).toBeDefined()
+    expect(ped?.points).toBe(7)
+    expect(ped?.category).toBeUndefined()
+    expect(ped?.bonus).toBeUndefined()
   })
 })

@@ -143,6 +143,8 @@ function MatchList({
           awayScore={pred?.awayScore ?? null}
           matchStatus={match.status}
           points={pred?.points ?? null}
+          category={pred?.category ?? null}
+          bonus={pred?.bonus ?? null}
           actualHomeScore={match.homeScore}
           actualAwayScore={match.awayScore}
           onSave={onSave}
@@ -156,6 +158,7 @@ function MatchList({
   return (
     <div className="flex flex-col">
       {sections.map((section) => {
+        const isSingle = section.items.length === 1
         const leftItems = section.items.filter((item) => item.localIndex % 2 === 0)
         const rightItems = section.items.filter((item) => item.localIndex % 2 === 1)
         return (
@@ -165,14 +168,20 @@ function MatchList({
                 {section.header}
               </p>
             )}
-            <div className="flex flex-col lg:flex-row lg:items-start lg:gap-x-4">
-              <div className="contents lg:flex lg:flex-1 lg:flex-col">
-                {leftItems.map(renderCard)}
+            {isSingle ? (
+              <div className="lg:mx-auto lg:w-full lg:max-w-[600px]">
+                {section.items.map(renderCard)}
               </div>
-              <div className="contents lg:flex lg:flex-1 lg:flex-col">
-                {rightItems.map(renderCard)}
+            ) : (
+              <div className="flex flex-col lg:flex-row lg:items-start lg:gap-x-4">
+                <div className="contents lg:flex lg:flex-1 lg:flex-col">
+                  {leftItems.map(renderCard)}
+                </div>
+                <div className="contents lg:flex lg:flex-1 lg:flex-col">
+                  {rightItems.map(renderCard)}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )
       })}
