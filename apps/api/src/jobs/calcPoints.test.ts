@@ -30,10 +30,17 @@ describe('calcPointsForMatch', () => {
           },
         },
         poolRepo: {
-          findById: async (poolId: string) => ({
-            id: poolId,
-            scope: { kind: poolId === 'pool-single' ? 'single-match' : 'whole-competition' },
-          }),
+          findById: async (poolId: string) => {
+            const { RangeScoringPolicy, SingleMatchScoringPolicy } = await import(
+              '../domain/scoring/ScoringPolicy'
+            )
+            const isSingle = poolId === 'pool-single'
+            return {
+              id: poolId,
+              scope: { kind: isSingle ? 'single-match' : 'whole-competition' },
+              scoringPolicy: () => (isSingle ? SingleMatchScoringPolicy : RangeScoringPolicy),
+            }
+          },
         },
       }),
     }))

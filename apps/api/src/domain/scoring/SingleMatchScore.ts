@@ -2,24 +2,23 @@ import { Score } from './Score'
 
 const BONUS_CAP = 4
 
-export type SingleMatchScoreBreakdown = {
-  category: number
-  bonus: number
-  distance: number
-  total: number
-}
-
 export const SingleMatchScore = {
+  /**
+   * Single-match scoring: base category (Score.calculate) + a proximity bonus
+   * capped at 4 points that rewards being numerically close. Returns a `Score`
+   * VO with the breakdown attached so callers can both treat it uniformly
+   * (`.points`) and inspect category/bonus when displaying.
+   */
   calculate(
     predictedHome: number,
     predictedAway: number,
     actualHome: number,
     actualAway: number,
-  ): SingleMatchScoreBreakdown {
+  ): Score {
     const category = Score.calculate(predictedHome, predictedAway, actualHome, actualAway).points
     const distance = computeDistance(predictedHome, predictedAway, actualHome, actualAway)
     const bonus = Math.max(0, BONUS_CAP - distance)
-    return { category, bonus, distance, total: category + bonus }
+    return Score.fromBreakdown({ category, bonus, distance })
   },
 }
 

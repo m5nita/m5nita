@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MatchRepository } from '../../domain/match/MatchRepository.port'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
+import { RangeScoringPolicy, SingleMatchScoringPolicy } from '../../domain/scoring/ScoringPolicy'
 import type { Clock } from '../../domain/shared/Clock'
 import { GetMatchPredictionsUseCase } from './GetMatchPredictionsUseCase'
 
@@ -25,10 +26,15 @@ function makeUseCase(overrides: {
   viewerIsMember?: boolean
   poolMatchId?: string | null
 }) {
+  const isSingle = (overrides.poolMatchId ?? null) !== null
   const pool = {
     id: 'pool-1',
     competitionId: 'comp-1',
-    scope: { matchId: overrides.poolMatchId ?? null },
+    scope: {
+      matchId: overrides.poolMatchId ?? null,
+      kind: isSingle ? ('single-match' as const) : ('range' as const),
+    },
+    scoringPolicy: () => (isSingle ? SingleMatchScoringPolicy : RangeScoringPolicy),
   }
   const poolRepo = {
     findById: async () => pool,

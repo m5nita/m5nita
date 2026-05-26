@@ -3,7 +3,6 @@ import type { MatchRepository } from '../../domain/match/MatchRepository.port'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import { PredictionError } from '../../domain/prediction/PredictionError'
 import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
-import { SingleMatchScore } from '../../domain/scoring/SingleMatchScore'
 import type { Clock } from '../../domain/shared/Clock'
 import { computeLivePoints, type LivePoints } from './computeLivePoints'
 
@@ -36,7 +35,8 @@ export class GetMatchPredictionsUseCase {
       throw new PredictionError('MATCH_NOT_IN_POOL', 'Este jogo não pertence ao bolão')
     }
 
-    const isSingleMatchPool = pool.scope.matchId !== null
+    const scoringPolicy = pool.scoringPolicy()
+    const includesBonus = pool.scope.kind === 'single-match'
 
     const isMember = await this.poolRepo.isMember(input.poolId, input.viewerUserId)
     if (!isMember) {
@@ -73,9 +73,7 @@ export class GetMatchPredictionsUseCase {
         let category: number | undefined
         let bonus: number | undefined
 
-        const live: LivePoints = isSingleMatchPool
-          ? computeLivePoints(predScores, matchState, p.points, { isSingleMatchPool: true })
-          : computeLivePoints(predScores, matchState, p.points)
+        const live: LivePoints = computeLivePoints(predScores, matchState, p.points, scoringPolicy)
 
         if (typeof live === 'object' && live !== null) {
           points = live.total
@@ -84,19 +82,19 @@ export class GetMatchPredictionsUseCase {
         } else {
           points = live
           if (
-            isSingleMatchPool &&
+            includesBonus &&
             points !== null &&
             match.homeScore !== null &&
             match.awayScore !== null
           ) {
-            const s = SingleMatchScore.calculate(
+            const s = scoringPolicy.score(
               p.homeScore,
               p.awayScore,
               match.homeScore,
               match.awayScore,
             )
-            category = s.category
-            bonus = s.bonus
+            category = s.breakdown?.category
+            bonus = s.breakdown?.bonus
           }
         }
 

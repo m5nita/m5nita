@@ -3,7 +3,7 @@ import type {
   PredictionRepository,
   PredictionWithMatch,
 } from '../../domain/prediction/PredictionRepository.port'
-import { SingleMatchScore } from '../../domain/scoring/SingleMatchScore'
+import { RangeScoringPolicy } from '../../domain/scoring/ScoringPolicy'
 import { computeLivePoints } from './computeLivePoints'
 
 type Input = {
@@ -24,7 +24,8 @@ export class GetUserPredictionsUseCase {
 
     const predictions = await this.predictionRepo.findByUserPool(input.userId, input.poolId)
 
-    const isSingleMatchPool = pool?.scope.kind === 'single-match'
+    const scoringPolicy = pool?.scoringPolicy() ?? RangeScoringPolicy
+    const includesBonus = pool?.scope.kind === 'single-match'
 
     const withLivePoints = predictions.map((p) => {
       const predScores = { homeScore: p.homeScore, awayScore: p.awayScore }
@@ -34,9 +35,7 @@ export class GetUserPredictionsUseCase {
         awayScore: p.match.awayScore,
       }
 
-      const live = isSingleMatchPool
-        ? computeLivePoints(predScores, matchState, p.points, { isSingleMatchPool: true })
-        : computeLivePoints(predScores, matchState, p.points)
+      const live = computeLivePoints(predScores, matchState, p.points, scoringPolicy)
 
       let points: number | null
       let category: number | undefined
@@ -49,19 +48,19 @@ export class GetUserPredictionsUseCase {
       } else {
         points = live
         if (
-          isSingleMatchPool &&
+          includesBonus &&
           points !== null &&
           p.match.homeScore !== null &&
           p.match.awayScore !== null
         ) {
-          const s = SingleMatchScore.calculate(
+          const s = scoringPolicy.score(
             p.homeScore,
             p.awayScore,
             p.match.homeScore,
             p.match.awayScore,
           )
-          category = s.category
-          bonus = s.bonus
+          category = s.breakdown?.category
+          bonus = s.breakdown?.bonus
         }
       }
 
@@ -71,8 +70,6 @@ export class GetUserPredictionsUseCase {
     if (!pool) return withLivePoints
 
     return withLivePoints.filter((p) => {
-      // Single-match scope: only the chosen match counts; the competition
-      // check is implicit because scope.contains() requires id match.
       if (pool.scope.kind === 'single-match') {
         return pool.scope.contains({ id: p.match.id, matchday: p.match.matchday })
       }

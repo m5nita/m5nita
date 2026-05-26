@@ -70,6 +70,31 @@ const RULES = [
     pattern: /\bgetEffectiveFeeRate\s*\(/,
     allow: [],
   },
+  {
+    name: 'scoring-branch-leak',
+    description:
+      'Branching on `isSingleMatchPool` / `scope.matchId` to pick scoring is domain logic. Use `pool.scoringPolicy()` instead.',
+    pattern: /\bisSingleMatchPool\b|\bscope\.matchId\s*!==?\s*null\b/,
+    allow: [
+      // Domain itself defines the distinction:
+      'apps/api/src/domain/pool/Pool.ts',
+      'apps/api/src/domain/shared/PoolScope.ts',
+    ],
+  },
+  {
+    name: 'direct-scoring-call',
+    description:
+      'Use `pool.scoringPolicy().score(...)`. Direct `Score.calculate`/`SingleMatchScore.calculate` calls outside domain bypass policy selection.',
+    pattern: /\b(Score|SingleMatchScore)\.calculate\s*\(/,
+    allow: [
+      'apps/api/src/domain/scoring/Score.ts',
+      'apps/api/src/domain/scoring/Score.test.ts',
+      'apps/api/src/domain/scoring/SingleMatchScore.ts',
+      'apps/api/src/domain/scoring/SingleMatchScore.test.ts',
+      'apps/api/src/domain/scoring/ScoringPolicy.ts',
+      'apps/api/src/domain/prediction/Prediction.ts',
+    ],
+  },
 ]
 
 function* walk(dir) {

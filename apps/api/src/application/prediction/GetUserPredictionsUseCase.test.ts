@@ -4,6 +4,7 @@ import type {
   PredictionRepository,
   PredictionWithMatch,
 } from '../../domain/prediction/PredictionRepository.port'
+import { RangeScoringPolicy, SingleMatchScoringPolicy } from '../../domain/scoring/ScoringPolicy'
 import { GetUserPredictionsUseCase } from './GetUserPredictionsUseCase'
 
 function makeSingleMatchPool() {
@@ -11,6 +12,7 @@ function makeSingleMatchPool() {
     id: 'pool-1',
     competitionId: 'comp-1',
     scope: { kind: 'single-match' as const, matchId: 'm-1', contains: () => true },
+    scoringPolicy: () => SingleMatchScoringPolicy,
   }
 }
 
@@ -46,6 +48,7 @@ function makeUseCase(predictions: PredictionWithMatch[]) {
     id: 'pool-1',
     competitionId: 'comp-1',
     scope: { kind: 'whole-competition', contains: () => true },
+    scoringPolicy: () => RangeScoringPolicy,
   }
   const poolRepo = { findById: async () => pool } as unknown as PoolRepository
   const predictionRepo = {
@@ -124,7 +127,12 @@ describe('GetUserPredictionsUseCase — live scoring', () => {
       kind: 'single-match' as const,
       contains: (m: { id: string }) => m.id === 'm-1',
     }
-    const pool = { id: 'pool-1', competitionId: 'comp-1', scope: singleMatchScope }
+    const pool = {
+      id: 'pool-1',
+      competitionId: 'comp-1',
+      scope: singleMatchScope,
+      scoringPolicy: () => SingleMatchScoringPolicy,
+    }
     const poolRepo = { findById: async () => pool } as unknown as PoolRepository
     const predictionRepo = {
       findByUserPool: async () => [a, b],
