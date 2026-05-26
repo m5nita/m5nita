@@ -5,11 +5,19 @@ interface MatchPredictionsListProps {
   data: MatchPredictionsResponse
 }
 
-function formatPoints(points: number | null, matchStatus: MatchStatus) {
-  if (points === null) return null
-  const label = points === 1 ? '+1 pt' : `+${points} pts`
-  const className = matchStatus === 'live' ? 'text-red' : 'text-green'
-  return { label, className, pulse: matchStatus === 'live' }
+function formatPoints(predictor: MatchPredictor, matchStatus: MatchStatus) {
+  if (predictor.points === null) return null
+  const baseClass = matchStatus === 'live' ? 'text-red' : 'text-green'
+  const pulse = matchStatus === 'live'
+
+  const hasBreakdown = typeof predictor.category === 'number' && typeof predictor.bonus === 'number'
+
+  return {
+    total: predictor.points === 1 ? '+1 pt' : `+${predictor.points} pts`,
+    breakdown: hasBreakdown ? `${predictor.category} + ${predictor.bonus}` : null,
+    className: baseClass,
+    pulse,
+  }
 }
 
 function displayName(name: string | null) {
@@ -23,7 +31,7 @@ function PredictorRow({
   predictor: MatchPredictor
   matchStatus: MatchStatus
 }) {
-  const points = formatPoints(predictor.points, matchStatus)
+  const points = formatPoints(predictor, matchStatus)
   return (
     <div className="flex items-center gap-2 py-2">
       <span className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black">
@@ -40,12 +48,22 @@ function PredictorRow({
       </div>
       {points && (
         <span
-          className={`shrink-0 flex min-w-[48px] items-center justify-end gap-1 font-display text-xs font-black ${points.className}`}
+          className={`shrink-0 flex min-w-[48px] flex-col items-end gap-0 font-display text-xs font-black ${points.className}`}
         >
-          {points.pulse && (
-            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+          <span className="flex items-center gap-1">
+            {points.pulse && (
+              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+            )}
+            {points.total}
+          </span>
+          {points.breakdown && (
+            <span
+              className="text-[10px] font-bold text-gray-muted"
+              title="Pontos da categoria + bônus por proximidade do placar"
+            >
+              {points.breakdown}
+            </span>
           )}
-          {points.label}
         </span>
       )}
     </div>
