@@ -82,7 +82,6 @@ vi.mock('../../../services/payment', () => ({
 
 vi.mock('../../../services/coupon', () => ({
   validateCoupon: vi.fn(() => ({ valid: false, reason: 'not_found' })),
-  getEffectiveFeeRate: vi.fn((d: number) => 0.05 * (1 - d / 100)),
 }))
 
 const testUser = { id: 'user-1', name: 'Test', phoneNumber: '+5511999999999' }

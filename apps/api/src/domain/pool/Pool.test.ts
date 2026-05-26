@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EntryFee } from '../shared/EntryFee'
+import { FeePolicy } from '../shared/FeePolicy'
 import { InviteCode } from '../shared/InviteCode'
 import { PoolScope } from '../shared/PoolScope'
 import { PoolStatus } from '../shared/PoolStatus'
@@ -89,16 +90,33 @@ describe('Pool', () => {
     expect(pool.isOwnedBy('other-user')).toBe(false)
   })
 
-  it('calculatePrize() computes correctly', () => {
+  it('prize() computes total with standard fee policy', () => {
     const pool = createPool({ entryFee: EntryFee.of(5000) })
-    const prize = pool.calculatePrize(10, 0.05)
+    const prize = pool.prize(10, FeePolicy.standard())
     expect(prize.centavos).toBe(47500)
   })
 
-  it('calculatePlatformFee() computes correctly', () => {
+  it('prize() applies discount through FeePolicy', () => {
     const pool = createPool({ entryFee: EntryFee.of(5000) })
-    const fee = pool.calculatePlatformFee(5)
+    const prize = pool.prize(10, FeePolicy.withDiscount(100))
+    expect(prize.centavos).toBe(50000)
+  })
+
+  it('platformFee() returns 5% of entry fee with standard policy', () => {
+    const pool = createPool({ entryFee: EntryFee.of(5000) })
+    const fee = pool.platformFee(FeePolicy.standard())
     expect(fee.centavos).toBe(250)
+  })
+
+  it('platformFee() applies discount', () => {
+    const pool = createPool({ entryFee: EntryFee.of(5000) })
+    const fee = pool.platformFee(FeePolicy.withDiscount(50))
+    expect(fee.centavos).toBe(125)
+  })
+
+  it('originalPlatformFee() ignores any discount', () => {
+    const pool = createPool({ entryFee: EntryFee.of(5000) })
+    expect(pool.originalPlatformFee().centavos).toBe(250)
   })
 
   it('scope is set at construction and exposed via a readonly field', () => {

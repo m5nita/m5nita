@@ -1,6 +1,8 @@
+import { PrizeCalculation } from '../prize/PrizeCalculation'
 import type { EntryFee } from '../shared/EntryFee'
+import { FeePolicy } from '../shared/FeePolicy'
 import type { InviteCode } from '../shared/InviteCode'
-import { Money } from '../shared/Money'
+import type { Money } from '../shared/Money'
 import type { PoolScope } from '../shared/PoolScope'
 import { PoolStatus } from '../shared/PoolStatus'
 import { PoolError } from './PoolError'
@@ -73,11 +75,15 @@ export class Pool {
     return this.ownerId === userId
   }
 
-  calculatePrize(memberCount: number, effectiveFeeRate: number): Money {
-    return Money.of(Math.floor(this.entryFee.value.centavos * memberCount * (1 - effectiveFeeRate)))
+  prize(memberCount: number, feePolicy: FeePolicy): Money {
+    return PrizeCalculation.calculatePrizeTotal(this.entryFee, memberCount, feePolicy)
   }
 
-  calculatePlatformFee(effectiveFeeRate: number): Money {
-    return this.entryFee.value.percentage(effectiveFeeRate)
+  platformFee(feePolicy: FeePolicy): Money {
+    return feePolicy.applyTo(this.entryFee.value)
+  }
+
+  originalPlatformFee(): Money {
+    return FeePolicy.standard().applyTo(this.entryFee.value)
   }
 }

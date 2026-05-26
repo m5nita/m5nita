@@ -1,9 +1,5 @@
-import { COUPON, POOL } from '@m5nita/shared'
+import { COUPON, computeEffectiveFeeRate, computePlatformFee, POOL } from '@m5nita/shared'
 import { describe, expect, it } from 'vitest'
-
-function getEffectiveFeeRate(discountPercent: number): number {
-  return POOL.PLATFORM_FEE_RATE * (1 - discountPercent / 100)
-}
 
 describe('Coupon validation rules', () => {
   it('validates_minCodeLength_2chars', () => {
@@ -33,37 +29,24 @@ describe('Coupon validation rules', () => {
   })
 })
 
-describe('getEffectiveFeeRate', () => {
-  it('calculates_noDiscount_fullRate', () => {
-    const rate = getEffectiveFeeRate(0)
-    expect(rate).toBe(POOL.PLATFORM_FEE_RATE)
+describe('fee math (shared helper)', () => {
+  it('no discount → full rate', () => {
+    expect(computeEffectiveFeeRate(0)).toBe(POOL.PLATFORM_FEE_RATE)
   })
 
-  it('calculates_50percentDiscount_halfRate', () => {
-    const rate = getEffectiveFeeRate(50)
-    expect(rate).toBeCloseTo(0.025)
+  it('50% discount → half rate', () => {
+    expect(computeEffectiveFeeRate(50)).toBeCloseTo(0.025)
   })
 
-  it('calculates_100percentDiscount_zeroRate', () => {
-    const rate = getEffectiveFeeRate(100)
-    expect(rate).toBe(0)
+  it('100% discount → zero rate', () => {
+    expect(computeEffectiveFeeRate(100)).toBe(0)
   })
 
-  it('calculates_platformFee_withDiscount_50percent', () => {
-    const rate = getEffectiveFeeRate(50)
-    const fee = Math.floor(5000 * rate)
-    expect(fee).toBe(125)
+  it('platform fee with 50% discount floors correctly', () => {
+    expect(computePlatformFee(5000, 50)).toBe(125)
   })
 
-  it('calculates_platformFee_withDiscount_100percent', () => {
-    const rate = getEffectiveFeeRate(100)
-    const fee = Math.floor(5000 * rate)
-    expect(fee).toBe(0)
-  })
-
-  it('calculates_platformFee_roundsDown_withDiscount', () => {
-    const rate = getEffectiveFeeRate(33)
-    const fee = Math.floor(1000 * rate)
-    expect(fee).toBe(Math.floor(1000 * 0.05 * (1 - 33 / 100)))
+  it('platform fee with 100% discount is zero', () => {
+    expect(computePlatformFee(5000, 100)).toBe(0)
   })
 })

@@ -1,4 +1,4 @@
-import { COUPON, POOL } from '@m5nita/shared'
+import { COUPON } from '@m5nita/shared'
 import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client'
 import { coupon } from '../db/schema/coupon'
@@ -130,10 +130,6 @@ export async function listCoupons() {
   return db.query.coupon.findMany({
     orderBy: (c, { desc }) => [desc(c.createdAt)],
   })
-}
-
-export function getEffectiveFeeRate(discountPercent: number): number {
-  return POOL.PLATFORM_FEE_RATE * (1 - discountPercent / 100)
 }
 
 export class CouponError extends Error {

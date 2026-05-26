@@ -6,6 +6,8 @@ import type {
   PrizeWithdrawalRepository,
 } from '../../domain/prize/PrizeWithdrawalRepository.port'
 import type { RankingRepository } from '../../domain/ranking/RankingRepository.port'
+import { EntryFee } from '../../domain/shared/EntryFee'
+import { FeePolicy } from '../../domain/shared/FeePolicy'
 import { PixKey } from '../../domain/shared/PixKey'
 import type { NotificationService } from '../ports/NotificationService.port'
 
@@ -22,7 +24,6 @@ export class RequestWithdrawalUseCase {
     private readonly prizeWithdrawalRepo: PrizeWithdrawalRepository,
     private readonly rankingRepo: RankingRepository,
     private readonly notificationService: NotificationService,
-    private readonly getEffectiveFeeRate: (discountPercent: number) => number,
   ) {}
 
   async execute(input: Input): Promise<PrizeWithdrawal> {
@@ -56,12 +57,11 @@ export class RequestWithdrawalUseCase {
 
     const pixKey = PixKey.create(input.pixKeyType, input.pixKey)
 
-    const discountPercent = poolDetails.coupon?.discountPercent ?? 0
-    const effectiveRate = this.getEffectiveFeeRate(discountPercent)
+    const feePolicy = FeePolicy.from(poolDetails.coupon?.discountPercent ?? null)
     const prizeTotal = PrizeCalculation.calculatePrizeTotal(
-      poolDetails.entryFee,
+      EntryFee.of(poolDetails.entryFee),
       poolDetails.memberCount,
-      effectiveRate,
+      feePolicy,
     )
     const winnerShare = PrizeCalculation.calculateWinnerShare(prizeTotal, winners.length)
 

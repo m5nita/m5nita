@@ -1,6 +1,5 @@
 import {
   createPoolSchema,
-  POOL,
   updatePoolSchema,
   validateCouponSchema,
   withdrawPrizeSchema,
@@ -14,7 +13,9 @@ import { pool } from '../../../db/schema/pool'
 import { poolMember } from '../../../db/schema/poolMember'
 import { PoolError } from '../../../domain/pool/PoolError'
 import { PrizeWithdrawalError } from '../../../domain/prize/PrizeWithdrawalError'
-import { getEffectiveFeeRate, validateCoupon } from '../../../services/coupon'
+import { FeePolicy } from '../../../domain/shared/FeePolicy'
+import { Money } from '../../../domain/shared/Money'
+import { validateCoupon } from '../../../services/coupon'
 import { getPoolById, getPoolByInviteCode, isPoolMember } from '../../../services/pool'
 import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
@@ -38,9 +39,10 @@ poolsRoutes.post('/pools/validate-coupon', async (c) => {
     return c.json({ valid: false, reason: result.reason })
   }
 
-  const originalFee = Math.floor(parsed.data.entryFee * POOL.PLATFORM_FEE_RATE)
-  const effectiveRate = getEffectiveFeeRate(result.discountPercent)
-  const discountedFee = Math.floor(parsed.data.entryFee * effectiveRate)
+  const entry = Money.of(parsed.data.entryFee)
+  const feePolicy = FeePolicy.from(result.discountPercent)
+  const originalFee = FeePolicy.standard().applyTo(entry).centavos
+  const discountedFee = feePolicy.applyTo(entry).centavos
 
   return c.json({
     valid: true,

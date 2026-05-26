@@ -15,24 +15,31 @@ vi.mock('../middleware/auth', () => ({
 }))
 
 const mockGetPoolRanking = vi.fn()
+const mockFindByIdWithDetails = vi.fn(async () => ({
+  id: 'pool-1',
+  entryFee: 5000,
+  competitionId: 'comp-1',
+  matchdayStart: null,
+  matchdayEnd: null,
+  matchId: null,
+  memberCount: 3,
+  prizeTotal: 14250,
+  hasLiveMatch: false,
+  coupon: null,
+}))
 
 vi.mock('../../../services/ranking', () => ({
   getPoolRanking: (...args: unknown[]) => mockGetPoolRanking(...args),
 }))
 
-vi.mock('../../../db/client', () => ({
-  db: {
-    query: {
-      pool: {
-        findFirst: vi.fn(() => ({ id: 'pool-1', entryFee: 5000 })),
-      },
-    },
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => [{ count: 3 }]),
-      })),
-    })),
-  },
+vi.mock('../../../services/pool', () => ({
+  poolHasLiveMatch: vi.fn(async () => false),
+}))
+
+vi.mock('../../../container', () => ({
+  getContainer: () => ({
+    poolRepo: { findByIdWithDetails: mockFindByIdWithDetails },
+  }),
 }))
 
 const testUser = { id: 'user-1', name: 'Test', phoneNumber: '+5511999999999' }

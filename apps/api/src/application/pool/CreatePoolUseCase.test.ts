@@ -76,10 +76,8 @@ describe('CreatePoolUseCase', () => {
           discountPercent: 100,
         })),
         incrementUsage,
-        getEffectiveFeeRate: () => 0,
       },
       activeCompetition,
-      0.05,
       noMatchFinder,
       fixedClock,
     )
@@ -121,10 +119,8 @@ describe('CreatePoolUseCase', () => {
           discountPercent: 100,
         })),
         incrementUsage,
-        getEffectiveFeeRate: () => 0,
       },
       activeCompetition,
-      0.05,
       noMatchFinder,
       fixedClock,
     )
@@ -148,10 +144,8 @@ describe('CreatePoolUseCase', () => {
           discountPercent: 100,
         })),
         incrementUsage,
-        getEffectiveFeeRate: () => 0,
       },
       activeCompetition,
-      0.05,
       noMatchFinder,
       fixedClock,
     )
@@ -171,10 +165,8 @@ describe('CreatePoolUseCase', () => {
       {
         validateCoupon: vi.fn(),
         incrementUsage: vi.fn(),
-        getEffectiveFeeRate: () => 0.05,
       },
       activeCompetition,
-      0.05,
       findMatch,
       fixedClock,
     )
@@ -197,9 +189,8 @@ describe('CreatePoolUseCase', () => {
     const useCase = new CreatePoolUseCase(
       makeRepo(),
       makeGateway(),
-      { validateCoupon: vi.fn(), incrementUsage: vi.fn(), getEffectiveFeeRate: () => 0.05 },
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn() },
       activeCompetition,
-      0.05,
       vi.fn(async () => null),
       fixedClock,
     )
@@ -220,9 +211,8 @@ describe('CreatePoolUseCase', () => {
     const useCase = new CreatePoolUseCase(
       makeRepo(),
       makeGateway(),
-      { validateCoupon: vi.fn(), incrementUsage: vi.fn(), getEffectiveFeeRate: () => 0.05 },
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn() },
       activeCompetition,
-      0.05,
       findMatch,
       fixedClock,
     )
@@ -243,9 +233,8 @@ describe('CreatePoolUseCase', () => {
     const useCase = new CreatePoolUseCase(
       makeRepo(),
       makeGateway(),
-      { validateCoupon: vi.fn(), incrementUsage: vi.fn(), getEffectiveFeeRate: () => 0.05 },
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn() },
       activeCompetition,
-      0.05,
       findMatch,
       fixedClock,
     )
@@ -265,9 +254,8 @@ describe('CreatePoolUseCase', () => {
     const useCase = new CreatePoolUseCase(
       makeRepo(),
       makeGateway(),
-      { validateCoupon: vi.fn(), incrementUsage: vi.fn(), getEffectiveFeeRate: () => 0.05 },
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn() },
       activeCompetition,
-      0.05,
       upcomingMatchFinder(),
       fixedClock,
     )
@@ -293,9 +281,8 @@ describe('CreatePoolUseCase', () => {
     const useCase = new CreatePoolUseCase(
       makeRepo({ save }),
       makeGateway(),
-      { validateCoupon, incrementUsage, getEffectiveFeeRate: () => 0.05 },
+      { validateCoupon, incrementUsage },
       activeCompetition,
-      0.05,
       noMatchFinder,
       fixedClock,
     )

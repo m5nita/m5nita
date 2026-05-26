@@ -3,6 +3,7 @@ import { PoolError } from '../../domain/pool/PoolError'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
 import { EntryFee } from '../../domain/shared/EntryFee'
+import { FeePolicy } from '../../domain/shared/FeePolicy'
 import { InviteCode } from '../../domain/shared/InviteCode'
 import { MatchdayRange } from '../../domain/shared/MatchdayRange'
 import { PoolScope } from '../../domain/shared/PoolScope'
@@ -16,7 +17,6 @@ type CouponValidationResult =
 type CouponDeps = {
   validateCoupon: (code: string) => Promise<CouponValidationResult>
   incrementUsage: (couponId: string) => Promise<boolean>
-  getEffectiveFeeRate: (discountPercent: number) => number
 }
 
 type CompetitionFinder = (id: string) => Promise<{ id: string; status: string } | null>
@@ -79,7 +79,6 @@ export class CreatePoolUseCase {
     private readonly paymentGateway: PaymentGateway,
     private readonly coupon: CouponDeps,
     private readonly findCompetition: CompetitionFinder,
-    private readonly baseFeeRate: number,
     private readonly findMatch: MatchFinder,
     private readonly clock: Clock,
   ) {}
@@ -100,9 +99,9 @@ export class CreatePoolUseCase {
 
     const couponState = await this.resolveCoupon(input.couponCode)
     const entryFee = EntryFee.of(input.entryFee)
-    const effectiveRate = this.coupon.getEffectiveFeeRate(couponState.discountPercent)
-    const platformFee = Math.floor(input.entryFee * effectiveRate)
-    const originalPlatformFee = Math.floor(input.entryFee * this.baseFeeRate)
+    const feePolicy = FeePolicy.from(couponState.discountPercent)
+    const platformFee = feePolicy.applyTo(entryFee.value).centavos
+    const originalPlatformFee = FeePolicy.standard().applyTo(entryFee.value).centavos
 
     const pool = new Pool(
       crypto.randomUUID(),
