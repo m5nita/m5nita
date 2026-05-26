@@ -203,6 +203,7 @@ export const Route = createFileRoute('/invite/$inviteCode')({
       throw redirect({ to: '/login' })
     }
     if (!session.data.user.name) {
+      savePendingRedirect(location.pathname)
       throw redirect({ to: '/complete-profile' })
     }
   },

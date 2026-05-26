@@ -5,7 +5,11 @@ import { Input } from '../components/ui/Input'
 import { OtpInput } from '../components/ui/OtpInput'
 import { PhoneInput } from '../components/ui/PhoneInput'
 import { authClient } from '../lib/auth'
-import { consumePendingRedirect, redirectIfAuthenticated } from '../lib/authGuard'
+import {
+  consumePendingRedirect,
+  peekPendingRedirect,
+  redirectIfAuthenticated,
+} from '../lib/authGuard'
 import { useTheme } from '../lib/theme'
 import { useTurnstile } from '../lib/turnstile'
 
@@ -116,14 +120,24 @@ function LoginPage() {
   }
 
   function handlePostLogin(userName?: string | null) {
+    if (!userName || userName.startsWith('+')) {
+      navigate({ to: '/complete-profile' })
+      return
+    }
     const pending = consumePendingRedirect()
     if (pending) {
       window.location.href = pending
-    } else if (!userName || userName.startsWith('+')) {
-      navigate({ to: '/complete-profile' })
     } else {
       navigate({ to: '/' })
     }
+  }
+
+  function callbackUrlWithPending() {
+    const pending = peekPendingRedirect()
+    if (pending?.startsWith('/')) {
+      return `${window.location.origin}${pending}`
+    }
+    return window.location.origin
   }
 
   async function handleSocialSignIn(provider: 'google') {
@@ -137,7 +151,7 @@ function LoginPage() {
       await authClient.signIn.social(
         {
           provider,
-          callbackURL: window.location.origin,
+          callbackURL: callbackUrlWithPending(),
           errorCallbackURL: `${window.location.origin}/login?error=social`,
         },
         captchaFetchOptions(),
@@ -163,7 +177,7 @@ function LoginPage() {
       const result = await authClient.signIn.magicLink(
         {
           email,
-          callbackURL: window.location.origin,
+          callbackURL: callbackUrlWithPending(),
         },
         captchaFetchOptions(),
       )
