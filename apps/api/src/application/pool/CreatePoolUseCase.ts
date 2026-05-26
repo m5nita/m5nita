@@ -1,3 +1,5 @@
+import type { Match } from '../../domain/match/Match'
+import { MatchEligibility } from '../../domain/match/MatchEligibility'
 import { Pool } from '../../domain/pool/Pool'
 import { PoolError } from '../../domain/pool/PoolError'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
@@ -21,8 +23,7 @@ type CouponDeps = {
 
 type CompetitionFinder = (id: string) => Promise<{ id: string; status: string } | null>
 
-export type MatchSummary = { id: string; competitionId: string; kickoffAt: Date }
-export type MatchFinder = (id: string) => Promise<MatchSummary | null>
+export type MatchFinder = (id: string) => Promise<Match | null>
 
 type Input = {
   userId: string
@@ -63,12 +64,15 @@ async function resolveSingleMatchScope(
   clock: Clock,
 ): Promise<PoolScope> {
   const match = await findMatch(matchId)
-  if (!match) throw new PoolError('MATCH_UNAVAILABLE', 'Jogo não encontrado')
-  if (match.competitionId !== competitionId) {
-    throw new PoolError('MATCH_UNAVAILABLE', 'Jogo não pertence à competição informada')
-  }
-  if (match.kickoffAt.getTime() <= clock.now().getTime()) {
-    throw new PoolError('MATCH_UNAVAILABLE', 'Jogo já começou ou terminou')
+  const result = MatchEligibility.checkForSingleMatchPool(match, competitionId, clock)
+  if (!result.ok) {
+    const message =
+      result.reason === 'not-found'
+        ? 'Jogo não encontrado'
+        : result.reason === 'wrong-competition'
+          ? 'Jogo não pertence à competição informada'
+          : 'Jogo já começou ou terminou'
+    throw new PoolError('MATCH_UNAVAILABLE', message)
   }
   return PoolScope.singleMatch(matchId)
 }

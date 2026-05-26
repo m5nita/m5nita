@@ -231,7 +231,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
   const isLocked =
     matchStatus === 'live' ||
     matchStatus === 'finished' ||
-    new Date(matchDate).getTime() <= Date.now()
+    new Date(matchDate).getTime() <= Date.now() // leak-allow: front mirror of domain `Prediction.canSubmitFor`; API does not yet ship a `predictionsLocked` flag — track in follow-up
 
   useImperativeHandle(ref, () => ({
     focusHome: () => homeInputRef.current?.focus(),

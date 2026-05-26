@@ -1,3 +1,4 @@
+import type { Match } from '../match/Match'
 import { Score } from '../scoring/Score'
 
 export class Prediction {
@@ -36,7 +37,16 @@ export class Prediction {
     this._points = score.points
   }
 
+  /**
+   * @deprecated use `Prediction.canSubmitFor(match, now)`. Kept as a thin
+   * delegate for tests that exercise the deadline rule with a raw Date.
+   */
   static canSubmit(matchDate: Date, now: Date): boolean {
     return matchDate > now
+  }
+
+  /** Domain-anchored: predictions are open while the match still accepts them. */
+  static canSubmitFor(match: Match, now: Date): boolean {
+    return match.canBePredicted(now)
   }
 }

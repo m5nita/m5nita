@@ -1,6 +1,9 @@
 import type { MatchPredictionsResponse } from '@m5nita/shared'
+import { Match } from '../../domain/match/Match'
 import type { MatchRepository } from '../../domain/match/MatchRepository.port'
+import { MatchStatus } from '../../domain/match/MatchStatus'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
+import { Prediction } from '../../domain/prediction/Prediction'
 import { PredictionError } from '../../domain/prediction/PredictionError'
 import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
@@ -26,14 +29,24 @@ export class GetMatchPredictionsUseCase {
       throw new PredictionError('POOL_NOT_FOUND', 'Bolão não encontrado')
     }
 
-    const match = await this.matchRepo.findById(input.matchId)
-    if (!match) {
+    const matchData = await this.matchRepo.findById(input.matchId)
+    if (!matchData) {
       throw new PredictionError('MATCH_NOT_FOUND', 'Jogo não encontrado')
     }
 
-    if (match.competitionId !== pool.competitionId) {
+    if (matchData.competitionId !== pool.competitionId) {
       throw new PredictionError('MATCH_NOT_IN_POOL', 'Este jogo não pertence ao bolão')
     }
+
+    const match = new Match(
+      matchData.id,
+      matchData.competitionId,
+      matchData.matchDate,
+      matchData.matchday,
+      MatchStatus.from(matchData.status),
+      matchData.homeScore,
+      matchData.awayScore,
+    )
 
     const scoringPolicy = pool.scoringPolicy()
     const includesBonus = pool.scope.kind === 'single-match'
@@ -43,11 +56,7 @@ export class GetMatchPredictionsUseCase {
       throw new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão')
     }
 
-    const isLocked =
-      match.status === 'live' ||
-      match.status === 'finished' ||
-      match.matchDate.getTime() <= this.clock.now().getTime()
-    if (!isLocked) {
+    if (Prediction.canSubmitFor(match, this.clock.now())) {
       throw new PredictionError('MATCH_NOT_LOCKED', 'Este jogo ainda não está bloqueado')
     }
 
@@ -64,7 +73,7 @@ export class GetMatchPredictionsUseCase {
       .map((p) => {
         const predScores = { homeScore: p.homeScore, awayScore: p.awayScore }
         const matchState = {
-          status: match.status,
+          status: match.status.value,
           homeScore: match.homeScore,
           awayScore: match.awayScore,
         }
@@ -121,7 +130,7 @@ export class GetMatchPredictionsUseCase {
 
     return {
       matchId: input.matchId,
-      matchStatus: match.status as MatchPredictionsResponse['matchStatus'],
+      matchStatus: match.status.value as MatchPredictionsResponse['matchStatus'],
       isLocked: true,
       totalMembers: members.length,
       viewerIncluded: true,

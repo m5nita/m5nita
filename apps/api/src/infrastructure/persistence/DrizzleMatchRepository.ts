@@ -7,6 +7,7 @@ import type {
   MatchRepository,
   UpsertMatchData,
 } from '../../domain/match/MatchRepository.port'
+import type { UnfinishedMatchesQuery } from '../../domain/pool/Pool'
 
 type MatchRow = typeof match.$inferSelect
 
@@ -173,5 +174,13 @@ export class DrizzleMatchRepository implements MatchRepository {
       .limit(1)
 
     return !!row
+  }
+
+  async hasUnfinishedFor(query: UnfinishedMatchesQuery): Promise<boolean> {
+    if (query.kind === 'single-match') {
+      const m = await this.findById(query.matchId)
+      return m === null || m.status !== 'finished'
+    }
+    return this.hasUnfinishedMatches(query.competitionId, query.matchdayFrom, query.matchdayTo)
   }
 }

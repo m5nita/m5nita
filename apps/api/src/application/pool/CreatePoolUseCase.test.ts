@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
+import { Match } from '../../domain/match/Match'
+import { MatchStatus } from '../../domain/match/MatchStatus'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
 import type { PaymentGateway } from '../ports/PaymentGateway.port'
@@ -10,11 +12,16 @@ const noMatchFinder: MatchFinder = vi.fn(async () => null)
 const upcomingMatchFinder = (
   overrides: Partial<{ id: string; competitionId: string; kickoffAt: Date }> = {},
 ): MatchFinder =>
-  vi.fn(async () => ({
-    id: overrides.id ?? '11111111-1111-4111-8111-111111111111',
-    competitionId: overrides.competitionId ?? 'comp-1',
-    kickoffAt: overrides.kickoffAt ?? new Date('2026-05-25T18:00:00Z'),
-  }))
+  vi.fn(
+    async () =>
+      new Match(
+        overrides.id ?? '11111111-1111-4111-8111-111111111111',
+        overrides.competitionId ?? 'comp-1',
+        overrides.kickoffAt ?? new Date('2026-05-25T18:00:00Z'),
+        null,
+        MatchStatus.Scheduled,
+      ),
+  )
 
 function makeRepo(overrides: Partial<PoolRepository> = {}): PoolRepository {
   const base: Partial<PoolRepository> = {

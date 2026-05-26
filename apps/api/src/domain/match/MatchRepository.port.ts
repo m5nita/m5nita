@@ -24,6 +24,8 @@ export type MatchFilters = {
 
 export type UpsertMatchData = Omit<MatchData, 'id'>
 
+import type { UnfinishedMatchesQuery } from '../pool/Pool'
+
 export interface MatchRepository {
   findById(id: string): Promise<MatchData | null>
   findByCompetition(competitionId: string, filters?: MatchFilters): Promise<MatchData[]>
@@ -36,4 +38,9 @@ export interface MatchRepository {
     matchdayFrom?: number | null,
     matchdayTo?: number | null,
   ): Promise<boolean>
+  /**
+   * Domain-anchored variant: takes the query the Pool aggregate emits.
+   * Adapter handles single-match vs range internally so callers don't branch.
+   */
+  hasUnfinishedFor(query: UnfinishedMatchesQuery): Promise<boolean>
 }

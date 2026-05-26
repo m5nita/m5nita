@@ -1,32 +1,40 @@
+import { Match } from '../domain/match/Match'
+import { MatchStatus } from '../domain/match/MatchStatus'
+
 interface MatchScore {
   fullTime: { home: number | null; away: number | null }
 }
 
-const MATCH_MAX_DURATION_MS = 12 * 60 * 60 * 1000
+/**
+ * Pure translation from the upstream feed's status string to ours. The
+ * "stale live → finished after 12h" business rule lives in
+ * `domain/match/Match.deriveStatusFromApi`; this function just maps strings.
+ */
+function rawTranslate(apiStatus: string): MatchStatus {
+  const statusMap: Record<string, MatchStatus> = {
+    SCHEDULED: MatchStatus.Scheduled,
+    TIMED: MatchStatus.Scheduled,
+    IN_PLAY: MatchStatus.Live,
+    PAUSED: MatchStatus.Live,
+    FINISHED: MatchStatus.Finished,
+    POSTPONED: MatchStatus.Postponed,
+    CANCELLED: MatchStatus.Cancelled,
+    SUSPENDED: MatchStatus.Cancelled,
+    AWARDED: MatchStatus.Finished,
+  }
+  return statusMap[apiStatus] ?? MatchStatus.Scheduled
+}
 
 export function mapStatus(apiStatus: string, score?: MatchScore, utcDate?: string): string {
-  if (
-    (apiStatus === 'IN_PLAY' || apiStatus === 'PAUSED') &&
-    utcDate &&
-    score?.fullTime.home !== null &&
-    score?.fullTime.away !== null &&
-    Date.now() - new Date(utcDate).getTime() > MATCH_MAX_DURATION_MS
-  ) {
-    return 'finished'
-  }
-
-  const statusMap: Record<string, string> = {
-    SCHEDULED: 'scheduled',
-    TIMED: 'scheduled',
-    IN_PLAY: 'live',
-    PAUSED: 'live',
-    FINISHED: 'finished',
-    POSTPONED: 'postponed',
-    CANCELLED: 'cancelled',
-    SUSPENDED: 'cancelled',
-    AWARDED: 'finished',
-  }
-  return statusMap[apiStatus] || 'scheduled'
+  const status = Match.deriveStatusFromApi({
+    apiStatus,
+    homeScore: score?.fullTime.home ?? null,
+    awayScore: score?.fullTime.away ?? null,
+    kickoffAt: utcDate ? new Date(utcDate) : new Date(),
+    now: new Date(),
+    rawTranslator: rawTranslate,
+  })
+  return status.value
 }
 
 export function mapStage(stage: string): string {

@@ -12,6 +12,8 @@ import { GetPrizeInfoUseCase } from './application/prize/GetPrizeInfoUseCase'
 import { MarkWithdrawalPaidUseCase } from './application/prize/MarkWithdrawalPaidUseCase'
 import { RequestWithdrawalUseCase } from './application/prize/RequestWithdrawalUseCase'
 import { db as defaultDb } from './db/client'
+import { Match } from './domain/match/Match'
+import { MatchStatus } from './domain/match/MatchStatus'
 import type { Clock } from './domain/shared/Clock'
 import { SystemClock } from './infrastructure/clock/SystemClock'
 import { InfinitePayPaymentGateway } from './infrastructure/external/InfinitePayPaymentGateway'
@@ -124,7 +126,17 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
       getCompetitionById,
       async (id) => {
         const m = await matchRepo.findById(id)
-        return m ? { id: m.id, competitionId: m.competitionId, kickoffAt: m.matchDate } : null
+        return m
+          ? new Match(
+              m.id,
+              m.competitionId,
+              m.matchDate,
+              m.matchday,
+              MatchStatus.from(m.status),
+              m.homeScore,
+              m.awayScore,
+            )
+          : null
       },
       clock,
     ),
