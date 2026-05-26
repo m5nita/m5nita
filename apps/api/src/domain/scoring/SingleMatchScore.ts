@@ -23,13 +23,30 @@ export const SingleMatchScore = {
   },
 }
 
-function computeDistance(pH: number, pA: number, rH: number, rA: number): number {
-  const pSign = Math.sign(pH - pA)
-  const rSign = Math.sign(rH - rA)
-  const inverted = pSign !== 0 && rSign !== 0 && pSign !== rSign
-  if (!inverted) return Math.abs(pH - rH) + Math.abs(pA - rA)
-  // real home wins, pred away wins
-  if (rSign > 0) return Math.abs(pH - rH) + (pA + rA)
-  // real away wins, pred home wins
-  return pH + rH + Math.abs(pA - rA)
+function computeDistance(
+  predictedHome: number,
+  predictedAway: number,
+  actualHome: number,
+  actualAway: number,
+): number {
+  const predictedOutcome = Math.sign(predictedHome - predictedAway)
+  const actualOutcome = Math.sign(actualHome - actualAway)
+  const winnerInverted =
+    predictedOutcome !== 0 && actualOutcome !== 0 && predictedOutcome !== actualOutcome
+
+  const homeGoalsGap = Math.abs(predictedHome - actualHome)
+  const awayGoalsGap = Math.abs(predictedAway - actualAway)
+
+  if (!winnerInverted) return homeGoalsGap + awayGoalsGap
+
+  // Winner inverted: on the column where the loser became the winner,
+  // sum the goals instead of subtracting — this punishes flipping the result
+  // more than a numerically-close-but-wrong prediction would otherwise show.
+  const actualHomeWon = actualOutcome > 0
+  if (actualHomeWon) {
+    const awayColumnSum = predictedAway + actualAway
+    return homeGoalsGap + awayColumnSum
+  }
+  const homeColumnSum = predictedHome + actualHome
+  return homeColumnSum + awayGoalsGap
 }
