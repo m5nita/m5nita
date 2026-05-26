@@ -15,18 +15,16 @@ export async function checkAndClosePools(): Promise<void> {
 
   for (const p of activePools) {
     try {
-      let hasUnfinished: boolean
-      if (p.matchId != null) {
-        // Single-match scope: the pool closes once that one match finishes.
-        const m = await matchRepo.findById(p.matchId)
-        hasUnfinished = m === null || m.status !== 'finished'
-      } else {
-        hasUnfinished = await matchRepo.hasUnfinishedMatches(
-          p.competitionId,
-          p.matchdayFrom,
-          p.matchdayTo,
-        )
-      }
+      const query =
+        p.matchId != null
+          ? { kind: 'single-match' as const, matchId: p.matchId }
+          : {
+              kind: 'range' as const,
+              competitionId: p.competitionId,
+              matchdayFrom: p.matchdayFrom,
+              matchdayTo: p.matchdayTo,
+            }
+      const hasUnfinished = await matchRepo.hasUnfinishedFor(query)
 
       if (hasUnfinished) continue
 

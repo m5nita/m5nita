@@ -5,8 +5,7 @@ const {
   mockGetMemberCount,
   mockGetMembersWithPhone,
   mockUpdateStatus,
-  mockMatchFindById,
-  mockHasUnfinishedMatches,
+  mockHasUnfinishedFor,
   mockGetPoolRanking,
   mockNotifyWinners,
 } = vi.hoisted(() => ({
@@ -14,8 +13,7 @@ const {
   mockGetMemberCount: vi.fn(),
   mockGetMembersWithPhone: vi.fn(),
   mockUpdateStatus: vi.fn(),
-  mockMatchFindById: vi.fn(),
-  mockHasUnfinishedMatches: vi.fn(),
+  mockHasUnfinishedFor: vi.fn(),
   mockGetPoolRanking: vi.fn(),
   mockNotifyWinners: vi.fn(),
 }))
@@ -29,8 +27,7 @@ vi.mock('../container', () => ({
       updateStatus: mockUpdateStatus,
     },
     matchRepo: {
-      findById: mockMatchFindById,
-      hasUnfinishedMatches: mockHasUnfinishedMatches,
+      hasUnfinishedFor: mockHasUnfinishedFor,
     },
     rankingRepo: { getPoolRanking: mockGetPoolRanking },
     notificationService: { notifyWinners: mockNotifyWinners },
@@ -71,35 +68,41 @@ describe('checkAndClosePools — scope branching (FR-012)', () => {
     vi.clearAllMocks()
   })
 
-  it('single-match: closes the pool when the chosen match is finished (does not consult hasUnfinishedMatches)', async () => {
+  it('single-match: closes the pool when hasUnfinishedFor returns false', async () => {
     mockFindAllActive.mockResolvedValue([baseSinglePool])
-    mockMatchFindById.mockResolvedValue({ id: 'match-1', status: 'finished' })
+    mockHasUnfinishedFor.mockResolvedValue(false)
 
     await checkAndClosePools()
 
-    expect(mockMatchFindById).toHaveBeenCalledWith('match-1')
-    expect(mockHasUnfinishedMatches).not.toHaveBeenCalled()
+    expect(mockHasUnfinishedFor).toHaveBeenCalledWith({
+      kind: 'single-match',
+      matchId: 'match-1',
+    })
     expect(mockUpdateStatus).toHaveBeenCalledTimes(1)
     expect(mockUpdateStatus.mock.calls[0]?.[0]).toBe('pool-single')
   })
 
-  it('single-match: keeps the pool open while the chosen match is still scheduled', async () => {
+  it('single-match: keeps the pool open while the match still reports unfinished', async () => {
     mockFindAllActive.mockResolvedValue([baseSinglePool])
-    mockMatchFindById.mockResolvedValue({ id: 'match-1', status: 'scheduled' })
+    mockHasUnfinishedFor.mockResolvedValue(true)
 
     await checkAndClosePools()
 
     expect(mockUpdateStatus).not.toHaveBeenCalled()
   })
 
-  it('range pool: still routes through hasUnfinishedMatches (unchanged behavior)', async () => {
+  it('range pool: queries hasUnfinishedFor with the range shape', async () => {
     mockFindAllActive.mockResolvedValue([baseRangePool])
-    mockHasUnfinishedMatches.mockResolvedValue(false)
+    mockHasUnfinishedFor.mockResolvedValue(false)
 
     await checkAndClosePools()
 
-    expect(mockHasUnfinishedMatches).toHaveBeenCalledWith('comp-1', 30, 30)
-    expect(mockMatchFindById).not.toHaveBeenCalled()
+    expect(mockHasUnfinishedFor).toHaveBeenCalledWith({
+      kind: 'range',
+      competitionId: 'comp-1',
+      matchdayFrom: 30,
+      matchdayTo: 30,
+    })
     expect(mockUpdateStatus).toHaveBeenCalledTimes(1)
   })
 })

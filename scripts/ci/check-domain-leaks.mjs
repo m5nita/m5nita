@@ -75,11 +75,7 @@ const RULES = [
     description:
       'Branching on `isSingleMatchPool` / `scope.matchId` to pick scoring is domain logic. Use `pool.scoringPolicy()` instead.',
     pattern: /\bisSingleMatchPool\b|\bscope\.matchId\s*!==?\s*null\b/,
-    allow: [
-      // Domain itself defines the distinction:
-      'apps/api/src/domain/pool/Pool.ts',
-      'apps/api/src/domain/shared/PoolScope.ts',
-    ],
+    allow: ['apps/api/src/domain/pool/Pool.ts', 'apps/api/src/domain/shared/PoolScope.ts'],
   },
   {
     name: 'direct-scoring-call',
@@ -92,6 +88,28 @@ const RULES = [
       'apps/api/src/domain/scoring/SingleMatchScore.ts',
       'apps/api/src/domain/scoring/SingleMatchScore.test.ts',
       'apps/api/src/domain/scoring/ScoringPolicy.ts',
+      'apps/api/src/domain/prediction/Prediction.ts',
+    ],
+  },
+  {
+    name: 'stale-match-12h-leak',
+    description:
+      '12-hour stale-match rule is domain logic. Use `StaleMatchPolicy.isStaleSinceKickoff(...)`.',
+    pattern: /\b12\s*\*\s*60\s*\*\s*60\s*\*\s*1000\b|\bMATCH_MAX_DURATION_MS\b/,
+    allow: [
+      'apps/api/src/domain/match/StaleMatchPolicy.ts',
+      'apps/api/src/domain/match/Match.test.ts',
+    ],
+  },
+  {
+    name: 'match-kickoff-comparison-leak',
+    description:
+      'Comparing `kickoffAt` / `matchDate` against `now` is `Match.canBePredicted` / `MatchEligibility` territory.',
+    pattern: /\b(kickoffAt|matchDate)\b.*\.getTime\(\)\s*[<>]=?/,
+    allow: [
+      'apps/api/src/domain/match/Match.ts',
+      'apps/api/src/domain/match/MatchEligibility.ts',
+      'apps/api/src/domain/match/StaleMatchPolicy.ts',
       'apps/api/src/domain/prediction/Prediction.ts',
     ],
   },

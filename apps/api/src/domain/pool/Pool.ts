@@ -95,4 +95,30 @@ export class Pool {
   scoringPolicy(): ScoringPolicy {
     return this.scope.kind === 'single-match' ? SingleMatchScoringPolicy : RangeScoringPolicy
   }
+
+  /**
+   * Describes which matches must finish for this pool to be closable. The
+   * repository adapter translates the query into SQL; callers don't branch
+   * on `scope.matchId`.
+   */
+  unfinishedMatchesQuery(): UnfinishedMatchesQuery {
+    if (this.scope.kind === 'single-match' && this.scope.matchId) {
+      return { kind: 'single-match', matchId: this.scope.matchId }
+    }
+    return {
+      kind: 'range',
+      competitionId: this.competitionId,
+      matchdayFrom: this.scope.range?.from ?? null,
+      matchdayTo: this.scope.range?.to ?? null,
+    }
+  }
 }
+
+export type UnfinishedMatchesQuery =
+  | { kind: 'single-match'; matchId: string }
+  | {
+      kind: 'range'
+      competitionId: string
+      matchdayFrom: number | null
+      matchdayTo: number | null
+    }

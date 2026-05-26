@@ -1,4 +1,6 @@
+import { Match } from '../../domain/match/Match'
 import type { MatchRepository } from '../../domain/match/MatchRepository.port'
+import { MatchStatus } from '../../domain/match/MatchStatus'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import { Prediction } from '../../domain/prediction/Prediction'
 import { PredictionError } from '../../domain/prediction/PredictionError'
@@ -35,11 +37,20 @@ export class UpsertPredictionUseCase {
       throw new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão')
     }
 
-    const match = await this.matchRepo.findById(input.matchId)
-    if (!match) {
+    const matchData = await this.matchRepo.findById(input.matchId)
+    if (!matchData) {
       throw new PredictionError('MATCH_NOT_FOUND', 'Jogo não encontrado')
     }
-    if (!Prediction.canSubmit(match.matchDate, this.clock.now())) {
+    const match = new Match(
+      matchData.id,
+      matchData.competitionId,
+      matchData.matchDate,
+      matchData.matchday,
+      MatchStatus.from(matchData.status),
+      matchData.homeScore,
+      matchData.awayScore,
+    )
+    if (!Prediction.canSubmitFor(match, this.clock.now())) {
       throw new PredictionError('MATCH_STARTED', 'Não é possível palpitar após o início do jogo')
     }
 
