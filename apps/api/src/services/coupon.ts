@@ -132,6 +132,11 @@ export async function listCoupons() {
   })
 }
 
+/**
+ * @deprecated Use `FeePolicy.from(discountPercent)` from `domain/shared/FeePolicy`.
+ * Kept temporarily for `services/pool.ts`, `routes/pools.ts`, `routes/ranking.ts`
+ * — to be removed in the read-model refactor (PR2).
+ */
 export function getEffectiveFeeRate(discountPercent: number): number {
   return POOL.PLATFORM_FEE_RATE * (1 - discountPercent / 100)
 }

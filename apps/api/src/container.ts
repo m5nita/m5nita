@@ -1,4 +1,3 @@
-import { POOL } from '@m5nita/shared'
 import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
 import { GetPoolDetailsUseCase } from './application/pool/GetPoolDetailsUseCase'
 import { GetUserPoolsUseCase } from './application/pool/GetUserPoolsUseCase'
@@ -30,7 +29,7 @@ import { mercadoPagoClient } from './lib/mercadopago'
 import { stripe } from './lib/stripe'
 import { bot } from './lib/telegram'
 import { getCompetitionById } from './services/competition'
-import { getEffectiveFeeRate, incrementUsage, validateCoupon } from './services/coupon'
+import { incrementUsage, validateCoupon } from './services/coupon'
 
 type Db = typeof defaultDb
 
@@ -105,12 +104,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const paymentGateway = overrides.paymentGateway ?? buildPaymentGateway(db)
   const notificationService = overrides.notificationService ?? new TelegramNotificationService(bot)
 
-  const getPrizeInfoUseCase = new GetPrizeInfoUseCase(
-    poolRepo,
-    prizeWithdrawalRepo,
-    rankingRepo,
-    getEffectiveFeeRate,
-  )
+  const getPrizeInfoUseCase = new GetPrizeInfoUseCase(poolRepo, prizeWithdrawalRepo, rankingRepo)
   const getPendingPrizesUseCase = new GetPendingPrizesUseCase(poolRepo, getPrizeInfoUseCase)
 
   return {
@@ -122,14 +116,12 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     matchRepo,
     notificationService,
     paymentGateway,
-    getEffectiveFeeRate,
 
     createPoolUseCase: new CreatePoolUseCase(
       poolRepo,
       paymentGateway,
-      { validateCoupon, incrementUsage, getEffectiveFeeRate },
+      { validateCoupon, incrementUsage },
       getCompetitionById,
-      POOL.PLATFORM_FEE_RATE,
       async (id) => {
         const m = await matchRepo.findById(id)
         return m ? { id: m.id, competitionId: m.competitionId, kickoffAt: m.matchDate } : null
@@ -159,7 +151,6 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
       prizeWithdrawalRepo,
       rankingRepo,
       notificationService,
-      getEffectiveFeeRate,
     ),
     markWithdrawalPaidUseCase: new MarkWithdrawalPaidUseCase(prizeWithdrawalRepo),
   }

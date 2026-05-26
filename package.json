@@ -9,6 +9,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "pnpm -r typecheck",
+    "check:leaks": "node scripts/check-domain-leaks.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "engines": {

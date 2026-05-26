@@ -3,6 +3,8 @@ import { PrizeCalculation } from '../../domain/prize/PrizeCalculation'
 import { PrizeWithdrawalError } from '../../domain/prize/PrizeWithdrawalError'
 import type { PrizeWithdrawalRepository } from '../../domain/prize/PrizeWithdrawalRepository.port'
 import type { RankingRepository } from '../../domain/ranking/RankingRepository.port'
+import { EntryFee } from '../../domain/shared/EntryFee'
+import { FeePolicy } from '../../domain/shared/FeePolicy'
 
 type Input = {
   poolId: string
@@ -40,7 +42,6 @@ export class GetPrizeInfoUseCase {
     private readonly poolRepo: PoolRepository,
     private readonly prizeWithdrawalRepo: PrizeWithdrawalRepository,
     private readonly rankingRepo: RankingRepository,
-    private readonly getEffectiveFeeRate: (discountPercent: number) => number,
   ) {}
 
   async execute(input: Input): Promise<Output> {
@@ -53,12 +54,11 @@ export class GetPrizeInfoUseCase {
       throw new PrizeWithdrawalError('POOL_NOT_CLOSED', 'O bolão ainda não foi finalizado.')
     }
 
-    const discountPercent = poolDetails.coupon?.discountPercent ?? 0
-    const effectiveRate = this.getEffectiveFeeRate(discountPercent)
+    const feePolicy = FeePolicy.from(poolDetails.coupon?.discountPercent ?? null)
     const prizeTotal = PrizeCalculation.calculatePrizeTotal(
-      poolDetails.entryFee,
+      EntryFee.of(poolDetails.entryFee),
       poolDetails.memberCount,
-      effectiveRate,
+      feePolicy,
     )
 
     const ranking = await this.rankingRepo.getPoolRanking(input.poolId, input.userId)

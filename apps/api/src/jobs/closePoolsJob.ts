@@ -1,9 +1,11 @@
 import { getContainer } from '../container'
+import { PrizeCalculation } from '../domain/prize/PrizeCalculation'
+import { EntryFee } from '../domain/shared/EntryFee'
+import { FeePolicy } from '../domain/shared/FeePolicy'
 import { PoolStatus } from '../domain/shared/PoolStatus'
 
 export async function checkAndClosePools(): Promise<void> {
-  const { poolRepo, matchRepo, rankingRepo, notificationService, getEffectiveFeeRate } =
-    getContainer()
+  const { poolRepo, matchRepo, rankingRepo, notificationService } = getContainer()
 
   const activePools = await poolRepo.findAllActive()
 
@@ -55,9 +57,13 @@ export async function checkAndClosePools(): Promise<void> {
     if (winnerEntries.length === 0) return
 
     const memberCount = await poolRepo.getMemberCount(p.id)
-    const effectiveRate = getEffectiveFeeRate(p.discountPercent)
-    const prizeTotal = Math.floor(p.entryFee * memberCount * (1 - effectiveRate))
-    const prizeShare = Math.floor(prizeTotal / winnerEntries.length)
+    const feePolicy = FeePolicy.from(p.discountPercent)
+    const prizeTotal = PrizeCalculation.calculatePrizeTotal(
+      EntryFee.of(p.entryFee),
+      memberCount,
+      feePolicy,
+    )
+    const prizeShare = PrizeCalculation.calculateWinnerShare(prizeTotal, winnerEntries.length)
 
     const members = await poolRepo.getMembersWithPhone(p.id)
     const phoneByUserId = new Map(members.map((m) => [m.userId, m.phoneNumber]))
@@ -67,6 +73,6 @@ export async function checkAndClosePools(): Promise<void> {
       phoneNumber: phoneByUserId.get(w.userId) ?? null,
     }))
 
-    await notificationService.notifyWinners(p.name, winners, prizeShare)
+    await notificationService.notifyWinners(p.name, winners, prizeShare.centavos)
   }
 }

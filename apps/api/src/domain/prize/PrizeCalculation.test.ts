@@ -1,16 +1,43 @@
 import { describe, expect, it } from 'vitest'
+import { EntryFee } from '../shared/EntryFee'
+import { FeePolicy } from '../shared/FeePolicy'
 import { Money } from '../shared/Money'
 import { PrizeCalculation } from './PrizeCalculation'
 
 describe('PrizeCalculation', () => {
-  it('calculates prize total with 5% fee rate', () => {
-    const total = PrizeCalculation.calculatePrizeTotal(5000, 10, 0.05)
+  it('calculates prize total with standard policy (5% fee)', () => {
+    const total = PrizeCalculation.calculatePrizeTotal(EntryFee.of(5000), 10, FeePolicy.standard())
     expect(total.centavos).toBe(47500)
   })
 
-  it('calculates prize total with 0% fee rate (full discount)', () => {
-    const total = PrizeCalculation.calculatePrizeTotal(5000, 10, 0)
+  it('calculates prize total with 100% discount (no fee)', () => {
+    const total = PrizeCalculation.calculatePrizeTotal(
+      EntryFee.of(5000),
+      10,
+      FeePolicy.withDiscount(100),
+    )
     expect(total.centavos).toBe(50000)
+  })
+
+  it('calculates prize total with partial discount', () => {
+    // 5000 * 10 * (1 - 0.05 * 0.5) = 50000 * 0.975 = 48750
+    const total = PrizeCalculation.calculatePrizeTotal(
+      EntryFee.of(5000),
+      10,
+      FeePolicy.withDiscount(50),
+    )
+    expect(total.centavos).toBe(48750)
+  })
+
+  it('returns zero for zero members', () => {
+    const total = PrizeCalculation.calculatePrizeTotal(EntryFee.of(5000), 0, FeePolicy.standard())
+    expect(total.centavos).toBe(0)
+  })
+
+  it('rejects negative memberCount', () => {
+    expect(() =>
+      PrizeCalculation.calculatePrizeTotal(EntryFee.of(5000), -1, FeePolicy.standard()),
+    ).toThrow()
   })
 
   it('calculates winner share split 2 ways', () => {

@@ -9,7 +9,6 @@ const {
   mockHasUnfinishedMatches,
   mockGetPoolRanking,
   mockNotifyWinners,
-  mockGetEffectiveFeeRate,
 } = vi.hoisted(() => ({
   mockFindAllActive: vi.fn(),
   mockGetMemberCount: vi.fn(),
@@ -19,7 +18,6 @@ const {
   mockHasUnfinishedMatches: vi.fn(),
   mockGetPoolRanking: vi.fn(),
   mockNotifyWinners: vi.fn(),
-  mockGetEffectiveFeeRate: vi.fn(() => 0.05),
 }))
 
 vi.mock('../container', () => ({
@@ -36,7 +34,6 @@ vi.mock('../container', () => ({
     },
     rankingRepo: { getPoolRanking: mockGetPoolRanking },
     notificationService: { notifyWinners: mockNotifyWinners },
-    getEffectiveFeeRate: mockGetEffectiveFeeRate,
   }),
 }))
 
