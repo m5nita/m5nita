@@ -131,6 +131,10 @@ export interface Prediction {
   homeScore: number
   awayScore: number
   points: number | null
+  /** Single-match pools only: the category portion of `points` (0/5/7/10). */
+  category?: number | null
+  /** Single-match pools only: the proximity bonus portion of `points` (0-4). */
+  bonus?: number | null
   match?: Match
 }
 
@@ -140,6 +144,10 @@ export interface MatchPredictor {
   homeScore: number
   awayScore: number
   points: number | null
+  /** Single-match pools only: the category portion (0/5/7/10). */
+  category?: number | null
+  /** Single-match pools only: the proximity bonus portion (0-4). */
+  bonus?: number | null
 }
 
 export interface MatchNonPredictor {
