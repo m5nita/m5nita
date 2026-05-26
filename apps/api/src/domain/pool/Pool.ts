@@ -1,4 +1,9 @@
 import { PrizeCalculation } from '../prize/PrizeCalculation'
+import {
+  RangeScoringPolicy,
+  type ScoringPolicy,
+  SingleMatchScoringPolicy,
+} from '../scoring/ScoringPolicy'
 import type { EntryFee } from '../shared/EntryFee'
 import { FeePolicy } from '../shared/FeePolicy'
 import type { InviteCode } from '../shared/InviteCode'
@@ -85,5 +90,9 @@ export class Pool {
 
   originalPlatformFee(): Money {
     return FeePolicy.standard().applyTo(this.entryFee.value)
+  }
+
+  scoringPolicy(): ScoringPolicy {
+    return this.scope.kind === 'single-match' ? SingleMatchScoringPolicy : RangeScoringPolicy
   }
 }

@@ -1,15 +1,18 @@
 import { desc, eq, sql } from 'drizzle-orm'
+import { getContainer } from '../container'
 import { db } from '../db/client'
 import { user } from '../db/schema/auth'
 import { match as matchTable } from '../db/schema/match'
-import { pool as poolTable } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
-import { Score } from '../domain/scoring/Score'
-import { SingleMatchScore } from '../domain/scoring/SingleMatchScore'
+import { Ranking } from '../domain/ranking/Ranking'
+import type { ScoringPolicy } from '../domain/scoring/ScoringPolicy'
 
 export async function getPoolRanking(poolId: string, currentUserId: string) {
-  const results = await db
+  const { poolRepo } = getContainer()
+  const pool = await poolRepo.findById(poolId)
+
+  const rawEntries = await db
     .select({
       userId: poolMember.userId,
       name: user.name,
@@ -31,12 +34,23 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
       desc(sql`count(case when ${prediction.points} = 10 then 1 end)`),
     )
 
-  const [poolRow] = await db
-    .select({ matchId: poolTable.matchId })
-    .from(poolTable)
-    .where(eq(poolTable.id, poolId))
-  const isSingleMatchPool = poolRow?.matchId != null
+  const livePoints = pool ? await computeLivePointsByUser(poolId, pool.scoringPolicy()) : new Map()
 
+  const entries = rawEntries.map((r) => ({
+    userId: r.userId,
+    name: r.name,
+    totalPoints: r.totalPoints,
+    livePoints: livePoints.get(r.userId) ?? 0,
+    exactMatches: r.exactMatches,
+  }))
+
+  return Ranking.build(entries, currentUserId)
+}
+
+async function computeLivePointsByUser(
+  poolId: string,
+  scoringPolicy: ScoringPolicy,
+): Promise<Map<string, number>> {
   const livePreds = await db
     .select({
       userId: prediction.userId,
@@ -49,39 +63,18 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
     .innerJoin(matchTable, eq(matchTable.id, prediction.matchId))
     .where(sql`${prediction.poolId} = ${poolId} and ${matchTable.status} = 'live'`)
 
-  const liveByUser = new Map<string, number>()
+  const byUser = new Map<string, number>()
   for (const row of livePreds) {
     if (row.actualHome === null || row.actualAway === null) continue
-    const pts = isSingleMatchPool
-      ? SingleMatchScore.calculate(row.predHome, row.predAway, row.actualHome, row.actualAway).total
-      : Score.calculate(row.predHome, row.predAway, row.actualHome, row.actualAway).points
-    liveByUser.set(row.userId, (liveByUser.get(row.userId) ?? 0) + pts)
+    const pts = scoringPolicy.score(
+      row.predHome,
+      row.predAway,
+      row.actualHome,
+      row.actualAway,
+    ).points
+    byUser.set(row.userId, (byUser.get(row.userId) ?? 0) + pts)
   }
-
-  // Assign positions with shared ranks for ties
-  let position = 0
-  let lastPoints = -1
-  let lastExact = -1
-
-  const ranking = results.map((r, index) => {
-    if (r.totalPoints !== lastPoints || r.exactMatches !== lastExact) {
-      position = index + 1
-      lastPoints = r.totalPoints
-      lastExact = r.exactMatches
-    }
-
-    return {
-      position,
-      userId: r.userId,
-      name: r.name,
-      totalPoints: r.totalPoints,
-      livePoints: liveByUser.get(r.userId) ?? 0,
-      exactMatches: r.exactMatches,
-      isCurrentUser: r.userId === currentUserId,
-    }
-  })
-
-  return ranking
+  return byUser
 }
 
 export async function getPoolPrizeTotal(poolId: string) {

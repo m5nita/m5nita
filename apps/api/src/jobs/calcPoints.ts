@@ -1,6 +1,5 @@
 import { getContainer } from '../container'
-import { Score } from '../domain/scoring/Score'
-import { SingleMatchScore } from '../domain/scoring/SingleMatchScore'
+import { RangeScoringPolicy, type ScoringPolicy } from '../domain/scoring/ScoringPolicy'
 
 export async function calcPointsForMatch(matchId: string) {
   const { matchRepo, predictionRepo, poolRepo } = getContainer()
@@ -19,27 +18,24 @@ export async function calcPointsForMatch(matchId: string) {
 
   const predictions = await predictionRepo.findByMatch(matchId)
 
-  const poolScopeCache = new Map<string, boolean>() // poolId → isSingleMatch
-  async function isSingleMatch(poolId: string): Promise<boolean> {
-    const cached = poolScopeCache.get(poolId)
-    if (cached !== undefined) return cached
+  const policyCache = new Map<string, ScoringPolicy>()
+  async function policyFor(poolId: string): Promise<ScoringPolicy> {
+    const cached = policyCache.get(poolId)
+    if (cached) return cached
     const pool = await poolRepo.findById(poolId)
-    const result = pool?.scope.kind === 'single-match'
-    poolScopeCache.set(poolId, result)
-    return result
+    const policy = pool?.scoringPolicy() ?? RangeScoringPolicy
+    policyCache.set(poolId, policy)
+    return policy
   }
 
   for (const pred of predictions) {
-    const singleMatch = await isSingleMatch(pred.poolId)
-    const points = singleMatch
-      ? SingleMatchScore.calculate(
-          pred.homeScore,
-          pred.awayScore,
-          matchData.homeScore,
-          matchData.awayScore,
-        ).total
-      : Score.calculate(pred.homeScore, pred.awayScore, matchData.homeScore, matchData.awayScore)
-          .points
+    const policy = await policyFor(pred.poolId)
+    const points = policy.score(
+      pred.homeScore,
+      pred.awayScore,
+      matchData.homeScore,
+      matchData.awayScore,
+    ).points
 
     if (pred.id) {
       await predictionRepo.updatePoints(pred.id, points)
