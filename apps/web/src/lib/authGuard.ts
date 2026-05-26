@@ -13,6 +13,10 @@ export function consumePendingRedirect(): string | null {
   return url
 }
 
+export function peekPendingRedirect(): string | null {
+  return sessionStorage.getItem(PENDING_REDIRECT_KEY)
+}
+
 export async function redirectIfAuthenticated() {
   const session = await authClient.getSession()
 

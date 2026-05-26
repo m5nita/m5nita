@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { apiFetch } from '../lib/api'
+import { consumePendingRedirect } from '../lib/authGuard'
 
 function CompleteProfilePage() {
   const navigate = useNavigate()
@@ -29,7 +30,12 @@ function CompleteProfilePage() {
         setError(data.message || 'Erro ao salvar')
         return
       }
-      navigate({ to: '/' })
+      const pending = consumePendingRedirect()
+      if (pending) {
+        window.location.href = pending
+      } else {
+        navigate({ to: '/' })
+      }
     } catch {
       setError('Erro de conexão.')
     } finally {
