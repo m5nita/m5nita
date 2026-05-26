@@ -2,9 +2,11 @@ import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client'
 import { user } from '../db/schema/auth'
 import { match as matchTable } from '../db/schema/match'
+import { pool as poolTable } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
 import { Score } from '../domain/scoring/Score'
+import { SingleMatchScore } from '../domain/scoring/SingleMatchScore'
 
 export async function getPoolRanking(poolId: string, currentUserId: string) {
   const results = await db
@@ -29,6 +31,12 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
       desc(sql`count(case when ${prediction.points} = 10 then 1 end)`),
     )
 
+  const [poolRow] = await db
+    .select({ matchId: poolTable.matchId })
+    .from(poolTable)
+    .where(eq(poolTable.id, poolId))
+  const isSingleMatchPool = poolRow?.matchId != null
+
   const livePreds = await db
     .select({
       userId: prediction.userId,
@@ -44,7 +52,9 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
   const liveByUser = new Map<string, number>()
   for (const row of livePreds) {
     if (row.actualHome === null || row.actualAway === null) continue
-    const pts = Score.calculate(row.predHome, row.predAway, row.actualHome, row.actualAway).points
+    const pts = isSingleMatchPool
+      ? SingleMatchScore.calculate(row.predHome, row.predAway, row.actualHome, row.actualAway).total
+      : Score.calculate(row.predHome, row.predAway, row.actualHome, row.actualAway).points
     liveByUser.set(row.userId, (liveByUser.get(row.userId) ?? 0) + pts)
   }
 
