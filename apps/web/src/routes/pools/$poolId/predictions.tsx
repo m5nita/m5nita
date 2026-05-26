@@ -143,6 +143,8 @@ function MatchList({
           awayScore={pred?.awayScore ?? null}
           matchStatus={match.status}
           points={pred?.points ?? null}
+          category={pred?.category ?? null}
+          bonus={pred?.bonus ?? null}
           actualHomeScore={match.homeScore}
           actualAwayScore={match.awayScore}
           onSave={onSave}

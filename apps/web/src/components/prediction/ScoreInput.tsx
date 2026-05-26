@@ -25,6 +25,8 @@ interface ScoreInputProps {
   awayScore: number | null
   matchStatus: string
   points: number | null
+  category?: number | null
+  bonus?: number | null
   actualHomeScore: number | null
   actualAwayScore: number | null
   onSave: (matchId: string, homeScore: number, awayScore: number) => void
@@ -81,6 +83,8 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
     awayScore: initialAway,
     matchStatus,
     points,
+    category,
+    bonus,
     actualHomeScore,
     actualAwayScore,
     onSave,
@@ -92,6 +96,8 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
   const [home, setHome] = useState(initialHome?.toString() ?? '')
   const [away, setAway] = useState(initialAway?.toString() ?? '')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const breakdown =
+    typeof category === 'number' && typeof bonus === 'number' ? `${category} + ${bonus}` : null
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const homeInputRef = useRef<HTMLInputElement>(null)
   const awayInputRef = useRef<HTMLInputElement>(null)
@@ -252,13 +258,33 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
           </span>
         )}
         {matchStatus === 'live' && hasPrediction && points != null && (
-          <span className="flex items-center gap-1 font-display text-xs font-black text-red">
-            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
-            {points} pts
+          <span className="flex flex-col items-center gap-0 font-display text-xs font-black text-red">
+            <span className="flex items-center gap-1">
+              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
+              {points} pts
+            </span>
+            {breakdown && (
+              <span
+                className="text-[10px] font-bold text-gray-muted"
+                title="Pontos da categoria + bônus por proximidade do placar"
+              >
+                {breakdown}
+              </span>
+            )}
           </span>
         )}
         {matchStatus === 'finished' && (
-          <span className="font-display text-xs font-black text-green">+{points ?? 0} pts</span>
+          <span className="flex flex-col items-center gap-0 font-display text-xs font-black text-green">
+            <span>+{points ?? 0} pts</span>
+            {breakdown && (
+              <span
+                className="text-[10px] font-bold text-gray-muted"
+                title="Pontos da categoria + bônus por proximidade do placar"
+              >
+                {breakdown}
+              </span>
+            )}
+          </span>
         )}
       </div>
       {renderExpandedContent && (
