@@ -10,11 +10,8 @@ function formatPoints(predictor: MatchPredictor, matchStatus: MatchStatus) {
   const baseClass = matchStatus === 'live' ? 'text-red' : 'text-green'
   const pulse = matchStatus === 'live'
 
-  const hasBreakdown = typeof predictor.category === 'number' && typeof predictor.bonus === 'number'
-
   return {
     total: predictor.points === 1 ? '+1 pt' : `+${predictor.points} pts`,
-    breakdown: hasBreakdown ? `${predictor.category} + ${predictor.bonus} bônus` : null,
     className: baseClass,
     pulse,
   }
@@ -48,22 +45,12 @@ function PredictorRow({
       </div>
       {points && (
         <span
-          className={`shrink-0 flex min-w-[48px] flex-col items-end gap-0 font-display text-xs font-black ${points.className}`}
+          className={`shrink-0 flex min-w-[48px] items-center justify-end gap-1 font-display text-xs font-black ${points.className}`}
         >
-          <span className="flex items-center gap-1">
-            {points.pulse && (
-              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-            )}
-            {points.total}
-          </span>
-          {points.breakdown && (
-            <span
-              className="text-[10px] font-bold text-gray-muted"
-              title="Pontos da categoria + bônus por proximidade do placar"
-            >
-              {points.breakdown}
-            </span>
+          {points.pulse && (
+            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
           )}
+          {points.total}
         </span>
       )}
     </div>
