@@ -1,4 +1,3 @@
-import { POOL } from '@m5nita/shared'
 import { and, desc, eq, ne, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { user } from '../../db/schema/auth'
@@ -15,8 +14,15 @@ import type {
   PoolRepository,
   PoolWithDetails,
 } from '../../domain/pool/PoolRepository.port'
+import { FeePolicy } from '../../domain/shared/FeePolicy'
 import type { PoolStatus } from '../../domain/shared/PoolStatus'
-import { poolToDomain, poolToPersistence } from './mappers/PoolMapper'
+import { type PoolRow, poolToDomain, poolToPersistence } from './mappers/PoolMapper'
+
+type PoolRowWithRelations = PoolRow & {
+  owner: { id: string; name: string | null }
+  competition: { name: string }
+  coupon: { discountPercent: number } | null
+}
 
 export class DrizzlePoolRepository implements PoolRepository {
   constructor(private readonly db: typeof dbClient) {}
@@ -32,68 +38,26 @@ export class DrizzlePoolRepository implements PoolRepository {
   async findByInviteCode(code: string): Promise<PoolWithDetails | null> {
     const row = await this.db.query.pool.findFirst({
       where: eq(pool.inviteCode, code),
-      with: {
-        owner: true,
-        coupon: true,
-        competition: true,
-      },
+      with: { owner: true, coupon: true, competition: true },
     })
     if (!row) return null
-
-    const memberCount = await this.getMemberCount(row.id)
-    const discountPercent = row.coupon?.discountPercent ?? 0
-    const effectiveRate =
-      discountPercent > 0
-        ? POOL.PLATFORM_FEE_RATE * (1 - discountPercent / 100)
-        : POOL.PLATFORM_FEE_RATE
-    const prizeTotal = Math.floor(row.entryFee * memberCount * (1 - effectiveRate))
-    const hasLiveMatch = await this.hasLiveMatchForPool(
-      row.competitionId,
-      row.matchdayFrom,
-      row.matchdayTo,
-      row.matchId,
-    )
-
-    return {
-      id: row.id,
-      name: row.name,
-      entryFee: row.entryFee,
-      ownerId: row.ownerId,
-      inviteCode: row.inviteCode,
-      competitionId: row.competitionId,
-      matchdayStart: row.matchdayFrom,
-      matchdayEnd: row.matchdayTo,
-      matchId: row.matchId,
-      status: row.status,
-      isOpen: row.isOpen,
-      couponId: row.couponId,
-      owner: { id: row.owner.id, name: row.owner.name ?? '' },
-      competitionName: row.competition.name,
-      coupon: row.coupon ? { discountPercent: row.coupon.discountPercent } : null,
-      memberCount,
-      prizeTotal,
-      hasLiveMatch,
-    }
+    return this.buildPoolWithDetails(row)
   }
 
   async findByIdWithDetails(id: string): Promise<PoolWithDetails | null> {
     const row = await this.db.query.pool.findFirst({
       where: eq(pool.id, id),
-      with: {
-        owner: true,
-        coupon: true,
-        competition: true,
-      },
+      with: { owner: true, coupon: true, competition: true },
     })
     if (!row) return null
+    return this.buildPoolWithDetails(row)
+  }
 
+  private async buildPoolWithDetails(row: PoolRowWithRelations): Promise<PoolWithDetails> {
     const memberCount = await this.getMemberCount(row.id)
-    const discountPercent = row.coupon?.discountPercent ?? 0
-    const effectiveRate =
-      discountPercent > 0
-        ? POOL.PLATFORM_FEE_RATE * (1 - discountPercent / 100)
-        : POOL.PLATFORM_FEE_RATE
-    const prizeTotal = Math.floor(row.entryFee * memberCount * (1 - effectiveRate))
+    const poolEntity = poolToDomain(row)
+    const feePolicy = FeePolicy.from(row.coupon?.discountPercent ?? null)
+    const prizeTotal = poolEntity.prize(memberCount, feePolicy).centavos
     const hasLiveMatch = await this.hasLiveMatchForPool(
       row.competitionId,
       row.matchdayFrom,

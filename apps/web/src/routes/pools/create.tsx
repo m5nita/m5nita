@@ -1,5 +1,5 @@
 import type { CompetitionListItem } from '@m5nita/shared'
-import { POOL } from '@m5nita/shared'
+import { computePlatformFee, POOL } from '@m5nita/shared'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import { InviteTicket } from '../../components/pool/InviteTicket'
@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input'
 import { type PoolScopeMode, PoolScopeToggle } from '../../features/pools/PoolScopeToggle'
 import { UpcomingMatchPicker } from '../../features/pools/UpcomingMatchPicker'
 import { apiFetch } from '../../lib/api'
-import { calculateDiscountedFee, calculatePlatformFee, formatCurrency } from '../../lib/utils'
+import { formatCurrency } from '../../lib/utils'
 
 type Step = 'config' | 'invite'
 
@@ -59,9 +59,9 @@ function CreatePoolPage() {
   }, [])
 
   const currentFee = customFee ? Number(customFee) * 100 : entryFee
-  const platformFee = calculatePlatformFee(currentFee)
+  const platformFee = computePlatformFee(currentFee)
   const discountedFee = coupon.valid
-    ? calculateDiscountedFee(currentFee, coupon.discountPercent)
+    ? computePlatformFee(currentFee, coupon.discountPercent)
     : platformFee
   const isValidFee = currentFee >= POOL.MIN_ENTRY_FEE && currentFee <= POOL.MAX_ENTRY_FEE
 

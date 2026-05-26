@@ -13,17 +13,3 @@ export function formatDate(date: string): string {
     minute: '2-digit',
   }).format(new Date(date))
 }
-
-export function calculatePrize(entryFee: number, memberCount: number, discountPercent = 0): number {
-  const effectiveRate = 0.05 * (1 - discountPercent / 100)
-  return Math.floor(entryFee * memberCount * (1 - effectiveRate))
-}
-
-export function calculatePlatformFee(amount: number): number {
-  return Math.floor(amount * 0.05)
-}
-
-export function calculateDiscountedFee(amount: number, discountPercent: number): number {
-  const effectiveRate = 0.05 * (1 - discountPercent / 100)
-  return Math.floor(amount * effectiveRate)
-}

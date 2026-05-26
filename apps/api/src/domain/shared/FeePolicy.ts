@@ -1,4 +1,9 @@
-import { POOL } from '@m5nita/shared'
+import {
+  computeEffectiveFeeRate,
+  computeOriginalPlatformFee,
+  computePlatformFee,
+  POOL,
+} from '@m5nita/shared'
 import { Money } from './Money'
 
 export class FeePolicy {
@@ -29,15 +34,15 @@ export class FeePolicy {
   }
 
   effectiveRate(): number {
-    return POOL.PLATFORM_FEE_RATE * (1 - this.discountPercent / 100)
+    return computeEffectiveFeeRate(this.discountPercent)
   }
 
   applyTo(amount: Money): Money {
-    return Money.of(Math.floor(amount.centavos * this.effectiveRate()))
+    return Money.of(computePlatformFee(amount.centavos, this.discountPercent))
   }
 
   originalFeeOn(amount: Money): Money {
-    return Money.of(Math.floor(amount.centavos * POOL.PLATFORM_FEE_RATE))
+    return Money.of(computeOriginalPlatformFee(amount.centavos))
   }
 
   prizeShareOf(amount: Money): Money {
