@@ -24,6 +24,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm check:leaks
+      - run: pnpm check:arch
 
   test:
     runs-on: ubuntu-latest
