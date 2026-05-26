@@ -10,6 +10,7 @@
     "lint:fix": "biome check --write .",
     "typecheck": "pnpm -r typecheck",
     "check:leaks": "node scripts/ci/check-domain-leaks.mjs",
+    "check:arch": "depcruise --config .dependency-cruiser.cjs apps/api/src",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "engines": {
@@ -17,6 +18,7 @@
   },
   "packageManager": "pnpm@9.15.4",
   "devDependencies": {
-    "@biomejs/biome": "^2.4.8"
+    "@biomejs/biome": "^2.4.8",
+    "dependency-cruiser": "^17.4.2"
   }
 }

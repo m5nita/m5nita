@@ -42,6 +42,49 @@ apps/web/        # Frontend React PWA
 packages/shared/ # Shared types, schemas, constants
 ```
 
+## Where business rules live (DDD layout)
+
+Core rules belong in `apps/api/src/domain/`, encapsulated as value objects /
+aggregates / policies — never re-derived in `services/`, `application/`,
+`infrastructure/`, jobs, or the front. The architecture guardrails
+(`scripts/ci/check-domain-leaks.mjs` and `apps/api/src/_architecture.test.ts`)
+enforce this in CI.
+
+| Concern                                       | Home                                                      |
+|-----------------------------------------------|-----------------------------------------------------------|
+| Platform fee, discount, prize total           | `domain/shared/FeePolicy.ts` + `domain/prize/PrizeCalculation.ts` |
+| Pure fee math (back + front share)            | `packages/shared/src/lib/fee.ts`                          |
+| Pool aggregate (state, money, scope)          | `domain/pool/Pool.ts`                                     |
+| Scoring algorithm choice (range vs single)    | `Pool.scoringPolicy()` → `domain/scoring/ScoringPolicy.ts` |
+| Score + breakdown                             | `domain/scoring/Score.ts` (+ `SingleMatchScore.ts`)       |
+| Ranking position / tiebreaker                 | `domain/ranking/Ranking.ts`                               |
+| Match status + lifecycle                      | `domain/match/Match.ts` + `MatchStatus.ts`                |
+| "Stale live → finished after 12h"             | `domain/match/StaleMatchPolicy.ts`                        |
+| Single-match pool eligibility                 | `domain/match/MatchEligibility.ts`                        |
+| Prediction deadline                           | `Prediction.canSubmitFor(match, now)`                     |
+| Repository interfaces                         | `domain/<aggregate>/*.port.ts`                            |
+
+**Frontend rule**: the front never computes prize/fee from existing pools —
+the API returns them pre-calculated. The pre-create preview uses
+`computePlatformFee` from `@m5nita/shared` (single source of truth).
+
+**Adding new rules**: write the rule once in `domain/`, expose it via a method
+on the relevant aggregate or a small policy module. If multiple layers need
+the same math (back + front), extract a pure helper in `packages/shared/src/lib/`
+and have the domain VO delegate to it.
+
+## Architecture guardrails
+
+| ID  | Mechanism                                | Catches                                                  |
+|-----|------------------------------------------|----------------------------------------------------------|
+| G2  | `pnpm check:leaks` (`scripts/ci/check-domain-leaks.mjs`) | regex-based leak patterns (inline fee math, 12h literal, scope-branching, deprecated helpers) |
+| G3  | `apps/api/src/_architecture.test.ts` (Vitest) | layer-boundary imports (domain → outer, application → infrastructure, services bypassing repos) |
+
+Both run automatically in CI. When intentional, exempt a single line with
+`// leak-allow: <reason>` (G2) or `// arch-allow: <reason>` (G3). The
+`_architecture.test.ts` file also carries `BASELINE_*` allow-lists of
+pre-existing offenders — never extend them.
+
 ## Commands
 
 ```bash
