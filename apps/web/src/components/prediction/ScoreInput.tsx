@@ -42,6 +42,155 @@ function displayTeamName(name: string): string {
   return name === 'TBD' ? 'A definir' : name
 }
 
+function categoryLabel(category: number, realIsDraw: boolean): string {
+  if (category === 10) return 'exato'
+  if (category === 7) return 'vencedor+diff'
+  if (category === 5) return realIsDraw ? 'empate' : 'vencedor'
+  return 'errou'
+}
+
+function buildExplanation({
+  homeTeam,
+  awayTeam,
+  realHome,
+  realAway,
+  category,
+  bonus,
+}: {
+  homeTeam: string
+  awayTeam: string
+  realHome: number
+  realAway: number
+  category: number
+  bonus: number
+}): { categoryLine: string; bonusLine: string } {
+  const realIsDraw = realHome === realAway
+  const realWinnerTeam = realHome > realAway ? homeTeam : awayTeam
+
+  let categoryLine: string
+  if (category === 10) {
+    categoryLine = `🎯 10 pts — você acertou o placar exato!`
+  } else if (category === 7) {
+    categoryLine = `🎯 7 pts — você acertou o vencedor (${realWinnerTeam}) e a diferença de gols.`
+  } else if (category === 5) {
+    categoryLine = realIsDraw
+      ? `🎯 5 pts — você acertou que ia empatar (mesmo errando o placar exato).`
+      : `🎯 5 pts — você acertou o vencedor (${realWinnerTeam}), mas errou a diferença.`
+  } else {
+    categoryLine = realIsDraw
+      ? `❌ 0 pts da categoria — o jogo foi empate e você apostou em vencedor.`
+      : `❌ 0 pts da categoria — você errou o vencedor (era o ${realWinnerTeam}).`
+  }
+
+  let bonusLine: string
+  if (bonus === 4) {
+    bonusLine = `✨ +4 pts de bônus — placar exato dá o bônus máximo.`
+  } else if (bonus > 0) {
+    bonusLine = `✨ +${bonus} pts de bônus — seu palpite ficou perto do placar real.`
+  } else {
+    bonusLine = `Sem bônus — seu placar ficou longe do real.`
+  }
+
+  return { categoryLine, bonusLine }
+}
+
+function ScoreBreakdownToggle({
+  total,
+  category,
+  bonus,
+  realIsDraw,
+  variant,
+  isOpen,
+  onToggle,
+}: {
+  total: number
+  category: number
+  bonus: number
+  realIsDraw: boolean
+  variant: 'live' | 'finished'
+  isOpen: boolean
+  onToggle: () => void
+}) {
+  const totalLabel = total === 1 ? '+1 pt' : `+${total} pts`
+  const catLabel = categoryLabel(category, realIsDraw)
+  const colorClass = variant === 'live' ? 'text-red' : 'text-green'
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={isOpen}
+      aria-label={`Ver como ${totalLabel} foram calculados`}
+      className={`flex flex-col items-center gap-0 font-display text-xs font-black ${colorClass} transition-opacity hover:opacity-80`}
+    >
+      <span className="flex items-center gap-1">
+        {variant === 'live' && (
+          <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+        )}
+        {totalLabel}
+      </span>
+      <span className="flex items-center gap-1 text-[10px] font-bold text-gray-muted">
+        <span>
+          {catLabel} {category} + bônus {bonus}
+        </span>
+        <span
+          aria-hidden="true"
+          className="flex h-3 w-3 items-center justify-center rounded-full border border-gray-muted text-[8px] font-black"
+        >
+          ?
+        </span>
+      </span>
+    </button>
+  )
+}
+
+function ScoreBreakdownPanel({
+  total,
+  category,
+  bonus,
+  predHome,
+  predAway,
+  realHome,
+  realAway,
+  homeTeam,
+  awayTeam,
+}: {
+  total: number
+  category: number
+  bonus: number
+  predHome: number
+  predAway: number
+  realHome: number
+  realAway: number
+  homeTeam: string
+  awayTeam: string
+}) {
+  const explanation = buildExplanation({
+    homeTeam,
+    awayTeam,
+    realHome,
+    realAway,
+    category,
+    bonus,
+  })
+  return (
+    <div className="mt-2 w-full border-2 border-border bg-white/70 p-3 text-left">
+      <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
+        Como esses {total} pts foram calculados:
+      </p>
+      <p className="mt-2 text-xs text-gray-dark">
+        O jogo terminou {realHome}×{realAway} e você palpitou {predHome}×{predAway}.
+      </p>
+      <p className="mt-2 text-xs text-gray-dark">{explanation.categoryLine}</p>
+      <p className="mt-1 text-xs text-gray-dark">{explanation.bonusLine}</p>
+      <div className="mt-3 border-t border-border pt-2 text-[11px] leading-relaxed text-gray-muted">
+        Em bolões de jogo único, além dos pontos da categoria, você ganha até 4 pts extras por
+        proximidade do placar. Quanto mais perto, mais bônus.
+      </div>
+    </div>
+  )
+}
+
 function ExpandPredictionsControl({
   isLocked,
   matchId,
@@ -96,8 +245,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
   const [home, setHome] = useState(initialHome?.toString() ?? '')
   const [away, setAway] = useState(initialAway?.toString() ?? '')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
-  const breakdown =
-    typeof category === 'number' && typeof bonus === 'number' ? `${category} + ${bonus}` : null
+  const [breakdownOpen, setBreakdownOpen] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const homeInputRef = useRef<HTMLInputElement>(null)
   const awayInputRef = useRef<HTMLInputElement>(null)
@@ -258,35 +406,67 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
           </span>
         )}
         {matchStatus === 'live' && hasPrediction && points != null && (
-          <span className="flex flex-col items-center gap-0 font-display text-xs font-black text-red">
-            <span className="flex items-center gap-1">
-              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
-              {points} pts
-            </span>
-            {breakdown && (
-              <span
-                className="text-[10px] font-bold text-gray-muted"
-                title="Pontos da categoria + bônus por proximidade do placar"
-              >
-                {breakdown}
+          <>
+            {typeof category === 'number' &&
+            typeof bonus === 'number' &&
+            actualHomeScore !== null &&
+            actualAwayScore !== null ? (
+              <ScoreBreakdownToggle
+                total={points}
+                category={category}
+                bonus={bonus}
+                realIsDraw={actualHomeScore === actualAwayScore}
+                variant="live"
+                isOpen={breakdownOpen}
+                onToggle={() => setBreakdownOpen((v) => !v)}
+              />
+            ) : (
+              <span className="flex items-center gap-1 font-display text-xs font-black text-red">
+                <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
+                {points} pts
               </span>
             )}
-          </span>
+          </>
         )}
-        {matchStatus === 'finished' && (
-          <span className="flex flex-col items-center gap-0 font-display text-xs font-black text-green">
-            <span>+{points ?? 0} pts</span>
-            {breakdown && (
-              <span
-                className="text-[10px] font-bold text-gray-muted"
-                title="Pontos da categoria + bônus por proximidade do placar"
-              >
-                {breakdown}
-              </span>
-            )}
-          </span>
-        )}
+        {matchStatus === 'finished' &&
+          (typeof category === 'number' &&
+          typeof bonus === 'number' &&
+          points !== null &&
+          actualHomeScore !== null &&
+          actualAwayScore !== null ? (
+            <ScoreBreakdownToggle
+              total={points}
+              category={category}
+              bonus={bonus}
+              realIsDraw={actualHomeScore === actualAwayScore}
+              variant="finished"
+              isOpen={breakdownOpen}
+              onToggle={() => setBreakdownOpen((v) => !v)}
+            />
+          ) : (
+            <span className="font-display text-xs font-black text-green">+{points ?? 0} pts</span>
+          ))}
       </div>
+      {breakdownOpen &&
+        typeof category === 'number' &&
+        typeof bonus === 'number' &&
+        points !== null &&
+        initialHome !== null &&
+        initialAway !== null &&
+        actualHomeScore !== null &&
+        actualAwayScore !== null && (
+          <ScoreBreakdownPanel
+            total={points}
+            category={category}
+            bonus={bonus}
+            predHome={initialHome}
+            predAway={initialAway}
+            realHome={actualHomeScore}
+            realAway={actualAwayScore}
+            homeTeam={displayTeamName(homeTeam)}
+            awayTeam={displayTeamName(awayTeam)}
+          />
+        )}
       {renderExpandedContent && (
         <ExpandPredictionsControl
           isLocked={isLocked}

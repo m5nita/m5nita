@@ -14,7 +14,7 @@ function formatPoints(predictor: MatchPredictor, matchStatus: MatchStatus) {
 
   return {
     total: predictor.points === 1 ? '+1 pt' : `+${predictor.points} pts`,
-    breakdown: hasBreakdown ? `${predictor.category} + ${predictor.bonus}` : null,
+    breakdown: hasBreakdown ? `${predictor.category} + ${predictor.bonus} bônus` : null,
     className: baseClass,
     pulse,
   }
