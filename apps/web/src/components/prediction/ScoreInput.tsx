@@ -42,13 +42,6 @@ function displayTeamName(name: string): string {
   return name === 'TBD' ? 'A definir' : name
 }
 
-function categoryLabel(category: number, realIsDraw: boolean): string {
-  if (category === 10) return 'exato'
-  if (category === 7) return 'vencedor+diff'
-  if (category === 5) return realIsDraw ? 'empate' : 'vencedor'
-  return 'errou'
-}
-
 function buildExplanation({
   homeTeam,
   awayTeam,
@@ -69,24 +62,24 @@ function buildExplanation({
 
   let categoryLine: string
   if (category === 10) {
-    categoryLine = `🎯 10 pts — você acertou o placar exato!`
+    categoryLine = `10 pts — você acertou o placar exato.`
   } else if (category === 7) {
-    categoryLine = `🎯 7 pts — você acertou o vencedor (${realWinnerTeam}) e a diferença de gols.`
+    categoryLine = `7 pts — você acertou o vencedor (${realWinnerTeam}) e a diferença de gols.`
   } else if (category === 5) {
     categoryLine = realIsDraw
-      ? `🎯 5 pts — você acertou que ia empatar (mesmo errando o placar exato).`
-      : `🎯 5 pts — você acertou o vencedor (${realWinnerTeam}), mas errou a diferença.`
+      ? `5 pts — você acertou que ia empatar (mesmo errando o placar exato).`
+      : `5 pts — você acertou o vencedor (${realWinnerTeam}), mas errou a diferença.`
   } else {
     categoryLine = realIsDraw
-      ? `❌ 0 pts da categoria — o jogo foi empate e você apostou em vencedor.`
-      : `❌ 0 pts da categoria — você errou o vencedor (era o ${realWinnerTeam}).`
+      ? `0 pts da categoria — o jogo foi empate e você apostou em vencedor.`
+      : `0 pts da categoria — você errou o vencedor (era o ${realWinnerTeam}).`
   }
 
   let bonusLine: string
   if (bonus === 4) {
-    bonusLine = `✨ +4 pts de bônus — placar exato dá o bônus máximo.`
+    bonusLine = `4 pts de bônus — placar exato dá o bônus máximo.`
   } else if (bonus > 0) {
-    bonusLine = `✨ +${bonus} pts de bônus — seu palpite ficou perto do placar real.`
+    bonusLine = `${bonus} pts de bônus — seu palpite ficou perto do placar real.`
   } else {
     bonusLine = `Sem bônus — seu placar ficou longe do real.`
   }
@@ -96,23 +89,16 @@ function buildExplanation({
 
 function ScoreBreakdownToggle({
   total,
-  category,
-  bonus,
-  realIsDraw,
   variant,
   isOpen,
   onToggle,
 }: {
   total: number
-  category: number
-  bonus: number
-  realIsDraw: boolean
   variant: 'live' | 'finished'
   isOpen: boolean
   onToggle: () => void
 }) {
   const totalLabel = total === 1 ? '+1 pt' : `+${total} pts`
-  const catLabel = categoryLabel(category, realIsDraw)
   const colorClass = variant === 'live' ? 'text-red' : 'text-green'
 
   return (
@@ -121,24 +107,17 @@ function ScoreBreakdownToggle({
       onClick={onToggle}
       aria-expanded={isOpen}
       aria-label={`Ver como ${totalLabel} foram calculados`}
-      className={`flex flex-col items-center gap-0 font-display text-xs font-black ${colorClass} transition-opacity hover:opacity-80`}
+      className={`flex items-center gap-1.5 font-display text-xs font-black ${colorClass} transition-opacity hover:opacity-80`}
     >
-      <span className="flex items-center gap-1">
-        {variant === 'live' && (
-          <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-        )}
-        {totalLabel}
-      </span>
-      <span className="flex items-center gap-1 text-[10px] font-bold text-gray-muted">
-        <span>
-          {catLabel} {category} + bônus {bonus}
-        </span>
-        <span
-          aria-hidden="true"
-          className="flex h-3 w-3 items-center justify-center rounded-full border border-gray-muted text-[8px] font-black"
-        >
-          ?
-        </span>
+      {variant === 'live' && (
+        <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+      )}
+      <span>{totalLabel}</span>
+      <span
+        aria-hidden="true"
+        className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] font-black"
+      >
+        ?
       </span>
     </button>
   )
@@ -413,9 +392,6 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
             actualAwayScore !== null ? (
               <ScoreBreakdownToggle
                 total={points}
-                category={category}
-                bonus={bonus}
-                realIsDraw={actualHomeScore === actualAwayScore}
                 variant="live"
                 isOpen={breakdownOpen}
                 onToggle={() => setBreakdownOpen((v) => !v)}
@@ -436,9 +412,6 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
           actualAwayScore !== null ? (
             <ScoreBreakdownToggle
               total={points}
-              category={category}
-              bonus={bonus}
-              realIsDraw={actualHomeScore === actualAwayScore}
               variant="finished"
               isOpen={breakdownOpen}
               onToggle={() => setBreakdownOpen((v) => !v)}
