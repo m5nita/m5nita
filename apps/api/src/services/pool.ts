@@ -1,52 +1,35 @@
-import { POOL } from '@m5nita/shared'
 import { and, eq, sql } from 'drizzle-orm'
+import { getContainer } from '../container'
 import { db } from '../db/client'
 import { match } from '../db/schema/match'
-import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
-import { getEffectiveFeeRate } from './coupon'
+import { FeePolicy } from '../domain/shared/FeePolicy'
+import { Money } from '../domain/shared/Money'
 
+/**
+ * HTTP read helper. Returns a flattened shape consumed by routes. Prize/fee
+ * are computed by the `Pool` aggregate inside the repository (read-model).
+ */
 export async function getPoolById(poolId: string, userId: string) {
-  const poolData = await db.query.pool.findFirst({
-    where: eq(pool.id, poolId),
-    with: {
-      owner: true,
-      coupon: true,
-      competition: true,
-    },
-  })
-
-  if (!poolData) return null
-
-  const [memberCount] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(poolMember)
-    .where(eq(poolMember.poolId, poolId))
-
-  const hasLiveMatch = await poolHasLiveMatch(
-    poolData.competitionId,
-    poolData.matchdayFrom,
-    poolData.matchdayTo,
-    poolData.matchId,
-  )
+  const { poolRepo } = getContainer()
+  const details = await poolRepo.findByIdWithDetails(poolId)
+  if (!details) return null
 
   const isMember = await isPoolMember(poolId, userId)
-
-  const discountPercent = poolData.coupon?.discountPercent ?? 0
-  const effectiveRate = getEffectiveFeeRate(discountPercent)
-  const prizeTotal = Math.floor(poolData.entryFee * (memberCount?.count ?? 0) * (1 - effectiveRate))
+  const feePolicy = FeePolicy.from(details.coupon?.discountPercent ?? null)
+  const entryMoney = Money.of(details.entryFee)
+  const platformFee = feePolicy.applyTo(entryMoney).centavos
+  const originalPlatformFee = FeePolicy.standard().applyTo(entryMoney).centavos
 
   return {
-    ...poolData,
-    owner: { id: poolData.owner.id, name: poolData.owner.name },
-    competitionName: poolData.competition.name,
-    memberCount: memberCount?.count ?? 0,
-    prizeTotal,
-    hasLiveMatch,
+    ...details,
+    memberCount: details.memberCount,
+    prizeTotal: details.prizeTotal,
+    hasLiveMatch: details.hasLiveMatch,
     isMember,
-    discountPercent,
-    originalPlatformFee: Math.floor(poolData.entryFee * POOL.PLATFORM_FEE_RATE),
-    platformFee: Math.floor(poolData.entryFee * effectiveRate),
+    discountPercent: details.coupon?.discountPercent ?? 0,
+    originalPlatformFee,
+    platformFee,
   }
 }
 
@@ -56,7 +39,6 @@ export async function poolHasLiveMatch(
   matchdayTo: number | null,
   matchId: string | null = null,
 ): Promise<boolean> {
-  // Single-match scope: only the chosen match counts as "live for this pool".
   if (matchId !== null) {
     const [row] = await db
       .select({ count: sql<number>`count(*)::int` })
@@ -79,28 +61,14 @@ export async function poolHasLiveMatch(
 }
 
 export async function getPoolByInviteCode(inviteCode: string) {
-  const poolData = await db.query.pool.findFirst({
-    where: eq(pool.inviteCode, inviteCode),
-    with: {
-      owner: true,
-      coupon: true,
-      competition: true,
-    },
-  })
+  const { poolRepo } = getContainer()
+  const details = await poolRepo.findByInviteCode(inviteCode)
+  if (!details || details.status !== 'active') return null
 
-  if (!poolData || poolData.status !== 'active') return null
-
-  const [memberCount] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(poolMember)
-    .where(eq(poolMember.poolId, poolData.id))
-
-  const count = memberCount?.count ?? 0
-  const discountPercent = poolData.coupon?.discountPercent ?? 0
-  const effectiveRate = getEffectiveFeeRate(discountPercent)
-  const originalPlatformFee = Math.floor(poolData.entryFee * POOL.PLATFORM_FEE_RATE)
-  const platformFee = Math.floor(poolData.entryFee * effectiveRate)
-  const prizeTotal = Math.floor(poolData.entryFee * count * (1 - effectiveRate))
+  const feePolicy = FeePolicy.from(details.coupon?.discountPercent ?? null)
+  const entryMoney = Money.of(details.entryFee)
+  const platformFee = feePolicy.applyTo(entryMoney).centavos
+  const originalPlatformFee = FeePolicy.standard().applyTo(entryMoney).centavos
 
   let singleMatch: {
     id: string
@@ -112,7 +80,7 @@ export async function getPoolByInviteCode(inviteCode: string) {
     stage: string | null
     matchday: number | null
   } | null = null
-  if (poolData.matchId) {
+  if (details.matchId) {
     const [m] = await db
       .select({
         id: match.id,
@@ -125,7 +93,7 @@ export async function getPoolByInviteCode(inviteCode: string) {
         matchday: match.matchday,
       })
       .from(match)
-      .where(eq(match.id, poolData.matchId))
+      .where(eq(match.id, details.matchId))
       .limit(1)
     if (m) {
       singleMatch = {
@@ -142,21 +110,21 @@ export async function getPoolByInviteCode(inviteCode: string) {
   }
 
   return {
-    id: poolData.id,
-    name: poolData.name,
-    entryFee: poolData.entryFee,
+    id: details.id,
+    name: details.name,
+    entryFee: details.entryFee,
     platformFee,
     originalPlatformFee,
-    discountPercent,
-    competitionName: poolData.competition.name,
-    matchdayFrom: poolData.matchdayFrom,
-    matchdayTo: poolData.matchdayTo,
-    matchId: poolData.matchId,
+    discountPercent: details.coupon?.discountPercent ?? 0,
+    competitionName: details.competitionName,
+    matchdayFrom: details.matchdayStart,
+    matchdayTo: details.matchdayEnd,
+    matchId: details.matchId,
     singleMatch,
-    owner: { name: poolData.owner.name },
-    memberCount: count,
-    prizeTotal,
-    isOpen: poolData.isOpen,
+    owner: { name: details.owner.name },
+    memberCount: details.memberCount,
+    prizeTotal: details.prizeTotal,
+    isOpen: details.isOpen,
   }
 }
 
