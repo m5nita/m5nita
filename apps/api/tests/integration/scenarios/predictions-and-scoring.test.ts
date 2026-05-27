@@ -213,4 +213,47 @@ describe('US3 — predictions and scoring', () => {
     const playerPrediction = body.predictors.find((p) => p.userId === player.id)
     expect(playerPrediction).toMatchObject({ homeScore: 0, awayScore: 0 })
   })
+
+  // Regression: single-match scoring stores 10 (category) + up to 4 (proximity
+  // bonus) = up to 14 for an exact prediction. The ranking endpoint used to
+  // count `exactMatches` as `prediction.points = 10` and always returned 0 in
+  // single-match pools. The fix derives "exact" from the actual match scores.
+  it('scenario 5 — single-match pool: exact prediction counts as 1 exato even though points = 14', async () => {
+    const { app, clock } = buildTestApp({ initialNow: BEFORE })
+    const comp = await makeCompetition(sql)
+    const admin = await signInViaPhoneOtp(app, { phoneNumber: '+5511933330041' })
+    const match = await makeMatch(sql, { competitionId: comp.id, matchDate: KICKOFF })
+
+    const pool = await makePool({
+      admin,
+      competitionId: comp.id,
+      entryFeeCentavos: 10_000,
+      matchId: match.id,
+    })
+    await deliverInfinitePayPaidWebhook(app, pool.paymentId)
+
+    await admin.fetch(`/api/pools/${pool.id}/predictions/${match.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ homeScore: 2, awayScore: 1 }),
+    })
+
+    clock.setNow(AFTER)
+    await finishMatch(sql, match.id, 2, 1)
+    await calcPointsForMatch(match.id)
+
+    const storedPoints = await sql`
+      SELECT points FROM "prediction" WHERE user_id = ${admin.id} AND match_id = ${match.id}
+    `
+    expect(storedPoints[0]?.points).toBe(14) // 10 category + 4 bonus (distance 0)
+
+    const rankingResp = await admin.fetch(`/api/pools/${pool.id}/ranking`)
+    expect(rankingResp.status).toBe(200)
+    const rankingBody = (await rankingResp.json()) as {
+      ranking: Array<{ userId: string; totalPoints: number; exactMatches: number }>
+    }
+    const me = rankingBody.ranking.find((r) => r.userId === admin.id)
+    expect(me?.totalPoints).toBe(14)
+    expect(me?.exactMatches).toBe(1) // would be 0 under the old `points = 10` rule
+  })
 })
