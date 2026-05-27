@@ -57,7 +57,7 @@ export async function checkAndClosePools(): Promise<void> {
     const memberCount = await poolRepo.getMemberCount(p.id)
     const feePolicy = FeePolicy.from(p.discountPercent)
     const prizeTotal = PrizeCalculation.calculatePrizeTotal(
-      EntryFee.of(p.entryFee),
+      EntryFee.hydrate(p.entryFee),
       memberCount,
       feePolicy,
     )
