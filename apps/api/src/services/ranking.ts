@@ -12,14 +12,18 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
   const { poolRepo } = getContainer()
   const pool = await poolRepo.findById(poolId)
 
+  // Exact = predicted score == actual finished score. Derived from match scores
+  // (not from `prediction.points = 10`), since single-match scoring stores 14
+  // for an exact prediction (10 category + 4 bonus).
+  const exactExpr = sql`count(case when ${matchTable.status} = 'finished'
+      and ${prediction.homeScore} = ${matchTable.homeScore}
+      and ${prediction.awayScore} = ${matchTable.awayScore} then 1 end)`
   const rawEntries = await db
     .select({
       userId: poolMember.userId,
       name: user.name,
       totalPoints: sql<number>`coalesce(sum(${prediction.points}), 0)::int`.as('total_points'),
-      exactMatches: sql<number>`count(case when ${prediction.points} = 10 then 1 end)::int`.as(
-        'exact_matches',
-      ),
+      exactMatches: sql<number>`${exactExpr}::int`.as('exact_matches'),
     })
     .from(poolMember)
     .innerJoin(user, eq(user.id, poolMember.userId))
@@ -27,12 +31,10 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
       prediction,
       sql`${prediction.userId} = ${poolMember.userId} and ${prediction.poolId} = ${poolMember.poolId}`,
     )
+    .leftJoin(matchTable, eq(matchTable.id, prediction.matchId))
     .where(eq(poolMember.poolId, poolId))
     .groupBy(poolMember.userId, user.name)
-    .orderBy(
-      desc(sql`coalesce(sum(${prediction.points}), 0)`),
-      desc(sql`count(case when ${prediction.points} = 10 then 1 end)`),
-    )
+    .orderBy(desc(sql`coalesce(sum(${prediction.points}), 0)`), desc(exactExpr))
 
   const livePoints = pool ? await computeLivePointsByUser(poolId, pool.scoringPolicy()) : new Map()
 

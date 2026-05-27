@@ -17,6 +17,7 @@ type MakePoolOpts = {
   entryFeeCentavos?: number
   matchdayFrom?: number
   matchdayTo?: number
+  matchId?: string
 }
 
 export async function makePool(opts: MakePoolOpts): Promise<TestPool> {
@@ -28,6 +29,9 @@ export async function makePool(opts: MakePoolOpts): Promise<TestPool> {
   if (opts.matchdayFrom != null && opts.matchdayTo != null) {
     body.matchdayFrom = opts.matchdayFrom
     body.matchdayTo = opts.matchdayTo
+  }
+  if (opts.matchId != null) {
+    body.matchId = opts.matchId
   }
 
   const resp = await opts.admin.fetch('/api/pools', {
