@@ -22,8 +22,8 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
   const hasLiveMatch = details
     ? await poolHasLiveMatch(
         details.competitionId,
-        details.matchdayStart,
-        details.matchdayEnd,
+        details.matchdayFrom,
+        details.matchdayTo,
         details.matchId,
       )
     : false

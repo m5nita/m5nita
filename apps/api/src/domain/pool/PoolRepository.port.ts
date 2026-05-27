@@ -8,8 +8,8 @@ export type PoolWithDetails = {
   ownerId: string
   inviteCode: string
   competitionId: string
-  matchdayStart: number | null
-  matchdayEnd: number | null
+  matchdayFrom: number | null
+  matchdayTo: number | null
   matchId: string | null
   status: string
   isOpen: boolean

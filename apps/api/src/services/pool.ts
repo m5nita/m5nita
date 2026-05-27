@@ -23,9 +23,6 @@ export async function getPoolById(poolId: string, userId: string) {
 
   return {
     ...details,
-    memberCount: details.memberCount,
-    prizeTotal: details.prizeTotal,
-    hasLiveMatch: details.hasLiveMatch,
     isMember,
     discountPercent: details.coupon?.discountPercent ?? 0,
     originalPlatformFee,
@@ -117,8 +114,8 @@ export async function getPoolByInviteCode(inviteCode: string) {
     originalPlatformFee,
     discountPercent: details.coupon?.discountPercent ?? 0,
     competitionName: details.competitionName,
-    matchdayFrom: details.matchdayStart,
-    matchdayTo: details.matchdayEnd,
+    matchdayFrom: details.matchdayFrom,
+    matchdayTo: details.matchdayTo,
     matchId: details.matchId,
     singleMatch,
     owner: { name: details.owner.name },
