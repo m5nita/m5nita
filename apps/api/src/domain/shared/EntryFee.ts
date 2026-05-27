@@ -14,6 +14,14 @@ export class EntryFee {
     return new EntryFee(Money.of(centavos))
   }
 
+  // Reconstitute an EntryFee from persisted state without re-applying the
+  // current creation-time invariant (R$5 minimum). Pools created before the
+  // bound was tightened in #55 may legally hold values below the current
+  // floor; refusing to load them would corrupt history.
+  static hydrate(centavos: number): EntryFee {
+    return new EntryFee(Money.of(centavos))
+  }
+
   platformFee(rate: number): Money {
     return this.value.percentage(rate * 100)
   }

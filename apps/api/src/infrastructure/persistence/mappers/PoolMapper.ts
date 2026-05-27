@@ -25,7 +25,7 @@ export function poolToDomain(row: PoolRow): Pool {
   return new Pool(
     row.id,
     row.name,
-    EntryFee.of(row.entryFee),
+    EntryFee.hydrate(row.entryFee),
     row.ownerId,
     InviteCode.from(row.inviteCode),
     row.competitionId,

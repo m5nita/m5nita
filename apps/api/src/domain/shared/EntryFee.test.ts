@@ -27,6 +27,18 @@ describe('EntryFee', () => {
     })
   })
 
+  describe('EntryFee.hydrate()', () => {
+    it('accepts legacy values below the current creation floor', () => {
+      const fee = EntryFee.hydrate(100)
+      expect(fee.value.centavos).toBe(100)
+    })
+
+    it('still rejects negative / non-integer values via Money', () => {
+      expect(() => EntryFee.hydrate(-1)).toThrow()
+      expect(() => EntryFee.hydrate(1.5)).toThrow()
+    })
+  })
+
   describe('platformFee()', () => {
     it('calculates 5% platform fee on 5000 centavos', () => {
       const fee = EntryFee.of(5000)
