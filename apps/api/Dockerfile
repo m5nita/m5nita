@@ -29,4 +29,4 @@ ARG SOURCE_COMMIT=unknown
 ENV SENTRY_RELEASE=${SOURCE_COMMIT}
 ENV NODE_ENV=production
 EXPOSE 3001
-CMD ["./apps/api/node_modules/.bin/tsx", "apps/api/src/index.ts"]
+CMD ["sh", "-c", "cd /app/apps/api && ./node_modules/.bin/drizzle-kit migrate && ./node_modules/.bin/tsx src/index.ts"]
