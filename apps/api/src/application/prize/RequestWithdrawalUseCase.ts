@@ -59,7 +59,7 @@ export class RequestWithdrawalUseCase {
 
     const feePolicy = FeePolicy.from(poolDetails.coupon?.discountPercent ?? null)
     const prizeTotal = PrizeCalculation.calculatePrizeTotal(
-      EntryFee.of(poolDetails.entryFee),
+      EntryFee.hydrate(poolDetails.entryFee),
       poolDetails.memberCount,
       feePolicy,
     )
