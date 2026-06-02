@@ -9,7 +9,11 @@ interface PoolCardProps {
 
 export function PoolCard({ pool, index }: PoolCardProps) {
   return (
-    <Link to="/pools/$poolId" params={{ poolId: pool.id }} className="group cursor-pointer">
+    <Link
+      to="/pools/$poolId"
+      params={{ poolId: pool.id }}
+      className="group cursor-pointer transition-opacity active:opacity-60"
+    >
       {/* Mobile: horizontal list item */}
       <div className="flex items-center gap-4 border-b border-border py-4 transition-colors group-hover:border-black lg:hidden">
         <span className="font-display text-3xl font-black text-gray-light group-hover:text-red transition-colors">

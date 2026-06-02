@@ -8,12 +8,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants = {
-  primary: 'bg-black text-white border-2 border-black hover:bg-black/85 focus-visible:ring-black',
+  primary:
+    'bg-black text-white border-2 border-black hover:bg-black/85 active:bg-black/70 focus-visible:ring-black',
   secondary:
-    'bg-transparent text-black border-2 border-black hover:bg-black hover:text-white focus-visible:ring-black',
-  danger: 'bg-red text-white border-2 border-red hover:bg-red/85 focus-visible:ring-red',
+    'bg-transparent text-black border-2 border-black hover:bg-black hover:text-white active:bg-black/80 active:text-white focus-visible:ring-black',
+  danger:
+    'bg-red text-white border-2 border-red hover:bg-red/85 active:bg-red/70 focus-visible:ring-red',
   ghost:
-    'text-gray-dark border-2 border-transparent hover:text-black hover:bg-black/5 focus-visible:ring-black',
+    'text-gray-dark border-2 border-transparent hover:text-black hover:bg-black/5 active:bg-black/10 focus-visible:ring-black',
 }
 
 const sizes = {
@@ -35,7 +37,7 @@ export function Button({
     <button
       type="button"
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 font-display font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-display font-bold uppercase tracking-wider transition-all duration-150 active:scale-[0.97] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 ${variants[variant]} ${sizes[size]} ${className}`}
       aria-busy={loading}
       {...props}
     >

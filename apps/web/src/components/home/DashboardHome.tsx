@@ -9,7 +9,7 @@ import { MatchCard } from '../match/MatchCard'
 import { PoolCard } from '../pool/PoolCard'
 import { Button } from '../ui/Button'
 import { ErrorMessage } from '../ui/ErrorMessage'
-import { MatchCardSkeleton } from '../ui/Skeleton'
+import { MatchCardSkeleton, PoolCardSkeleton } from '../ui/Skeleton'
 import { PendingPrizesSection } from './PendingPrizesSection'
 import { PoolsSection } from './PoolsSection'
 
@@ -25,7 +25,7 @@ export function DashboardHome() {
     isError: poolsError,
     refetch: refetchPools,
   } = useQuery({
-    queryKey: ['pools'],
+    queryKey: ['pools', 'active'],
     queryFn: async () => {
       const res = await apiFetch('/api/pools')
       if (!res.ok) throw new Error('Failed to fetch pools')
@@ -35,6 +35,23 @@ export function DashboardHome() {
       const pools = query.state.data?.pools
       return pools?.some((p) => p.hasLiveMatch) ? livePollMs() : false
     },
+  })
+
+  // Finished pools are the expensive part of the list query and most users only
+  // want the active ones — fetch them lazily, only once the section is expanded.
+  const {
+    data: finishedData,
+    isPending: finishedPending,
+    isError: finishedError,
+    refetch: refetchFinished,
+  } = useQuery({
+    queryKey: ['pools', 'closed'],
+    queryFn: async () => {
+      const res = await apiFetch('/api/pools?status=closed')
+      if (!res.ok) throw new Error('Failed to fetch finished pools')
+      return res.json() as Promise<{ pools: PoolListItem[] }>
+    },
+    enabled: showFinished,
   })
 
   const {
@@ -52,9 +69,8 @@ export function DashboardHome() {
     },
   })
 
-  const allPools = poolsData?.pools ?? []
-  const activePools = allPools.filter((p) => p.status === 'active')
-  const finishedPools = allPools.filter((p) => p.status === 'closed')
+  const activePools = poolsData?.pools ?? []
+  const finishedPools = finishedData?.pools ?? []
   const upcomingMatches = (matchesData?.matches ?? []).slice(0, 4)
 
   function handleJoinByCode() {
@@ -130,34 +146,50 @@ export function DashboardHome() {
         </PoolsSection>
       </section>
 
-      {finishedPools.length > 0 && (
-        <section>
-          <button
-            type="button"
-            onClick={() => setShowFinished((v) => !v)}
-            aria-expanded={showFinished}
-            className="flex w-full items-center gap-3 cursor-pointer"
+      <section>
+        <button
+          type="button"
+          onClick={() => setShowFinished((v) => !v)}
+          aria-expanded={showFinished}
+          className="flex w-full items-center gap-3 cursor-pointer transition-opacity active:opacity-60"
+        >
+          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+            Finalizados
+          </h2>
+          <div className="h-px flex-1 bg-border" />
+          <span
+            className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted"
+            aria-hidden="true"
           >
-            <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
-              Finalizados ({finishedPools.length})
-            </h2>
-            <div className="h-px flex-1 bg-border" />
-            <span
-              className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted"
-              aria-hidden="true"
-            >
-              {showFinished ? '▴' : '▾'}
-            </span>
-          </button>
-          {showFinished && (
+            {showFinished ? '▴' : '▾'}
+          </span>
+        </button>
+        {showFinished &&
+          (finishedPending ? (
+            <div className="mt-4 flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-5">
+              {['s1', 's2', 's3'].map((k) => (
+                <PoolCardSkeleton key={k} />
+              ))}
+            </div>
+          ) : finishedError ? (
+            <div className="mt-4">
+              <ErrorMessage
+                message="Não foi possível carregar os bolões finalizados."
+                onRetry={() => refetchFinished()}
+              />
+            </div>
+          ) : finishedPools.length > 0 ? (
             <div className="mt-4 flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-5">
               {finishedPools.map((pool, i) => (
                 <PoolCard key={pool.id} pool={pool} index={i + 1} />
               ))}
             </div>
-          )}
-        </section>
-      )}
+          ) : (
+            <p className="mt-4 py-6 text-center font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+              Nenhum bolão finalizado
+            </p>
+          ))}
+      </section>
 
       <section>
         <div className="flex items-center gap-3 mb-4">
