@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, gte, inArray, lte } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../../../db/client'
 import { match } from '../../../db/schema/match'
@@ -10,6 +10,24 @@ const matchesRoutes = new Hono<AppEnv>()
 
 matchesRoutes.use('/*', requireAuth)
 
+// Only the columns in the shared Match type — skip external_id/created_at/
+// updated_at, which the client never reads, to trim the payload.
+const matchColumns = {
+  id: match.id,
+  competitionId: match.competitionId,
+  homeTeam: match.homeTeam,
+  awayTeam: match.awayTeam,
+  homeFlag: match.homeFlag,
+  awayFlag: match.awayFlag,
+  homeScore: match.homeScore,
+  awayScore: match.awayScore,
+  stage: match.stage,
+  group: match.group,
+  matchday: match.matchday,
+  matchDate: match.matchDate,
+  status: match.status,
+}
+
 // GET /api/matches — List matches with filters
 matchesRoutes.get('/matches', async (c) => {
   const stage = c.req.query('stage')
@@ -17,8 +35,12 @@ matchesRoutes.get('/matches', async (c) => {
   const status = c.req.query('status')
   const competitionId = c.req.query('competitionId')
   const featured = c.req.query('featured')
+  // Optional pool-scope filters (additive — absent params preserve old behaviour).
+  const matchId = c.req.query('matchId')
+  const matchdayFrom = c.req.query('matchdayFrom')
+  const matchdayTo = c.req.query('matchdayTo')
 
-  let query = db.select().from(match).$dynamic()
+  let query = db.select(matchColumns).from(match).$dynamic()
 
   const conditions = []
   if (competitionId) {
@@ -31,6 +53,9 @@ matchesRoutes.get('/matches', async (c) => {
       return c.json({ matches: [] })
     }
   }
+  if (matchId) conditions.push(eq(match.id, matchId))
+  if (matchdayFrom) conditions.push(gte(match.matchday, Number(matchdayFrom)))
+  if (matchdayTo) conditions.push(lte(match.matchday, Number(matchdayTo)))
   if (stage) conditions.push(eq(match.stage, stage))
   if (group) conditions.push(eq(match.group, group))
   if (status) conditions.push(eq(match.status, status))
@@ -46,7 +71,7 @@ matchesRoutes.get('/matches', async (c) => {
 // GET /api/matches/live — Live matches only
 matchesRoutes.get('/matches/live', async (c) => {
   const matches = await db
-    .select()
+    .select(matchColumns)
     .from(match)
     .where(eq(match.status, 'live'))
     .orderBy(match.matchDate)
