@@ -1,15 +1,37 @@
 import { type CSSProperties, useId } from 'react'
 
+// Truncated-icosahedron (real soccer-ball solid) projected to 2D: the authentic
+// pattern of black pentagons + white hexagons wrapping around the sphere, with
+// faces foreshortening toward the silhouette. Geometry is precomputed.
+const HEXAGONS = [
+  'M65.42 8.78 L68.01 7.97 L53.39 7.15 L36.18 7.15 L33.59 7.97 L48.21 8.78 Z',
+  'M88.74 30.80 L91.33 29.98 L80.97 18.57 L68.01 7.97 L65.42 8.78 L75.78 20.20 Z',
+  'M18.69 18.57 L12.08 24.30 L5.19 41.45 L4.92 52.87 L11.53 47.13 L18.42 29.98 Z',
+  'M11.53 47.13 L4.92 52.87 L8.67 70.02 L19.03 81.43 L25.65 75.70 L21.90 58.55 Z',
+  'M87.92 75.70 L94.81 58.55 L90.89 48.45 L80.08 55.50 L73.19 72.66 L77.11 82.75 Z',
+  'M47.93 20.20 L48.21 8.78 L33.59 7.97 L18.69 18.57 L18.42 29.98 L33.04 30.80 Z',
+  'M63.82 92.85 L77.11 82.75 L73.19 72.66 L55.98 72.66 L42.69 82.75 L46.61 92.85 Z',
+  'M90.89 48.45 L88.74 30.80 L75.78 20.20 L64.98 27.25 L67.13 44.90 L80.08 55.50 Z',
+  'M42.69 82.75 L55.98 72.66 L52.23 55.50 L35.19 48.45 L21.90 58.55 L25.65 75.70 Z',
+  'M67.13 44.90 L64.98 27.25 L47.93 20.20 L33.04 30.80 L35.19 48.45 L52.23 55.50 Z',
+]
+const PENTAGONS = [
+  'M81.31 81.43 L87.92 75.70 L77.11 82.75 L63.82 92.85 L66.41 92.03 Z',
+  'M94.81 58.55 L95.08 47.13 L91.33 29.98 L88.74 30.80 L90.89 48.45 Z',
+  'M31.99 92.03 L46.61 92.85 L42.69 82.75 L25.65 75.70 L19.03 81.43 Z',
+  'M75.78 20.20 L65.42 8.78 L48.21 8.78 L47.93 20.20 L64.98 27.25 Z',
+  'M35.19 48.45 L33.04 30.80 L18.42 29.98 L11.53 47.13 L21.90 58.55 Z',
+  'M73.19 72.66 L80.08 55.50 L67.13 44.90 L52.23 55.50 L55.98 72.66 Z',
+]
+
 /**
- * Football-themed loader: a classic (Telstar) black-and-white ball bouncing with
- * squash-and-stretch, a shadow that scales with its height, and a slow spin.
- * Pure SVG + CSS (see `.ball-loader` in app.css) — crisp at any size, and it
- * honors prefers-reduced-motion (static ball). Decorative: wrap with an
- * aria-live label where it conveys loading state.
+ * Football-themed loader: a classic black-and-white soccer ball that bounces
+ * with squash-and-stretch and a shadow that scales with its height. Pure SVG +
+ * CSS (see `.ball-loader` in app.css) — crisp at any size, honors
+ * prefers-reduced-motion. Decorative: wrap with an aria-live label.
  */
 export function BallLoader({ size = 48, className = '' }: { size?: number; className?: string }) {
-  // Unique clip id so multiple instances don't collide.
-  const clipId = `ball-clip-${useId().replace(/:/g, '')}`
+  const clip = `ball-${useId().replace(/:/g, '')}`
   return (
     <div
       className={`ball-loader ${className}`.trim()}
@@ -19,38 +41,34 @@ export function BallLoader({ size = 48, className = '' }: { size?: number; class
       <div className="ball-loader__ball">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <clipPath id={clipId}>
-              <circle cx="50" cy="50" r="44" />
+            <clipPath id={clip}>
+              <circle cx="50" cy="50" r="46" />
             </clipPath>
           </defs>
-          <circle cx="50" cy="50" r="46" fill="#fafaf8" stroke="#111111" strokeWidth="4" />
-          <g clipPath={`url(#${clipId})`}>
-            <g stroke="#111111" strokeWidth="3" strokeLinecap="round">
-              <line x1="50" y1="34" x2="50" y2="24" />
-              <line x1="65.22" y1="45.06" x2="74.73" y2="41.97" />
-              <line x1="59.4" y1="62.94" x2="65.28" y2="71.03" />
-              <line x1="40.6" y1="62.94" x2="34.72" y2="71.03" />
-              <line x1="34.78" y1="45.06" x2="25.27" y2="41.97" />
-            </g>
-            <path d="M50 34 L65.22 45.06 L59.4 62.94 L40.6 62.94 L34.78 45.06 Z" fill="#111111" />
-            <path d="M50 24 L38.59 15.71 L42.95 2.29 L57.05 2.29 L61.41 15.71 Z" fill="#111111" />
-            <path
-              d="M74.73 41.97 L79.09 28.55 L93.19 28.55 L97.55 41.97 L86.14 50.26 Z"
-              fill="#111111"
-            />
-            <path
-              d="M65.28 71.03 L79.39 71.03 L83.75 84.45 L72.34 92.74 L60.92 84.45 Z"
-              fill="#111111"
-            />
-            <path
-              d="M34.72 71.03 L39.08 84.45 L27.66 92.74 L16.25 84.45 L20.61 71.03 Z"
-              fill="#111111"
-            />
-            <path
-              d="M25.27 41.97 L13.86 50.26 L2.45 41.97 L6.81 28.55 L20.91 28.55 Z"
-              fill="#111111"
-            />
+          <g clipPath={`url(#${clip})`}>
+            <circle cx="50" cy="50" r="46" fill="#fafaf8" />
+            {HEXAGONS.map((d) => (
+              <path
+                key={d}
+                d={d}
+                fill="#fafaf8"
+                stroke="#111111"
+                strokeWidth="1.1"
+                strokeLinejoin="round"
+              />
+            ))}
+            {PENTAGONS.map((d) => (
+              <path
+                key={d}
+                d={d}
+                fill="#111111"
+                stroke="#111111"
+                strokeWidth="1.1"
+                strokeLinejoin="round"
+              />
+            ))}
           </g>
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#111111" strokeWidth="2.6" />
         </svg>
       </div>
       <div className="ball-loader__shadow" />
