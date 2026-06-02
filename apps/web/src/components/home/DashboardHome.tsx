@@ -4,6 +4,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import { useSession } from '../../lib/auth'
+import { livePollMs } from '../../lib/poll'
 import { MatchCard } from '../match/MatchCard'
 import { PoolCard } from '../pool/PoolCard'
 import { Button } from '../ui/Button'
@@ -32,7 +33,7 @@ export function DashboardHome() {
     },
     refetchInterval: (query) => {
       const pools = query.state.data?.pools
-      return pools?.some((p) => p.hasLiveMatch) ? 30_000 : false
+      return pools?.some((p) => p.hasLiveMatch) ? livePollMs() : false
     },
   })
 
@@ -44,7 +45,8 @@ export function DashboardHome() {
   } = useQuery({
     queryKey: ['matches', 'upcoming'],
     queryFn: async () => {
-      const res = await apiFetch('/api/matches?status=scheduled&featured=true')
+      // Only 4 are rendered (.slice below) — let the server cap the payload.
+      const res = await apiFetch('/api/matches?status=scheduled&featured=true&limit=4')
       if (!res.ok) throw new Error('Failed to fetch matches')
       return res.json() as Promise<{ matches: Match[] }>
     },

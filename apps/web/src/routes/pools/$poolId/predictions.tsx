@@ -16,6 +16,7 @@ import { MatchCardSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
 import { matchParamsForPool } from '../../../lib/matchQuery'
 import { upsertPrediction } from '../../../lib/optimisticPredictions'
+import { livePollMs } from '../../../lib/poll'
 
 function MatchPredictionsAccordion({
   poolId,
@@ -26,7 +27,7 @@ function MatchPredictionsAccordion({
   matchId: string
   isLive: boolean
 }) {
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['match-predictions', poolId, matchId],
     queryFn: async (): Promise<MatchPredictionsResponse> => {
       const res = await apiFetch(`/api/pools/${poolId}/matches/${matchId}/predictions`)
@@ -34,15 +35,19 @@ function MatchPredictionsAccordion({
       return res.json()
     },
     staleTime: 30_000,
-    refetchInterval: isLive ? 30_000 : false,
+    refetchInterval: isLive ? livePollMs() : false,
   })
 
   if (isPending) {
     return (
-      <div className="-mx-5 mt-3 border-t border-border bg-black/2 px-5 py-4 text-center lg:mx-0 lg:px-4">
-        <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
-          Carregando palpites...
-        </p>
+      <div className="-mx-5 mt-3 border-t border-border bg-black/2 px-5 pt-2 pb-3 lg:mx-0 lg:px-4">
+        {['a', 'b', 'c'].map((k) => (
+          <div key={k} className="flex items-center gap-2 py-2">
+            <span className="h-4 flex-1 animate-pulse bg-black/10" />
+            <span className="h-8 w-8 animate-pulse bg-black/10" />
+            <span className="h-8 w-8 animate-pulse bg-black/10" />
+          </div>
+        ))}
       </div>
     )
   }
@@ -53,6 +58,13 @@ function MatchPredictionsAccordion({
         <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
           Erro ao carregar palpites
         </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="mt-2 font-display text-[10px] font-bold uppercase tracking-widest text-black underline underline-offset-4 transition-colors hover:text-red"
+        >
+          Tentar novamente
+        </button>
       </div>
     )
   }
@@ -217,7 +229,7 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
     },
     refetchInterval: (query) => {
       const matches = query.state.data?.matches
-      return matches?.some((m) => m.status === 'live') ? 30_000 : false
+      return matches?.some((m) => m.status === 'live') ? livePollMs() : false
     },
   })
 
@@ -235,7 +247,7 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
       if (!res.ok) throw new Error('Erro ao carregar palpites')
       return res.json()
     },
-    refetchInterval: hasLiveMatch ? 30_000 : false,
+    refetchInterval: hasLiveMatch ? livePollMs() : false,
   })
 
   const predictionsKey = ['predictions', poolId]

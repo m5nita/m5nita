@@ -1,0 +1,1 @@
+CREATE INDEX "prediction_pool_id_match_id_idx" ON "prediction" USING btree ("pool_id","match_id");

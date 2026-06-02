@@ -42,6 +42,7 @@ describe('calcPointsForMatch', () => {
             }
           },
         },
+        rankingRepo: { recomputeStandings: async () => {} },
       }),
     }))
 
@@ -73,6 +74,7 @@ describe('calcPointsForMatch', () => {
           updatePoints: async (id: string, p: number) => updates.push({ id, points: p }),
         },
         poolRepo: { findById: async () => null },
+        rankingRepo: { recomputeStandings: async () => {} },
       }),
     }))
     const { calcPointsForMatch } = await import('./calcPoints')

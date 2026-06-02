@@ -11,8 +11,6 @@ function makePoolListItem(overrides: Partial<PoolListItem>): PoolListItem {
     status: 'active',
     competitionName: 'Copa',
     memberCount: 3,
-    userPosition: null,
-    userPoints: 0,
     nextMatchAt: null,
     lastMatchAt: null,
     hasLiveMatch: false,

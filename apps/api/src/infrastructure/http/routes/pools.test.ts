@@ -279,8 +279,6 @@ describe('GET /api/pools', () => {
         status: 'active',
         competitionName: 'Copa',
         memberCount: 5,
-        userPosition: null,
-        userPoints: 0,
         nextMatchAt: nextDate,
         lastMatchAt: lastDate,
       },

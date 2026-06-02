@@ -1,7 +1,7 @@
 import type { PoolDetail } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { type ReactNode, useEffect, useState } from 'react'
+import { Link, Navigate } from '@tanstack/react-router'
+import { type ReactNode, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import { useSession } from '../../lib/auth'
 import { formatCurrency } from '../../lib/utils'
@@ -19,7 +19,6 @@ interface PoolHubProps {
 
 export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
   const { data: session } = useSession()
-  const navigate = useNavigate()
   const [inviteOpen, setInviteOpen] = useState(false)
 
   const {
@@ -39,23 +38,19 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
     // round-trips just to re-confirm a hasLiveMatch boolean the shell discards.
   })
 
-  useEffect(() => {
-    if (!pool || pool.isMember) return
-    if (pool.inviteCode && pool.status !== 'closed') {
-      navigate({
-        to: '/invite/$inviteCode',
-        params: { inviteCode: pool.inviteCode },
-        replace: true,
-      })
-    } else {
-      navigate({ to: '/', replace: true })
-    }
-  }, [pool, navigate])
-
   if (isPending) return <Loading />
   if (error) return <ErrorMessage message={(error as Error).message} />
   if (!pool) return null
-  if (!pool.isMember) return <Loading />
+
+  // Non-members never see the hub — redirect during render (not in an effect) so
+  // we don't commit the shell or mount the child predictions/ranking queries.
+  if (!pool.isMember) {
+    return pool.inviteCode && pool.status !== 'closed' ? (
+      <Navigate to="/invite/$inviteCode" params={{ inviteCode: pool.inviteCode }} replace />
+    ) : (
+      <Navigate to="/" replace />
+    )
+  }
 
   const isOwner = session?.user?.id === pool.ownerId
   const canInvite = pool.status !== 'closed' && !!pool.inviteCode

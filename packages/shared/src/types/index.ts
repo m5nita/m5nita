@@ -52,8 +52,6 @@ export interface PoolListItem {
   entryFee: number
   competitionName: string
   memberCount: number
-  userPosition: number | null
-  userPoints: number
   status: PoolStatus
   nextMatchAt: string | null
   lastMatchAt: string | null
