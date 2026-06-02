@@ -32,8 +32,9 @@ vi.mock('../../../services/ranking', () => ({
   getPoolRanking: (...args: unknown[]) => mockGetPoolRanking(...args),
 }))
 
+const mockPoolHasLiveMatch = vi.fn(async (..._args: unknown[]) => false)
 vi.mock('../../../services/pool', () => ({
-  poolHasLiveMatch: vi.fn(async () => false),
+  poolHasLiveMatch: (...args: unknown[]) => mockPoolHasLiveMatch(...args),
 }))
 
 vi.mock('../../../container', () => ({
@@ -160,6 +161,30 @@ describe('GET /api/pools/:poolId/ranking', () => {
 
     expect(body.prizeTotal).toBeDefined()
     expect(typeof body.prizeTotal).toBe('number')
+  })
+
+  it('returns_hasLiveMatch_from_pool_details_without_extra_query', async () => {
+    mockGetPoolRanking.mockResolvedValue([])
+    mockFindByIdWithDetails.mockResolvedValueOnce({
+      id: 'pool-1',
+      entryFee: 5000,
+      competitionId: 'comp-1',
+      matchdayFrom: null,
+      matchdayTo: null,
+      matchId: null,
+      memberCount: 3,
+      prizeTotal: 14250,
+      hasLiveMatch: true,
+      coupon: null,
+    })
+
+    const res = await app.request('/api/pools/pool-1/ranking', { headers })
+    const body = await res.json()
+
+    // hasLiveMatch must come from the single findByIdWithDetails read, not a
+    // second poolHasLiveMatch query (mocked to return false).
+    expect(body.hasLiveMatch).toBe(true)
+    expect(mockPoolHasLiveMatch).not.toHaveBeenCalled()
   })
 
   it('rejects_noAuth_401', async () => {

@@ -1,5 +1,6 @@
 import { getContainer } from '../container'
 import { RangeScoringPolicy, type ScoringPolicy } from '../domain/scoring/ScoringPolicy'
+import { invalidateRankingAggregate } from '../services/rankingCache'
 
 export async function calcPointsForMatch(matchId: string) {
   const { matchRepo, predictionRepo, poolRepo } = getContainer()
@@ -40,6 +41,12 @@ export async function calcPointsForMatch(matchId: string) {
     if (pred.id) {
       await predictionRepo.updatePoints(pred.id, points)
     }
+  }
+
+  // Points just changed for these pools — drop their cached standings so the
+  // next ranking read reflects the finished match immediately.
+  for (const poolId of new Set(predictions.map((p) => p.poolId))) {
+    invalidateRankingAggregate(poolId)
   }
 
   console.log(`[CalcPoints] Processed ${predictions.length} predictions for match ${matchId}`)

@@ -7,18 +7,16 @@ import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
 import { Ranking } from '../domain/ranking/Ranking'
 import type { ScoringPolicy } from '../domain/scoring/ScoringPolicy'
+import { type RankingAggregateRow, rankingAggregateCache } from './rankingCache'
 
-export async function getPoolRanking(poolId: string, currentUserId: string) {
-  const { poolRepo } = getContainer()
-  const pool = await poolRepo.findById(poolId)
-
+async function computeRankingAggregate(poolId: string): Promise<RankingAggregateRow[]> {
   // Exact = predicted score == actual finished score. Derived from match scores
   // (not from `prediction.points = 10`), since single-match scoring stores 14
   // for an exact prediction (10 category + 4 bonus).
   const exactExpr = sql`count(case when ${matchTable.status} = 'finished'
       and ${prediction.homeScore} = ${matchTable.homeScore}
       and ${prediction.awayScore} = ${matchTable.awayScore} then 1 end)`
-  const rawEntries = await db
+  return db
     .select({
       userId: poolMember.userId,
       name: user.name,
@@ -35,6 +33,15 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
     .where(eq(poolMember.poolId, poolId))
     .groupBy(poolMember.userId, user.name)
     .orderBy(desc(sql`coalesce(sum(${prediction.points}), 0)`), desc(exactExpr))
+}
+
+export async function getPoolRanking(poolId: string, currentUserId: string) {
+  const { poolRepo } = getContainer()
+  const pool = await poolRepo.findById(poolId)
+
+  const rawEntries = await rankingAggregateCache.getOrCompute(poolId, () =>
+    computeRankingAggregate(poolId),
+  )
 
   const livePoints = pool ? await computeLivePointsByUser(poolId, pool.scoringPolicy()) : new Map()
 

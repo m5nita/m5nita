@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { getContainer } from '../../../container'
-import { poolHasLiveMatch } from '../../../services/pool'
 import { getPoolRanking } from '../../../services/ranking'
 import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
@@ -16,19 +15,16 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
 
   const ranking = await getPoolRanking(poolId, currentUser.id)
 
+  // findByIdWithDetails already computes prizeTotal AND hasLiveMatch in one read;
+  // reuse both instead of re-checking live matches with a second query.
   const { poolRepo } = getContainer()
   const details = await poolRepo.findByIdWithDetails(poolId)
-  const prizeTotal = details?.prizeTotal ?? 0
-  const hasLiveMatch = details
-    ? await poolHasLiveMatch(
-        details.competitionId,
-        details.matchdayFrom,
-        details.matchdayTo,
-        details.matchId,
-      )
-    : false
 
-  return c.json({ ranking, prizeTotal, hasLiveMatch })
+  return c.json({
+    ranking,
+    prizeTotal: details?.prizeTotal ?? 0,
+    hasLiveMatch: details?.hasLiveMatch ?? false,
+  })
 })
 
 export { rankingRoutes }
