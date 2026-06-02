@@ -1,7 +1,7 @@
 import type { PoolInviteInfo } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { createFileRoute, Navigate, redirect, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import { ErrorMessage } from '../../components/ui/ErrorMessage'
 import { Loading } from '../../components/ui/Loading'
@@ -29,21 +29,18 @@ function InvitePage() {
       if (res.status === 409) {
         const data = (await res.json()) as { error: string; message: string; poolId?: string }
         if (data.error === 'ALREADY_MEMBER' && data.poolId) {
-          return { alreadyMember: true as const, poolId: data.poolId }
+          return { kind: 'already-member' as const, poolId: data.poolId }
+        }
+        if (data.error === 'POOL_CLOSED') {
+          return { kind: 'closed' as const }
         }
         throw new Error(data.message)
       }
       if (!res.ok) throw new Error('Erro ao carregar convite')
       const info = (await res.json()) as PoolInviteInfo
-      return { alreadyMember: false as const, info }
+      return { kind: 'open' as const, info }
     },
   })
-
-  useEffect(() => {
-    if (inviteResult?.alreadyMember) {
-      navigate({ to: '/pools/$poolId', params: { poolId: inviteResult.poolId }, replace: true })
-    }
-  }, [inviteResult, navigate])
 
   if (isPending) return <Loading message="Carregando convite..." />
 
@@ -53,11 +50,38 @@ function InvitePage() {
         title="Convite indisponível"
         message={fetchError.message}
         onRetry={() => navigate({ to: '/' })}
+        retryLabel="Voltar ao início"
       />
     )
   }
 
-  if (!inviteResult || inviteResult.alreadyMember) return <Loading message="Carregando bolão..." />
+  // Already a member — redirect during render (no extra "Carregando bolão" frame).
+  if (inviteResult?.kind === 'already-member') {
+    return <Navigate to="/pools/$poolId" params={{ poolId: inviteResult.poolId }} replace />
+  }
+
+  // Pool stopped accepting entries — a distinct state, not a generic error.
+  if (inviteResult?.kind === 'closed') {
+    return (
+      <div className="flex flex-col gap-4 lg:items-center lg:text-center">
+        <div className="lg:max-w-[420px]">
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+            Convite
+          </p>
+          <h1 className="mt-1 font-display text-3xl font-black leading-[0.95] text-black">
+            Bolão fechado
+          </h1>
+          <div className="mt-3 h-1 w-12 bg-red lg:mx-auto" />
+          <p className="mt-4 text-sm text-gray-dark">Este bolão não aceita mais entradas.</p>
+          <Button onClick={() => navigate({ to: '/' })} className="mt-6" size="lg">
+            Voltar ao início
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!inviteResult) return null
 
   const poolInfo = inviteResult.info
 

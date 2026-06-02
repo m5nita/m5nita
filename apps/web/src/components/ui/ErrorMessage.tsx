@@ -2,9 +2,16 @@ interface ErrorMessageProps {
   title?: string
   message: string
   onRetry?: () => void
+  /** Label for the action button. Defaults to "Tentar novamente". */
+  retryLabel?: string
 }
 
-export function ErrorMessage({ title = 'Erro', message, onRetry }: ErrorMessageProps) {
+export function ErrorMessage({
+  title = 'Erro',
+  message,
+  onRetry,
+  retryLabel = 'Tentar novamente',
+}: ErrorMessageProps) {
   return (
     <div className="border-l-4 border-red bg-red/5 p-5" role="alert">
       <h3 className="font-display text-sm font-bold uppercase tracking-wider text-red">{title}</h3>
@@ -15,7 +22,7 @@ export function ErrorMessage({ title = 'Erro', message, onRetry }: ErrorMessageP
           onClick={onRetry}
           className="mt-3 font-display text-xs font-bold uppercase tracking-wider text-black underline underline-offset-4 hover:text-red transition-colors cursor-pointer"
         >
-          Tentar novamente
+          {retryLabel}
         </button>
       )}
     </div>

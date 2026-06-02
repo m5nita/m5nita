@@ -32,28 +32,19 @@ export function PoolCard({ pool, index }: PoolCardProps) {
             {formatCurrency(pool.entryFee)}
           </p>
         </div>
-        {pool.userPosition != null ? (
-          <div className="shrink-0 text-center">
-            <p className="font-display text-2xl font-black text-black">{pool.userPosition}°</p>
-            <p className="font-display text-[10px] font-bold uppercase tracking-wider text-gray-muted">
-              {pool.userPoints} pts
-            </p>
-          </div>
-        ) : (
-          <svg
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-gray-light group-hover:text-black transition-colors"
-          >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        )}
+        <svg
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="text-gray-light group-hover:text-black transition-colors"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
       </div>
       {/* Desktop: editorial card */}
       <div className="hidden lg:flex flex-col border border-border p-5 transition-colors group-hover:border-black">
@@ -61,18 +52,11 @@ export function PoolCard({ pool, index }: PoolCardProps) {
           <span className="font-display text-4xl font-black text-gray-light group-hover:text-red transition-colors">
             {String(index).padStart(2, '0')}
           </span>
-          {pool.status === 'closed' ? (
+          {pool.status === 'closed' && (
             <span className="bg-gray-muted/20 px-2 py-0.5 font-display text-[9px] font-bold uppercase tracking-wider text-gray-muted">
               Finalizado
             </span>
-          ) : pool.userPosition != null ? (
-            <div className="text-right">
-              <p className="font-display text-2xl font-black text-black">{pool.userPosition}°</p>
-              <p className="font-display text-[10px] font-bold uppercase tracking-wider text-gray-muted">
-                {pool.userPoints} pts
-              </p>
-            </div>
-          ) : null}
+          )}
         </div>
         <h3 className="mt-2 font-display text-lg font-black uppercase tracking-wide text-black truncate">
           {pool.name}

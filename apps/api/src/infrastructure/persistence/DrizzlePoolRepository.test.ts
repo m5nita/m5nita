@@ -39,8 +39,6 @@ describe('DrizzlePoolRepository.findUserPools', () => {
         status: 'active',
         competitionName: 'Copa',
         memberCount: 3,
-        userPosition: null,
-        userPoints: 0,
         nextMatchAt: nextDate,
         lastMatchAt: lastDate,
         hasLiveMatch: false,

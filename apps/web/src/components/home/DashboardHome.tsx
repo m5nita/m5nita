@@ -4,11 +4,14 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import { useSession } from '../../lib/auth'
+import { livePollMs } from '../../lib/poll'
 import { MatchCard } from '../match/MatchCard'
 import { PoolCard } from '../pool/PoolCard'
 import { Button } from '../ui/Button'
-import { Loading } from '../ui/Loading'
+import { ErrorMessage } from '../ui/ErrorMessage'
+import { MatchCardSkeleton } from '../ui/Skeleton'
 import { PendingPrizesSection } from './PendingPrizesSection'
+import { PoolsSection } from './PoolsSection'
 
 export function DashboardHome() {
   const { data: session } = useSession()
@@ -16,7 +19,12 @@ export function DashboardHome() {
   const [inviteCode, setInviteCode] = useState('')
   const [showFinished, setShowFinished] = useState(false)
 
-  const { data: poolsData, isPending: poolsPending } = useQuery({
+  const {
+    data: poolsData,
+    isPending: poolsPending,
+    isError: poolsError,
+    refetch: refetchPools,
+  } = useQuery({
     queryKey: ['pools'],
     queryFn: async () => {
       const res = await apiFetch('/api/pools')
@@ -25,14 +33,20 @@ export function DashboardHome() {
     },
     refetchInterval: (query) => {
       const pools = query.state.data?.pools
-      return pools?.some((p) => p.hasLiveMatch) ? 30_000 : false
+      return pools?.some((p) => p.hasLiveMatch) ? livePollMs() : false
     },
   })
 
-  const { data: matchesData } = useQuery({
+  const {
+    data: matchesData,
+    isPending: matchesPending,
+    isError: matchesError,
+    refetch: refetchMatches,
+  } = useQuery({
     queryKey: ['matches', 'upcoming'],
     queryFn: async () => {
-      const res = await apiFetch('/api/matches?status=scheduled&featured=true')
+      // Only 4 are rendered (.slice below) — let the server cap the payload.
+      const res = await apiFetch('/api/matches?status=scheduled&featured=true&limit=4')
       if (!res.ok) throw new Error('Failed to fetch matches')
       return res.json() as Promise<{ matches: Match[] }>
     },
@@ -102,24 +116,18 @@ export function DashboardHome() {
           </h2>
           <div className="h-px flex-1 bg-border" />
         </div>
-        {poolsPending ? (
-          <Loading message="Carregando..." />
-        ) : activePools.length > 0 ? (
+        <PoolsSection
+          isPending={poolsPending}
+          isError={poolsError}
+          isEmpty={activePools.length === 0}
+          onRetry={() => refetchPools()}
+        >
           <div className="flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-5">
             {activePools.map((pool, i) => (
               <PoolCard key={pool.id} pool={pool} index={i + 1} />
             ))}
           </div>
-        ) : (
-          <div className="border-2 border-dashed border-border py-10 text-center">
-            <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
-              Nenhum bolão
-            </p>
-            <p className="mt-1 text-xs text-gray-muted">
-              Crie um ou entre pelo convite de um amigo
-            </p>
-          </div>
-        )}
+        </PoolsSection>
       </section>
 
       {finishedPools.length > 0 && (
@@ -158,7 +166,19 @@ export function DashboardHome() {
           </h2>
           <div className="h-px flex-1 bg-border" />
         </div>
-        {upcomingMatches.length > 0 ? (
+        {matchesPending ? (
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-4 lg:gap-4">
+            <MatchCardSkeleton />
+            <MatchCardSkeleton />
+            <MatchCardSkeleton />
+            <MatchCardSkeleton />
+          </div>
+        ) : matchesError ? (
+          <ErrorMessage
+            message="Não foi possível carregar os próximos jogos."
+            onRetry={() => refetchMatches()}
+          />
+        ) : upcomingMatches.length > 0 ? (
           <>
             <div className="flex flex-col lg:grid lg:grid-cols-4 lg:gap-4">
               {upcomingMatches.map((m) => (

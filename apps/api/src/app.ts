@@ -1,6 +1,7 @@
 import { phoneSchema } from '@m5nita/shared'
 import * as Sentry from '@sentry/node'
 import { Hono } from 'hono'
+import { compress } from 'hono/compress'
 import { cors } from 'hono/cors'
 import { csrf } from 'hono/csrf'
 import { HTTPException } from 'hono/http-exception'
@@ -35,6 +36,11 @@ export function buildApp(): Hono<AppEnv> {
       ].filter(Boolean),
     ),
   )
+
+  // gzip JSON responses (honors Accept-Encoding). Read endpoints — especially
+  // the full-competition matches list and ranking — are polled every 30s during
+  // live rounds; compression cuts that egress ~90% against the box's traffic cap.
+  app.use('/api/*', compress())
 
   app.use('/api/*', secureHeaders())
 

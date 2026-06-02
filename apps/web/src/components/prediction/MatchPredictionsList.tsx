@@ -21,6 +21,14 @@ function displayName(name: string | null) {
   return name && name.trim().length > 0 ? name : 'Sem nome'
 }
 
+function predictorAriaLabel(predictor: MatchPredictor, matchStatus: MatchStatus): string {
+  const base = `${displayName(predictor.name)} palpitou ${predictor.homeScore} a ${predictor.awayScore}`
+  if (predictor.points === null) return base
+  const unit = predictor.points === 1 ? 'ponto' : 'pontos'
+  const qualifier = matchStatus === 'live' ? ' parciais' : ''
+  return `${base}, ${predictor.points} ${unit}${qualifier}`
+}
+
 function PredictorRow({
   predictor,
   matchStatus,
@@ -30,11 +38,19 @@ function PredictorRow({
 }) {
   const points = formatPoints(predictor, matchStatus)
   return (
-    <div className="flex items-center gap-2 py-2">
-      <span className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black">
+    // Visual content is aria-hidden; the row's aria-label carries the full,
+    // color-independent summary (incl. "parciais" for live) for screen readers.
+    <li
+      className="flex items-center gap-2 py-2"
+      aria-label={predictorAriaLabel(predictor, matchStatus)}
+    >
+      <span
+        aria-hidden="true"
+        className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black"
+      >
         {displayName(predictor.name)}
       </span>
-      <div className="flex shrink-0 items-center gap-1">
+      <div aria-hidden="true" className="flex shrink-0 items-center gap-1">
         <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
           {predictor.homeScore}
         </div>
@@ -45,6 +61,7 @@ function PredictorRow({
       </div>
       {points && (
         <span
+          aria-hidden="true"
           className={`shrink-0 flex min-w-[48px] items-center justify-end gap-1 font-display text-xs font-black ${points.className}`}
         >
           {points.pulse && (
@@ -53,7 +70,7 @@ function PredictorRow({
           {points.total}
         </span>
       )}
-    </div>
+    </li>
   )
 }
 
@@ -66,7 +83,7 @@ export function MatchPredictionsList({ data }: MatchPredictionsListProps) {
   return (
     <div className="-mx-5 mt-3 border-t border-border bg-black/2 px-5 pt-2 pb-1 lg:mx-0 lg:px-4">
       {hasPredictors ? (
-        <div className="divide-y divide-border/60">
+        <ul className="divide-y divide-border/60">
           {data.predictors.map((predictor) => (
             <PredictorRow
               key={predictor.userId}
@@ -74,7 +91,7 @@ export function MatchPredictionsList({ data }: MatchPredictionsListProps) {
               matchStatus={data.matchStatus}
             />
           ))}
-        </div>
+        </ul>
       ) : (
         <p className="py-4 text-center font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
           Nenhum outro participante palpitou
