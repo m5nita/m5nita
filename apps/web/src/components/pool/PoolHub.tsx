@@ -163,7 +163,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
           replace
           role="tab"
           aria-selected={activeTab === 'predictions'}
-          className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-colors cursor-pointer ${
+          className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-[transform,colors] active:scale-[0.98] cursor-pointer ${
             activeTab === 'predictions'
               ? 'bg-black text-white border-black'
               : 'bg-transparent text-black border-black hover:bg-black hover:text-white'
@@ -177,7 +177,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
           replace
           role="tab"
           aria-selected={activeTab === 'ranking'}
-          className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-colors cursor-pointer ${
+          className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-[transform,colors] active:scale-[0.98] cursor-pointer ${
             activeTab === 'ranking'
               ? 'bg-black text-white border-black'
               : 'bg-transparent text-black border-black hover:bg-black hover:text-white'

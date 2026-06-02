@@ -113,10 +113,14 @@ poolsRoutes.post('/pools', async (c) => {
   }
 })
 
-// GET /api/pools — List user pools
+// GET /api/pools — List user pools (active by default; ?status=closed for finished)
 poolsRoutes.get('/pools', async (c) => {
   const currentUser = c.get('user')
-  const pools = await getContainer().getUserPoolsUseCase.execute({ userId: currentUser.id })
+  const status = c.req.query('status') === 'closed' ? 'closed' : 'active'
+  const pools = await getContainer().getUserPoolsUseCase.execute({
+    userId: currentUser.id,
+    status,
+  })
   return c.json({ pools })
 })
 

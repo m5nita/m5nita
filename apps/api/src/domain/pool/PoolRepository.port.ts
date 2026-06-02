@@ -31,6 +31,8 @@ export type PoolMemberWithPhone = PoolMemberInfo & {
   phoneNumber: string | null
 }
 
+export type PoolListStatusFilter = 'active' | 'closed'
+
 export type PoolListItem = {
   id: string
   name: string
@@ -67,7 +69,7 @@ export interface PoolRepository {
   isMember(poolId: string, userId: string): Promise<boolean>
   addMember(poolId: string, userId: string, paymentId: string): Promise<void>
   removeMember(poolId: string, userId: string): Promise<void>
-  findUserPools(userId: string): Promise<PoolListItem[]>
+  findUserPools(userId: string, status?: PoolListStatusFilter): Promise<PoolListItem[]>
   getMembers(poolId: string): Promise<PoolMemberInfo[]>
   getMembersWithPhone(poolId: string): Promise<PoolMemberWithPhone[]>
 }

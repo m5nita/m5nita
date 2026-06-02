@@ -1,6 +1,7 @@
 import { createRootRoute, Link, Outlet, useLocation, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { ThemeSwitcher } from '../components/ui/ThemeSwitcher'
+import { TopProgressBar } from '../components/ui/TopProgressBar'
 import { authClient, useSession } from '../lib/auth'
 
 function RootLayout() {
@@ -25,6 +26,7 @@ function RootLayout() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-cream font-body text-black">
+      <TopProgressBar />
       <header className="sticky top-0 z-50 border-b border-border bg-cream/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-[430px] items-center justify-between px-5 py-3 lg:max-w-7xl">
           <div className="flex items-center gap-3">
