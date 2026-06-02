@@ -5,6 +5,7 @@ import { PoolHub } from '../../../components/pool/PoolHub'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import { RankingRowSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
+import { livePollMs } from '../../../lib/poll'
 
 function positionColor(position: number): string {
   if (position === 1) return 'text-red'
@@ -24,7 +25,7 @@ function RankingContent({ poolId }: { poolId: string }) {
         hasLiveMatch: boolean
       }>
     },
-    refetchInterval: (query) => (query.state.data?.hasLiveMatch ? 30_000 : false),
+    refetchInterval: (query) => (query.state.data?.hasLiveMatch ? livePollMs() : false),
   })
 
   if (isPending) {
