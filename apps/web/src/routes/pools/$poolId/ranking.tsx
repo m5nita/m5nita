@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { PoolHub } from '../../../components/pool/PoolHub'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
-import { Loading } from '../../../components/ui/Loading'
+import { RankingRowSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
 
 function positionColor(position: number): string {
@@ -27,7 +27,15 @@ function RankingContent({ poolId }: { poolId: string }) {
     refetchInterval: (query) => (query.state.data?.hasLiveMatch ? 30_000 : false),
   })
 
-  if (isPending) return <Loading />
+  if (isPending) {
+    return (
+      <div className="flex flex-col">
+        {['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8'].map((k) => (
+          <RankingRowSkeleton key={k} />
+        ))}
+      </div>
+    )
+  }
   if (error) return <ErrorMessage message={(error as Error).message} onRetry={() => refetch()} />
 
   const ranking = data?.ranking ?? []

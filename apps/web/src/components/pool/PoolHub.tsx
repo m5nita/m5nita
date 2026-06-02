@@ -33,7 +33,10 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
       if (!res.ok) throw new Error('Bolão não encontrado')
       return res.json()
     },
-    refetchInterval: (query) => (query.state.data?.hasLiveMatch ? 30_000 : false),
+    // No self-poll: the header (name, members, entry, prize) is static during a
+    // match, and the child predictions/ranking screens already poll their own
+    // live data. Re-fetching the full pool-detail chain every 30s here was 4
+    // round-trips just to re-confirm a hasLiveMatch boolean the shell discards.
   })
 
   useEffect(() => {

@@ -16,6 +16,10 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60,
       retry: 1,
+      // Live screens already poll on a 30s interval; refetching on every tab
+      // focus just adds a correlated burst (everyone alt-tabs back on a goal)
+      // against the heavy ranking aggregate. Let the interval own freshness.
+      refetchOnWindowFocus: false,
     },
   },
 })

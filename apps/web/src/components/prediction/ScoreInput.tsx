@@ -29,7 +29,7 @@ interface ScoreInputProps {
   bonus?: number | null
   actualHomeScore: number | null
   actualAwayScore: number | null
-  onSave: (matchId: string, homeScore: number, awayScore: number) => void
+  onSave: (matchId: string, homeScore: number, awayScore: number) => void | Promise<unknown>
   onAdvance?: () => void
   renderExpandedContent?: (matchId: string) => ReactNode
 }
@@ -223,9 +223,11 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
 ) {
   const [home, setHome] = useState(initialHome?.toString() ?? '')
   const [away, setAway] = useState(initialAway?.toString() ?? '')
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [breakdownOpen, setBreakdownOpen] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const aliveRef = useRef(true)
   const homeInputRef = useRef<HTMLInputElement>(null)
   const awayInputRef = useRef<HTMLInputElement>(null)
   const isLocked =
@@ -246,21 +248,36 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
       const awayVal = Number.parseInt(a, 10)
       if (Number.isNaN(homeVal) || Number.isNaN(awayVal) || homeVal < 0 || awayVal < 0) return
       timerRef.current = setTimeout(() => {
+        if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
         setStatus('saving')
-        onSave(matchId, homeVal, awayVal)
-        setTimeout(() => setStatus('saved'), 300)
-        setTimeout(() => setStatus('idle'), 2000)
+        // Drive the status off the actual save result, not a fixed timer — a
+        // rejected save (e.g. 403 after kickoff) must NOT report "Salvo".
+        Promise.resolve(onSave(matchId, homeVal, awayVal))
+          .then(() => {
+            if (!aliveRef.current) return
+            setStatus('saved')
+            resetTimerRef.current = setTimeout(() => {
+              if (aliveRef.current) setStatus('idle')
+            }, 2000)
+          })
+          .catch(() => {
+            if (aliveRef.current) setStatus('error')
+          })
       }, 500)
     },
     [matchId, onSave],
   )
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Re-arm on (re)mount — StrictMode double-invokes setup/cleanup in dev, so a
+    // cleanup-only effect would leave aliveRef stuck false and freeze the status.
+    aliveRef.current = true
+    return () => {
+      aliveRef.current = false
       if (timerRef.current) clearTimeout(timerRef.current)
-    },
-    [],
-  )
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+    }
+  }, [])
 
   function handleHomeChange(value: string) {
     const digits = value.replace(/\D/g, '').slice(0, 2)
@@ -373,7 +390,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
           </span>
         </div>
       </div>
-      <div className="mt-1 flex items-center justify-center gap-2">
+      <div className="mt-1 flex items-center justify-center gap-2" role="status" aria-live="polite">
         {status === 'saved' && (
           <span className="font-display text-[9px] font-bold uppercase tracking-widest text-green">
             Salvo
@@ -382,6 +399,11 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         {status === 'saving' && (
           <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
             Salvando...
+          </span>
+        )}
+        {status === 'error' && (
+          <span className="font-display text-[9px] font-bold uppercase tracking-widest text-red">
+            Não salvo
           </span>
         )}
         {matchStatus === 'live' && hasPrediction && points != null && (

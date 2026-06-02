@@ -11,8 +11,11 @@ import { useCallback, useRef, useState } from 'react'
 import { PoolHub } from '../../../components/pool/PoolHub'
 import { MatchPredictionsList } from '../../../components/prediction/MatchPredictionsList'
 import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
-import { Loading } from '../../../components/ui/Loading'
+import { ErrorMessage } from '../../../components/ui/ErrorMessage'
+import { MatchCardSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
+import { matchParamsForPool } from '../../../lib/matchQuery'
+import { upsertPrediction } from '../../../lib/optimisticPredictions'
 
 function MatchPredictionsAccordion({
   poolId,
@@ -196,11 +199,18 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
   const [activeKnockoutStage, setActiveKnockoutStage] = useState<string | null>(null)
 
-  const { data: matchesData, isPending: matchesPending } = useQuery({
-    queryKey: ['matches', pool.competitionId],
+  const {
+    data: matchesData,
+    isPending: matchesPending,
+    isError: matchesError,
+    refetch: refetchMatches,
+  } = useQuery({
+    // Pool-scoped key: the server now returns only this pool's matches (one
+    // match, a round range, or the whole competition), so it must not share a
+    // cache entry with other pools of the same competition.
+    queryKey: ['pool-matches', poolId],
     queryFn: async (): Promise<{ matches: Match[] }> => {
-      const params = new URLSearchParams()
-      if (pool.competitionId) params.set('competitionId', pool.competitionId)
+      const params = matchParamsForPool(pool)
       const res = await apiFetch(`/api/matches?${params}`)
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json()
@@ -213,7 +223,12 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
 
   const hasLiveMatch = (matchesData?.matches ?? []).some((m) => m.status === 'live')
 
-  const { data: predictionsData, isPending: predictionsPending } = useQuery({
+  const {
+    data: predictionsData,
+    isPending: predictionsPending,
+    isError: predictionsError,
+    refetch: refetchPredictions,
+  } = useQuery({
     queryKey: ['predictions', poolId],
     queryFn: async (): Promise<{ predictions: Prediction[] }> => {
       const res = await apiFetch(`/api/pools/${poolId}/predictions`)
@@ -223,6 +238,7 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
     refetchInterval: hasLiveMatch ? 30_000 : false,
   })
 
+  const predictionsKey = ['predictions', poolId]
   const saveMutation = useMutation({
     mutationFn: async ({
       matchId,
@@ -244,16 +260,49 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
       }
       return res.json()
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['predictions', poolId] }),
+    // Optimistic: write the typed score straight into the cache so the card
+    // updates instantly and we avoid a full-list refetch per keystroke. Roll
+    // back to server truth on error (ScoreInput surfaces "Não salvo").
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({ queryKey: predictionsKey })
+      const previous = queryClient.getQueryData<{ predictions: Prediction[] }>(predictionsKey)
+      queryClient.setQueryData<{ predictions: Prediction[] }>(predictionsKey, (old) => ({
+        predictions: upsertPrediction(old?.predictions ?? [], vars),
+      }))
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(predictionsKey, context.previous)
+    },
   })
 
   const handleSave = useCallback(
     (matchId: string, homeScore: number, awayScore: number) =>
-      saveMutation.mutate({ matchId, homeScore, awayScore }),
+      saveMutation.mutateAsync({ matchId, homeScore, awayScore }),
     [saveMutation],
   )
 
-  if (matchesPending || predictionsPending) return <Loading message="Carregando palpites..." />
+  if (matchesPending || predictionsPending) {
+    return (
+      <div className="flex flex-col gap-3">
+        {['s1', 's2', 's3', 's4', 's5', 's6'].map((k) => (
+          <MatchCardSkeleton key={k} />
+        ))}
+      </div>
+    )
+  }
+
+  if (matchesError || predictionsError) {
+    return (
+      <ErrorMessage
+        message="Não foi possível carregar os palpites. Tente novamente."
+        onRetry={() => {
+          if (matchesError) refetchMatches()
+          if (predictionsError) refetchPredictions()
+        }}
+      />
+    )
+  }
 
   const rawMatches = matchesData?.matches ?? []
   const allMatches = rawMatches.filter((m) => {
