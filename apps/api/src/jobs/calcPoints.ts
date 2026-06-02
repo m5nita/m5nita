@@ -3,7 +3,7 @@ import { RangeScoringPolicy, type ScoringPolicy } from '../domain/scoring/Scorin
 import { invalidateRankingAggregate } from '../services/rankingCache'
 
 export async function calcPointsForMatch(matchId: string) {
-  const { matchRepo, predictionRepo, poolRepo } = getContainer()
+  const { matchRepo, predictionRepo, poolRepo, rankingRepo } = getContainer()
 
   const matchData = await matchRepo.findById(matchId)
 
@@ -43,9 +43,10 @@ export async function calcPointsForMatch(matchId: string) {
     }
   }
 
-  // Points just changed for these pools — drop their cached standings so the
-  // next ranking read reflects the finished match immediately.
+  // Points just changed for these pools — recompute their denormalized standings
+  // and drop the cached copy so the next ranking read reflects the finished match.
   for (const poolId of new Set(predictions.map((p) => p.poolId))) {
+    await rankingRepo.recomputeStandings(poolId)
     invalidateRankingAggregate(poolId)
   }
 

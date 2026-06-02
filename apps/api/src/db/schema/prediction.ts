@@ -31,6 +31,7 @@ export const prediction = pgTable(
       table.matchId,
     ),
     index('prediction_pool_id_user_id_idx').on(table.poolId, table.userId),
+    index('prediction_pool_id_match_id_idx').on(table.poolId, table.matchId),
     index('prediction_match_id_idx').on(table.matchId),
   ],
 )

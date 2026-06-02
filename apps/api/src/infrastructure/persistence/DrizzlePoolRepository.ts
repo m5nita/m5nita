@@ -54,16 +54,13 @@ export class DrizzlePoolRepository implements PoolRepository {
   }
 
   private async buildPoolWithDetails(row: PoolRowWithRelations): Promise<PoolWithDetails> {
-    const memberCount = await this.getMemberCount(row.id)
+    const [memberCount, hasLiveMatch] = await Promise.all([
+      this.getMemberCount(row.id),
+      this.hasLiveMatchForPool(row.competitionId, row.matchdayFrom, row.matchdayTo, row.matchId),
+    ])
     const poolEntity = poolToDomain(row)
     const feePolicy = FeePolicy.from(row.coupon?.discountPercent ?? null)
     const prizeTotal = poolEntity.prize(memberCount, feePolicy).centavos
-    const hasLiveMatch = await this.hasLiveMatchForPool(
-      row.competitionId,
-      row.matchdayFrom,
-      row.matchdayTo,
-      row.matchId,
-    )
 
     return {
       id: row.id,
@@ -298,8 +295,6 @@ export class DrizzlePoolRepository implements PoolRepository {
       status: r.status,
       competitionName: r.competitionName,
       memberCount: r.memberCount ?? 0,
-      userPosition: null,
-      userPoints: 0,
       nextMatchAt: r.nextMatchAt,
       lastMatchAt: r.lastMatchAt,
       hasLiveMatch: r.hasLiveMatch ?? false,

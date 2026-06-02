@@ -24,12 +24,18 @@ export class GetMatchPredictionsUseCase {
   ) {}
 
   async execute(input: Input): Promise<MatchPredictionsResponse> {
-    const pool = await this.poolRepo.findById(input.poolId)
+    // These three reads are independent — run them together, then validate in
+    // the original precedence order (POOL → MATCH → IN_POOL → MEMBER → LOCKED).
+    const [pool, matchData, isMember] = await Promise.all([
+      this.poolRepo.findById(input.poolId),
+      this.matchRepo.findById(input.matchId),
+      this.poolRepo.isMember(input.poolId, input.viewerUserId),
+    ])
+
     if (!pool) {
       throw new PredictionError('POOL_NOT_FOUND', 'Bolão não encontrado')
     }
 
-    const matchData = await this.matchRepo.findById(input.matchId)
     if (!matchData) {
       throw new PredictionError('MATCH_NOT_FOUND', 'Jogo não encontrado')
     }
@@ -51,7 +57,6 @@ export class GetMatchPredictionsUseCase {
     const scoringPolicy = pool.scoringPolicy()
     const includesBonus = pool.scope.kind === 'single-match'
 
-    const isMember = await this.poolRepo.isMember(input.poolId, input.viewerUserId)
     if (!isMember) {
       throw new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão')
     }

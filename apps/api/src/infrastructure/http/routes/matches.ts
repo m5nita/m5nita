@@ -39,6 +39,7 @@ matchesRoutes.get('/matches', async (c) => {
   const matchId = c.req.query('matchId')
   const matchdayFrom = c.req.query('matchdayFrom')
   const matchdayTo = c.req.query('matchdayTo')
+  const limit = c.req.query('limit')
 
   let query = db.select(matchColumns).from(match).$dynamic()
 
@@ -64,7 +65,13 @@ matchesRoutes.get('/matches', async (c) => {
     query = query.where(and(...conditions))
   }
 
-  const matches = await query.orderBy(match.matchDate)
+  query = query.orderBy(match.matchDate)
+  const limitNum = limit ? Number(limit) : Number.NaN
+  if (Number.isInteger(limitNum) && limitNum > 0) {
+    query = query.limit(limitNum)
+  }
+
+  const matches = await query
   return c.json({ matches })
 })
 

@@ -12,10 +12,13 @@ import { Money } from '../domain/shared/Money'
  */
 export async function getPoolById(poolId: string, userId: string) {
   const { poolRepo } = getContainer()
-  const details = await poolRepo.findByIdWithDetails(poolId)
+  // Independent reads — fetch the pool detail and membership together.
+  const [details, isMember] = await Promise.all([
+    poolRepo.findByIdWithDetails(poolId),
+    isPoolMember(poolId, userId),
+  ])
   if (!details) return null
 
-  const isMember = await isPoolMember(poolId, userId)
   const feePolicy = FeePolicy.from(details.coupon?.discountPercent ?? null)
   const entryMoney = Money.of(details.entryFee)
   const platformFee = feePolicy.applyTo(entryMoney).centavos

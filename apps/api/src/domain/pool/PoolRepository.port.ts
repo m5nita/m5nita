@@ -38,8 +38,6 @@ export type PoolListItem = {
   status: string
   competitionName: string
   memberCount: number
-  userPosition: number | null
-  userPoints: number
   nextMatchAt: Date | null
   lastMatchAt: Date | null
   hasLiveMatch: boolean

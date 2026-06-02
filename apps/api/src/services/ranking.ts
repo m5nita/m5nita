@@ -1,46 +1,22 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { getContainer } from '../container'
 import { db } from '../db/client'
-import { user } from '../db/schema/auth'
 import { match as matchTable } from '../db/schema/match'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
 import { Ranking } from '../domain/ranking/Ranking'
 import type { ScoringPolicy } from '../domain/scoring/ScoringPolicy'
-import { type RankingAggregateRow, rankingAggregateCache } from './rankingCache'
-
-async function computeRankingAggregate(poolId: string): Promise<RankingAggregateRow[]> {
-  // Exact = predicted score == actual finished score. Derived from match scores
-  // (not from `prediction.points = 10`), since single-match scoring stores 14
-  // for an exact prediction (10 category + 4 bonus).
-  const exactExpr = sql`count(case when ${matchTable.status} = 'finished'
-      and ${prediction.homeScore} = ${matchTable.homeScore}
-      and ${prediction.awayScore} = ${matchTable.awayScore} then 1 end)`
-  return db
-    .select({
-      userId: poolMember.userId,
-      name: user.name,
-      totalPoints: sql<number>`coalesce(sum(${prediction.points}), 0)::int`.as('total_points'),
-      exactMatches: sql<number>`${exactExpr}::int`.as('exact_matches'),
-    })
-    .from(poolMember)
-    .innerJoin(user, eq(user.id, poolMember.userId))
-    .leftJoin(
-      prediction,
-      sql`${prediction.userId} = ${poolMember.userId} and ${prediction.poolId} = ${poolMember.poolId}`,
-    )
-    .leftJoin(matchTable, eq(matchTable.id, prediction.matchId))
-    .where(eq(poolMember.poolId, poolId))
-    .groupBy(poolMember.userId, user.name)
-    .orderBy(desc(sql`coalesce(sum(${prediction.points}), 0)`), desc(exactExpr))
-}
+import { rankingAggregateCache } from './rankingCache'
 
 export async function getPoolRanking(poolId: string, currentUserId: string) {
-  const { poolRepo } = getContainer()
+  const { poolRepo, rankingRepo } = getContainer()
   const pool = await poolRepo.findById(poolId)
 
+  // Read the precomputed standings (cheap; ~one row per member). The cache stays
+  // as a thin layer that collapses concurrent reads/focus bursts; it is busted
+  // when standings change at match-finish (jobs/calcPoints.ts).
   const rawEntries = await rankingAggregateCache.getOrCompute(poolId, () =>
-    computeRankingAggregate(poolId),
+    rankingRepo.getStandings(poolId),
   )
 
   const livePoints = pool ? await computeLivePointsByUser(poolId, pool.scoringPolicy()) : new Map()
@@ -60,27 +36,44 @@ async function computeLivePointsByUser(
   poolId: string,
   scoringPolicy: ScoringPolicy,
 ): Promise<Map<string, number>> {
+  // Resolve the (few) live matches first via match_status_idx, then read only
+  // this pool's predictions for them through prediction_pool_id_match_id_idx —
+  // instead of seq-scanning all ~63k pool predictions to find the handful live.
+  const liveMatches = await db
+    .select({
+      id: matchTable.id,
+      home: matchTable.homeScore,
+      away: matchTable.awayScore,
+    })
+    .from(matchTable)
+    .where(eq(matchTable.status, 'live'))
+
+  if (liveMatches.length === 0) return new Map()
+
+  const scoreByMatch = new Map(liveMatches.map((m) => [m.id, m]))
   const livePreds = await db
     .select({
       userId: prediction.userId,
       predHome: prediction.homeScore,
       predAway: prediction.awayScore,
-      actualHome: matchTable.homeScore,
-      actualAway: matchTable.awayScore,
+      matchId: prediction.matchId,
     })
     .from(prediction)
-    .innerJoin(matchTable, eq(matchTable.id, prediction.matchId))
-    .where(sql`${prediction.poolId} = ${poolId} and ${matchTable.status} = 'live'`)
+    .where(
+      and(
+        eq(prediction.poolId, poolId),
+        inArray(
+          prediction.matchId,
+          liveMatches.map((m) => m.id),
+        ),
+      ),
+    )
 
   const byUser = new Map<string, number>()
   for (const row of livePreds) {
-    if (row.actualHome === null || row.actualAway === null) continue
-    const pts = scoringPolicy.score(
-      row.predHome,
-      row.predAway,
-      row.actualHome,
-      row.actualAway,
-    ).points
+    const m = scoreByMatch.get(row.matchId)
+    if (!m || m.home === null || m.away === null) continue
+    const pts = scoringPolicy.score(row.predHome, row.predAway, m.home, m.away).points
     byUser.set(row.userId, (byUser.get(row.userId) ?? 0) + pts)
   }
   return byUser
