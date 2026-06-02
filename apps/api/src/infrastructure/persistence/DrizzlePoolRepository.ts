@@ -9,6 +9,7 @@ import type { Pool } from '../../domain/pool/Pool'
 import type {
   ActivePoolInfo,
   PoolListItem,
+  PoolListStatusFilter,
   PoolMemberInfo,
   PoolMemberWithPhone,
   PoolRepository,
@@ -201,7 +202,7 @@ export class DrizzlePoolRepository implements PoolRepository {
     return rows
   }
 
-  async findUserPools(userId: string): Promise<PoolListItem[]> {
+  async findUserPools(userId: string, status?: PoolListStatusFilter): Promise<PoolListItem[]> {
     const rows = await this.db
       .select({
         id: pool.id,
@@ -256,7 +257,14 @@ export class DrizzlePoolRepository implements PoolRepository {
       .from(poolMember)
       .innerJoin(pool, eq(pool.id, poolMember.poolId))
       .innerJoin(competition, eq(competition.id, pool.competitionId))
-      .where(and(eq(poolMember.userId, userId), ne(pool.status, 'cancelled')))
+      .where(
+        and(
+          eq(poolMember.userId, userId),
+          // No status arg → all non-cancelled (used by the prize path). A status
+          // filter narrows to just active or just closed (dashboard sections).
+          status ? eq(pool.status, status) : ne(pool.status, 'cancelled'),
+        ),
+      )
       .orderBy(
         sql`CASE WHEN ${pool.status} = 'active' THEN 0 ELSE 1 END`,
         sql`CASE WHEN ${pool.status} = 'active' THEN (

@@ -295,6 +295,34 @@ describe('GET /api/pools', () => {
     expect(body.pools[0].nextMatchAt).toBe(nextDate.toISOString())
     expect(body.pools[0].lastMatchAt).toBe(lastDate.toISOString())
   })
+
+  it('defaults to active pools when no status is given', async () => {
+    mockGetUserPoolsExecute.mockResolvedValue([])
+    await app.request('/api/pools', { headers: { 'x-test-user': JSON.stringify(testUser) } })
+    expect(mockGetUserPoolsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'active' }),
+    )
+  })
+
+  it('passes status=closed through to the use case', async () => {
+    mockGetUserPoolsExecute.mockResolvedValue([])
+    await app.request('/api/pools?status=closed', {
+      headers: { 'x-test-user': JSON.stringify(testUser) },
+    })
+    expect(mockGetUserPoolsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'closed' }),
+    )
+  })
+
+  it('ignores an invalid status and falls back to active', async () => {
+    mockGetUserPoolsExecute.mockResolvedValue([])
+    await app.request('/api/pools?status=bogus', {
+      headers: { 'x-test-user': JSON.stringify(testUser) },
+    })
+    expect(mockGetUserPoolsExecute).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'active' }),
+    )
+  })
 })
 
 describe('updatePoolSchema — FR-014 scope immutability via PATCH /api/pools/:poolId', () => {
