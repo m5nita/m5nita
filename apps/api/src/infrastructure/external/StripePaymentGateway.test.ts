@@ -84,7 +84,7 @@ describe('StripePaymentGateway', () => {
         type: 'entry',
         paymentId: 'payment-uuid-123',
       },
-      success_url: 'http://localhost:5173/pools/payment-success',
+      success_url: 'http://localhost:5173/pools/payment-success?pool_id=pool-1&type=entry',
       cancel_url: 'http://localhost:5173/',
     })
 

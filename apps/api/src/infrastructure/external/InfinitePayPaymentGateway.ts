@@ -8,6 +8,7 @@ import type {
 import type { db as DbClient } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { payment } from '../../db/schema/payment'
+import { paymentSuccessUrl } from './paymentSuccessUrl'
 
 const CREATE_LINK_URL = 'https://api.checkout.infinitepay.io/links'
 
@@ -72,11 +73,18 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
   async createCheckoutSession(params: CheckoutParams): Promise<CheckoutResult> {
     const paymentRecord = await this.insertPendingRow(params)
     try {
+      const origin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173'
+      const redirectUrl = paymentSuccessUrl(origin, {
+        poolId: params.poolId,
+        type: params.type ?? 'entry',
+        paymentId: paymentRecord.id,
+      })
       const checkoutUrl = await this.createLink(
         paymentRecord.id,
         params.userId,
         params.amount,
         params.description ?? 'Entrada no Bolão',
+        redirectUrl,
       )
       return { payment: { id: paymentRecord.id }, checkoutUrl }
     } catch (err) {
@@ -114,6 +122,7 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
     userId: string,
     amount: number,
     description: string,
+    redirectUrl: string,
   ): Promise<string> {
     const customerRecord = await this.db.query.user.findFirst({ where: eq(user.id, userId) })
     const body = this.buildRequestBody(
@@ -121,6 +130,7 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
       amount,
       buildCustomer(customerRecord ?? null),
       description,
+      redirectUrl,
     )
 
     const response = await this.fetchWithRetry(body)
@@ -183,12 +193,12 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
     amount: number,
     customer: CustomerInfo | undefined,
     description: string,
+    redirectUrl: string,
   ) {
-    const origin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173'
     const apiUrl = process.env.BETTER_AUTH_URL || 'http://localhost:3001'
     return {
       handle: this.handle,
-      redirect_url: `${origin}/pools/payment-success?payment_id=${paymentId}`,
+      redirect_url: redirectUrl,
       webhook_url: `${apiUrl}/api/webhooks/infinitepay`,
       order_nsu: paymentId,
       ...(customer ? { customer } : {}),

@@ -8,6 +8,7 @@ import type {
 } from '../../application/ports/PaymentGateway.port'
 import type { db as DbClient } from '../../db/client'
 import { payment } from '../../db/schema/payment'
+import { paymentSuccessUrl } from './paymentSuccessUrl'
 
 export class MercadoPagoPaymentGateway implements PaymentGateway {
   private preference: Preference
@@ -56,9 +57,9 @@ export class MercadoPagoPaymentGateway implements PaymentGateway {
           },
         ],
         back_urls: {
-          success: `${origin}/pools/payment-success`,
+          success: paymentSuccessUrl(origin, { poolId, type }),
           failure: `${origin}/`,
-          pending: `${origin}/pools/payment-success`,
+          pending: paymentSuccessUrl(origin, { poolId, type }),
         },
         ...(isLocalhost ? {} : { auto_return: 'approved' }),
         external_reference: paymentRecord.id,
