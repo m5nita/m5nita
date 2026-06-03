@@ -39,7 +39,7 @@ export function BallLoader({ size = 48, className = '' }: { size?: number; class
       aria-hidden="true"
     >
       <div className="ball-loader__ball">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
             <clipPath id={clip}>
               <circle cx="50" cy="50" r="46" />

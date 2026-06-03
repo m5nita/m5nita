@@ -90,6 +90,7 @@ export function OtpInput({
         />
         {digits.map((digit, pos) => (
           <input
+            // biome-ignore lint/suspicious/noArrayIndexKey: posição é a identidade estável de cada slot de OTP (lista de tamanho fixo, sem reordenação)
             key={`otp-digit-${pos}`}
             ref={(el) => {
               inputRefs.current[pos] = el

@@ -51,6 +51,79 @@ function TabLink({
   )
 }
 
+function matchdayLabel(pool: PoolDetail): string | null {
+  if (pool.matchdayFrom == null) return null
+  if (pool.matchdayTo && pool.matchdayTo !== pool.matchdayFrom) {
+    return ` · Rodadas ${pool.matchdayFrom} a ${pool.matchdayTo}`
+  }
+  return ` · Rodada ${pool.matchdayFrom}`
+}
+
+function PoolHubActions({
+  poolId,
+  canInvite,
+  isOwner,
+  onInvite,
+}: {
+  poolId: string
+  canInvite: boolean
+  isOwner: boolean
+  onInvite: () => void
+}) {
+  return (
+    <div className="flex flex-shrink-0 gap-2">
+      {canInvite && (
+        <button
+          type="button"
+          onClick={onInvite}
+          className="flex h-10 w-10 items-center justify-center border-2 border-border text-black hover:border-black transition-colors cursor-pointer"
+          aria-label="Convidar amigos"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
+        </button>
+      )}
+      {isOwner && (
+        <Link
+          to="/pools/$poolId/manage"
+          params={{ poolId }}
+          className="flex h-10 w-10 items-center justify-center border-2 border-border text-black hover:border-black transition-colors cursor-pointer"
+          aria-label="Gerenciar bolão"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </Link>
+      )}
+    </div>
+  )
+}
+
 export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
   const { data: session } = useSession()
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -104,63 +177,16 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
           {pool.competitionName && (
             <p className="mt-1 font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
               {pool.competitionName}
-              {pool.matchdayFrom != null &&
-                (pool.matchdayTo && pool.matchdayTo !== pool.matchdayFrom
-                  ? ` · Rodadas ${pool.matchdayFrom} a ${pool.matchdayTo}`
-                  : ` · Rodada ${pool.matchdayFrom}`)}
+              {matchdayLabel(pool)}
             </p>
           )}
         </div>
-        <div className="flex flex-shrink-0 gap-2">
-          {canInvite && (
-            <button
-              type="button"
-              onClick={() => setInviteOpen(true)}
-              className="flex h-10 w-10 items-center justify-center border-2 border-border text-black hover:border-black transition-colors cursor-pointer"
-              aria-label="Convidar amigos"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-              </svg>
-            </button>
-          )}
-          {isOwner && (
-            <Link
-              to="/pools/$poolId/manage"
-              params={{ poolId }}
-              className="flex h-10 w-10 items-center justify-center border-2 border-border text-black hover:border-black transition-colors cursor-pointer"
-              aria-label="Gerenciar bolão"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </Link>
-          )}
-        </div>
+        <PoolHubActions
+          poolId={poolId}
+          canInvite={canInvite}
+          isOwner={isOwner}
+          onInvite={() => setInviteOpen(true)}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-px bg-border">

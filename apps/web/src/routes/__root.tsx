@@ -131,13 +131,11 @@ function RootLayout() {
 
       {menuOpen && (
         <>
-          <div
-            className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm"
+          <button
+            type="button"
+            aria-label="Fechar menu"
+            className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm cursor-default"
             onClick={() => setMenuOpen(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setMenuOpen(false)
-            }}
-            role="presentation"
           />
           <nav className="fixed inset-x-0 top-[53px] z-40 border-b border-border bg-cream shadow-lg">
             <div className="mx-auto max-w-[430px] p-5 lg:max-w-7xl">

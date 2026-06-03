@@ -162,6 +162,31 @@ function LoginPage() {
     }
   }
 
+  function startMagicLinkCooldown() {
+    setMagicLinkCooldown(30)
+    const interval = setInterval(() => {
+      setMagicLinkCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  function handleMagicLinkError(err: { code?: string; message?: string; status?: number }) {
+    if (isCaptchaError(err)) {
+      handleCaptchaError('Verificação expirada. Tente novamente.')
+      return
+    }
+    if (err.message?.includes('TOO_MANY_REQUESTS')) {
+      setError('Muitas tentativas. Aguarde alguns minutos.')
+    } else {
+      setError('Erro ao enviar link. Tente novamente.')
+    }
+  }
+
   async function handleSendMagicLink() {
     if (!email || !email.includes('@')) {
       setError('Informe um email válido')
@@ -182,29 +207,12 @@ function LoginPage() {
         captchaFetchOptions(),
       )
       if (result.error) {
-        if (isCaptchaError(result.error)) {
-          handleCaptchaError('Verificação expirada. Tente novamente.')
-          return
-        }
-        if (result.error.message?.includes('TOO_MANY_REQUESTS')) {
-          setError('Muitas tentativas. Aguarde alguns minutos.')
-        } else {
-          setError('Erro ao enviar link. Tente novamente.')
-        }
+        handleMagicLinkError(result.error)
         return
       }
       turnstile.reset()
       setStep('magic-link-sent')
-      setMagicLinkCooldown(30)
-      const interval = setInterval(() => {
-        setMagicLinkCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
+      startMagicLinkCooldown()
     } catch {
       setError('Erro ao enviar link. Tente novamente.')
     } finally {

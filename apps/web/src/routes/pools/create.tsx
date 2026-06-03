@@ -19,6 +19,161 @@ interface CouponState {
   error: string
 }
 
+type MatchdayBounds = { nextMatchday: number; max: number }
+
+function PoolScopeSection({
+  competitionId,
+  scopeMode,
+  setScopeMode,
+  matchId,
+  setMatchId,
+  matchdays,
+  matchdayFrom,
+  setMatchdayFrom,
+  matchdayTo,
+  setMatchdayTo,
+}: {
+  competitionId: string
+  scopeMode: PoolScopeMode
+  setScopeMode: (next: PoolScopeMode) => void
+  matchId: string
+  setMatchId: (id: string) => void
+  matchdays: MatchdayBounds | null
+  matchdayFrom: string
+  setMatchdayFrom: (value: string) => void
+  matchdayTo: string
+  setMatchdayTo: (value: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <PoolScopeToggle
+        value={scopeMode}
+        onChange={(next) => {
+          setScopeMode(next)
+          if (next === 'range') setMatchId('')
+          if (next === 'single') {
+            setMatchdayFrom('')
+            setMatchdayTo('')
+          }
+        }}
+      />
+
+      {scopeMode === 'single' && (
+        <UpcomingMatchPicker competitionId={competitionId} value={matchId} onChange={setMatchId} />
+      )}
+
+      {!matchdays && scopeMode === 'range' && (
+        <p className="text-xs text-gray-muted">Este bolão cobrirá todos os jogos da competição.</p>
+      )}
+
+      {matchdays && scopeMode === 'range' && (
+        <div className="flex flex-col gap-2">
+          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+            Rodadas
+          </p>
+          <p className="text-xs text-gray-muted">
+            Rodadas {matchdays.nextMatchday} a {matchdays.max} disponíveis. Deixe em branco para
+            incluir todo o campeonato.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              label="De"
+              type="number"
+              inputMode="numeric"
+              className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              value={matchdayFrom}
+              onChange={(e) => {
+                const newFrom = e.target.value
+                setMatchdayFrom(newFrom)
+                if (!matchdayTo || (newFrom && Number(matchdayTo) < Number(newFrom))) {
+                  setMatchdayTo(newFrom)
+                }
+              }}
+              onBlur={(e) => {
+                if (!e.target.value) return
+                const clamped = Math.min(
+                  Math.max(Number(e.target.value), matchdays.nextMatchday),
+                  matchdays.max,
+                )
+                const clampedStr = String(clamped)
+                if (clampedStr !== e.target.value) {
+                  setMatchdayFrom(clampedStr)
+                }
+                if (matchdayTo) {
+                  const toNum = Number(matchdayTo)
+                  if (toNum < clamped || toNum > matchdays.max) {
+                    setMatchdayTo(String(Math.min(Math.max(toNum, clamped), matchdays.max)))
+                  }
+                }
+              }}
+              min={matchdays.nextMatchday}
+              max={matchdays.max}
+            />
+            <Input
+              label="Até"
+              type="number"
+              inputMode="numeric"
+              className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              value={matchdayTo}
+              onChange={(e) => setMatchdayTo(e.target.value)}
+              onBlur={(e) => {
+                if (!e.target.value) return
+                const minValue = Number(matchdayFrom || matchdays.nextMatchday)
+                const clamped = Math.min(Math.max(Number(e.target.value), minValue), matchdays.max)
+                if (String(clamped) !== e.target.value) {
+                  setMatchdayTo(String(clamped))
+                }
+              }}
+              min={matchdayFrom || matchdays.nextMatchday}
+              max={matchdays.max}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FeeSummary({
+  coupon,
+  currentFee,
+  platformFee,
+  discountedFee,
+}: {
+  coupon: CouponState
+  currentFee: number
+  platformFee: number
+  discountedFee: number
+}) {
+  return (
+    <div className="mt-auto flex flex-col gap-2 text-sm">
+      <div className="flex justify-between">
+        <span className="text-gray-dark">Entrada</span>
+        <span className="font-medium text-black">{formatCurrency(currentFee)}</span>
+      </div>
+      {coupon.valid ? (
+        <>
+          <div className="flex justify-between">
+            <span className="text-gray-muted line-through">Taxa (5%)</span>
+            <span className="text-gray-muted line-through">{formatCurrency(platformFee)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-green font-medium">
+              Taxa com desconto ({(5 * (1 - coupon.discountPercent / 100)).toFixed(1)}%)
+            </span>
+            <span className="text-green font-medium">{formatCurrency(discountedFee)}</span>
+          </div>
+        </>
+      ) : (
+        <div className="flex justify-between">
+          <span className="text-gray-muted">Taxa (5%)</span>
+          <span className="text-gray-muted">{formatCurrency(platformFee)}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CreatePoolPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>('config')
@@ -121,17 +276,63 @@ function CreatePoolPage() {
     [currentFee],
   )
 
+  function validateForm(): string | null {
+    if (name.trim().length < 3) return 'Nome deve ter pelo menos 3 caracteres'
+    if (!isValidFee) return 'Valor deve ser entre R$ 5 e R$ 1.000'
+    if (!competitionId) return 'Selecione uma competição'
+    return null
+  }
+
+  // Builds the create-pool request body from the current scope/coupon selection.
+  // Returns null when a single-match pool is missing its match (caller surfaces
+  // the "selecione o jogo" error).
+  function buildCreateBody(
+    trimmedCoupon: string,
+    couponValid: boolean,
+  ): Record<string, unknown> | null {
+    const body: Record<string, unknown> = {
+      name: name.trim(),
+      entryFee: currentFee,
+      competitionId,
+    }
+    if (scopeMode === 'single') {
+      if (!matchId) return null
+      body.matchId = matchId
+    } else if (isLeague && matchdayFrom && matchdayTo) {
+      body.matchdayFrom = Number(matchdayFrom)
+      body.matchdayTo = Number(matchdayTo)
+    }
+    if (trimmedCoupon && couponValid) {
+      body.couponCode = trimmedCoupon
+    }
+    return body
+  }
+
+  async function submitCreate(body: Record<string, unknown>): Promise<void> {
+    const res = await apiFetch('/api/pools', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      setError(data.message || 'Erro ao criar bolão')
+      return
+    }
+    const data = await res.json()
+    setCreatedPool({ name: data.pool.name, inviteCode: data.pool.inviteCode })
+
+    if (data.payment.checkoutUrl) {
+      window.location.href = data.payment.checkoutUrl
+    } else {
+      setStep('invite')
+    }
+  }
+
   async function handleCreate() {
-    if (name.trim().length < 3) {
-      setError('Nome deve ter pelo menos 3 caracteres')
-      return
-    }
-    if (!isValidFee) {
-      setError('Valor deve ser entre R$ 5 e R$ 1.000')
-      return
-    }
-    if (!competitionId) {
-      setError('Selecione uma competição')
+    const validationError = validateForm()
+    if (validationError) {
+      setError(validationError)
       return
     }
     setLoading(true)
@@ -148,44 +349,14 @@ function CreatePoolPage() {
         couponValid = true
       }
 
-      const body: Record<string, unknown> = {
-        name: name.trim(),
-        entryFee: currentFee,
-        competitionId,
-      }
-      if (scopeMode === 'single') {
-        if (!matchId) {
-          setError('Selecione o jogo do bolão.')
-          setLoading(false)
-          return
-        }
-        body.matchId = matchId
-      } else if (isLeague && matchdayFrom && matchdayTo) {
-        body.matchdayFrom = Number(matchdayFrom)
-        body.matchdayTo = Number(matchdayTo)
-      }
-      if (trimmedCoupon && couponValid) {
-        body.couponCode = trimmedCoupon
-      }
-
-      const res = await apiFetch('/api/pools', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.message || 'Erro ao criar bolão')
+      const body = buildCreateBody(trimmedCoupon, couponValid)
+      if (!body) {
+        setError('Selecione o jogo do bolão.')
+        setLoading(false)
         return
       }
-      const data = await res.json()
-      setCreatedPool({ name: data.pool.name, inviteCode: data.pool.inviteCode })
 
-      if (data.payment.checkoutUrl) {
-        window.location.href = data.payment.checkoutUrl
-      } else {
-        setStep('invite')
-      }
+      await submitCreate(body)
     } catch {
       setError('Erro de conexão.')
     } finally {
@@ -263,101 +434,18 @@ function CreatePoolPage() {
         </div>
 
         {competitionId && (
-          <div className="flex flex-col gap-3">
-            <PoolScopeToggle
-              value={scopeMode}
-              onChange={(next) => {
-                setScopeMode(next)
-                if (next === 'range') setMatchId('')
-                if (next === 'single') {
-                  setMatchdayFrom('')
-                  setMatchdayTo('')
-                }
-              }}
-            />
-
-            {scopeMode === 'single' && (
-              <UpcomingMatchPicker
-                competitionId={competitionId}
-                value={matchId}
-                onChange={setMatchId}
-              />
-            )}
-
-            {!matchdays && scopeMode === 'range' && (
-              <p className="text-xs text-gray-muted">
-                Este bolão cobrirá todos os jogos da competição.
-              </p>
-            )}
-
-            {matchdays && scopeMode === 'range' && (
-              <div className="flex flex-col gap-2">
-                <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
-                  Rodadas
-                </p>
-                <p className="text-xs text-gray-muted">
-                  Rodadas {matchdays.nextMatchday} a {matchdays.max} disponíveis. Deixe em branco
-                  para incluir todo o campeonato.
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    label="De"
-                    type="number"
-                    inputMode="numeric"
-                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={matchdayFrom}
-                    onChange={(e) => {
-                      const newFrom = e.target.value
-                      setMatchdayFrom(newFrom)
-                      if (!matchdayTo || (newFrom && Number(matchdayTo) < Number(newFrom))) {
-                        setMatchdayTo(newFrom)
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (!e.target.value) return
-                      const clamped = Math.min(
-                        Math.max(Number(e.target.value), matchdays.nextMatchday),
-                        matchdays.max,
-                      )
-                      const clampedStr = String(clamped)
-                      if (clampedStr !== e.target.value) {
-                        setMatchdayFrom(clampedStr)
-                      }
-                      if (matchdayTo) {
-                        const toNum = Number(matchdayTo)
-                        if (toNum < clamped || toNum > matchdays.max) {
-                          setMatchdayTo(String(Math.min(Math.max(toNum, clamped), matchdays.max)))
-                        }
-                      }
-                    }}
-                    min={matchdays.nextMatchday}
-                    max={matchdays.max}
-                  />
-                  <Input
-                    label="Até"
-                    type="number"
-                    inputMode="numeric"
-                    className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={matchdayTo}
-                    onChange={(e) => setMatchdayTo(e.target.value)}
-                    onBlur={(e) => {
-                      if (!e.target.value) return
-                      const minValue = Number(matchdayFrom || matchdays.nextMatchday)
-                      const clamped = Math.min(
-                        Math.max(Number(e.target.value), minValue),
-                        matchdays.max,
-                      )
-                      if (String(clamped) !== e.target.value) {
-                        setMatchdayTo(String(clamped))
-                      }
-                    }}
-                    min={matchdayFrom || matchdays.nextMatchday}
-                    max={matchdays.max}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <PoolScopeSection
+            competitionId={competitionId}
+            scopeMode={scopeMode}
+            setScopeMode={setScopeMode}
+            matchId={matchId}
+            setMatchId={setMatchId}
+            matchdays={matchdays}
+            matchdayFrom={matchdayFrom}
+            setMatchdayFrom={setMatchdayFrom}
+            matchdayTo={matchdayTo}
+            setMatchdayTo={setMatchdayTo}
+          />
         )}
 
         <div className="flex flex-col gap-2">
@@ -415,31 +503,12 @@ function CreatePoolPage() {
           {coupon.loading && <p className="text-xs text-gray-muted">Validando cupom...</p>}
         </div>
 
-        <div className="mt-auto flex flex-col gap-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-dark">Entrada</span>
-            <span className="font-medium text-black">{formatCurrency(currentFee)}</span>
-          </div>
-          {coupon.valid ? (
-            <>
-              <div className="flex justify-between">
-                <span className="text-gray-muted line-through">Taxa (5%)</span>
-                <span className="text-gray-muted line-through">{formatCurrency(platformFee)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-green font-medium">
-                  Taxa com desconto ({(5 * (1 - coupon.discountPercent / 100)).toFixed(1)}%)
-                </span>
-                <span className="text-green font-medium">{formatCurrency(discountedFee)}</span>
-              </div>
-            </>
-          ) : (
-            <div className="flex justify-between">
-              <span className="text-gray-muted">Taxa (5%)</span>
-              <span className="text-gray-muted">{formatCurrency(platformFee)}</span>
-            </div>
-          )}
-        </div>
+        <FeeSummary
+          coupon={coupon}
+          currentFee={currentFee}
+          platformFee={platformFee}
+          discountedFee={discountedFee}
+        />
 
         {error && (
           <p className="text-xs font-medium text-red" role="alert">

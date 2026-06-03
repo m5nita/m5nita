@@ -14,7 +14,8 @@ export async function handleCheckoutCompleted(paymentId: string) {
       .where(and(eq(payment.id, paymentId), ne(payment.status, 'completed')))
       .returning()
 
-    if (claimed.length === 0) {
+    const paymentRecord = claimed[0]
+    if (!paymentRecord) {
       const existing = await tx.query.payment.findFirst({ where: eq(payment.id, paymentId) })
       if (!existing) {
         const msg = `[payment] record not found for id=${paymentId}`
@@ -25,8 +26,6 @@ export async function handleCheckoutCompleted(paymentId: string) {
       }
       return
     }
-
-    const paymentRecord = claimed[0]!
 
     Sentry.addBreadcrumb({
       category: 'payment',

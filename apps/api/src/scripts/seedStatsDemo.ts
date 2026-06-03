@@ -332,8 +332,7 @@ async function addFixtures(
   }
 
   const pendingIds: string[] = []
-  for (let k = 0; k < UPCOMING.length; k++) {
-    const u = UPCOMING[k]!
+  for (const [k, u] of UPCOMING.entries()) {
     const [m] = await db
       .insert(match)
       .values({
@@ -368,7 +367,8 @@ async function makeMember(poolId: string, userId: string): Promise<void> {
       type: 'entry',
     })
     .returning()
-  await db.insert(poolMember).values({ poolId, userId, paymentId: pay!.id })
+  if (!pay) throw new Error('failed to create demo entry payment')
+  await db.insert(poolMember).values({ poolId, userId, paymentId: pay.id })
 }
 
 function finishedInScope(
@@ -415,10 +415,11 @@ async function buildPool(
   for (const f of finishedInScope(sc.scope, finished, singleId)) {
     const rows = [
       { userId: targetId, s: predict(sc.target, f.actual) },
-      ...sc.rivals.map((profile, idx) => ({
-        userId: rivalIds[idx]!,
-        s: predict(profile, f.actual),
-      })),
+      ...sc.rivals.map((profile, idx) => {
+        const userId = rivalIds[idx]
+        if (!userId) throw new Error(`missing rival id at index ${idx}`)
+        return { userId, s: predict(profile, f.actual) }
+      }),
     ]
     await db.insert(prediction).values(
       rows.map((r) => ({
@@ -525,8 +526,7 @@ async function printGuide(
   console.log(`  Login:  ${TARGET_PHONE}   (OTP no console do "pnpm dev")`)
   console.log('=================================================================\n')
 
-  for (let i = 0; i < built.length; i++) {
-    const { scenario: sc, poolId } = built[i]!
+  for (const [i, { scenario: sc, poolId }] of built.entries()) {
     console.log(`[${i + 1}] ${sc.name}`)
     console.log(`    Abrir:      /pools/${poolId}/estatisticas`)
     console.log(`    Demonstra:  ${sc.explanation}`)

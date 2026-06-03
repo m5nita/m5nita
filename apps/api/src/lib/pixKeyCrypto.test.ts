@@ -44,8 +44,11 @@ describe('pixKeyCrypto', () => {
     const enc = encryptPixKey('secret-key')
     const parts = enc.split(':')
     // Flip the last byte of the auth tag
-    const tagBuf = Buffer.from(parts[2]!, 'base64')
-    tagBuf[tagBuf.length - 1] = tagBuf[tagBuf.length - 1]! ^ 0x01
+    const tag = parts[2]
+    if (!tag) throw new Error('expected auth tag in encrypted value')
+    const tagBuf = Buffer.from(tag, 'base64')
+    const lastIndex = tagBuf.length - 1
+    tagBuf[lastIndex] = (tagBuf[lastIndex] ?? 0) ^ 0x01
     parts[2] = tagBuf.toString('base64')
     const tampered = parts.join(':')
     expect(() => decryptPixKey(tampered)).toThrow()
