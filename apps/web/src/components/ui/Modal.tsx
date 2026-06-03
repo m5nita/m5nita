@@ -29,18 +29,15 @@ export function Modal({ open, onClose, children, ariaLabel }: ModalProps) {
   if (!open) return null
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose()
-      }}
-      role="presentation"
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <button
+        type="button"
+        aria-label="Fechar"
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+      />
       <div
         className="relative w-full max-w-[430px] max-h-[90vh] overflow-y-auto bg-cream border-2 border-border"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel}

@@ -235,6 +235,236 @@ function MatchList({
   )
 }
 
+function filterMatchesForPool(rawMatches: Match[], pool: PoolDetail): Match[] {
+  return rawMatches.filter((m) => {
+    if (pool.matchId != null) {
+      return m.id === pool.matchId
+    }
+    if (pool.matchdayFrom != null && pool.matchdayTo != null && m.matchday != null) {
+      return m.matchday >= pool.matchdayFrom && m.matchday <= pool.matchdayTo
+    }
+    return true
+  })
+}
+
+type MatchListShared = {
+  poolId: string
+  predictionMap: Map<string, Prediction>
+  onSave: (matchId: string, homeScore: number, awayScore: number) => void
+  highlightMatchId: string | null
+}
+
+function GroupKnockoutTabBar({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+  return (
+    <div className="flex gap-2" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={tab === 'groups'}
+        onClick={() => setTab('groups')}
+        className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'groups' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
+      >
+        Fase de Grupos
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={tab === 'knockout'}
+        onClick={() => setTab('knockout')}
+        className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'knockout' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
+      >
+        Mata-Mata
+      </button>
+    </div>
+  )
+}
+
+function LeagueMatchdayView({
+  leagueMatches,
+  activeMatchday,
+  setActiveMatchday,
+  poolId,
+  predictionMap,
+  onSave,
+  highlightMatchId,
+}: MatchListShared & {
+  leagueMatches: Match[]
+  activeMatchday: number | null
+  setActiveMatchday: (md: number) => void
+}) {
+  const byMatchday = new Map<number, Match[]>()
+  for (const m of leagueMatches) {
+    const md = m.matchday ?? 0
+    if (!byMatchday.has(md)) byMatchday.set(md, [])
+    byMatchday.get(md)?.push(m)
+  }
+  const sortedMatchdays = [...byMatchday.keys()].sort((a, b) => a - b)
+  const firstUnfinishedMatchday = sortedMatchdays.find((md) =>
+    (byMatchday.get(md) ?? []).some((m) => m.status !== 'finished'),
+  )
+  const defaultMatchday =
+    firstUnfinishedMatchday ?? sortedMatchdays[sortedMatchdays.length - 1] ?? 0
+  const currentMatchday = activeMatchday ?? defaultMatchday
+  const currentMatches = byMatchday.get(currentMatchday) ?? []
+
+  return (
+    <>
+      <div
+        className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
+        role="tablist"
+        aria-label="Rodadas"
+      >
+        {sortedMatchdays.map((md) => (
+          <button
+            key={md}
+            type="button"
+            role="tab"
+            aria-selected={currentMatchday === md}
+            onClick={() => setActiveMatchday(md)}
+            className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
+              currentMatchday === md ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
+            }`}
+          >
+            {md}ª
+          </button>
+        ))}
+      </div>
+
+      <p className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+        {currentMatchday}ª Rodada
+      </p>
+      <MatchList
+        poolId={poolId}
+        matches={currentMatches}
+        predictionMap={predictionMap}
+        onSave={onSave}
+        highlightMatchId={highlightMatchId}
+      />
+    </>
+  )
+}
+
+function GroupStageView({
+  groupMatches,
+  activeGroup,
+  setActiveGroup,
+  poolId,
+  predictionMap,
+  onSave,
+  highlightMatchId,
+}: MatchListShared & {
+  groupMatches: Match[]
+  activeGroup: string
+  setActiveGroup: (group: string) => void
+}) {
+  const filteredGroupMatches = groupMatches.filter((m) => m.group === activeGroup)
+  return (
+    <>
+      <div
+        className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
+        role="tablist"
+        aria-label="Grupos"
+      >
+        {MATCH.GROUPS.map((group) => (
+          <button
+            key={group}
+            type="button"
+            role="tab"
+            aria-selected={activeGroup === group}
+            onClick={() => setActiveGroup(group)}
+            className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
+              activeGroup === group ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
+            }`}
+          >
+            {group}
+          </button>
+        ))}
+      </div>
+
+      {filteredGroupMatches.length === 0 ? (
+        <div className="border-2 border-dashed border-border py-10 text-center">
+          <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
+            Nenhum jogo no Grupo {activeGroup}
+          </p>
+        </div>
+      ) : (
+        <MatchList
+          poolId={poolId}
+          matches={[...filteredGroupMatches].sort((a, b) => (a.matchday ?? 0) - (b.matchday ?? 0))}
+          predictionMap={predictionMap}
+          onSave={onSave}
+          matchdayHeaders
+          highlightMatchId={highlightMatchId}
+        />
+      )}
+    </>
+  )
+}
+
+function KnockoutStagesView({
+  knockoutMatches,
+  activeKnockoutStage,
+  setActiveKnockoutStage,
+  poolId,
+  predictionMap,
+  onSave,
+  highlightMatchId,
+}: MatchListShared & {
+  knockoutMatches: Match[]
+  activeKnockoutStage: string | null
+  setActiveKnockoutStage: (stage: string) => void
+}) {
+  const availableStages = knockoutStageOrder.filter((stage) =>
+    knockoutMatches.some((m) => m.stage === stage),
+  )
+
+  if (availableStages.length === 0) {
+    return (
+      <div className="border-2 border-dashed border-border py-10 text-center">
+        <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
+          Em breve
+        </p>
+        <p className="mt-1 text-xs text-gray-muted">Mata-mata após a fase de grupos</p>
+      </div>
+    )
+  }
+
+  const currentStage = activeKnockoutStage ?? availableStages[0] ?? ''
+  const stageMatches = knockoutMatches.filter((m) => m.stage === currentStage)
+
+  return (
+    <>
+      <div
+        className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
+        role="tablist"
+        aria-label="Fases"
+      >
+        {availableStages.map((stage) => (
+          <button
+            key={stage}
+            type="button"
+            role="tab"
+            aria-selected={currentStage === stage}
+            onClick={() => setActiveKnockoutStage(stage)}
+            className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
+              currentStage === stage ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
+            }`}
+          >
+            {knockoutStageLabels[stage] ?? stage}
+          </button>
+        ))}
+      </div>
+      <MatchList
+        poolId={poolId}
+        matches={stageMatches}
+        predictionMap={predictionMap}
+        onSave={onSave}
+        highlightMatchId={highlightMatchId}
+      />
+    </>
+  )
+}
+
 function PredictionsContent({
   pool,
   poolId,
@@ -387,15 +617,7 @@ function PredictionsContent({
   }
 
   const rawMatches = matchesData?.matches ?? []
-  const allMatches = rawMatches.filter((m) => {
-    if (pool.matchId != null) {
-      return m.id === pool.matchId
-    }
-    if (pool.matchdayFrom != null && pool.matchdayTo != null && m.matchday != null) {
-      return m.matchday >= pool.matchdayFrom && m.matchday <= pool.matchdayTo
-    }
-    return true
-  })
+  const allMatches = filterMatchesForPool(rawMatches, pool)
   const predictions = predictionsData?.predictions ?? []
   const predictionMap = new Map(predictions.map((p) => [p.matchId, p]))
 
@@ -403,7 +625,6 @@ function PredictionsContent({
   const groupMatches = allMatches.filter((m) => m.stage === 'group')
   const knockoutMatches = allMatches.filter((m) => m.stage !== 'group' && m.stage !== 'league')
   const leagueMatches = allMatches.filter((m) => m.stage === 'league')
-  const filteredGroupMatches = groupMatches.filter((m) => m.group === activeGroup)
 
   return (
     <>
@@ -416,182 +637,42 @@ function PredictionsContent({
           highlightMatchId={highlightMatchId}
         />
       ) : hasLeagueMatches ? (
-        (() => {
-          const byMatchday = new Map<number, Match[]>()
-          for (const m of leagueMatches) {
-            const md = m.matchday ?? 0
-            if (!byMatchday.has(md)) byMatchday.set(md, [])
-            byMatchday.get(md)?.push(m)
-          }
-          const sortedMatchdays = [...byMatchday.keys()].sort((a, b) => a - b)
-          const firstUnfinishedMatchday = sortedMatchdays.find((md) =>
-            (byMatchday.get(md) ?? []).some((m) => m.status !== 'finished'),
-          )
-          const defaultMatchday =
-            firstUnfinishedMatchday ?? sortedMatchdays[sortedMatchdays.length - 1] ?? 0
-          const currentMatchday = activeMatchday ?? defaultMatchday
-          const currentMatches = byMatchday.get(currentMatchday) ?? []
-
-          return (
-            <>
-              <div
-                className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
-                role="tablist"
-                aria-label="Rodadas"
-              >
-                {sortedMatchdays.map((md) => (
-                  <button
-                    key={md}
-                    type="button"
-                    role="tab"
-                    aria-selected={currentMatchday === md}
-                    onClick={() => setActiveMatchday(md)}
-                    className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
-                      currentMatchday === md
-                        ? 'bg-black text-white'
-                        : 'text-gray-muted hover:text-black'
-                    }`}
-                  >
-                    {md}ª
-                  </button>
-                ))}
-              </div>
-
-              <p className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
-                {currentMatchday}ª Rodada
-              </p>
-              <MatchList
-                poolId={poolId}
-                matches={currentMatches}
-                predictionMap={predictionMap}
-                onSave={handleSave}
-                highlightMatchId={highlightMatchId}
-              />
-            </>
-          )
-        })()
+        <LeagueMatchdayView
+          leagueMatches={leagueMatches}
+          activeMatchday={activeMatchday}
+          setActiveMatchday={setActiveMatchday}
+          poolId={poolId}
+          predictionMap={predictionMap}
+          onSave={handleSave}
+          highlightMatchId={highlightMatchId}
+        />
       ) : (
-        <div className="flex gap-2" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'groups'}
-            onClick={() => setTab('groups')}
-            className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'groups' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
-          >
-            Fase de Grupos
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'knockout'}
-            onClick={() => setTab('knockout')}
-            className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'knockout' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
-          >
-            Mata-Mata
-          </button>
-        </div>
+        <GroupKnockoutTabBar tab={tab} setTab={setTab} />
       )}
 
       {!hasLeagueMatches && tab === 'groups' && (
-        <>
-          <div
-            className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
-            role="tablist"
-            aria-label="Grupos"
-          >
-            {MATCH.GROUPS.map((group) => (
-              <button
-                key={group}
-                type="button"
-                role="tab"
-                aria-selected={activeGroup === group}
-                onClick={() => setActiveGroup(group)}
-                className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
-                  activeGroup === group ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
-                }`}
-              >
-                {group}
-              </button>
-            ))}
-          </div>
-
-          {filteredGroupMatches.length === 0 ? (
-            <div className="border-2 border-dashed border-border py-10 text-center">
-              <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
-                Nenhum jogo no Grupo {activeGroup}
-              </p>
-            </div>
-          ) : (
-            <MatchList
-              poolId={poolId}
-              matches={[...filteredGroupMatches].sort(
-                (a, b) => (a.matchday ?? 0) - (b.matchday ?? 0),
-              )}
-              predictionMap={predictionMap}
-              onSave={handleSave}
-              matchdayHeaders
-              highlightMatchId={highlightMatchId}
-            />
-          )}
-        </>
+        <GroupStageView
+          groupMatches={groupMatches}
+          activeGroup={activeGroup}
+          setActiveGroup={setActiveGroup}
+          poolId={poolId}
+          predictionMap={predictionMap}
+          onSave={handleSave}
+          highlightMatchId={highlightMatchId}
+        />
       )}
 
-      {!hasLeagueMatches &&
-        tab === 'knockout' &&
-        (() => {
-          const availableStages = knockoutStageOrder.filter((stage) =>
-            knockoutMatches.some((m) => m.stage === stage),
-          )
-
-          if (availableStages.length === 0) {
-            return (
-              <div className="border-2 border-dashed border-border py-10 text-center">
-                <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
-                  Em breve
-                </p>
-                <p className="mt-1 text-xs text-gray-muted">Mata-mata após a fase de grupos</p>
-              </div>
-            )
-          }
-
-          const currentStage = activeKnockoutStage ?? availableStages[0] ?? ''
-          const stageMatches = knockoutMatches.filter((m) => m.stage === currentStage)
-
-          return (
-            <>
-              <div
-                className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
-                role="tablist"
-                aria-label="Fases"
-              >
-                {availableStages.map((stage) => (
-                  <button
-                    key={stage}
-                    type="button"
-                    role="tab"
-                    aria-selected={currentStage === stage}
-                    onClick={() => setActiveKnockoutStage(stage)}
-                    className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
-                      currentStage === stage
-                        ? 'bg-black text-white'
-                        : 'text-gray-muted hover:text-black'
-                    }`}
-                  >
-                    {knockoutStageLabels[stage] ?? stage}
-                  </button>
-                ))}
-              </div>
-              <MatchList
-                poolId={poolId}
-                matches={stageMatches}
-                predictionMap={predictionMap}
-                onSave={handleSave}
-                highlightMatchId={highlightMatchId}
-              />
-            </>
-          )
-        })()}
+      {!hasLeagueMatches && tab === 'knockout' && (
+        <KnockoutStagesView
+          knockoutMatches={knockoutMatches}
+          activeKnockoutStage={activeKnockoutStage}
+          setActiveKnockoutStage={setActiveKnockoutStage}
+          poolId={poolId}
+          predictionMap={predictionMap}
+          onSave={handleSave}
+          highlightMatchId={highlightMatchId}
+        />
+      )}
     </>
   )
 }

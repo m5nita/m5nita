@@ -54,8 +54,8 @@ describe('useInViewportLoop', () => {
     })
     rerender()
 
-    const observer = observerInstances[0]!
-    expect(observer).toBeDefined()
+    const observer = observerInstances[0]
+    if (!observer) throw new Error('IntersectionObserver was not instantiated')
 
     act(() => {
       observer.callback(
@@ -82,7 +82,8 @@ describe('useInViewportLoop', () => {
       return value
     })
     rerender()
-    const observer = observerInstances[0]!
+    const observer = observerInstances[0]
+    if (!observer) throw new Error('IntersectionObserver was not instantiated')
     unmount()
     expect(observer.disconnect).toHaveBeenCalled()
   })

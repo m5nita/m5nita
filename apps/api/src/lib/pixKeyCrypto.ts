@@ -45,14 +45,14 @@ export function decryptPixKey(stored: string): string {
     return stored
   }
   const parts = stored.split(':')
-  if (parts.length !== 4) {
+  const [, ivB64, tagB64, ctB64] = parts
+  if (parts.length !== 4 || !ivB64 || !tagB64 || !ctB64) {
     throw new Error('Malformed encrypted PIX key')
   }
-  const [, ivB64, tagB64, ctB64] = parts
   const key = loadKey()
-  const iv = Buffer.from(ivB64!, 'base64')
-  const tag = Buffer.from(tagB64!, 'base64')
-  const ct = Buffer.from(ctB64!, 'base64')
+  const iv = Buffer.from(ivB64, 'base64')
+  const tag = Buffer.from(tagB64, 'base64')
+  const ct = Buffer.from(ctB64, 'base64')
   const decipher = createDecipheriv(ALGORITHM, key, iv)
   decipher.setAuthTag(tag)
   const dec = Buffer.concat([decipher.update(ct), decipher.final()])

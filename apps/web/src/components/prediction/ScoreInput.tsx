@@ -29,7 +29,7 @@ interface ScoreInputProps {
   bonus?: number | null
   actualHomeScore: number | null
   actualAwayScore: number | null
-  onSave: (matchId: string, homeScore: number, awayScore: number) => void | Promise<unknown>
+  onSave: (matchId: string, homeScore: number, awayScore: number) => unknown
   onAdvance?: () => void
   renderExpandedContent?: (matchId: string) => ReactNode
 }
@@ -199,6 +199,205 @@ function ExpandPredictionsControl({
   )
 }
 
+function LiveResultHeader({
+  matchStatus,
+  isLocked,
+  hasActualScore,
+  actualHomeScore,
+  actualAwayScore,
+}: {
+  matchStatus: string
+  isLocked: boolean
+  hasActualScore: boolean
+  actualHomeScore: number | null
+  actualAwayScore: number | null
+}) {
+  if (!((isLocked && hasActualScore) || matchStatus === 'live')) return null
+  return (
+    <div
+      className={`mb-1 flex items-center justify-center gap-2 font-display text-[10px] font-bold uppercase leading-none tracking-widest ${
+        matchStatus === 'live' ? 'text-red' : 'text-gray-muted'
+      }`}
+    >
+      {matchStatus === 'live' ? (
+        <span className="flex items-center gap-1">
+          <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+          Ao Vivo
+        </span>
+      ) : (
+        <span>Resultado oficial</span>
+      )}
+      {hasActualScore && (
+        <span className="flex items-center gap-1.5">
+          <span>{actualHomeScore}</span>
+          <span>x</span>
+          <span>{actualAwayScore}</span>
+        </span>
+      )}
+    </div>
+  )
+}
+
+function SaveStatus({ status }: { status: 'idle' | 'saving' | 'saved' | 'error' }) {
+  if (status === 'saved') {
+    return (
+      <span className="font-display text-[9px] font-bold uppercase tracking-widest text-green">
+        Salvo
+      </span>
+    )
+  }
+  if (status === 'saving') {
+    return (
+      <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
+        Salvando...
+      </span>
+    )
+  }
+  if (status === 'error') {
+    return (
+      <span className="font-display text-[9px] font-bold uppercase tracking-widest text-red">
+        Não salvo
+      </span>
+    )
+  }
+  return null
+}
+
+function MaybeScoreBreakdownPanel({
+  breakdownOpen,
+  points,
+  category,
+  bonus,
+  initialHome,
+  initialAway,
+  actualHomeScore,
+  actualAwayScore,
+  homeTeam,
+  awayTeam,
+}: {
+  breakdownOpen: boolean
+  points: number | null
+  category: number | null | undefined
+  bonus: number | null | undefined
+  initialHome: number | null
+  initialAway: number | null
+  actualHomeScore: number | null
+  actualAwayScore: number | null
+  homeTeam: string
+  awayTeam: string
+}) {
+  if (
+    !breakdownOpen ||
+    typeof category !== 'number' ||
+    typeof bonus !== 'number' ||
+    points === null ||
+    initialHome === null ||
+    initialAway === null ||
+    actualHomeScore === null ||
+    actualAwayScore === null
+  ) {
+    return null
+  }
+  return (
+    <ScoreBreakdownPanel
+      total={points}
+      category={category}
+      bonus={bonus}
+      predHome={initialHome}
+      predAway={initialAway}
+      realHome={actualHomeScore}
+      realAway={actualAwayScore}
+      homeTeam={displayTeamName(homeTeam)}
+      awayTeam={displayTeamName(awayTeam)}
+    />
+  )
+}
+
+function ScoreResultFooter({
+  status,
+  matchStatus,
+  hasPrediction,
+  points,
+  category,
+  bonus,
+  initialHome,
+  initialAway,
+  actualHomeScore,
+  actualAwayScore,
+  homeTeam,
+  awayTeam,
+  breakdownOpen,
+  onToggleBreakdown,
+}: {
+  status: 'idle' | 'saving' | 'saved' | 'error'
+  matchStatus: string
+  hasPrediction: boolean
+  points: number | null
+  category: number | null | undefined
+  bonus: number | null | undefined
+  initialHome: number | null
+  initialAway: number | null
+  actualHomeScore: number | null
+  actualAwayScore: number | null
+  homeTeam: string
+  awayTeam: string
+  breakdownOpen: boolean
+  onToggleBreakdown: () => void
+}) {
+  const scoreReady =
+    typeof category === 'number' &&
+    typeof bonus === 'number' &&
+    actualHomeScore !== null &&
+    actualAwayScore !== null
+
+  return (
+    <>
+      <div className="mt-1 flex items-center justify-center gap-2" role="status" aria-live="polite">
+        <SaveStatus status={status} />
+        {matchStatus === 'live' &&
+          hasPrediction &&
+          points != null &&
+          (scoreReady ? (
+            <ScoreBreakdownToggle
+              total={points}
+              variant="live"
+              isOpen={breakdownOpen}
+              onToggle={onToggleBreakdown}
+            />
+          ) : (
+            <span className="flex items-center gap-1 font-display text-xs font-black text-red">
+              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
+              {points} pts
+            </span>
+          ))}
+        {matchStatus === 'finished' &&
+          (scoreReady && points !== null ? (
+            <ScoreBreakdownToggle
+              total={points}
+              variant="finished"
+              isOpen={breakdownOpen}
+              onToggle={onToggleBreakdown}
+            />
+          ) : (
+            <span className="font-display text-xs font-black text-green">+{points ?? 0} pts</span>
+          ))}
+      </div>
+      <MaybeScoreBreakdownPanel
+        breakdownOpen={breakdownOpen}
+        points={points}
+        category={category}
+        bonus={bonus}
+        initialHome={initialHome}
+        initialAway={initialAway}
+        actualHomeScore={actualHomeScore}
+        actualAwayScore={actualAwayScore}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+      />
+    </>
+  )
+}
+
 export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function ScoreInput(
   {
     matchId,
@@ -305,29 +504,13 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
       <p className="mb-1.5 text-center font-display text-[10px] text-gray-muted">
         {formatDate(matchDate)}
       </p>
-      {(isLocked && hasActualScore) || matchStatus === 'live' ? (
-        <div
-          className={`mb-1 flex items-center justify-center gap-2 font-display text-[10px] font-bold uppercase leading-none tracking-widest ${
-            matchStatus === 'live' ? 'text-red' : 'text-gray-muted'
-          }`}
-        >
-          {matchStatus === 'live' ? (
-            <span className="flex items-center gap-1">
-              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-              Ao Vivo
-            </span>
-          ) : (
-            <span>Resultado oficial</span>
-          )}
-          {hasActualScore && (
-            <span className="flex items-center gap-1.5">
-              <span>{actualHomeScore}</span>
-              <span>x</span>
-              <span>{actualAwayScore}</span>
-            </span>
-          )}
-        </div>
-      ) : null}
+      <LiveResultHeader
+        matchStatus={matchStatus}
+        isLocked={isLocked}
+        hasActualScore={hasActualScore}
+        actualHomeScore={actualHomeScore}
+        actualAwayScore={actualAwayScore}
+      />
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
           <span
@@ -390,78 +573,22 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
           </span>
         </div>
       </div>
-      <div className="mt-1 flex items-center justify-center gap-2" role="status" aria-live="polite">
-        {status === 'saved' && (
-          <span className="font-display text-[9px] font-bold uppercase tracking-widest text-green">
-            Salvo
-          </span>
-        )}
-        {status === 'saving' && (
-          <span className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
-            Salvando...
-          </span>
-        )}
-        {status === 'error' && (
-          <span className="font-display text-[9px] font-bold uppercase tracking-widest text-red">
-            Não salvo
-          </span>
-        )}
-        {matchStatus === 'live' && hasPrediction && points != null && (
-          <>
-            {typeof category === 'number' &&
-            typeof bonus === 'number' &&
-            actualHomeScore !== null &&
-            actualAwayScore !== null ? (
-              <ScoreBreakdownToggle
-                total={points}
-                variant="live"
-                isOpen={breakdownOpen}
-                onToggle={() => setBreakdownOpen((v) => !v)}
-              />
-            ) : (
-              <span className="flex items-center gap-1 font-display text-xs font-black text-red">
-                <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
-                {points} pts
-              </span>
-            )}
-          </>
-        )}
-        {matchStatus === 'finished' &&
-          (typeof category === 'number' &&
-          typeof bonus === 'number' &&
-          points !== null &&
-          actualHomeScore !== null &&
-          actualAwayScore !== null ? (
-            <ScoreBreakdownToggle
-              total={points}
-              variant="finished"
-              isOpen={breakdownOpen}
-              onToggle={() => setBreakdownOpen((v) => !v)}
-            />
-          ) : (
-            <span className="font-display text-xs font-black text-green">+{points ?? 0} pts</span>
-          ))}
-      </div>
-      {breakdownOpen &&
-        typeof category === 'number' &&
-        typeof bonus === 'number' &&
-        points !== null &&
-        initialHome !== null &&
-        initialAway !== null &&
-        actualHomeScore !== null &&
-        actualAwayScore !== null && (
-          <ScoreBreakdownPanel
-            total={points}
-            category={category}
-            bonus={bonus}
-            predHome={initialHome}
-            predAway={initialAway}
-            realHome={actualHomeScore}
-            realAway={actualAwayScore}
-            homeTeam={displayTeamName(homeTeam)}
-            awayTeam={displayTeamName(awayTeam)}
-          />
-        )}
+      <ScoreResultFooter
+        status={status}
+        matchStatus={matchStatus}
+        hasPrediction={hasPrediction}
+        points={points}
+        category={category}
+        bonus={bonus}
+        initialHome={initialHome}
+        initialAway={initialAway}
+        actualHomeScore={actualHomeScore}
+        actualAwayScore={actualAwayScore}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+        breakdownOpen={breakdownOpen}
+        onToggleBreakdown={() => setBreakdownOpen((v) => !v)}
+      />
       {renderExpandedContent && (
         <ExpandPredictionsControl
           isLocked={isLocked}

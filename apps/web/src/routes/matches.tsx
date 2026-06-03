@@ -21,6 +21,86 @@ const stageLabels: Record<string, string> = {
   league: 'Liga',
 }
 
+function computeLeagueMatchdays(allMatches: Match[], isLeagueSelected: boolean): number[] {
+  if (!isLeagueSelected) return []
+  const matchdays = new Set(
+    allMatches.map((m) => m.matchday).filter((md): md is number => md != null),
+  )
+  return [...matchdays].sort((a, b) => a - b)
+}
+
+function filterMatches({
+  allMatches,
+  activeStage,
+  activeGroup,
+  isLeagueSelected,
+  currentMatchday,
+}: {
+  allMatches: Match[]
+  activeStage: string
+  activeGroup: string | null
+  isLeagueSelected: boolean
+  currentMatchday: number | null
+}): Match[] {
+  if (isLeagueSelected && currentMatchday != null) {
+    return allMatches.filter((m) => m.matchday === currentMatchday)
+  }
+  let filtered = allMatches
+  if (activeStage !== 'all') filtered = filtered.filter((m) => m.stage === activeStage)
+  if (activeGroup && activeStage === 'group') {
+    filtered = filtered.filter((m) => m.group === activeGroup)
+  }
+  return filtered
+}
+
+function GroupedMatches({ matches }: { matches: Match[] }) {
+  const byMatchday = new Map<number, Match[]>()
+  for (const m of matches) {
+    const md = m.matchday ?? 0
+    if (!byMatchday.has(md)) byMatchday.set(md, [])
+    byMatchday.get(md)?.push(m)
+  }
+  const sortedMatchdays = [...byMatchday.entries()].sort(([a], [b]) => a - b)
+  return (
+    <div className="flex flex-col gap-6">
+      {sortedMatchdays.map(([matchday, matches]) => (
+        <div key={matchday}>
+          <p className="mb-2 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+            {matchday > 0 ? `${matchday}ª Rodada` : 'Rodada'}
+          </p>
+          <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
+            {matches.map((m) => (
+              <MatchCard key={m.id} match={m} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function MatchesGrid({ filtered, activeStage }: { filtered: Match[]; activeStage: string }) {
+  if (filtered.length === 0) {
+    return (
+      <div className="border-2 border-dashed border-border py-12 text-center">
+        <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
+          Nenhum jogo
+        </p>
+      </div>
+    )
+  }
+  if (activeStage === 'group') {
+    return <GroupedMatches matches={filtered} />
+  }
+  return (
+    <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
+      {filtered.map((m) => (
+        <MatchCard key={m.id} match={m} />
+      ))}
+    </div>
+  )
+}
+
 function MatchesPage() {
   const [activeCompetition, setActiveCompetition] = useState<string | null>(null)
   const [activeStage, setActiveStage] = useState('all')
@@ -64,22 +144,18 @@ function MatchesPage() {
   if (error) return <ErrorMessage message={error.message} onRetry={() => refetch()} />
 
   const allMatches = data?.matches ?? []
-  let filtered = allMatches
-  if (activeStage !== 'all') filtered = filtered.filter((m) => m.stage === activeStage)
-  if (activeGroup && activeStage === 'group')
-    filtered = filtered.filter((m) => m.group === activeGroup)
   const hasLive = allMatches.some((m) => m.status === 'live')
 
   // For league, compute matchday tabs
-  const leagueMatchdays = isLeagueSelected
-    ? [...new Set(allMatches.map((m) => m.matchday).filter((md): md is number => md != null))].sort(
-        (a, b) => a - b,
-      )
-    : []
+  const leagueMatchdays = computeLeagueMatchdays(allMatches, isLeagueSelected)
   const currentMatchday = activeMatchday ?? leagueMatchdays[0] ?? null
-  if (isLeagueSelected && currentMatchday != null) {
-    filtered = allMatches.filter((m) => m.matchday === currentMatchday)
-  }
+  const filtered = filterMatches({
+    allMatches,
+    activeStage,
+    activeGroup,
+    isLeagueSelected,
+    currentMatchday,
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -207,45 +283,7 @@ function MatchesPage() {
         </div>
       )}
 
-      {filtered.length === 0 ? (
-        <div className="border-2 border-dashed border-border py-12 text-center">
-          <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
-            Nenhum jogo
-          </p>
-        </div>
-      ) : activeStage === 'group' ? (
-        (() => {
-          const byMatchday = new Map<number, Match[]>()
-          for (const m of filtered) {
-            const md = m.matchday ?? 0
-            if (!byMatchday.has(md)) byMatchday.set(md, [])
-            byMatchday.get(md)?.push(m)
-          }
-          const sortedMatchdays = [...byMatchday.entries()].sort(([a], [b]) => a - b)
-          return (
-            <div className="flex flex-col gap-6">
-              {sortedMatchdays.map(([matchday, matches]) => (
-                <div key={matchday}>
-                  <p className="mb-2 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
-                    {matchday > 0 ? `${matchday}ª Rodada` : 'Rodada'}
-                  </p>
-                  <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
-                    {matches.map((m) => (
-                      <MatchCard key={m.id} match={m} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        })()
-      ) : (
-        <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
-          {filtered.map((m) => (
-            <MatchCard key={m.id} match={m} />
-          ))}
-        </div>
-      )}
+      <MatchesGrid filtered={filtered} activeStage={activeStage} />
     </div>
   )
 }
