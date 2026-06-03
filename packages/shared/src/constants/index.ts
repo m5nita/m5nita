@@ -47,7 +47,15 @@ export const MATCH = {
 export const PAYMENT = {
   PIX_TIMEOUT_SECONDS: 1800,
   STATUSES: ['pending', 'completed', 'refunded', 'expired'] as const,
-  TYPES: ['entry', 'refund', 'prize'] as const,
+  TYPES: ['entry', 'refund', 'prize', 'stats_unlock'] as const,
+} as const
+
+export const STATS = {
+  // Symbolic one-time price to unlock a pool's statistics (centavos, BRL).
+  // Configurable at the composition root via STATS_UNLOCK_PRICE_CENTAVOS.
+  UNLOCK_PRICE_CENTAVOS_DEFAULT: 199,
+  // Goal-volume band cutoff: a finished match with total goals <= this is "low".
+  LOW_GOALS_MAX: 2,
 } as const
 
 export const COUPON = {

@@ -16,6 +16,8 @@ export class StripePaymentGateway implements PaymentGateway {
 
   async createCheckoutSession(params: CheckoutParams): Promise<CheckoutResult> {
     const { userId, poolId, amount, platformFee } = params
+    const type = params.type ?? 'entry'
+    const title = params.description ?? 'Entrada no Bolão'
 
     const [paymentRecord] = await this.db
       .insert(payment)
@@ -25,7 +27,7 @@ export class StripePaymentGateway implements PaymentGateway {
         amount,
         platformFee,
         status: 'pending',
-        type: 'entry',
+        type,
       })
       .returning()
 
@@ -41,13 +43,13 @@ export class StripePaymentGateway implements PaymentGateway {
         {
           price_data: {
             currency: 'brl',
-            product_data: { name: 'Entrada no Bolão' },
+            product_data: { name: title },
             unit_amount: amount,
           },
           quantity: 1,
         },
       ],
-      metadata: { userId, poolId, type: 'entry', paymentId: paymentRecord.id },
+      metadata: { userId, poolId, type, paymentId: paymentRecord.id },
       success_url: `${origin}/pools/payment-success`,
       cancel_url: `${origin}/`,
     })

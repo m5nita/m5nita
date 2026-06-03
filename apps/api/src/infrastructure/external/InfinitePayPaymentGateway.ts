@@ -72,7 +72,12 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
   async createCheckoutSession(params: CheckoutParams): Promise<CheckoutResult> {
     const paymentRecord = await this.insertPendingRow(params)
     try {
-      const checkoutUrl = await this.createLink(paymentRecord.id, params.userId, params.amount)
+      const checkoutUrl = await this.createLink(
+        paymentRecord.id,
+        params.userId,
+        params.amount,
+        params.description ?? 'Entrada no Bolão',
+      )
       return { payment: { id: paymentRecord.id }, checkoutUrl }
     } catch (err) {
       console.error(
@@ -97,16 +102,26 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
         amount: params.amount,
         platformFee: params.platformFee,
         status: 'pending',
-        type: 'entry',
+        type: params.type ?? 'entry',
       })
       .returning()
     if (!row) throw new Error('Failed to create payment record')
     return row
   }
 
-  private async createLink(paymentId: string, userId: string, amount: number): Promise<string> {
+  private async createLink(
+    paymentId: string,
+    userId: string,
+    amount: number,
+    description: string,
+  ): Promise<string> {
     const customerRecord = await this.db.query.user.findFirst({ where: eq(user.id, userId) })
-    const body = this.buildRequestBody(paymentId, amount, buildCustomer(customerRecord ?? null))
+    const body = this.buildRequestBody(
+      paymentId,
+      amount,
+      buildCustomer(customerRecord ?? null),
+      description,
+    )
 
     const response = await this.fetchWithRetry(body)
 
@@ -163,7 +178,12 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
     await this.sleep(jitter)
   }
 
-  private buildRequestBody(paymentId: string, amount: number, customer: CustomerInfo | undefined) {
+  private buildRequestBody(
+    paymentId: string,
+    amount: number,
+    customer: CustomerInfo | undefined,
+    description: string,
+  ) {
     const origin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173'
     const apiUrl = process.env.BETTER_AUTH_URL || 'http://localhost:3001'
     return {
@@ -172,7 +192,7 @@ export class InfinitePayPaymentGateway implements PaymentGateway {
       webhook_url: `${apiUrl}/api/webhooks/infinitepay`,
       order_nsu: paymentId,
       ...(customer ? { customer } : {}),
-      items: [{ description: 'Entrada no Bolão', quantity: 1, price: amount }],
+      items: [{ description, quantity: 1, price: amount }],
     }
   }
 }

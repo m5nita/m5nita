@@ -183,4 +183,33 @@ export class DrizzleMatchRepository implements MatchRepository {
     }
     return this.hasUnfinishedMatches(query.competitionId, query.matchdayFrom, query.matchdayTo)
   }
+
+  async findPendingFor(query: UnfinishedMatchesQuery, now: Date): Promise<MatchData[]> {
+    // Not-yet-started = kickoff in the future and still playable (same signal as
+    // findUpcomingByCompetition). Scope translation lives here, not in callers.
+    const notStarted = inArray(match.status, ['scheduled', 'timed', 'postponed'])
+
+    if (query.kind === 'single-match') {
+      const rows = await this.db
+        .select()
+        .from(match)
+        .where(and(eq(match.id, query.matchId), gt(match.matchDate, now), notStarted))
+      return rows.map(toMatchData)
+    }
+
+    const conditions = [
+      eq(match.competitionId, query.competitionId),
+      gt(match.matchDate, now),
+      notStarted,
+    ]
+    if (query.matchdayFrom != null) conditions.push(gte(match.matchday, query.matchdayFrom))
+    if (query.matchdayTo != null) conditions.push(lte(match.matchday, query.matchdayTo))
+
+    const rows = await this.db
+      .select()
+      .from(match)
+      .where(and(...conditions))
+      .orderBy(asc(match.matchDate), asc(match.id))
+    return rows.map(toMatchData)
+  }
 }

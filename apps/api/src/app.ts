@@ -15,6 +15,7 @@ import { paymentsRoutes } from './infrastructure/http/routes/payments'
 import { poolsRoutes } from './infrastructure/http/routes/pools'
 import { predictionsRoutes } from './infrastructure/http/routes/predictions'
 import { rankingRoutes } from './infrastructure/http/routes/ranking'
+import { statsRoutes } from './infrastructure/http/routes/stats'
 import { telegramRoutes } from './infrastructure/http/routes/telegram'
 import { usersRoutes } from './infrastructure/http/routes/users'
 import { webhooksRoutes } from './infrastructure/http/routes/webhooks'
@@ -107,6 +108,7 @@ export function buildApp(): Hono<AppEnv> {
   app.route('/api', matchesRoutes)
   app.route('/api', predictionsRoutes)
   app.route('/api', rankingRoutes)
+  app.route('/api', statsRoutes)
   app.route('/api', paymentsRoutes)
 
   app.onError((err, c) => {

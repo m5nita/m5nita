@@ -1,5 +1,6 @@
+import { SCORING } from '@m5nita/shared'
 import { Score } from './Score'
-import { SingleMatchScore } from './SingleMatchScore'
+import { SINGLE_MATCH_MAX_POINTS, SingleMatchScore } from './SingleMatchScore'
 
 /**
  * Chooses the scoring algorithm a pool applies to each prediction. Range and
@@ -10,16 +11,24 @@ import { SingleMatchScore } from './SingleMatchScore'
  */
 export interface ScoringPolicy {
   score(predictedHome: number, predictedAway: number, actualHome: number, actualAway: number): Score
+  /** Maximum points obtainable on a single prediction under this policy. */
+  maxPoints(): number
 }
 
 export const RangeScoringPolicy: ScoringPolicy = {
   score(predictedHome, predictedAway, actualHome, actualAway) {
     return Score.calculate(predictedHome, predictedAway, actualHome, actualAway)
   },
+  maxPoints() {
+    return SCORING.EXACT_MATCH
+  },
 }
 
 export const SingleMatchScoringPolicy: ScoringPolicy = {
   score(predictedHome, predictedAway, actualHome, actualAway) {
     return SingleMatchScore.calculate(predictedHome, predictedAway, actualHome, actualAway)
+  },
+  maxPoints() {
+    return SINGLE_MATCH_MAX_POINTS
   },
 }

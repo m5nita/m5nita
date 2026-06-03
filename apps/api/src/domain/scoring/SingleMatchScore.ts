@@ -1,6 +1,10 @@
+import { SCORING } from '@m5nita/shared'
 import { Score } from './Score'
 
 const BONUS_CAP = 4
+
+/** Max points obtainable on a single-match prediction: exact (10) + full bonus (4). */
+export const SINGLE_MATCH_MAX_POINTS = SCORING.EXACT_MATCH + BONUS_CAP
 
 export const SingleMatchScore = {
   /**

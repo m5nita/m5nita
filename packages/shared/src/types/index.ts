@@ -1,6 +1,6 @@
 export type PoolStatus = 'active' | 'closed' | 'cancelled'
 export type PaymentStatus = 'pending' | 'completed' | 'refunded' | 'expired'
-export type PaymentType = 'entry' | 'refund' | 'prize'
+export type PaymentType = 'entry' | 'refund' | 'prize' | 'stats_unlock'
 export type MatchStage =
   | 'group'
   | 'round-of-32'
