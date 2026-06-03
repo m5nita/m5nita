@@ -45,6 +45,18 @@ function mapStatusToState(status: string, attempt: number): ConfirmState | null 
   return null
 }
 
+async function resolveNext(req: ConfirmRequest, attempt: number): Promise<ConfirmState | 'retry'> {
+  try {
+    const status = await confirmPayment(req)
+    return mapStatusToState(status, attempt) ?? 'retry'
+  } catch (err) {
+    return {
+      kind: 'error',
+      message: err instanceof Error ? err.message : 'Erro ao confirmar pagamento.',
+    }
+  }
+}
+
 function Panel({
   eyebrow,
   eyebrowColor,
@@ -104,19 +116,13 @@ function PaymentSuccessPage() {
     async function tick() {
       if (cancelledRef.current) return
       attempt += 1
-      try {
-        const status = await confirmPayment(request)
-        if (cancelledRef.current) return
-        const next = mapStatusToState(status, attempt)
-        if (next) setState(next)
-        else setTimeout(tick, POLL_INTERVAL_MS)
-      } catch (err) {
-        if (cancelledRef.current) return
-        setState({
-          kind: 'error',
-          message: err instanceof Error ? err.message : 'Erro ao confirmar pagamento.',
-        })
+      const next = await resolveNext(request, attempt)
+      if (cancelledRef.current) return
+      if (next === 'retry') {
+        setTimeout(tick, POLL_INTERVAL_MS)
+        return
       }
+      setState(next)
     }
     tick()
 
@@ -125,11 +131,26 @@ function PaymentSuccessPage() {
     }
   }, [paymentId, search.invoice_slug, search.transaction_nsu])
 
-  const homeButton = (
-    <Button onClick={() => navigate({ to: '/' })} size="lg" className="w-full">
-      Ir para Home
+  // Send the payer back to where the payment came from: the pool's stats tab
+  // for a stats unlock, its predictions tab for an entry, or home when we have
+  // no pool context.
+  const poolId = search.pool_id
+  const isStats = search.type === 'stats_unlock'
+  function goToContext() {
+    if (poolId && isStats) {
+      navigate({ to: '/pools/$poolId/estatisticas', params: { poolId } })
+    } else if (poolId) {
+      navigate({ to: '/pools/$poolId/predictions', params: { poolId } })
+    } else {
+      navigate({ to: '/' })
+    }
+  }
+  const ctxButton = (label: string) => (
+    <Button onClick={goToContext} size="lg" className="w-full">
+      {label}
     </Button>
   )
+  const backLabel = poolId ? 'Voltar ao bolão' : 'Ir para Home'
 
   if (state.kind === 'checking') {
     return (
@@ -152,7 +173,7 @@ function PaymentSuccessPage() {
         eyebrowColor="text-red"
         title="Pagamento Recusado ou Expirado"
         barColor="bg-red"
-        action={homeButton}
+        action={ctxButton(backLabel)}
       >
         O pagamento não foi concluído. Você pode tentar novamente a partir da tela do bolão.
       </Panel>
@@ -166,7 +187,7 @@ function PaymentSuccessPage() {
         eyebrowColor="text-gray-dark"
         title="Aguardando Confirmação"
         barColor="bg-black"
-        action={homeButton}
+        action={ctxButton(backLabel)}
       >
         {state.message}
       </Panel>
@@ -179,9 +200,13 @@ function PaymentSuccessPage() {
       eyebrowColor="text-green"
       title="Pagamento Confirmado"
       barColor="bg-green"
-      action={homeButton}
+      action={ctxButton(
+        poolId ? (isStats ? 'Ver estatísticas' : 'Ir para o bolão') : 'Ir para Home',
+      )}
     >
-      Seu pagamento foi processado. Você já faz parte do bolão!
+      {isStats
+        ? 'Pagamento processado. Suas estatísticas deste bolão estão desbloqueadas!'
+        : 'Seu pagamento foi processado. Você já faz parte do bolão!'}
     </Panel>
   )
 }
@@ -196,5 +221,7 @@ export const Route = createFileRoute('/pools/payment-success')({
     payment_id: pickString(search.payment_id),
     invoice_slug: pickString(search.invoice_slug) ?? pickString(search.slug),
     transaction_nsu: pickString(search.transaction_nsu),
+    pool_id: pickString(search.pool_id),
+    type: pickString(search.type),
   }),
 })

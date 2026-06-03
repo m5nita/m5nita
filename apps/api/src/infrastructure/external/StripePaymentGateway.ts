@@ -7,6 +7,7 @@ import type {
 } from '../../application/ports/PaymentGateway.port'
 import type { db as DbClient } from '../../db/client'
 import { payment } from '../../db/schema/payment'
+import { paymentSuccessUrl } from './paymentSuccessUrl'
 
 export class StripePaymentGateway implements PaymentGateway {
   constructor(
@@ -50,7 +51,7 @@ export class StripePaymentGateway implements PaymentGateway {
         },
       ],
       metadata: { userId, poolId, type, paymentId: paymentRecord.id },
-      success_url: `${origin}/pools/payment-success`,
+      success_url: paymentSuccessUrl(origin, { poolId, type }),
       cancel_url: `${origin}/`,
     })
 

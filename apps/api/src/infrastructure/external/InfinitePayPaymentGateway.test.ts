@@ -107,7 +107,7 @@ describe('InfinitePayPaymentGateway', () => {
     const body = JSON.parse(init?.body as string)
     expect(body).toMatchObject({
       handle: HANDLE,
-      redirect_url: `http://localhost:5173/pools/payment-success?payment_id=${PAYMENT_ID}`,
+      redirect_url: `http://localhost:5173/pools/payment-success?payment_id=${PAYMENT_ID}&pool_id=pool-1&type=entry`,
       webhook_url: 'http://localhost:3001/api/webhooks/infinitepay',
       order_nsu: PAYMENT_ID,
       customer: { name: 'Maria', email: 'maria@example.com', phone_number: '+5511999999999' },

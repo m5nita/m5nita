@@ -80,9 +80,9 @@ describe('MercadoPagoPaymentGateway', () => {
           }),
         ],
         back_urls: {
-          success: 'http://localhost:5173/pools/payment-success',
+          success: 'http://localhost:5173/pools/payment-success?pool_id=pool-1&type=entry',
           failure: 'http://localhost:5173/',
-          pending: 'http://localhost:5173/pools/payment-success',
+          pending: 'http://localhost:5173/pools/payment-success?pool_id=pool-1&type=entry',
         },
         external_reference: 'payment-uuid-123',
         metadata: { userId: 'user-1', poolId: 'pool-1', type: 'entry' },
