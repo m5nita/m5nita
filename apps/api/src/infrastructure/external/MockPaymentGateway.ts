@@ -1,4 +1,3 @@
-import { and, eq } from 'drizzle-orm'
 import type {
   CheckoutParams,
   CheckoutResult,
@@ -6,16 +5,24 @@ import type {
 } from '../../application/ports/PaymentGateway.port'
 import type { db as DbClient } from '../../db/client'
 import { payment } from '../../db/schema/payment'
-import { pool } from '../../db/schema/pool'
-import { poolMember } from '../../db/schema/poolMember'
+import { handleCheckoutCompleted } from '../../services/payment'
 
+/**
+ * Dev/test gateway: no real provider. Inserts a pending payment with the
+ * requested type, then runs the SAME completion path as a real webhook
+ * (`handleCheckoutCompleted`) so the dispatch (entry → activate + member;
+ * stats_unlock → grant) is exercised once, with no duplicated logic.
+ * `handleCheckoutCompleted` uses the module db, which is this gateway's db in
+ * dev (the default container db).
+ */
 export class MockPaymentGateway implements PaymentGateway {
   constructor(private db: typeof DbClient) {}
 
   async createCheckoutSession(params: CheckoutParams): Promise<CheckoutResult> {
     const { userId, poolId, amount, platformFee } = params
+    const type = params.type ?? 'entry'
 
-    console.log(`[DEV] Mock payment: ${amount / 100} BRL for pool ${poolId}`)
+    console.log(`[DEV] Mock payment: ${amount / 100} BRL for pool ${poolId} (${type})`)
 
     const [paymentRecord] = await this.db
       .insert(payment)
@@ -25,29 +32,19 @@ export class MockPaymentGateway implements PaymentGateway {
         amount,
         platformFee,
         externalPaymentId: `mock_pi_${crypto.randomUUID()}`,
-        status: 'completed',
-        type: 'entry',
+        status: 'pending',
+        type,
       })
       .returning()
 
-    await this.db
-      .update(pool)
-      .set({ status: 'active', updatedAt: new Date() })
-      .where(eq(pool.id, poolId))
-
-    const existing = await this.db.query.poolMember.findFirst({
-      where: and(eq(poolMember.poolId, poolId), eq(poolMember.userId, userId)),
-    })
-    if (!existing && paymentRecord) {
-      await this.db.insert(poolMember).values({
-        poolId,
-        userId,
-        paymentId: paymentRecord.id,
-      })
+    if (!paymentRecord) {
+      throw new Error('Failed to create payment record')
     }
 
+    await handleCheckoutCompleted(paymentRecord.id)
+
     return {
-      payment: paymentRecord as NonNullable<typeof paymentRecord>,
+      payment: paymentRecord,
       checkoutUrl: null,
     }
   }

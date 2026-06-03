@@ -7,7 +7,7 @@ import {
 } from '@m5nita/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PoolHub } from '../../../components/pool/PoolHub'
 import { MatchPredictionsList } from '../../../components/prediction/MatchPredictionsList'
 import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
@@ -85,18 +85,40 @@ const knockoutStageOrder = ['round-of-32', 'round-of-16', 'quarter', 'semi', 'th
 
 type Tab = 'groups' | 'knockout'
 
+type SubTabSelection = {
+  tab?: Tab
+  group?: string
+  matchday?: number
+  knockoutStage?: string
+}
+
+// Which sub-tab (group / round / knockout stage) must be active for `target` to
+// be on screen, derived purely from the match's stage/round. Single-match pools
+// render no sub-tabs, so this extra state is simply unused there.
+function subTabForMatch(target: Match): SubTabSelection {
+  if (target.stage === 'group') {
+    return target.group ? { tab: 'groups', group: target.group } : { tab: 'groups' }
+  }
+  if (target.stage === 'league') {
+    return target.matchday != null ? { matchday: target.matchday } : {}
+  }
+  return { tab: 'knockout', knockoutStage: target.stage }
+}
+
 function MatchList({
   poolId,
   matches,
   predictionMap,
   onSave,
   matchdayHeaders,
+  highlightMatchId,
 }: {
   poolId: string
   matches: Match[]
   predictionMap: Map<string, Prediction>
   onSave: (matchId: string, homeScore: number, awayScore: number) => void
   matchdayHeaders?: boolean
+  highlightMatchId?: string | null
 }) {
   const refs = useRef<(ScoreInputHandle | null)[]>([])
 
@@ -143,7 +165,16 @@ function MatchList({
   function renderCard({ match, originalIndex, localIndex }: SectionItem) {
     const pred = predictionMap.get(match.id)
     return (
-      <div key={match.id} style={{ order: localIndex }}>
+      <div
+        key={match.id}
+        id={`match-${match.id}`}
+        style={{ order: localIndex }}
+        className={
+          highlightMatchId === match.id
+            ? 'bg-red/5 transition-colors duration-700'
+            : 'transition-colors duration-700'
+        }
+      >
         <ScoreInput
           ref={(el) => {
             refs.current[originalIndex] = el
@@ -204,12 +235,22 @@ function MatchList({
   )
 }
 
-function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string }) {
+function PredictionsContent({
+  pool,
+  poolId,
+  targetMatchId,
+}: {
+  pool: PoolDetail
+  poolId: string
+  targetMatchId?: string
+}) {
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<Tab>('groups')
   const [activeGroup, setActiveGroup] = useState('A')
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
   const [activeKnockoutStage, setActiveKnockoutStage] = useState<string | null>(null)
+  const [highlightMatchId, setHighlightMatchId] = useState<string | null>(null)
+  const handledTargetRef = useRef<string | null>(null)
 
   const {
     data: matchesData,
@@ -294,6 +335,35 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
     [saveMutation],
   )
 
+  // Deep-link from the stats "Jogos que mais importam" list: arriving with
+  // ?match=<id>, jump straight to the sub-tab (group / round / knockout stage)
+  // that holds that match, scroll to its card and briefly highlight it —
+  // instead of dumping the user on the first tab. Runs once per target id.
+  useEffect(() => {
+    if (!targetMatchId || handledTargetRef.current === targetMatchId) return
+    const target = matchesData?.matches?.find((m) => m.id === targetMatchId)
+    if (!target) return
+    handledTargetRef.current = targetMatchId
+
+    const sel = subTabForMatch(target)
+    if (sel.tab) setTab(sel.tab)
+    if (sel.group) setActiveGroup(sel.group)
+    if (sel.matchday != null) setActiveMatchday(sel.matchday)
+    if (sel.knockoutStage) setActiveKnockoutStage(sel.knockoutStage)
+
+    setHighlightMatchId(targetMatchId)
+    const scrollTimer = setTimeout(() => {
+      document
+        .getElementById(`match-${targetMatchId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 120)
+    const clearTimer = setTimeout(() => setHighlightMatchId(null), 2600)
+    return () => {
+      clearTimeout(scrollTimer)
+      clearTimeout(clearTimer)
+    }
+  }, [targetMatchId, matchesData])
+
   if (matchesPending || predictionsPending) {
     return (
       <div className="flex flex-col gap-3">
@@ -343,6 +413,7 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
           matches={allMatches}
           predictionMap={predictionMap}
           onSave={handleSave}
+          highlightMatchId={highlightMatchId}
         />
       ) : hasLeagueMatches ? (
         (() => {
@@ -394,6 +465,7 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
                 matches={currentMatches}
                 predictionMap={predictionMap}
                 onSave={handleSave}
+                highlightMatchId={highlightMatchId}
               />
             </>
           )
@@ -459,6 +531,7 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
               predictionMap={predictionMap}
               onSave={handleSave}
               matchdayHeaders
+              highlightMatchId={highlightMatchId}
             />
           )}
         </>
@@ -514,6 +587,7 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
                 matches={stageMatches}
                 predictionMap={predictionMap}
                 onSave={handleSave}
+                highlightMatchId={highlightMatchId}
               />
             </>
           )
@@ -524,11 +598,16 @@ function PredictionsContent({ pool, poolId }: { pool: PoolDetail; poolId: string
 
 function PredictionsPage() {
   const { poolId } = Route.useParams()
+  const { match: targetMatchId } = Route.useSearch()
   return (
     <PoolHub poolId={poolId} activeTab="predictions">
-      {(pool) => <PredictionsContent pool={pool} poolId={poolId} />}
+      {(pool) => <PredictionsContent pool={pool} poolId={poolId} targetMatchId={targetMatchId} />}
     </PoolHub>
   )
 }
 
-export const Route = createFileRoute('/pools/$poolId/predictions')({ component: PredictionsPage })
+export const Route = createFileRoute('/pools/$poolId/predictions')({
+  component: PredictionsPage,
+  validateSearch: (search: Record<string, unknown>): { match?: string } =>
+    typeof search.match === 'string' && search.match.length > 0 ? { match: search.match } : {},
+})

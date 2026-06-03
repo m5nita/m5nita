@@ -43,6 +43,8 @@ describe('calcPointsForMatch', () => {
           },
         },
         rankingRepo: { recomputeStandings: async () => {} },
+        statsUnlockRepo: { listUnlockedUsers: async () => [] },
+        statsRepo: { recomputeSnapshot: async () => {} },
       }),
     }))
 
@@ -75,6 +77,8 @@ describe('calcPointsForMatch', () => {
         },
         poolRepo: { findById: async () => null },
         rankingRepo: { recomputeStandings: async () => {} },
+        statsUnlockRepo: { listUnlockedUsers: async () => [] },
+        statsRepo: { recomputeSnapshot: async () => {} },
       }),
     }))
     const { calcPointsForMatch } = await import('./calcPoints')

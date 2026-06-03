@@ -13,8 +13,42 @@ import { PrizeWithdrawal } from './PrizeWithdrawal'
 
 interface PoolHubProps {
   poolId: string
-  activeTab: 'predictions' | 'ranking'
+  activeTab: 'predictions' | 'ranking' | 'statistics'
   children: (pool: PoolDetail) => ReactNode
+}
+
+type TabTarget =
+  | '/pools/$poolId/predictions'
+  | '/pools/$poolId/ranking'
+  | '/pools/$poolId/estatisticas'
+
+function TabLink({
+  poolId,
+  to,
+  active,
+  children,
+}: {
+  poolId: string
+  to: TabTarget
+  active: boolean
+  children: ReactNode
+}) {
+  return (
+    <Link
+      to={to}
+      params={{ poolId }}
+      replace
+      role="tab"
+      aria-selected={active}
+      className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-[transform,colors] active:scale-[0.98] cursor-pointer ${
+        active
+          ? 'bg-black text-white border-black'
+          : 'bg-transparent text-black border-black hover:bg-black hover:text-white'
+      }`}
+    >
+      {children}
+    </Link>
+  )
 }
 
 export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
@@ -157,34 +191,28 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:gap-4" role="tablist">
-        <Link
+        <TabLink
+          poolId={poolId}
           to="/pools/$poolId/predictions"
-          params={{ poolId }}
-          replace
-          role="tab"
-          aria-selected={activeTab === 'predictions'}
-          className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-[transform,colors] active:scale-[0.98] cursor-pointer ${
-            activeTab === 'predictions'
-              ? 'bg-black text-white border-black'
-              : 'bg-transparent text-black border-black hover:bg-black hover:text-white'
-          }`}
+          active={activeTab === 'predictions'}
         >
           Palpites
-        </Link>
-        <Link
-          to="/pools/$poolId/ranking"
-          params={{ poolId }}
-          replace
-          role="tab"
-          aria-selected={activeTab === 'ranking'}
-          className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-[transform,colors] active:scale-[0.98] cursor-pointer ${
-            activeTab === 'ranking'
-              ? 'bg-black text-white border-black'
-              : 'bg-transparent text-black border-black hover:bg-black hover:text-white'
-          }`}
-        >
+        </TabLink>
+        <TabLink poolId={poolId} to="/pools/$poolId/ranking" active={activeTab === 'ranking'}>
           Ranking
-        </Link>
+        </TabLink>
+        <TabLink
+          poolId={poolId}
+          to="/pools/$poolId/estatisticas"
+          active={activeTab === 'statistics'}
+        >
+          <span className="inline-flex items-center justify-center gap-1.5">
+            Estatísticas
+            <span className="rounded-sm bg-red px-1 py-0.5 text-[9px] font-black leading-none tracking-widest text-white">
+              BETA
+            </span>
+          </span>
+        </TabLink>
       </div>
 
       {pool.status === 'closed' && <PrizeWithdrawal poolId={poolId} />}

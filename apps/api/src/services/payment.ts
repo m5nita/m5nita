@@ -4,6 +4,7 @@ import { db } from '../db/client'
 import { payment } from '../db/schema/payment'
 import { pool } from '../db/schema/pool'
 import { poolMember } from '../db/schema/poolMember'
+import { statsUnlock } from '../db/schema/statsUnlock'
 
 export async function handleCheckoutCompleted(paymentId: string) {
   await db.transaction(async (tx) => {
@@ -42,6 +43,28 @@ export async function handleCheckoutCompleted(paymentId: string) {
     console.log(
       `[payment] ${paymentRecord.id} marked completed (pool=${paymentRecord.poolId}, type=${paymentRecord.type})`,
     )
+
+    // Statistics unlock: grant the entitlement idempotently in the SAME tx as
+    // the completion CAS (atomic — no window where the user paid but isn't
+    // granted). 100% platform revenue: NEVER touches poolMember / pool
+    // activation / prize. The per-user snapshot is (re)computed at match finish
+    // (jobs/calcPoints) and on first read.
+    if (paymentRecord.type === 'stats_unlock') {
+      await tx
+        .insert(statsUnlock)
+        .values({
+          userId: paymentRecord.userId,
+          poolId: paymentRecord.poolId,
+          paymentId: paymentRecord.id,
+        })
+        .onConflictDoNothing({
+          target: [statsUnlock.userId, statsUnlock.poolId],
+        })
+      console.log(
+        `[payment] stats unlocked (pool=${paymentRecord.poolId}, user=${paymentRecord.userId})`,
+      )
+      return
+    }
 
     if (paymentRecord.type !== 'entry') return
 

@@ -21,6 +21,8 @@ export class MercadoPagoPaymentGateway implements PaymentGateway {
 
   async createCheckoutSession(params: CheckoutParams): Promise<CheckoutResult> {
     const { userId, poolId, amount, platformFee } = params
+    const type = params.type ?? 'entry'
+    const title = params.description ?? 'Entrada no Bolão'
 
     const [paymentRecord] = await this.db
       .insert(payment)
@@ -30,7 +32,7 @@ export class MercadoPagoPaymentGateway implements PaymentGateway {
         amount,
         platformFee,
         status: 'pending',
-        type: 'entry',
+        type,
       })
       .returning()
 
@@ -47,7 +49,7 @@ export class MercadoPagoPaymentGateway implements PaymentGateway {
         items: [
           {
             id: paymentRecord.id,
-            title: 'Entrada no Bolão',
+            title,
             quantity: 1,
             unit_price: amount / 100,
             currency_id: 'BRL',
@@ -60,7 +62,7 @@ export class MercadoPagoPaymentGateway implements PaymentGateway {
         },
         ...(isLocalhost ? {} : { auto_return: 'approved' }),
         external_reference: paymentRecord.id,
-        metadata: { userId, poolId, type: 'entry' },
+        metadata: { userId, poolId, type },
         notification_url: `${apiUrl}/api/webhooks/mercadopago`,
       },
     })

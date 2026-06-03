@@ -11,10 +11,13 @@ import { GetPendingPrizesUseCase } from './application/prize/GetPendingPrizesUse
 import { GetPrizeInfoUseCase } from './application/prize/GetPrizeInfoUseCase'
 import { MarkWithdrawalPaidUseCase } from './application/prize/MarkWithdrawalPaidUseCase'
 import { RequestWithdrawalUseCase } from './application/prize/RequestWithdrawalUseCase'
+import { GetParticipantStatsUseCase } from './application/stats/GetParticipantStatsUseCase'
+import { UnlockStatsUseCase } from './application/stats/UnlockStatsUseCase'
 import { db as defaultDb } from './db/client'
 import { Match } from './domain/match/Match'
 import { MatchStatus } from './domain/match/MatchStatus'
 import type { Clock } from './domain/shared/Clock'
+import { StatsUnlockPrice } from './domain/stats/StatsUnlockPrice'
 import { SystemClock } from './infrastructure/clock/SystemClock'
 import { InfinitePayPaymentGateway } from './infrastructure/external/InfinitePayPaymentGateway'
 import { MercadoPagoPaymentGateway } from './infrastructure/external/MercadoPagoPaymentGateway'
@@ -26,12 +29,15 @@ import { DrizzlePoolRepository } from './infrastructure/persistence/DrizzlePoolR
 import { DrizzlePredictionRepository } from './infrastructure/persistence/DrizzlePredictionRepository'
 import { DrizzlePrizeWithdrawalRepository } from './infrastructure/persistence/DrizzlePrizeWithdrawalRepository'
 import { DrizzleRankingRepository } from './infrastructure/persistence/DrizzleRankingRepository'
+import { DrizzleStatsRepository } from './infrastructure/persistence/DrizzleStatsRepository'
+import { DrizzleStatsUnlockRepository } from './infrastructure/persistence/DrizzleStatsUnlockRepository'
 import { infinitePayConfig } from './lib/infinitepay'
 import { mercadoPagoClient } from './lib/mercadopago'
 import { stripe } from './lib/stripe'
 import { bot } from './lib/telegram'
 import { getCompetitionById } from './services/competition'
 import { incrementUsage, validateCoupon } from './services/coupon'
+import { participantStatsAggregateCache } from './services/statsCache'
 
 type Db = typeof defaultDb
 
@@ -102,9 +108,20 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const prizeWithdrawalRepo = new DrizzlePrizeWithdrawalRepository(db)
   const rankingRepo = new DrizzleRankingRepository(db)
   const matchRepo = new DrizzleMatchRepository(db)
+  const statsUnlockRepo = new DrizzleStatsUnlockRepository(db)
+  const statsRepo = new DrizzleStatsRepository(db)
+
+  // Cached per-pool stats aggregate loader (sibling of the ranking cache).
+  const loadPoolStatsAggregate = (poolId: string) =>
+    participantStatsAggregateCache.getOrCompute(poolId, () => statsRepo.poolAggregate(poolId))
 
   const paymentGateway = overrides.paymentGateway ?? buildPaymentGateway(db)
   const notificationService = overrides.notificationService ?? new TelegramNotificationService(bot)
+
+  const statsUnlockPriceEnv = process.env.STATS_UNLOCK_PRICE_CENTAVOS
+  const statsUnlockPrice = statsUnlockPriceEnv
+    ? StatsUnlockPrice.of(Number(statsUnlockPriceEnv))
+    : StatsUnlockPrice.default()
 
   const getPrizeInfoUseCase = new GetPrizeInfoUseCase(poolRepo, prizeWithdrawalRepo, rankingRepo)
   const getPendingPrizesUseCase = new GetPendingPrizesUseCase(poolRepo, getPrizeInfoUseCase)
@@ -116,6 +133,8 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     predictionRepo,
     rankingRepo,
     matchRepo,
+    statsUnlockRepo,
+    statsRepo,
     notificationService,
     paymentGateway,
 
@@ -165,6 +184,22 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
       notificationService,
     ),
     markWithdrawalPaidUseCase: new MarkWithdrawalPaidUseCase(prizeWithdrawalRepo),
+    unlockStatsUseCase: new UnlockStatsUseCase(
+      poolRepo,
+      statsUnlockRepo,
+      paymentGateway,
+      statsUnlockPrice,
+    ),
+    getParticipantStatsUseCase: new GetParticipantStatsUseCase(
+      poolRepo,
+      statsUnlockRepo,
+      statsUnlockPrice,
+      statsRepo,
+      loadPoolStatsAggregate,
+      matchRepo,
+      predictionRepo,
+      clock,
+    ),
   }
 }
 

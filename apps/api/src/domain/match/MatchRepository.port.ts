@@ -43,4 +43,10 @@ export interface MatchRepository {
    * Adapter handles single-match vs range internally so callers don't branch.
    */
   hasUnfinishedFor(query: UnfinishedMatchesQuery): Promise<boolean>
+  /**
+   * The pool's not-yet-started in-scope matches (kickoff in the future, not
+   * finished/cancelled), ordered by kickoff. Adapter translates the Pool query
+   * so callers never branch on scope.
+   */
+  findPendingFor(query: UnfinishedMatchesQuery, now: Date): Promise<MatchData[]>
 }

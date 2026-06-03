@@ -71,6 +71,13 @@
       "when": 1781510700000,
       "tag": "0009_pool_standing",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780494038438,
+      "tag": "0010_condemned_riptide",
+      "breakpoints": true
     }
   ]
 }
