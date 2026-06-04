@@ -29,6 +29,8 @@ Auto-generated from all feature plans. Last updated: 2026-06-03
 - PostgreSQL 16 — adds a nullable `match_id uuid` column to `pool` table, FK to `match.id`, with a CHECK constraint enforcing mutual exclusivity with `matchday_from`/`matchday_to`. (019-single-match-pool)
 - TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing MercadoPago / InfinitePay / Stripe / Mock adapters. **No new runtime dependencies** (charts are inline SVG). (021-estatisticas-participante)
 - PostgreSQL 16. Two new additive tables (`stats_unlock`, `participant_pool_stats`); one new accepted value for the existing text column `payment.type`. No prize/fee table touched. (021-estatisticas-participante)
+- TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend (022-email-notification-fallback)
+- PostgreSQL 16 via Drizzle. **No schema changes** — reads existing (022-email-notification-fallback)
 
 - TypeScript 5.x (Node.js >= 22) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM, Stripe SDK
@@ -108,9 +110,9 @@ pnpm drizzle-kit push        # Push schema (dev only)
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 022-email-notification-fallback: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend
 - 021-estatisticas-participante: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing MercadoPago / InfinitePay / Stripe / Mock adapters. **No new runtime dependencies** (charts are inline SVG).
 - 019-single-match-pool: Added TypeScript 5.x, Node.js ≥ 22 + Hono (API), Drizzle ORM, Better Auth, grammY (Telegram), React 19, TanStack Router, TanStack Query, Tailwind CSS v4. No new runtime dependencies.
-- 016-integration-tests-real-db: Added TypeScript 5.x, Node.js ≥ 22 (monorepo root `.nvmrc`) + Vitest 3.1 (existing), Hono 4.7, Drizzle ORM 0.41, postgres.js 3.4, Better Auth 1.5 (with phone-number plugin), grammY 1.41, Resend 6, mercadopago 2, stripe 22, `undici` (already bundled via Node 22 for `fetch` interception). **New**: `msw` 2.x (network-level stub library) — chosen to intercept `fetch`/`undici` calls to InfinitePay, Google OAuth, Resend, Turnstile and football-data at the HTTP boundary without touching application code.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

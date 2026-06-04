@@ -39,7 +39,7 @@ function makeRepo(overrides: Partial<PoolRepository> = {}): PoolRepository {
     removeMember: vi.fn(),
     findUserPools: vi.fn(),
     getMembers: vi.fn(),
-    getMembersWithPhone: vi.fn(),
+    getMembersWithContact: vi.fn(),
   }
   return { ...base, ...overrides } as PoolRepository
 }

@@ -1,25 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const {
-  mockSendMessage,
-  mockFindChatIdByPhone,
-  mockSelect,
-  mockSelectDistinctOn,
-  mockFindAllActive,
-  mockSendPredictionReminders,
-} = vi.hoisted(() => ({
-  mockSendMessage: vi.fn(),
-  mockFindChatIdByPhone: vi.fn(),
-  mockSelect: vi.fn(),
-  mockSelectDistinctOn: vi.fn(),
-  mockFindAllActive: vi.fn(),
-  mockSendPredictionReminders: vi.fn(),
-}))
-
-vi.mock('../lib/telegram', () => ({
-  bot: { api: { sendMessage: mockSendMessage } },
-  findChatIdByPhone: mockFindChatIdByPhone,
-}))
+const { mockSelect, mockSelectDistinctOn, mockFindAllActive, mockSendPredictionReminders } =
+  vi.hoisted(() => ({
+    mockSelect: vi.fn(),
+    mockSelectDistinctOn: vi.fn(),
+    mockFindAllActive: vi.fn(),
+    mockSendPredictionReminders: vi.fn(),
+  }))
 
 vi.mock('../db/client', () => ({
   db: {
@@ -46,7 +33,13 @@ vi.mock('../container', () => ({
 }))
 
 vi.mock('../db/schema/auth', () => ({
-  user: { id: 'user.id', phoneNumber: 'user.phone_number' },
+  user: {
+    id: 'user.id',
+    name: 'user.name',
+    phoneNumber: 'user.phone_number',
+    email: 'user.email',
+    emailVerified: 'user.email_verified',
+  },
 }))
 vi.mock('../db/schema/match', () => ({
   match: {
@@ -99,6 +92,23 @@ function createDistinctChainableMock(result: unknown[]) {
   }
 }
 
+const testPool = {
+  id: 'pool-1',
+  name: 'Test Pool',
+  entryFee: 1000,
+  competitionId: 'comp-1',
+  matchdayFrom: null,
+  matchdayTo: null,
+  discountPercent: 0,
+}
+
+const upcomingMatch = {
+  id: 'match-1',
+  homeTeam: 'Brasil',
+  awayTeam: 'Argentina',
+  matchDate: new Date('2026-06-15T14:45:00Z'),
+}
+
 describe('sendPredictionReminders', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -113,17 +123,7 @@ describe('sendPredictionReminders', () => {
   })
 
   it('noUpcomingMatches_sendsNoReminders', async () => {
-    mockFindAllActive.mockResolvedValue([
-      {
-        id: 'pool-1',
-        name: 'Test Pool',
-        entryFee: 1000,
-        competitionId: 'comp-1',
-        matchdayFrom: null,
-        matchdayTo: null,
-        discountPercent: 0,
-      },
-    ])
+    mockFindAllActive.mockResolvedValue([testPool])
     mockSelect.mockReturnValue(createChainableMock([]))
 
     const { sendPredictionReminders } = await import('./reminderJob')
@@ -133,27 +133,8 @@ describe('sendPredictionReminders', () => {
   })
 
   it('userWithPrediction_skipsUser', async () => {
-    mockFindAllActive.mockResolvedValue([
-      {
-        id: 'pool-1',
-        name: 'Test Pool',
-        entryFee: 1000,
-        competitionId: 'comp-1',
-        matchdayFrom: null,
-        matchdayTo: null,
-        discountPercent: 0,
-      },
-    ])
-    mockSelect.mockReturnValue(
-      createChainableMock([
-        {
-          id: 'match-1',
-          homeTeam: 'Brasil',
-          awayTeam: 'Argentina',
-          matchDate: new Date('2026-06-15T14:45:00Z'),
-        },
-      ]),
-    )
+    mockFindAllActive.mockResolvedValue([testPool])
+    mockSelect.mockReturnValue(createChainableMock([upcomingMatch]))
     mockSelectDistinctOn.mockReturnValue(createDistinctChainableMock([]))
 
     const { sendPredictionReminders } = await import('./reminderJob')
@@ -162,41 +143,30 @@ describe('sendPredictionReminders', () => {
     expect(mockSendPredictionReminders).not.toHaveBeenCalled()
   })
 
-  it('userWithoutPrediction_sendsReminder', async () => {
-    mockFindAllActive.mockResolvedValue([
-      {
-        id: 'pool-1',
-        name: 'Test Pool',
-        entryFee: 1000,
-        competitionId: 'comp-1',
-        matchdayFrom: null,
-        matchdayTo: null,
-        discountPercent: 0,
-      },
-    ])
-    mockSelect.mockReturnValue(
-      createChainableMock([
+  it('userWithoutPrediction_sendsReminderWithContact', async () => {
+    mockFindAllActive.mockResolvedValue([testPool])
+    mockSelect.mockReturnValue(createChainableMock([upcomingMatch]))
+    mockSelectDistinctOn.mockReturnValue(
+      createDistinctChainableMock([
         {
-          id: 'match-1',
-          homeTeam: 'Brasil',
-          awayTeam: 'Argentina',
-          matchDate: new Date('2026-06-15T14:45:00Z'),
+          userId: 'user-1',
+          name: 'Ana',
+          phoneNumber: '+5511999999999',
+          email: null,
+          emailVerified: false,
         },
       ]),
     )
-    mockSelectDistinctOn.mockReturnValue(
-      createDistinctChainableMock([{ userId: 'user-1', phoneNumber: '+5511999999999' }]),
-    )
-    mockFindChatIdByPhone.mockResolvedValue(123456789)
 
     const { sendPredictionReminders } = await import('./reminderJob')
     await sendPredictionReminders()
 
-    expect(mockFindChatIdByPhone).toHaveBeenCalledWith('+5511999999999')
     expect(mockSendPredictionReminders).toHaveBeenCalledOnce()
     expect(mockSendPredictionReminders).toHaveBeenCalledWith([
       expect.objectContaining({
-        chatId: 123456789,
+        userName: 'Ana',
+        phoneNumber: '+5511999999999',
+        email: null,
         poolName: 'Test Pool',
         poolId: 'pool-1',
         matches: [expect.objectContaining({ homeTeam: 'Brasil', awayTeam: 'Argentina' })],
@@ -204,51 +174,58 @@ describe('sendPredictionReminders', () => {
     ])
   })
 
-  it('userWithNoTelegramChat_skipsWithoutError', async () => {
-    mockFindAllActive.mockResolvedValue([
-      {
-        id: 'pool-1',
-        name: 'Test Pool',
-        entryFee: 1000,
-        competitionId: 'comp-1',
-        matchdayFrom: null,
-        matchdayTo: null,
-        discountPercent: 0,
-      },
-    ])
-    mockSelect.mockReturnValue(
-      createChainableMock([
+  it('verifiedEmailNoPhone_sendsEmailContact', async () => {
+    mockFindAllActive.mockResolvedValue([testPool])
+    mockSelect.mockReturnValue(createChainableMock([upcomingMatch]))
+    mockSelectDistinctOn.mockReturnValue(
+      createDistinctChainableMock([
         {
-          id: 'match-2',
-          homeTeam: 'Franca',
-          awayTeam: 'Alemanha',
-          matchDate: new Date('2026-06-15T14:30:00Z'),
+          userId: 'user-2',
+          name: 'Bia',
+          phoneNumber: null,
+          email: 'bia@example.com',
+          emailVerified: true,
         },
       ]),
     )
-    mockSelectDistinctOn.mockReturnValue(
-      createDistinctChainableMock([{ userId: 'user-2', phoneNumber: '+5511888888888' }]),
-    )
-    mockFindChatIdByPhone.mockResolvedValue(null)
 
     const { sendPredictionReminders } = await import('./reminderJob')
     await sendPredictionReminders()
 
-    expect(mockSendPredictionReminders).not.toHaveBeenCalled()
+    expect(mockSendPredictionReminders).toHaveBeenCalledWith([
+      expect.objectContaining({
+        phoneNumber: null,
+        email: 'bia@example.com',
+        poolId: 'pool-1',
+      }),
+    ])
+  })
+
+  it('unverifiedEmail_carriesNullEmail', async () => {
+    mockFindAllActive.mockResolvedValue([testPool])
+    mockSelect.mockReturnValue(createChainableMock([upcomingMatch]))
+    mockSelectDistinctOn.mockReturnValue(
+      createDistinctChainableMock([
+        {
+          userId: 'user-2b',
+          name: 'Caio',
+          phoneNumber: '+5511777770000',
+          email: 'caio@example.com',
+          emailVerified: false,
+        },
+      ]),
+    )
+
+    const { sendPredictionReminders } = await import('./reminderJob')
+    await sendPredictionReminders()
+
+    expect(mockSendPredictionReminders).toHaveBeenCalledWith([
+      expect.objectContaining({ phoneNumber: '+5511777770000', email: null }),
+    ])
   })
 
   it('duplicateReminder_skippedByDedupSet', async () => {
-    mockFindAllActive.mockResolvedValue([
-      {
-        id: 'pool-1',
-        name: 'Test Pool',
-        entryFee: 1000,
-        competitionId: 'comp-1',
-        matchdayFrom: null,
-        matchdayTo: null,
-        discountPercent: 0,
-      },
-    ])
+    mockFindAllActive.mockResolvedValue([testPool])
     const matchData = [
       {
         id: 'match-3',
@@ -257,11 +234,18 @@ describe('sendPredictionReminders', () => {
         matchDate: new Date('2026-06-15T14:50:00Z'),
       },
     ]
-    const userData = [{ userId: 'user-3', phoneNumber: '+5511777777777' }]
+    const userData = [
+      {
+        userId: 'user-3',
+        name: 'Dora',
+        phoneNumber: '+5511777777777',
+        email: null,
+        emailVerified: false,
+      },
+    ]
 
     mockSelect.mockReturnValue(createChainableMock(matchData))
     mockSelectDistinctOn.mockReturnValue(createDistinctChainableMock(userData))
-    mockFindChatIdByPhone.mockResolvedValue(111222333)
 
     const { sendPredictionReminders } = await import('./reminderJob')
 
@@ -278,17 +262,7 @@ describe('sendPredictionReminders', () => {
   })
 
   it('multipleUsers_sendsAllRemindersToNotificationService', async () => {
-    mockFindAllActive.mockResolvedValue([
-      {
-        id: 'pool-1',
-        name: 'Test Pool',
-        entryFee: 1000,
-        competitionId: 'comp-1',
-        matchdayFrom: null,
-        matchdayTo: null,
-        discountPercent: 0,
-      },
-    ])
+    mockFindAllActive.mockResolvedValue([testPool])
     mockSelect.mockReturnValue(
       createChainableMock([
         {
@@ -301,19 +275,30 @@ describe('sendPredictionReminders', () => {
     )
     mockSelectDistinctOn.mockReturnValue(
       createDistinctChainableMock([
-        { userId: 'user-4', phoneNumber: '+5511666666666' },
-        { userId: 'user-5', phoneNumber: '+5511555555555' },
+        {
+          userId: 'user-4',
+          name: 'Eva',
+          phoneNumber: '+5511666666666',
+          email: null,
+          emailVerified: false,
+        },
+        {
+          userId: 'user-5',
+          name: 'Fox',
+          phoneNumber: null,
+          email: 'fox@example.com',
+          emailVerified: true,
+        },
       ]),
     )
-    mockFindChatIdByPhone.mockResolvedValueOnce(444555666).mockResolvedValueOnce(777888999)
 
     const { sendPredictionReminders } = await import('./reminderJob')
     await sendPredictionReminders()
 
     expect(mockSendPredictionReminders).toHaveBeenCalledOnce()
     expect(mockSendPredictionReminders).toHaveBeenCalledWith([
-      expect.objectContaining({ chatId: 444555666, poolId: 'pool-1' }),
-      expect.objectContaining({ chatId: 777888999, poolId: 'pool-1' }),
+      expect.objectContaining({ phoneNumber: '+5511666666666', email: null, poolId: 'pool-1' }),
+      expect.objectContaining({ phoneNumber: null, email: 'fox@example.com', poolId: 'pool-1' }),
     ])
   })
 })

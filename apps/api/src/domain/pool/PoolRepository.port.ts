@@ -27,8 +27,10 @@ export type PoolMemberInfo = {
   name: string | null
 }
 
-export type PoolMemberWithPhone = PoolMemberInfo & {
+export type PoolMemberWithContact = PoolMemberInfo & {
   phoneNumber: string | null
+  email: string | null
+  emailVerified: boolean
 }
 
 export type PoolListStatusFilter = 'active' | 'closed'
@@ -71,5 +73,5 @@ export interface PoolRepository {
   removeMember(poolId: string, userId: string): Promise<void>
   findUserPools(userId: string, status?: PoolListStatusFilter): Promise<PoolListItem[]>
   getMembers(poolId: string): Promise<PoolMemberInfo[]>
-  getMembersWithPhone(poolId: string): Promise<PoolMemberWithPhone[]>
+  getMembersWithContact(poolId: string): Promise<PoolMemberWithContact[]>
 }

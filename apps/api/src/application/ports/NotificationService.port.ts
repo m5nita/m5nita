@@ -1,13 +1,24 @@
 export interface WinnerInfo {
   name: string | null
   phoneNumber: string | null
+  email: string | null
 }
 
+export interface ReminderMatch {
+  homeTeam: string
+  awayTeam: string
+  minutesUntil: number
+}
+
+// Channel-agnostic reminder: carries the recipient's contacts so the notification
+// adapter can pick a channel (Telegram if a chat resolves from the phone, else email).
 export interface ReminderData {
-  chatId: number
+  userName: string | null
+  phoneNumber: string | null
+  email: string | null
   poolName: string
   poolId: string
-  matches: Array<{ homeTeam: string; awayTeam: string; minutesUntil: number }>
+  matches: ReminderMatch[]
 }
 
 export interface AdminWithdrawalRequestNotification {

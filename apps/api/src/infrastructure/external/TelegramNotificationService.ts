@@ -1,11 +1,8 @@
 import type { Bot } from 'grammy'
 import type {
   AdminWithdrawalRequestNotification,
-  NotificationService,
-  ReminderData,
-  WinnerInfo,
+  ReminderMatch,
 } from '../../application/ports/NotificationService.port'
-import { findChatIdByPhone } from '../../lib/telegram'
 import { WITHDRAWAL_PAY_CALLBACK_PREFIX } from './telegramCallbacks'
 
 const APP_URL = process.env.APP_URL || ''
@@ -14,43 +11,65 @@ function escapeMarkdown(text: string): string {
   return text.replace(/([_*`[\]])/g, '\\$1')
 }
 
-export class TelegramNotificationService implements NotificationService {
+function formatBrl(centavos: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(centavos / 100)
+}
+
+// Telegram transport: sends already-routed messages to a resolved chat. Channel
+// selection (Telegram vs email) lives in CompositeNotificationService.
+export class TelegramNotificationService {
   constructor(private bot: Bot) {}
 
-  async notifyWinners(poolName: string, winners: WinnerInfo[], prizeShare: number): Promise<void> {
-    const formattedPrize = new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(prizeShare / 100)
+  async sendWinnerMessage(
+    chatId: number,
+    params: { poolName: string; winnerName: string | null; prizeShare: number },
+  ): Promise<void> {
+    const linkLine = APP_URL
+      ? `\n\nAcesse para solicitar a retirada:\n${APP_URL}`
+      : `\n\nAcesse o app para solicitar a retirada do seu prêmio.`
 
-    for (const winner of winners) {
-      if (!winner.phoneNumber) continue
-
-      try {
-        const chatId = await findChatIdByPhone(winner.phoneNumber)
-        if (!chatId) continue
-
-        const linkLine = APP_URL
-          ? `\n\nAcesse para solicitar a retirada:\n${APP_URL}`
-          : `\n\nAcesse o app para solicitar a retirada do seu prêmio.`
-
-        if (!APP_URL) {
-          console.warn('[Telegram] APP_URL not set — winner message will not include link')
-        }
-
-        const message =
-          `🏆 *Parabéns, ${escapeMarkdown(winner.name || 'Campeão')}!*\n\n` +
-          `Você venceu o bolão *${escapeMarkdown(poolName)}*!\n` +
-          `Seu prêmio: *${formattedPrize}*` +
-          linkLine
-
-        await this.bot.api.sendMessage(chatId, message, {
-          parse_mode: 'Markdown',
-        })
-      } catch (error) {
-        console.error(`[Telegram] Failed to notify winner ${winner.name}:`, error)
-      }
+    if (!APP_URL) {
+      console.warn('[Telegram] APP_URL not set — winner message will not include link')
     }
+
+    const message =
+      `🏆 *Parabéns, ${escapeMarkdown(params.winnerName || 'Campeão')}!*\n\n` +
+      `Você venceu o bolão *${escapeMarkdown(params.poolName)}*!\n` +
+      `Seu prêmio: *${formatBrl(params.prizeShare)}*` +
+      linkLine
+
+    await this.bot.api.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+    })
+  }
+
+  async sendReminderMessage(
+    chatId: number,
+    params: { poolName: string; poolId: string; matches: ReminderMatch[] },
+  ): Promise<void> {
+    const matchLines = params.matches
+      .map(
+        (m) =>
+          `⚽ *${escapeMarkdown(m.homeTeam)} x ${escapeMarkdown(m.awayTeam)}* — em ${m.minutesUntil} min`,
+      )
+      .join('\n')
+
+    const linkLine = APP_URL
+      ? `\n👉 [Fazer palpites](${APP_URL}/pools/${params.poolId}/predictions)`
+      : '\nAcesse o app para fazer seus palpites.'
+
+    const message =
+      `🎯 *${escapeMarkdown(params.poolName)}*\n\n` +
+      `Você ainda não fez palpite para:\n\n` +
+      `${matchLines}\n` +
+      linkLine
+
+    await this.bot.api.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+    })
   }
 
   async notifyAdminWithdrawalRequest(params: AdminWithdrawalRequestNotification): Promise<void> {
@@ -60,10 +79,7 @@ export class TelegramNotificationService implements NotificationService {
       .filter(Boolean)
     if (adminIds.length === 0) return
 
-    const formattedAmount = new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(params.amount / 100)
+    const formattedAmount = formatBrl(params.amount)
 
     const message =
       `💸 *Solicitação de retirada*\n\n` +
@@ -96,35 +112,6 @@ export class TelegramNotificationService implements NotificationService {
         })
       } catch (error) {
         console.error(`[Telegram] Failed to notify admin ${adminId}:`, error)
-      }
-    }
-  }
-
-  async sendPredictionReminders(reminders: ReminderData[]): Promise<void> {
-    for (const reminder of reminders) {
-      const matchLines = reminder.matches
-        .map(
-          (m) =>
-            `⚽ *${escapeMarkdown(m.homeTeam)} x ${escapeMarkdown(m.awayTeam)}* — em ${m.minutesUntil} min`,
-        )
-        .join('\n')
-
-      const linkLine = APP_URL
-        ? `\n👉 [Fazer palpites](${APP_URL}/pools/${reminder.poolId}/predictions)`
-        : '\nAcesse o app para fazer seus palpites.'
-
-      const message =
-        `🎯 *${escapeMarkdown(reminder.poolName)}*\n\n` +
-        `Você ainda não fez palpite para:\n\n` +
-        `${matchLines}\n` +
-        linkLine
-
-      try {
-        await this.bot.api.sendMessage(reminder.chatId, message, {
-          parse_mode: 'Markdown',
-        })
-      } catch (error) {
-        console.error(`[Telegram] Failed to send reminder to chatId ${reminder.chatId}:`, error)
       }
     }
   }
