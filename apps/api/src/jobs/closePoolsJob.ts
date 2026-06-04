@@ -63,13 +63,17 @@ export async function checkAndClosePools(): Promise<void> {
     )
     const prizeShare = PrizeCalculation.calculateWinnerShare(prizeTotal, winnerEntries.length)
 
-    const members = await poolRepo.getMembersWithPhone(p.id)
-    const phoneByUserId = new Map(members.map((m) => [m.userId, m.phoneNumber]))
+    const members = await poolRepo.getMembersWithContact(p.id)
+    const contactByUserId = new Map(members.map((m) => [m.userId, m]))
 
-    const winners = winnerEntries.map((w) => ({
-      name: w.name,
-      phoneNumber: phoneByUserId.get(w.userId) ?? null,
-    }))
+    const winners = winnerEntries.map((w) => {
+      const contact = contactByUserId.get(w.userId)
+      return {
+        name: w.name,
+        phoneNumber: contact?.phoneNumber ?? null,
+        email: contact?.emailVerified && contact.email ? contact.email : null,
+      }
+    })
 
     await notificationService.notifyWinners(p.name, winners, prizeShare.centavos)
   }

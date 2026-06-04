@@ -9,7 +9,7 @@ import type { Hono } from 'hono'
 import { buildApp } from '../../../src/app'
 import type { ContainerOverrides } from '../../../src/container'
 import { resetContainer } from '../../../src/container'
-import { TelegramNotificationService } from '../../../src/infrastructure/external/TelegramNotificationService'
+import { CompositeNotificationService } from '../../../src/infrastructure/external/CompositeNotificationService'
 import { testOtpInbox } from '../../../src/lib/testHooks'
 import type { AppEnv } from '../../../src/types/hono'
 import { telegramStub } from './stubs'
@@ -34,7 +34,7 @@ export function buildTestApp(options: BuildTestAppOptions = {}): TestApp {
   testOtpInbox.clear()
 
   const telegramBot = telegramStub.bot as unknown as Bot
-  const notificationService = new TelegramNotificationService(telegramBot)
+  const notificationService = new CompositeNotificationService(telegramBot)
 
   const container = resetContainer({
     clock,

@@ -11,7 +11,7 @@ import type {
   PoolListItem,
   PoolListStatusFilter,
   PoolMemberInfo,
-  PoolMemberWithPhone,
+  PoolMemberWithContact,
   PoolRepository,
   PoolWithDetails,
 } from '../../domain/pool/PoolRepository.port'
@@ -189,12 +189,14 @@ export class DrizzlePoolRepository implements PoolRepository {
     return rows
   }
 
-  async getMembersWithPhone(poolId: string): Promise<PoolMemberWithPhone[]> {
+  async getMembersWithContact(poolId: string): Promise<PoolMemberWithContact[]> {
     const rows = await this.db
       .select({
         userId: poolMember.userId,
         name: user.name,
         phoneNumber: user.phoneNumber,
+        email: user.email,
+        emailVerified: user.emailVerified,
       })
       .from(poolMember)
       .innerJoin(user, eq(user.id, poolMember.userId))

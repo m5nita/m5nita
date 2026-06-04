@@ -34,7 +34,7 @@ function makePoolRepo(items: PoolListItem[]): PoolRepository {
     removeMember: vi.fn(),
     findUserPools: vi.fn().mockResolvedValue(items),
     getMembers: vi.fn(),
-    getMembersWithPhone: vi.fn(),
+    getMembersWithContact: vi.fn(),
   }
 }
 

@@ -19,11 +19,11 @@ import { MatchStatus } from './domain/match/MatchStatus'
 import type { Clock } from './domain/shared/Clock'
 import { StatsUnlockPrice } from './domain/stats/StatsUnlockPrice'
 import { SystemClock } from './infrastructure/clock/SystemClock'
+import { CompositeNotificationService } from './infrastructure/external/CompositeNotificationService'
 import { InfinitePayPaymentGateway } from './infrastructure/external/InfinitePayPaymentGateway'
 import { MercadoPagoPaymentGateway } from './infrastructure/external/MercadoPagoPaymentGateway'
 import { MockPaymentGateway } from './infrastructure/external/MockPaymentGateway'
 import { StripePaymentGateway } from './infrastructure/external/StripePaymentGateway'
-import { TelegramNotificationService } from './infrastructure/external/TelegramNotificationService'
 import { DrizzleMatchRepository } from './infrastructure/persistence/DrizzleMatchRepository'
 import { DrizzlePoolRepository } from './infrastructure/persistence/DrizzlePoolRepository'
 import { DrizzlePredictionRepository } from './infrastructure/persistence/DrizzlePredictionRepository'
@@ -116,7 +116,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     participantStatsAggregateCache.getOrCompute(poolId, () => statsRepo.poolAggregate(poolId))
 
   const paymentGateway = overrides.paymentGateway ?? buildPaymentGateway(db)
-  const notificationService = overrides.notificationService ?? new TelegramNotificationService(bot)
+  const notificationService = overrides.notificationService ?? new CompositeNotificationService(bot)
 
   const statsUnlockPriceEnv = process.env.STATS_UNLOCK_PRICE_CENTAVOS
   const statsUnlockPrice = statsUnlockPriceEnv

@@ -1,6 +1,6 @@
 import type { SQL } from 'drizzle-orm'
-import { and, eq, gt, gte, isNotNull, isNull, lte } from 'drizzle-orm'
-import type { ReminderData } from '../application/ports/NotificationService.port'
+import { and, eq, gt, gte, isNotNull, isNull, lte, or } from 'drizzle-orm'
+import type { ReminderData, ReminderMatch } from '../application/ports/NotificationService.port'
 import { getContainer } from '../container'
 import { db } from '../db/client'
 import { user } from '../db/schema/auth'
@@ -8,7 +8,6 @@ import { match } from '../db/schema/match'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
 import type { ActivePoolInfo } from '../domain/pool/PoolRepository.port'
-import { findChatIdByPhone } from '../lib/telegram'
 
 // In-memory dedup: "userId:poolId" — prevents duplicate reminders per user per pool per cycle.
 // Grows monotonically (max ~64K entries for 64 pools x 1000 users ≈ 2MB).
@@ -17,10 +16,12 @@ const sentReminders = new Set<string>()
 
 type PendingReminder = {
   userId: string
-  phoneNumber: string
+  userName: string | null
+  phoneNumber: string | null
+  email: string | null
   poolId: string
   poolName: string
-  matches: { homeTeam: string; awayTeam: string; minutesUntil: number }[]
+  matches: ReminderMatch[]
 }
 
 // Match-window conditions scoped to this pool's PoolScope (single-match takes
@@ -48,7 +49,8 @@ function buildMatchConditions(activePool: ActivePoolInfo, now: Date, oneHourLate
 }
 
 // For one pool, find its upcoming matches and the members still missing a
-// prediction, accumulating reminders grouped by userId+poolId.
+// prediction, accumulating reminders grouped by userId+poolId. Candidates are
+// reachable by Telegram (phone) or by verified email.
 async function collectRemindersForPool(
   activePool: ActivePoolInfo,
   now: Date,
@@ -73,7 +75,10 @@ async function collectRemindersForPool(
     const usersToRemind = await db
       .selectDistinctOn([poolMember.userId], {
         userId: poolMember.userId,
+        name: user.name,
         phoneNumber: user.phoneNumber,
+        email: user.email,
+        emailVerified: user.emailVerified,
       })
       .from(poolMember)
       .innerJoin(user, eq(user.id, poolMember.userId))
@@ -89,7 +94,7 @@ async function collectRemindersForPool(
         and(
           eq(poolMember.poolId, activePool.id),
           isNull(prediction.id),
-          isNotNull(user.phoneNumber),
+          or(isNotNull(user.phoneNumber), and(eq(user.emailVerified, true), isNotNull(user.email))),
         ),
       )
 
@@ -101,7 +106,9 @@ async function collectRemindersForPool(
       if (!entry) {
         entry = {
           userId: u.userId,
-          phoneNumber: u.phoneNumber as string,
+          userName: u.name,
+          phoneNumber: u.phoneNumber,
+          email: u.emailVerified && u.email ? u.email : null,
           poolId: activePool.id,
           poolName: activePool.name,
           matches: [],
@@ -117,21 +124,18 @@ async function collectRemindersForPool(
   }
 }
 
-// Resolve chat IDs and build reminder data for the notification service,
-// skipping anything already sent this cycle or without a linked Telegram chat.
-async function buildRemindersToSend(
-  pendingReminders: Map<string, PendingReminder>,
-): Promise<ReminderData[]> {
+// Build channel-agnostic reminder data for the notification service, skipping
+// anything already sent this cycle. Channel selection happens in the adapter.
+function buildRemindersToSend(pendingReminders: Map<string, PendingReminder>): ReminderData[] {
   const remindersToSend: ReminderData[] = []
 
   for (const [groupKey, reminder] of pendingReminders) {
     if (sentReminders.has(groupKey)) continue
 
-    const chatId = await findChatIdByPhone(reminder.phoneNumber)
-    if (!chatId) continue
-
     remindersToSend.push({
-      chatId: Number(chatId),
+      userName: reminder.userName,
+      phoneNumber: reminder.phoneNumber,
+      email: reminder.email,
       poolName: reminder.poolName,
       poolId: reminder.poolId,
       matches: reminder.matches,
@@ -159,7 +163,7 @@ export async function sendPredictionReminders(): Promise<void> {
     await collectRemindersForPool(activePool, now, oneHourLater, pendingReminders)
   }
 
-  const remindersToSend = await buildRemindersToSend(pendingReminders)
+  const remindersToSend = buildRemindersToSend(pendingReminders)
 
   if (remindersToSend.length > 0) {
     await notificationService.sendPredictionReminders(remindersToSend)
