@@ -52,7 +52,7 @@ description: "Task list for Knockout Scoring (Extra Time & Penalties) + New Glob
 
 - [X] T007 [P] [US1] Unit tests for `KnockoutResult` (gradedScoreline = reg+ET, `decidedByShootout`, `advancingSide`) in `apps/api/src/domain/match/KnockoutResult.test.ts`
 - [X] T008 [P] [US1] Unit tests for `isKnockout(stage)` (true for round-of-32…final & third-place; false for group/league) in `apps/api/src/domain/match/MatchStage.test.ts`
-- [ ] T009 [P] [US1] Integration test: a `PENALTY_SHOOTOUT` provider payload stores reg+ET as the scoreline (never `fullTime`) plus winner/duration/penalties (apps/api integration suite, e.g. `apps/api/src/application/match/SyncFixturesUseCase.test.ts` or the real-DB harness)
+- [X] T009 [P] [US1] Integration test: a `PENALTY_SHOOTOUT` provider payload stores the 90' (regular-time) score as the scoreline (never the inflated `fullTime`) plus winner/duration/penalties — `apps/api/tests/integration/scenarios/knockout-scoring.test.ts`
 
 ### Implementation for User Story 1
 
@@ -80,7 +80,7 @@ description: "Task list for Knockout Scoring (Extra Time & Penalties) + New Glob
 
 - [X] T019 [P] [US2] Unit tests for `PenaltyAdvanceBonus.apply` (shootout × {pick home/away/none} × {home/away advances}; no bonus when not a shootout) in `apps/api/src/domain/scoring/PenaltyAdvanceBonus.test.ts`
 - [X] T020 [P] [US2] Unit tests for `ScoringPolicy.score(..., knockout)` on both Range and SingleMatch policies: bonus stacks on base, `breakdown.penaltyBonus` set, totals correct, in `apps/api/src/domain/scoring/ScoringPolicy.test.ts`
-- [ ] T021 [P] [US2] Integration test: two equal `1–1` predictions with opposite picks differ by 2 after a shootout settlement (apps/api prediction/ranking suite)
+- [X] T021 [P] [US2] Integration test: two equal `1–1` predictions with opposite picks differ by 2 after a shootout settlement, plus extra-time-bonus and no-bonus-in-regular-time cases — `apps/api/tests/integration/scenarios/knockout-scoring.test.ts`
 
 ### Implementation for User Story 2
 
