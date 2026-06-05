@@ -63,7 +63,7 @@ export async function poolHasLiveMatch(
 export async function getPoolByInviteCode(inviteCode: string) {
   const { poolRepo } = getContainer()
   const details = await poolRepo.findByInviteCode(inviteCode)
-  if (!details || details.status !== 'active') return null
+  if (details?.status !== 'active') return null
 
   const feePolicy = FeePolicy.from(details.coupon?.discountPercent ?? null)
   const entryMoney = Money.of(details.entryFee)

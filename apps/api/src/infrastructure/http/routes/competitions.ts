@@ -19,7 +19,7 @@ competitionsRoutes.get('/competitions', async (c) => {
 competitionsRoutes.get('/competitions/:competitionId/upcoming-matches', async (c) => {
   const { competitionId } = c.req.param()
   const competition = await getCompetitionById(competitionId)
-  if (!competition || competition.status !== 'active') {
+  if (competition?.status !== 'active') {
     return c.json({ code: 'COMPETITION_NOT_FOUND' }, 404)
   }
   const { matchRepo, clock } = getContainer()

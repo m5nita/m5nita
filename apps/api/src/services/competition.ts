@@ -162,3 +162,11 @@ export async function getFeaturedCompetitionIds(): Promise<string[]> {
   })
   return featured.map((c) => c.id)
 }
+
+/** Active competitions in the minimal shape the match-sync use cases expect (CompetitionInfo). */
+export async function findActiveCompetitionsForSync() {
+  return db.query.competition.findMany({
+    where: eq(competition.status, 'active'),
+    columns: { id: true, externalId: true, season: true, type: true, name: true },
+  })
+}

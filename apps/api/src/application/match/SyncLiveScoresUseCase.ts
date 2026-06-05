@@ -77,7 +77,7 @@ export class SyncLiveScoresUseCase {
   }
 
   private async applyLiveMatch(m: ExternalMatch, existing: MatchData): Promise<void> {
-    const newStatus = mapStatus(m.status)
+    const newStatus = mapStatus(m.status, m.score, m.utcDate)
     const wasNotFinished = existing.status !== 'finished'
 
     await this.deps.matchRepo.updateScores(existing.id, toResultUpdate(m.score, newStatus))

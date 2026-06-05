@@ -24,7 +24,7 @@ The codebase is a **pnpm monorepo** with a Hono API, a React 19 PWA, and a share
 - **Predictions** — group stage and knockout matches, auto-save with debounce, locked at kickoff.
 - **Ranking** — live scoring with tie-breakers, personal and global views.
 - **Prize withdrawal** — winners submit a PIX key (encrypted at rest with AES-256-GCM) and receive payout.
-- **Multi-gateway payments** — InfinitePay (default), MercadoPago or Stripe, selectable via env var.
+- **Multi-gateway payments** — InfinitePay (default) or Stripe, selectable via env var.
 - **Multi-auth** — phone OTP (WhatsApp & Telegram), magic-link email, Google OAuth — all powered by Better Auth.
 - **Telegram bot** — OTP delivery, prediction reminders, withdrawal notifications, "mark as paid" admin actions.
 - **Bot protection** — Cloudflare Turnstile on login entry points + per-phone rate limiting.
@@ -33,7 +33,7 @@ The codebase is a **pnpm monorepo** with a Hono API, a React 19 PWA, and a share
 
 ## Tech stack
 
-**Backend** — TypeScript · [Hono](https://hono.dev) · [Better Auth](https://www.better-auth.com) · [Drizzle ORM](https://orm.drizzle.team) · [grammY](https://grammy.dev) · Zod · Resend · MercadoPago / Stripe SDKs
+**Backend** — TypeScript · [Hono](https://hono.dev) · [Better Auth](https://www.better-auth.com) · [Drizzle ORM](https://orm.drizzle.team) · [grammY](https://grammy.dev) · Zod · Resend · Stripe SDK
 
 **Frontend** — React 19 · [TanStack Router](https://tanstack.com/router) · [TanStack Query](https://tanstack.com/query) · Tailwind CSS v4 · Vite · vite-plugin-pwa
 
@@ -121,7 +121,7 @@ API-only (run with `pnpm --filter @m5nita/api <script>`):
 
 ## Payments
 
-The active gateway is picked by `PAYMENT_GATEWAY` (`mercadopago` | `stripe` | `infinitepay`). Each gateway has its own webhook signature verification — webhook routes bypass CSRF for this reason.
+The active gateway is picked by `PAYMENT_GATEWAY` (`stripe` | `infinitepay`). Each gateway has its own webhook signature verification — webhook routes bypass CSRF for this reason.
 
 > [!IMPORTANT]
 > All monetary values are stored and exchanged in **centavos** (integer BRL cents). Conversions to `R$ XX,YY` happen only at the UI layer. Never introduce floats for money.

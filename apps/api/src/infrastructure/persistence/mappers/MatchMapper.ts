@@ -1,3 +1,6 @@
+import { Match } from '../../../domain/match/Match'
+import { MatchStatus } from '../../../domain/match/MatchStatus'
+
 export type MatchRow = {
   id: string
   competitionId: string
@@ -34,16 +37,20 @@ export type MatchData = {
   status: string
 }
 
-const STATUS_MAP: Record<string, string> = {
-  SCHEDULED: 'scheduled',
-  TIMED: 'scheduled',
-  IN_PLAY: 'live',
-  PAUSED: 'live',
-  FINISHED: 'finished',
-  POSTPONED: 'postponed',
-  CANCELLED: 'cancelled',
-  SUSPENDED: 'cancelled',
-  AWARDED: 'finished',
+const RAW_STATUS_MAP: Record<string, MatchStatus> = {
+  SCHEDULED: MatchStatus.Scheduled,
+  TIMED: MatchStatus.Scheduled,
+  IN_PLAY: MatchStatus.Live,
+  PAUSED: MatchStatus.Live,
+  FINISHED: MatchStatus.Finished,
+  POSTPONED: MatchStatus.Postponed,
+  CANCELLED: MatchStatus.Cancelled,
+  SUSPENDED: MatchStatus.Cancelled,
+  AWARDED: MatchStatus.Finished,
+}
+
+function rawTranslate(apiStatus: string): MatchStatus {
+  return RAW_STATUS_MAP[apiStatus] ?? MatchStatus.Scheduled
 }
 
 const STAGE_MAP: Record<string, string> = {
@@ -78,8 +85,24 @@ export function matchToData(row: MatchRow): MatchData {
   }
 }
 
-export function mapStatus(apiStatus: string): string {
-  return STATUS_MAP[apiStatus] || 'scheduled'
+/**
+ * Translate a provider status to ours, applying the "stale live → finished
+ * after 12h" rule (`Match.deriveStatusFromApi`) when `score`/`utcDate` are
+ * provided. Without them it's a plain string-to-string translation.
+ */
+export function mapStatus(
+  apiStatus: string,
+  score?: { fullTime: { home: number | null; away: number | null } },
+  utcDate?: string,
+): string {
+  return Match.deriveStatusFromApi({
+    apiStatus,
+    homeScore: score?.fullTime.home ?? null,
+    awayScore: score?.fullTime.away ?? null,
+    kickoffAt: utcDate ? new Date(utcDate) : new Date(),
+    now: new Date(),
+    rawTranslator: rawTranslate,
+  }).value
 }
 
 export function mapStage(apiStage: string, competitionType: string): string {

@@ -10,7 +10,7 @@ export async function calcPointsForMatch(matchId: string) {
 
   const matchData = await matchRepo.findById(matchId)
 
-  if (!matchData || matchData.status !== 'finished') {
+  if (matchData?.status !== 'finished') {
     console.log(`[CalcPoints] Match ${matchId} not finished, skipping`)
     return
   }

@@ -5,8 +5,8 @@ import type { PaymentType } from '@m5nita/shared'
  * success screen needs to send the payer to the right place after paying:
  * the pool's predictions tab for a pool entry, or its stats tab for a
  * `stats_unlock`. `paymentId` is included only for gateways the success screen
- * polls to confirm (InfinitePay); MercadoPago/Stripe confirm via webhook and
- * omit it (the screen then shows a confirmed state without polling).
+ * polls to confirm (InfinitePay); Stripe confirms via webhook and
+ * omits it (the screen then shows a confirmed state without polling).
  */
 export function paymentSuccessUrl(
   origin: string,

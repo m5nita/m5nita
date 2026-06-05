@@ -21,7 +21,6 @@ import { StatsUnlockPrice } from './domain/stats/StatsUnlockPrice'
 import { SystemClock } from './infrastructure/clock/SystemClock'
 import { CompositeNotificationService } from './infrastructure/external/CompositeNotificationService'
 import { InfinitePayPaymentGateway } from './infrastructure/external/InfinitePayPaymentGateway'
-import { MercadoPagoPaymentGateway } from './infrastructure/external/MercadoPagoPaymentGateway'
 import { MockPaymentGateway } from './infrastructure/external/MockPaymentGateway'
 import { StripePaymentGateway } from './infrastructure/external/StripePaymentGateway'
 import { DrizzleMatchRepository } from './infrastructure/persistence/DrizzleMatchRepository'
@@ -32,7 +31,6 @@ import { DrizzleRankingRepository } from './infrastructure/persistence/DrizzleRa
 import { DrizzleStatsRepository } from './infrastructure/persistence/DrizzleStatsRepository'
 import { DrizzleStatsUnlockRepository } from './infrastructure/persistence/DrizzleStatsUnlockRepository'
 import { infinitePayConfig } from './lib/infinitepay'
-import { mercadoPagoClient } from './lib/mercadopago'
 import { stripe } from './lib/stripe'
 import { bot } from './lib/telegram'
 import { getCompetitionById } from './services/competition'
@@ -61,14 +59,6 @@ const GATEWAY_SPECS: Record<string, GatewaySpec> = {
     mockReason:
       '[Stripe] No valid STRIPE_SECRET_KEY configured. Payment features will use mock mode.',
   },
-  mercadopago: {
-    build: (db) =>
-      mercadoPagoClient ? new MercadoPagoPaymentGateway(mercadoPagoClient, db) : null,
-    missingEnvError:
-      'PAYMENT_GATEWAY=mercadopago but MERCADOPAGO_ACCESS_TOKEN is missing or invalid',
-    mockReason:
-      '[MercadoPago] No valid MERCADOPAGO_ACCESS_TOKEN configured. Payment features will use mock mode.',
-  },
   infinitepay: {
     build: (db) =>
       infinitePayConfig ? new InfinitePayPaymentGateway(infinitePayConfig.handle, db) : null,
@@ -86,9 +76,7 @@ function buildPaymentGateway(db: Db): PaymentGateway {
 
   const spec = provider ? GATEWAY_SPECS[provider] : undefined
   if (!spec) {
-    throw new Error(
-      `Invalid PAYMENT_GATEWAY: "${provider}" (expected "stripe", "mercadopago", or "infinitepay")`,
-    )
+    throw new Error(`Invalid PAYMENT_GATEWAY: "${provider}" (expected "stripe" or "infinitepay")`)
   }
 
   const gateway = spec.build(db)
