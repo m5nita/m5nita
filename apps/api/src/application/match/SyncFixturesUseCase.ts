@@ -98,7 +98,7 @@ export class SyncFixturesUseCase {
       group: extractGroup(m.group),
       matchday: m.matchday,
       matchDate: new Date(m.utcDate),
-      status: mapStatus(m.status),
+      status: mapStatus(m.status, m.score, m.utcDate),
     }
   }
 }

@@ -6,8 +6,55 @@ import type { ServerType } from '@hono/node-server'
 import { serve } from '@hono/node-server'
 import * as Sentry from '@sentry/node'
 import { buildApp } from './app'
+import { SyncFixturesUseCase } from './application/match/SyncFixturesUseCase'
+import { SyncLiveScoresUseCase } from './application/match/SyncLiveScoresUseCase'
+import { getContainer } from './container'
+import { FootballDataApiAdapter } from './infrastructure/external/FootballDataApiAdapter'
+import { calcPointsForMatch } from './jobs/calcPoints'
+import { checkAndClosePools } from './jobs/closePoolsJob'
 import { sendPredictionReminders } from './jobs/reminderJob'
-import { syncFixtures, syncLiveScores } from './services/match'
+import { findActiveCompetitionsForSync } from './services/competition'
+
+const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY ?? ''
+
+/**
+ * Match-sync runners backed by the hexagonal use cases. Built lazily (the
+ * container resolves the match repo + clock) and gated on the API key, mirroring
+ * the previous behaviour without the legacy `services/match.ts` duplication.
+ */
+function buildMatchSyncRunners() {
+  const footballApi = new FootballDataApiAdapter(FOOTBALL_DATA_API_KEY)
+  const { matchRepo, clock } = getContainer()
+
+  const syncFixturesUseCase = new SyncFixturesUseCase({
+    footballApi,
+    matchRepo,
+    findActiveCompetitions: findActiveCompetitionsForSync,
+    onMatchFinished: calcPointsForMatch,
+  })
+  const syncLiveScoresUseCase = new SyncLiveScoresUseCase({
+    footballApi,
+    matchRepo,
+    clock,
+    findActiveCompetitions: findActiveCompetitionsForSync,
+    onMatchFinished: calcPointsForMatch,
+    onAllMatchesChecked: checkAndClosePools,
+  })
+
+  return {
+    syncFixtures: async () => {
+      if (!FOOTBALL_DATA_API_KEY) {
+        console.warn('[Match Sync] FOOTBALL_DATA_API_KEY not set, skipping fixtures sync')
+        return
+      }
+      await syncFixturesUseCase.execute()
+    },
+    syncLiveScores: async () => {
+      if (!FOOTBALL_DATA_API_KEY) return
+      await syncLiveScoresUseCase.execute()
+    },
+  }
+}
 
 // Validate required environment variables on startup
 const requiredEnvVars = [
@@ -84,13 +131,15 @@ function scheduleCron(spec: CronSpec): void {
 const server: ServerType = serve({ fetch: app.fetch, port }, () => {
   console.log(`m5nita API running on http://localhost:${port}`)
 
+  const matchSync = buildMatchSyncRunners()
+
   scheduleCron({
     slug: 'fixture-sync',
     crontab: '0 */6 * * *',
     intervalMs: 6 * 60 * 60 * 1000,
     checkinMargin: 15,
     maxRuntime: 30,
-    run: syncFixtures,
+    run: matchSync.syncFixtures,
   })
 
   scheduleCron({
@@ -99,7 +148,7 @@ const server: ServerType = serve({ fetch: app.fetch, port }, () => {
     intervalMs: 60 * 1000,
     checkinMargin: 2,
     maxRuntime: 5,
-    run: syncLiveScores,
+    run: matchSync.syncLiveScores,
   })
 
   scheduleCron({
