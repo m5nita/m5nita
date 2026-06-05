@@ -1,3 +1,4 @@
+import { knockoutContextFor } from '../../domain/match/KnockoutResult'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import type {
   PredictionRepository,
@@ -11,6 +12,10 @@ type Input = {
   poolId: string
 }
 
+function toAdvanceSide(value: string | null): 'home' | 'away' | null {
+  return value === 'home' || value === 'away' ? value : null
+}
+
 export class GetUserPredictionsUseCase {
   constructor(
     private readonly predictionRepo: PredictionRepository,
@@ -19,7 +24,9 @@ export class GetUserPredictionsUseCase {
 
   async execute(
     input: Input,
-  ): Promise<Array<PredictionWithMatch & { category?: number; bonus?: number }>> {
+  ): Promise<
+    Array<PredictionWithMatch & { category?: number; bonus?: number; advanceBonus?: number }>
+  > {
     const pool = await this.poolRepo.findById(input.poolId)
 
     const predictions = await this.predictionRepo.findByUserPool(input.userId, input.poolId)
@@ -40,6 +47,7 @@ export class GetUserPredictionsUseCase {
       let points: number | null
       let category: number | undefined
       let bonus: number | undefined
+      let advanceBonus: number | undefined
 
       if (typeof live === 'object' && live !== null) {
         points = live.total
@@ -53,18 +61,21 @@ export class GetUserPredictionsUseCase {
           p.match.homeScore !== null &&
           p.match.awayScore !== null
         ) {
+          const knockout = knockoutContextFor(p.match, toAdvanceSide(p.advancePick))
           const s = scoringPolicy.score(
             p.homeScore,
             p.awayScore,
             p.match.homeScore,
             p.match.awayScore,
+            knockout,
           )
           category = s.breakdown?.category
           bonus = s.breakdown?.bonus
+          advanceBonus = s.breakdown?.advanceBonus
         }
       }
 
-      return { ...p, points, category, bonus }
+      return { ...p, points, category, bonus, advanceBonus }
     })
 
     if (!pool) return withLivePoints

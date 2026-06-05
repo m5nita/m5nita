@@ -5,6 +5,7 @@ import type {
   MatchData,
   MatchFilters,
   MatchRepository,
+  MatchResultUpdate,
   UpsertMatchData,
 } from '../../domain/match/MatchRepository.port'
 import type { UnfinishedMatchesQuery } from '../../domain/pool/Pool'
@@ -22,11 +23,28 @@ function toMatchData(row: MatchRow): MatchData {
     awayFlag: row.awayFlag ?? '',
     homeScore: row.homeScore,
     awayScore: row.awayScore,
+    extraTimeHomeScore: row.extraTimeHomeScore,
+    extraTimeAwayScore: row.extraTimeAwayScore,
+    penaltyHomeScore: row.penaltyHomeScore,
+    penaltyAwayScore: row.penaltyAwayScore,
+    winner: row.winner,
+    duration: row.duration,
     stage: row.stage,
     group: row.group,
     matchday: row.matchday,
     matchDate: row.matchDate,
     status: row.status,
+  }
+}
+
+function knockoutColumns(m: UpsertMatchData) {
+  return {
+    extraTimeHomeScore: m.extraTimeHomeScore,
+    extraTimeAwayScore: m.extraTimeAwayScore,
+    penaltyHomeScore: m.penaltyHomeScore,
+    penaltyAwayScore: m.penaltyAwayScore,
+    winner: m.winner,
+    duration: m.duration,
   }
 }
 
@@ -105,6 +123,7 @@ export class DrizzleMatchRepository implements MatchRepository {
             awayFlag: m.awayFlag,
             homeScore: m.homeScore,
             awayScore: m.awayScore,
+            ...knockoutColumns(m),
             stage: m.stage,
             group: m.group,
             matchday: m.matchday,
@@ -127,6 +146,7 @@ export class DrizzleMatchRepository implements MatchRepository {
             awayFlag: m.awayFlag,
             homeScore: m.homeScore,
             awayScore: m.awayScore,
+            ...knockoutColumns(m),
             stage: m.stage,
             group: m.group,
             matchday: m.matchday,
@@ -141,15 +161,21 @@ export class DrizzleMatchRepository implements MatchRepository {
     return results
   }
 
-  async updateScores(
-    id: string,
-    homeScore: number,
-    awayScore: number,
-    status: string,
-  ): Promise<void> {
+  async updateScores(id: string, result: MatchResultUpdate): Promise<void> {
     await this.db
       .update(match)
-      .set({ homeScore, awayScore, status, updatedAt: new Date() })
+      .set({
+        homeScore: result.homeScore,
+        awayScore: result.awayScore,
+        status: result.status,
+        winner: result.winner ?? null,
+        duration: result.duration ?? null,
+        extraTimeHomeScore: result.extraTimeHomeScore ?? null,
+        extraTimeAwayScore: result.extraTimeAwayScore ?? null,
+        penaltyHomeScore: result.penaltyHomeScore ?? null,
+        penaltyAwayScore: result.penaltyAwayScore ?? null,
+        updatedAt: new Date(),
+      })
       .where(eq(match.id, id))
   }
 

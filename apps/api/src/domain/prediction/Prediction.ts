@@ -1,6 +1,8 @@
 import type { Match } from '../match/Match'
 import { Score } from '../scoring/Score'
 
+export type AdvanceSide = 'home' | 'away'
+
 export class Prediction {
   readonly id: string | null
   readonly userId: string
@@ -8,6 +10,8 @@ export class Prediction {
   readonly matchId: string
   readonly homeScore: number
   readonly awayScore: number
+  /** Knockout only: which side the member thinks advances past regular time. */
+  readonly advancePick: AdvanceSide | null
   private _points: number | null
 
   constructor(
@@ -18,6 +22,7 @@ export class Prediction {
     homeScore: number,
     awayScore: number,
     points: number | null = null,
+    advancePick: AdvanceSide | null = null,
   ) {
     this.id = id
     this.userId = userId
@@ -25,6 +30,7 @@ export class Prediction {
     this.matchId = matchId
     this.homeScore = homeScore
     this.awayScore = awayScore
+    this.advancePick = advancePick
     this._points = points
   }
 

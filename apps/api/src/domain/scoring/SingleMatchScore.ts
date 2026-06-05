@@ -22,7 +22,7 @@ export const SingleMatchScore = {
     const category = Score.calculate(predictedHome, predictedAway, actualHome, actualAway).points
     const distance = computeDistance(predictedHome, predictedAway, actualHome, actualAway)
     const bonus = Math.max(0, BONUS_CAP - distance)
-    return Score.fromBreakdown({ category, bonus, distance })
+    return Score.fromBreakdown({ category, bonus, distance, advanceBonus: 0 })
   },
 }
 

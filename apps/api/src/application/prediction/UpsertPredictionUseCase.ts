@@ -1,8 +1,9 @@
 import { Match } from '../../domain/match/Match'
 import type { MatchRepository } from '../../domain/match/MatchRepository.port'
+import { isKnockout } from '../../domain/match/MatchStage'
 import { MatchStatus } from '../../domain/match/MatchStatus'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
-import { Prediction } from '../../domain/prediction/Prediction'
+import { type AdvanceSide, Prediction } from '../../domain/prediction/Prediction'
 import { PredictionError } from '../../domain/prediction/PredictionError'
 import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
@@ -13,6 +14,7 @@ type Input = {
   matchId: string
   homeScore: number
   awayScore: number
+  advancePick?: AdvanceSide | null
 }
 
 export class UpsertPredictionUseCase {
@@ -60,6 +62,9 @@ export class UpsertPredictionUseCase {
       input.matchId,
     )
 
+    // The advance pick is only meaningful for knockout matches; drop it otherwise.
+    const advancePick = isKnockout(matchData.stage) ? (input.advancePick ?? null) : null
+
     const prediction = new Prediction(
       existing?.id ?? null,
       input.userId,
@@ -68,6 +73,7 @@ export class UpsertPredictionUseCase {
       input.homeScore,
       input.awayScore,
       existing?.points ?? null,
+      advancePick,
     )
 
     return this.predictionRepo.save(prediction)

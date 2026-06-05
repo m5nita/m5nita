@@ -42,6 +42,7 @@ export class DrizzlePredictionRepository implements PredictionRepository {
       matchId: r.matchId,
       homeScore: r.homeScore,
       awayScore: r.awayScore,
+      advancePick: r.advancePick,
       points: r.points,
       match: {
         id: r.match.id,
@@ -52,6 +53,12 @@ export class DrizzlePredictionRepository implements PredictionRepository {
         awayTeam: r.match.awayTeam,
         homeScore: r.match.homeScore,
         awayScore: r.match.awayScore,
+        extraTimeHomeScore: r.match.extraTimeHomeScore,
+        extraTimeAwayScore: r.match.extraTimeAwayScore,
+        penaltyHomeScore: r.match.penaltyHomeScore,
+        penaltyAwayScore: r.match.penaltyAwayScore,
+        winner: r.match.winner,
+        duration: r.match.duration,
         status: r.match.status,
         stage: r.match.stage,
         group: r.match.group,
@@ -68,6 +75,7 @@ export class DrizzlePredictionRepository implements PredictionRepository {
         name: user.name,
         homeScore: prediction.homeScore,
         awayScore: prediction.awayScore,
+        advancePick: prediction.advancePick,
         points: prediction.points,
       })
       .from(prediction)
@@ -80,6 +88,7 @@ export class DrizzlePredictionRepository implements PredictionRepository {
       name: r.name ?? '',
       homeScore: r.homeScore,
       awayScore: r.awayScore,
+      advancePick: r.advancePick,
       points: r.points,
     }))
   }
@@ -91,6 +100,7 @@ export class DrizzlePredictionRepository implements PredictionRepository {
         .set({
           homeScore: entity.homeScore,
           awayScore: entity.awayScore,
+          advancePick: entity.advancePick,
           points: entity.points,
           updatedAt: new Date(),
         })

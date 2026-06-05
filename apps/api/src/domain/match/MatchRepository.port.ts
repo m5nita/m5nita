@@ -8,6 +8,14 @@ export type MatchData = {
   awayFlag: string
   homeScore: number | null
   awayScore: number | null
+  extraTimeHomeScore: number | null
+  extraTimeAwayScore: number | null
+  penaltyHomeScore: number | null
+  penaltyAwayScore: number | null
+  /** 'home' | 'away' | 'draw' — the advancing/winning side */
+  winner: string | null
+  /** 'regular' | 'extra_time' | 'penalty_shootout' */
+  duration: string | null
   stage: string
   group: string | null
   matchday: number | null
@@ -24,6 +32,19 @@ export type MatchFilters = {
 
 export type UpsertMatchData = Omit<MatchData, 'id'>
 
+/** Fields written when a match score changes / it finishes. Knockout fields are null until known. */
+export type MatchResultUpdate = {
+  homeScore: number
+  awayScore: number
+  status: string
+  winner?: string | null
+  duration?: string | null
+  extraTimeHomeScore?: number | null
+  extraTimeAwayScore?: number | null
+  penaltyHomeScore?: number | null
+  penaltyAwayScore?: number | null
+}
+
 import type { UnfinishedMatchesQuery } from '../pool/Pool'
 
 export interface MatchRepository {
@@ -32,7 +53,7 @@ export interface MatchRepository {
   findUpcomingByCompetition(competitionId: string, now: Date): Promise<MatchData[]>
   findLive(): Promise<MatchData[]>
   upsertMany(matches: UpsertMatchData[]): Promise<MatchData[]>
-  updateScores(id: string, homeScore: number, awayScore: number, status: string): Promise<void>
+  updateScores(id: string, result: MatchResultUpdate): Promise<void>
   hasUnfinishedMatches(
     competitionId: string,
     matchdayFrom?: number | null,

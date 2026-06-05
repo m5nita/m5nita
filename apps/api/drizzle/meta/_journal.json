@@ -78,6 +78,13 @@
       "when": 1781510800000,
       "tag": "0010_condemned_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1781510900000,
+      "tag": "0011_clumsy_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

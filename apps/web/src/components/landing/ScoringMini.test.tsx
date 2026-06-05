@@ -30,9 +30,10 @@ function renderWithRouter(ui: React.ReactNode) {
 }
 
 describe('<ScoringMini />', () => {
-  it('renders all four scoring tiers using SCORING constants', async () => {
+  it('renders all five scoring tiers using SCORING constants', async () => {
     renderWithRouter(<ScoringMini />)
     expect(await screen.findByText(String(SCORING.EXACT_MATCH))).toBeInTheDocument()
+    expect(screen.getByText(String(SCORING.WINNER_AND_WINNER_GOALS))).toBeInTheDocument()
     expect(screen.getByText(String(SCORING.WINNER_AND_DIFF))).toBeInTheDocument()
     expect(screen.getByText(String(SCORING.OUTCOME_CORRECT))).toBeInTheDocument()
     expect(screen.getByText(String(SCORING.MISS))).toBeInTheDocument()

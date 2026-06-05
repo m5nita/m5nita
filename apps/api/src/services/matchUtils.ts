@@ -63,3 +63,17 @@ export function extractGroup(group: string | null): string | null {
   const groupMatch = group.match(/GROUP_([A-L])/i)
   return groupMatch ? (groupMatch[1]?.toUpperCase() ?? null) : null
 }
+
+export function mapWinner(apiWinner: string | null | undefined): string | null {
+  const map: Record<string, string> = { HOME_TEAM: 'home', AWAY_TEAM: 'away', DRAW: 'draw' }
+  return apiWinner ? (map[apiWinner] ?? null) : null
+}
+
+export function mapDuration(apiDuration: string | null | undefined): string | null {
+  const map: Record<string, string> = {
+    REGULAR: 'regular',
+    EXTRA_TIME: 'extra_time',
+    PENALTY_SHOOTOUT: 'penalty_shootout',
+  }
+  return apiDuration ? (map[apiDuration] ?? null) : null
+}

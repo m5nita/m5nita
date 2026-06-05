@@ -17,6 +17,14 @@ export const match = pgTable(
     awayFlag: text('away_flag'),
     homeScore: integer('home_score'),
     awayScore: integer('away_score'),
+    extraTimeHomeScore: integer('extra_time_home_score'),
+    extraTimeAwayScore: integer('extra_time_away_score'),
+    penaltyHomeScore: integer('penalty_home_score'),
+    penaltyAwayScore: integer('penalty_away_score'),
+    // 'home' | 'away' | 'draw' — the advancing/winning side as reported by the provider
+    winner: text('winner'),
+    // 'regular' | 'extra_time' | 'penalty_shootout' — how the match was decided
+    duration: text('duration'),
     stage: text('stage').notNull(),
     group: text('match_group'),
     matchday: integer('matchday'),

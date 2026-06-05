@@ -72,6 +72,8 @@ export const updatePoolSchema = z.object({
 export const upsertPredictionSchema = z.object({
   homeScore: z.number().int().min(0),
   awayScore: z.number().int().min(0),
+  // Knockout only: which side advances past regular time. Stored only for knockout matches.
+  advancePick: z.enum(['home', 'away']).nullish(),
 })
 
 // User schemas

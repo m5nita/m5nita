@@ -1,6 +1,6 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-06-03
+Auto-generated from all feature plans. Last updated: 2026-06-05
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 22) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
@@ -31,6 +31,8 @@ Auto-generated from all feature plans. Last updated: 2026-06-03
 - PostgreSQL 16. Two new additive tables (`stats_unlock`, `participant_pool_stats`); one new accepted value for the existing text column `payment.type`. No prize/fee table touched. (021-estatisticas-participante)
 - TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend (022-email-notification-fallback)
 - PostgreSQL 16 via Drizzle. **No schema changes** — reads existing (022-email-notification-fallback)
+- TypeScript 5.x, Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY (Telegram); React 19 + TanStack Router/Query + Tailwind v4 (web); football-data.org v4 (match data, via `fetch`) (023-knockout-scoring)
+- PostgreSQL 16 via Drizzle. Additive nullable columns on existing `match` and `prediction` tables; one new migration `0011`. No new tables. (023-knockout-scoring)
 
 - TypeScript 5.x (Node.js >= 22) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM, Stripe SDK
@@ -110,9 +112,9 @@ pnpm drizzle-kit push        # Push schema (dev only)
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 023-knockout-scoring: Added TypeScript 5.x, Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY (Telegram); React 19 + TanStack Router/Query + Tailwind v4 (web); football-data.org v4 (match data, via `fetch`)
 - 022-email-notification-fallback: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend
 - 021-estatisticas-participante: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing MercadoPago / InfinitePay / Stripe / Mock adapters. **No new runtime dependencies** (charts are inline SVG).
-- 019-single-match-pool: Added TypeScript 5.x, Node.js ≥ 22 + Hono (API), Drizzle ORM, Better Auth, grammY (Telegram), React 19, TanStack Router, TanStack Query, Tailwind CSS v4. No new runtime dependencies.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

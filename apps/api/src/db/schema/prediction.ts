@@ -20,6 +20,8 @@ export const prediction = pgTable(
       .references(() => match.id),
     homeScore: integer('home_score').notNull(),
     awayScore: integer('away_score').notNull(),
+    // 'home' | 'away' — which side the member thinks advances on penalties (knockout only)
+    advancePick: text('advance_pick'),
     points: integer('points'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
