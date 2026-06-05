@@ -163,7 +163,7 @@ describe('POST /api/pools/:poolId/join', () => {
     mockJoinPoolExecute.mockResolvedValue({
       payment: {
         payment: { id: 'pay-1' },
-        checkoutUrl: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=join',
+        checkoutUrl: 'https://checkout.example.com/redirect?id=join',
       },
       amount: 5000,
     })
@@ -175,9 +175,7 @@ describe('POST /api/pools/:poolId/join', () => {
 
     expect(res.status).toBe(201)
     const body = await res.json()
-    expect(body.payment.checkoutUrl).toBe(
-      'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=join',
-    )
+    expect(body.payment.checkoutUrl).toBe('https://checkout.example.com/redirect?id=join')
   })
 
   it('rejects_closedPool_409', async () => {

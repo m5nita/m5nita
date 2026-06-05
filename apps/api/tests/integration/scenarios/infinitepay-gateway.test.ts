@@ -80,7 +80,7 @@ describe('US5 — InfinitePay gateway edge cases', () => {
 
   it('scenario 3 — only the active gateway (InfinitePay) receives outbound traffic', async () => {
     // MSW's `onUnhandledRequest: 'error'` (configured in per-worker-setup)
-    // guarantees the suite fails loudly if any MercadoPago/Stripe URL is hit.
+    // guarantees the suite fails loudly if any Stripe URL is hit.
     // A full happy-path run through here is the strongest proof that the
     // configured gateway is the only one called.
 

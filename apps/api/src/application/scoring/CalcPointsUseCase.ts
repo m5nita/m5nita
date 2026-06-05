@@ -12,7 +12,7 @@ export class CalcPointsUseCase {
   async execute(input: { matchId: string }): Promise<void> {
     const match = await this.deps.matchRepo.findById(input.matchId)
 
-    if (!match || match.status !== 'finished') {
+    if (match?.status !== 'finished') {
       console.log(`[CalcPoints] Match ${input.matchId} not finished, skipping`)
       return
     }

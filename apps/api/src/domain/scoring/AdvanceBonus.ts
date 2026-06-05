@@ -20,7 +20,7 @@ export const AdvanceBonus = {
    * returns `score` unchanged otherwise.
    */
   apply(score: Score, knockout?: KnockoutContext): Score {
-    if (!knockout || !knockout.decidedInOvertime) return score
+    if (!knockout?.decidedInOvertime) return score
     if (knockout.predictedAdvance !== knockout.advancingSide) return score
     return score.withAdvanceBonus(SCORING.ADVANCE_BONUS)
   },

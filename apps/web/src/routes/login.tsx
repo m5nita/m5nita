@@ -188,7 +188,7 @@ function LoginPage() {
   }
 
   async function handleSendMagicLink() {
-    if (!email || !email.includes('@')) {
+    if (!email?.includes('@')) {
       setError('Informe um email válido')
       return
     }
