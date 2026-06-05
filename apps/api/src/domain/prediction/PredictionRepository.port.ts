@@ -7,6 +7,7 @@ export type PredictionWithMatch = {
   matchId: string
   homeScore: number
   awayScore: number
+  advancePick: string | null
   points: number | null
   match: {
     id: string
@@ -17,6 +18,12 @@ export type PredictionWithMatch = {
     awayTeam: string
     homeScore: number | null
     awayScore: number | null
+    extraTimeHomeScore: number | null
+    extraTimeAwayScore: number | null
+    penaltyHomeScore: number | null
+    penaltyAwayScore: number | null
+    winner: string | null
+    duration: string | null
     status: string
     stage: string
     group: string | null
@@ -30,6 +37,7 @@ export type PredictionWithUser = {
   name: string
   homeScore: number
   awayScore: number
+  advancePick: string | null
   points: number | null
 }
 

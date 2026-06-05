@@ -39,15 +39,21 @@ const scoringRules = [
     color: 'bg-green',
   },
   {
+    points: SCORING.WINNER_AND_WINNER_GOALS,
+    label: 'Vencedor + gols do vencedor',
+    example: 'Palpite 2×1, resultado 2×0',
+    color: 'bg-green/80',
+  },
+  {
     points: SCORING.WINNER_AND_DIFF,
-    label: 'Resultado + diferença de gols (saldo)',
+    label: 'Vencedor + saldo de gols',
     example: 'Palpite 3×1, resultado 2×0',
-    color: 'bg-green/70',
+    color: 'bg-green/60',
   },
   {
     points: SCORING.OUTCOME_CORRECT,
     label: 'Acertou o vencedor ou empate',
-    example: 'Palpite 1×0, resultado 3×0 ou 1×1, resultado 0×0',
+    example: 'Palpite 1×0, resultado 3×0 · ou 1×1, resultado 0×0',
     color: 'bg-green/40',
   },
   {
@@ -113,6 +119,27 @@ function HowItWorksPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+            Mata-mata
+          </h2>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+        <div className="flex items-start gap-3 py-2">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center bg-black font-display text-lg font-black text-white">
+            +{SCORING.ADVANCE_BONUS}
+          </span>
+          <p className="text-sm leading-relaxed text-gray-dark">
+            Nos jogos de mata-mata, o seu placar vale pelo{' '}
+            <strong className="text-black">tempo normal (90 min)</strong>. Se a partida for para a{' '}
+            <strong className="text-black">prorrogação ou pênaltis</strong>, você palpita também{' '}
+            <strong className="text-black">quem se classifica</strong> e ganha{' '}
+            <strong className="text-black">+{SCORING.ADVANCE_BONUS} pontos</strong> se acertar.
+          </p>
         </div>
       </section>
 

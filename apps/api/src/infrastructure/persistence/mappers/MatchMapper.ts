@@ -92,3 +92,23 @@ export function extractGroup(apiGroup: string | null): string | null {
   const matched = apiGroup.match(/GROUP_([A-L])/i)
   return matched ? (matched[1]?.toUpperCase() ?? null) : null
 }
+
+const WINNER_MAP: Record<string, string> = {
+  HOME_TEAM: 'home',
+  AWAY_TEAM: 'away',
+  DRAW: 'draw',
+}
+
+const DURATION_MAP: Record<string, string> = {
+  REGULAR: 'regular',
+  EXTRA_TIME: 'extra_time',
+  PENALTY_SHOOTOUT: 'penalty_shootout',
+}
+
+export function mapWinner(apiWinner: string | null | undefined): string | null {
+  return apiWinner ? (WINNER_MAP[apiWinner] ?? null) : null
+}
+
+export function mapDuration(apiDuration: string | null | undefined): string | null {
+  return apiDuration ? (DURATION_MAP[apiDuration] ?? null) : null
+}

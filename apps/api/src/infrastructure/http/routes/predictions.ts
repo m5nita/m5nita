@@ -72,6 +72,7 @@ predictionsRoutes.put('/pools/:poolId/predictions/:matchId', async (c) => {
       matchId,
       homeScore: parsed.data.homeScore,
       awayScore: parsed.data.awayScore,
+      advancePick: parsed.data.advancePick ?? null,
     })
     return c.json(result)
   } catch (err) {

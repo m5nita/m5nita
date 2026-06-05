@@ -9,10 +9,16 @@ const tiers = [
     color: 'bg-green',
   },
   {
+    points: SCORING.WINNER_AND_WINNER_GOALS,
+    label: 'Vencedor + gols do vencedor',
+    example: 'palpite 2×1, deu 2×0',
+    color: 'bg-green/80',
+  },
+  {
     points: SCORING.WINNER_AND_DIFF,
-    label: 'Resultado + saldo',
+    label: 'Vencedor + saldo',
     example: 'palpite 3×1, deu 2×0',
-    color: 'bg-green/70',
+    color: 'bg-green/60',
   },
   {
     points: SCORING.OUTCOME_CORRECT,

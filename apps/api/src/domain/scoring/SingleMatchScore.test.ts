@@ -16,6 +16,15 @@ describe('SingleMatchScore', () => {
       expect(s.distance).toBe(0)
     })
 
+    it('awards 8 + bonus for correct winner and the winner goal count', () => {
+      // real 2-0, predicted 2-1 → winner home, winner goals 2 → category 8
+      const s = brk(SingleMatchScore.calculate(2, 1, 2, 0))
+      expect(s.category).toBe(8)
+      expect(s.distance).toBe(1)
+      expect(s.bonus).toBe(3)
+      expect(s.total).toBe(11)
+    })
+
     it('awards 7 + bonus for correct winner and goal difference', () => {
       const s = brk(SingleMatchScore.calculate(3, 2, 2, 1))
       expect(s.category).toBe(7)

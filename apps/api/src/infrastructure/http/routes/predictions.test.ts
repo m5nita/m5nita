@@ -82,6 +82,7 @@ describe('PUT /api/pools/:poolId/predictions/:matchId', () => {
       matchId: 'match-1',
       homeScore: 2,
       awayScore: 1,
+      advancePick: null,
     })
   })
 

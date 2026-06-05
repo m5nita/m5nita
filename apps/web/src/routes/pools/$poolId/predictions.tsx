@@ -1,4 +1,5 @@
 import {
+  type AdvanceSide,
   MATCH,
   type Match,
   type MatchPredictionsResponse,
@@ -116,7 +117,12 @@ function MatchList({
   poolId: string
   matches: Match[]
   predictionMap: Map<string, Prediction>
-  onSave: (matchId: string, homeScore: number, awayScore: number) => void
+  onSave: (
+    matchId: string,
+    homeScore: number,
+    awayScore: number,
+    advancePick: AdvanceSide | null,
+  ) => void
   matchdayHeaders?: boolean
   highlightMatchId?: string | null
 }) {
@@ -185,14 +191,23 @@ function MatchList({
           homeFlag={match.homeFlag}
           awayFlag={match.awayFlag}
           matchDate={match.matchDate}
+          stage={match.stage}
           homeScore={pred?.homeScore ?? null}
           awayScore={pred?.awayScore ?? null}
+          advancePick={pred?.advancePick ?? null}
           matchStatus={match.status}
           points={pred?.points ?? null}
           category={pred?.category ?? null}
           bonus={pred?.bonus ?? null}
+          advanceBonus={pred?.advanceBonus ?? null}
           actualHomeScore={match.homeScore}
           actualAwayScore={match.awayScore}
+          winner={match.winner}
+          duration={match.duration}
+          extraTimeHomeScore={match.extraTimeHomeScore}
+          extraTimeAwayScore={match.extraTimeAwayScore}
+          penaltyHomeScore={match.penaltyHomeScore}
+          penaltyAwayScore={match.penaltyAwayScore}
           onSave={onSave}
           onAdvance={getOnAdvance(originalIndex)}
           renderExpandedContent={renderExpandedContent}
@@ -250,7 +265,12 @@ function filterMatchesForPool(rawMatches: Match[], pool: PoolDetail): Match[] {
 type MatchListShared = {
   poolId: string
   predictionMap: Map<string, Prediction>
-  onSave: (matchId: string, homeScore: number, awayScore: number) => void
+  onSave: (
+    matchId: string,
+    homeScore: number,
+    awayScore: number,
+    advancePick: AdvanceSide | null,
+  ) => void
   highlightMatchId: string | null
 }
 
@@ -527,15 +547,17 @@ function PredictionsContent({
       matchId,
       homeScore,
       awayScore,
+      advancePick,
     }: {
       matchId: string
       homeScore: number
       awayScore: number
+      advancePick: AdvanceSide | null
     }) => {
       const res = await apiFetch(`/api/pools/${poolId}/predictions/${matchId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ homeScore, awayScore }),
+        body: JSON.stringify({ homeScore, awayScore, advancePick }),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -560,8 +582,8 @@ function PredictionsContent({
   })
 
   const handleSave = useCallback(
-    (matchId: string, homeScore: number, awayScore: number) =>
-      saveMutation.mutateAsync({ matchId, homeScore, awayScore }),
+    (matchId: string, homeScore: number, awayScore: number, advancePick: AdvanceSide | null) =>
+      saveMutation.mutateAsync({ matchId, homeScore, awayScore, advancePick }),
     [saveMutation],
   )
 

@@ -1,4 +1,5 @@
 import { getContainer } from '../container'
+import { knockoutContextFor } from '../domain/match/KnockoutResult'
 import { RangeScoringPolicy, type ScoringPolicy } from '../domain/scoring/ScoringPolicy'
 import { invalidateRankingAggregate } from '../services/rankingCache'
 import { invalidateParticipantStatsAggregate } from '../services/statsCache'
@@ -33,11 +34,13 @@ export async function calcPointsForMatch(matchId: string) {
 
   for (const pred of predictions) {
     const policy = await policyFor(pred.poolId)
+    const knockout = knockoutContextFor(matchData, pred.advancePick)
     const points = policy.score(
       pred.homeScore,
       pred.awayScore,
       matchData.homeScore,
       matchData.awayScore,
+      knockout,
     ).points
 
     if (pred.id) {

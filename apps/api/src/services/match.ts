@@ -3,9 +3,16 @@ import { getContainer } from '../container'
 import { db } from '../db/client'
 import { competition } from '../db/schema/competition'
 import { match } from '../db/schema/match'
+import { gradedScoreline } from '../domain/match/KnockoutResult'
 import { calcPointsForMatch } from '../jobs/calcPoints'
 import { checkAndClosePools } from '../jobs/closePoolsJob'
-import { extractGroup, mapStageForCompetition, mapStatus } from './matchUtils'
+import {
+  extractGroup,
+  mapDuration,
+  mapStageForCompetition,
+  mapStatus,
+  mapWinner,
+} from './matchUtils'
 
 const FOOTBALL_DATA_BASE = 'https://api.football-data.org/v4'
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY || ''
@@ -21,12 +28,36 @@ interface FootballDataMatch {
   homeTeam: { name: string; crest: string }
   awayTeam: { name: string; crest: string }
   score: {
+    winner?: string | null
+    duration?: string | null
     fullTime: { home: number | null; away: number | null }
+    regularTime?: { home: number | null; away: number | null } | null
+    extraTime?: { home: number | null; away: number | null } | null
+    penalties?: { home: number | null; away: number | null } | null
   }
 }
 
 interface FootballDataResponse {
   matches: FootballDataMatch[]
+}
+
+/**
+ * Result columns from a provider score: the graded scoreline is the 90-minute
+ * (regular-time) score; extra-time/penalty figures and winner/duration are
+ * stored separately for display and the advance bonus.
+ */
+function resultColumns(score: FootballDataMatch['score']) {
+  const graded = gradedScoreline({ fullTime: score.fullTime, regularTime: score.regularTime })
+  return {
+    homeScore: graded.home,
+    awayScore: graded.away,
+    extraTimeHomeScore: score.extraTime?.home ?? null,
+    extraTimeAwayScore: score.extraTime?.away ?? null,
+    penaltyHomeScore: score.penalties?.home ?? null,
+    penaltyAwayScore: score.penalties?.away ?? null,
+    winner: mapWinner(score.winner),
+    duration: mapDuration(score.duration),
+  }
 }
 
 async function fetchMatches(endpoint: string): Promise<FootballDataMatch[]> {
@@ -65,8 +96,7 @@ async function upsertMatches(
       awayTeam: m.awayTeam.name || 'TBD',
       homeFlag: m.homeTeam.crest || null,
       awayFlag: m.awayTeam.crest || null,
-      homeScore: m.score.fullTime.home,
-      awayScore: m.score.fullTime.away,
+      ...resultColumns(m.score),
       stage: mapStageForCompetition(m.stage, competitionType),
       group: extractGroup(m.group),
       matchday: m.matchday,
@@ -150,8 +180,7 @@ export async function syncLiveScores() {
         await db
           .update(match)
           .set({
-            homeScore: m.score.fullTime.home,
-            awayScore: m.score.fullTime.away,
+            ...resultColumns(m.score),
             status: newStatus,
             updatedAt: new Date(),
           })

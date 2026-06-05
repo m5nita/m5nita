@@ -88,6 +88,7 @@ const RULES = [
       'apps/api/src/domain/scoring/SingleMatchScore.ts',
       'apps/api/src/domain/scoring/SingleMatchScore.test.ts',
       'apps/api/src/domain/scoring/ScoringPolicy.ts',
+      'apps/api/src/domain/scoring/AdvanceBonus.test.ts',
       'apps/api/src/domain/prediction/Prediction.ts',
     ],
   },

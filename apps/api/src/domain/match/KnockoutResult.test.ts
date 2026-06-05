@@ -1,0 +1,81 @@
+import { describe, expect, it } from 'vitest'
+import { gradedScoreline, knockoutContextFor } from './KnockoutResult'
+
+describe('gradedScoreline', () => {
+  it('is the regular-time (90-minute) score, ignoring extra time and penalties', () => {
+    const s = gradedScoreline({
+      fullTime: { home: 6, away: 5 }, // provider may inflate with ET/penalties — must be ignored
+      regularTime: { home: 1, away: 1 },
+    })
+    expect(s).toEqual({ home: 1, away: 1 })
+  })
+
+  it('ignores extra-time goals — uses the 90-minute draw even when ET decided it', () => {
+    const s = gradedScoreline({
+      fullTime: { home: 2, away: 1 }, // 1-1 at 90, decided 2-1 in ET
+      regularTime: { home: 1, away: 1 },
+    })
+    expect(s).toEqual({ home: 1, away: 1 })
+  })
+
+  it('falls back to full-time for a regular match (no regular-time sub-score)', () => {
+    expect(gradedScoreline({ fullTime: { home: 3, away: 0 } })).toEqual({ home: 3, away: 0 })
+  })
+
+  it('returns nulls when not finished', () => {
+    expect(gradedScoreline({ fullTime: { home: null, away: null } })).toEqual({
+      home: null,
+      away: null,
+    })
+  })
+})
+
+describe('knockoutContextFor', () => {
+  it('marks a penalty-decided knockout as decided in overtime', () => {
+    const ctx = knockoutContextFor(
+      { stage: 'final', winner: 'home', duration: 'penalty_shootout' },
+      'home',
+    )
+    expect(ctx).toEqual({
+      decidedInOvertime: true,
+      advancingSide: 'home',
+      predictedAdvance: 'home',
+    })
+  })
+
+  it('marks an extra-time-decided knockout as decided in overtime', () => {
+    const ctx = knockoutContextFor(
+      { stage: 'semi', winner: 'away', duration: 'extra_time' },
+      'home',
+    )
+    expect(ctx).toEqual({
+      decidedInOvertime: true,
+      advancingSide: 'away',
+      predictedAdvance: 'home',
+    })
+  })
+
+  it('marks a regular-time knockout as NOT decided in overtime', () => {
+    const ctx = knockoutContextFor(
+      { stage: 'quarter', winner: 'home', duration: 'regular' },
+      'home',
+    )
+    expect(ctx).toEqual({
+      decidedInOvertime: false,
+      advancingSide: 'home',
+      predictedAdvance: 'home',
+    })
+  })
+
+  it('returns undefined for a non-knockout match', () => {
+    expect(
+      knockoutContextFor({ stage: 'group', winner: 'home', duration: 'regular' }, 'home'),
+    ).toBeUndefined()
+  })
+
+  it('returns undefined when there is no decisive winner', () => {
+    expect(
+      knockoutContextFor({ stage: 'final', winner: 'draw', duration: 'regular' }, null),
+    ).toBeUndefined()
+  })
+})

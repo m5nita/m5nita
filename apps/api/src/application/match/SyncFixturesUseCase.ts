@@ -1,8 +1,11 @@
+import { gradedScoreline } from '../../domain/match/KnockoutResult'
 import type { MatchRepository, UpsertMatchData } from '../../domain/match/MatchRepository.port'
 import {
   extractGroup,
+  mapDuration,
   mapStage,
   mapStatus,
+  mapWinner,
 } from '../../infrastructure/persistence/mappers/MatchMapper'
 import type { ExternalMatch, FootballDataApi } from '../ports/FootballDataApi.port'
 
@@ -75,6 +78,7 @@ export class SyncFixturesUseCase {
 
   private toUpsertData(m: ExternalMatch, comp: CompetitionInfo): UpsertMatchData {
     const stage = comp.type === 'league' ? 'league' : mapStage(m.stage, comp.type)
+    const graded = gradedScoreline({ fullTime: m.score.fullTime, regularTime: m.score.regularTime })
     return {
       externalId: String(m.id),
       competitionId: comp.id,
@@ -82,8 +86,14 @@ export class SyncFixturesUseCase {
       awayTeam: m.awayTeam.name || 'TBD',
       homeFlag: m.homeTeam.crest || '',
       awayFlag: m.awayTeam.crest || '',
-      homeScore: m.score.fullTime.home,
-      awayScore: m.score.fullTime.away,
+      homeScore: graded.home,
+      awayScore: graded.away,
+      extraTimeHomeScore: m.score.extraTime?.home ?? null,
+      extraTimeAwayScore: m.score.extraTime?.away ?? null,
+      penaltyHomeScore: m.score.penalties?.home ?? null,
+      penaltyAwayScore: m.score.penalties?.away ?? null,
+      winner: mapWinner(m.score.winner),
+      duration: mapDuration(m.score.duration),
       stage,
       group: extractGroup(m.group),
       matchday: m.matchday,

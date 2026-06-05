@@ -1,7 +1,9 @@
+import type { AdvanceSide, MatchDuration } from '@m5nita/shared'
 import {
   forwardRef,
   type KeyboardEvent,
   type ReactNode,
+  type Ref,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -21,17 +23,36 @@ interface ScoreInputProps {
   homeFlag: string | null
   awayFlag: string | null
   matchDate: string
+  stage: string
   homeScore: number | null
   awayScore: number | null
+  advancePick?: AdvanceSide | null
   matchStatus: string
   points: number | null
   category?: number | null
   bonus?: number | null
+  advanceBonus?: number | null
   actualHomeScore: number | null
   actualAwayScore: number | null
-  onSave: (matchId: string, homeScore: number, awayScore: number) => unknown
+  winner?: 'home' | 'away' | 'draw' | null
+  duration?: MatchDuration | null
+  extraTimeHomeScore?: number | null
+  extraTimeAwayScore?: number | null
+  penaltyHomeScore?: number | null
+  penaltyAwayScore?: number | null
+  onSave: (
+    matchId: string,
+    homeScore: number,
+    awayScore: number,
+    advancePick: AdvanceSide | null,
+  ) => unknown
   onAdvance?: () => void
   renderExpandedContent?: (matchId: string) => ReactNode
+}
+
+const NON_KNOCKOUT_STAGES = new Set(['group', 'league'])
+function isKnockoutStage(stage: string): boolean {
+  return !NON_KNOCKOUT_STAGES.has(stage)
 }
 
 function teamNameStyle(name: string): string {
@@ -127,6 +148,7 @@ function ScoreBreakdownPanel({
   total,
   category,
   bonus,
+  advanceBonus,
   predHome,
   predAway,
   realHome,
@@ -137,6 +159,7 @@ function ScoreBreakdownPanel({
   total: number
   category: number
   bonus: number
+  advanceBonus: number
   predHome: number
   predAway: number
   realHome: number
@@ -158,13 +181,18 @@ function ScoreBreakdownPanel({
         Como esses {total} pts foram calculados:
       </p>
       <p className="mt-2 text-xs text-gray-dark">
-        O jogo terminou {realHome}×{realAway} e você palpitou {predHome}×{predAway}.
+        O jogo terminou {realHome}×{realAway} (tempo normal) e você palpitou {predHome}×{predAway}.
       </p>
       <p className="mt-2 text-xs text-gray-dark">{explanation.categoryLine}</p>
       <p className="mt-1 text-xs text-gray-dark">{explanation.bonusLine}</p>
+      {advanceBonus > 0 && (
+        <p className="mt-1 text-xs text-gray-dark">
+          +{advanceBonus} pts — você acertou quem se classificou ao final da prorrogação/pênaltis.
+        </p>
+      )}
       <div className="mt-3 border-t border-border pt-2 text-[11px] leading-relaxed text-gray-muted">
         Em bolões de jogo único, além dos pontos da categoria, você ganha até 4 pts extras por
-        proximidade do placar. Quanto mais perto, mais bônus.
+        proximidade do placar. No mata-mata, +2 por acertar quem se classifica.
       </div>
     </div>
   )
@@ -205,14 +233,19 @@ function LiveResultHeader({
   hasActualScore,
   actualHomeScore,
   actualAwayScore,
+  wentToOvertime,
 }: {
   matchStatus: string
   isLocked: boolean
   hasActualScore: boolean
   actualHomeScore: number | null
   actualAwayScore: number | null
+  wentToOvertime: boolean
 }) {
   if (!((isLocked && hasActualScore) || matchStatus === 'live')) return null
+  // For matches that went past 90', the displayed score is the regular-time
+  // score (what predictions grade against), so label it as such.
+  const finishedLabel = wentToOvertime ? 'Tempo normal' : 'Resultado oficial'
   return (
     <div
       className={`mb-1 flex items-center justify-center gap-2 font-display text-[10px] font-bold uppercase leading-none tracking-widest ${
@@ -225,7 +258,7 @@ function LiveResultHeader({
           Ao Vivo
         </span>
       ) : (
-        <span>Resultado oficial</span>
+        <span>{finishedLabel}</span>
       )}
       {hasActualScore && (
         <span className="flex items-center gap-1.5">
@@ -268,6 +301,7 @@ function MaybeScoreBreakdownPanel({
   points,
   category,
   bonus,
+  advanceBonus,
   initialHome,
   initialAway,
   actualHomeScore,
@@ -279,6 +313,7 @@ function MaybeScoreBreakdownPanel({
   points: number | null
   category: number | null | undefined
   bonus: number | null | undefined
+  advanceBonus: number | null | undefined
   initialHome: number | null
   initialAway: number | null
   actualHomeScore: number | null
@@ -303,6 +338,7 @@ function MaybeScoreBreakdownPanel({
       total={points}
       category={category}
       bonus={bonus}
+      advanceBonus={advanceBonus ?? 0}
       predHome={initialHome}
       predAway={initialAway}
       realHome={actualHomeScore}
@@ -320,6 +356,7 @@ function ScoreResultFooter({
   points,
   category,
   bonus,
+  advanceBonus,
   initialHome,
   initialAway,
   actualHomeScore,
@@ -335,6 +372,7 @@ function ScoreResultFooter({
   points: number | null
   category: number | null | undefined
   bonus: number | null | undefined
+  advanceBonus: number | null | undefined
   initialHome: number | null
   initialAway: number | null
   actualHomeScore: number | null
@@ -387,6 +425,7 @@ function ScoreResultFooter({
         points={points}
         category={category}
         bonus={bonus}
+        advanceBonus={advanceBonus}
         initialHome={initialHome}
         initialAway={initialAway}
         actualHomeScore={actualHomeScore}
@@ -398,6 +437,133 @@ function ScoreResultFooter({
   )
 }
 
+function AdvancePicker({
+  homeTeam,
+  awayTeam,
+  value,
+  locked,
+  onPick,
+  firstButtonRef,
+}: {
+  homeTeam: string
+  awayTeam: string
+  value: AdvanceSide | null
+  locked: boolean
+  onPick: (side: AdvanceSide) => void
+  firstButtonRef?: Ref<HTMLButtonElement>
+}) {
+  // Before kickoff: always offer the pick. After kickoff: keep showing the
+  // chosen side (locked), but hide entirely if the member never picked.
+  if (locked && !value) return null
+  return (
+    <div className="mt-2 flex flex-col items-center gap-1">
+      <p className="font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
+        Quem se classifica?{' '}
+        <span className="font-normal normal-case tracking-normal">(prorrogação / pênaltis)</span>
+      </p>
+      <div className="flex gap-1.5">
+        {(['home', 'away'] as const).map((side) => {
+          const selected = value === side
+          return (
+            <button
+              key={side}
+              ref={side === 'home' ? firstButtonRef : undefined}
+              type="button"
+              disabled={locked}
+              aria-pressed={selected}
+              onClick={() => onPick(side)}
+              className={`max-w-[130px] truncate px-2.5 py-1 font-display text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                selected
+                  ? 'bg-black text-white'
+                  : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+              } ${locked ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+            >
+              {displayTeamName(side === 'home' ? homeTeam : awayTeam)}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function resolvingScoreLabel({
+  duration,
+  regHomeScore,
+  regAwayScore,
+  extraTimeHomeScore,
+  extraTimeAwayScore,
+  penaltyHomeScore,
+  penaltyAwayScore,
+}: {
+  duration: MatchDuration
+  regHomeScore: number | null | undefined
+  regAwayScore: number | null | undefined
+  extraTimeHomeScore: number | null | undefined
+  extraTimeAwayScore: number | null | undefined
+  penaltyHomeScore: number | null | undefined
+  penaltyAwayScore: number | null | undefined
+}): string {
+  const hasReg = regHomeScore != null && regAwayScore != null
+  const extraTimeHadGoals = (extraTimeHomeScore ?? 0) > 0 || (extraTimeAwayScore ?? 0) > 0
+  const afterExtraTime = hasReg
+    ? `${regHomeScore + (extraTimeHomeScore ?? 0)}×${regAwayScore + (extraTimeAwayScore ?? 0)} ao final da prorrogação`
+    : null
+
+  if (duration === 'penalty_shootout') {
+    const pens =
+      penaltyHomeScore != null && penaltyAwayScore != null
+        ? `${penaltyHomeScore}×${penaltyAwayScore} nos pênaltis`
+        : 'nos pênaltis'
+    // Only mention the extra-time score when it adds information (ET goals);
+    // otherwise it just repeats the 90' score already in the header.
+    return extraTimeHadGoals && afterExtraTime ? `${afterExtraTime} · ${pens}` : pens
+  }
+  // extra time decided it: there was a goal, so the score differs from 90'
+  return afterExtraTime ?? 'ao final da prorrogação'
+}
+
+function AdvanceResultNote({
+  homeTeam,
+  awayTeam,
+  winner,
+  duration,
+  regHomeScore,
+  regAwayScore,
+  extraTimeHomeScore,
+  extraTimeAwayScore,
+  penaltyHomeScore,
+  penaltyAwayScore,
+}: {
+  homeTeam: string
+  awayTeam: string
+  winner: 'home' | 'away' | 'draw' | null | undefined
+  duration: MatchDuration | null | undefined
+  regHomeScore: number | null | undefined
+  regAwayScore: number | null | undefined
+  extraTimeHomeScore: number | null | undefined
+  extraTimeAwayScore: number | null | undefined
+  penaltyHomeScore: number | null | undefined
+  penaltyAwayScore: number | null | undefined
+}) {
+  if (!winner || winner === 'draw' || !duration || duration === 'regular') return null
+  const advTeam = winner === 'home' ? homeTeam : awayTeam
+  const detail = resolvingScoreLabel({
+    duration,
+    regHomeScore,
+    regAwayScore,
+    extraTimeHomeScore,
+    extraTimeAwayScore,
+    penaltyHomeScore,
+    penaltyAwayScore,
+  })
+  return (
+    <p className="mt-0.5 text-center font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
+      {displayTeamName(advTeam)} se classificou ({detail})
+    </p>
+  )
+}
+
 export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function ScoreInput(
   {
     matchId,
@@ -406,14 +572,23 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
     homeFlag,
     awayFlag,
     matchDate,
+    stage,
     homeScore: initialHome,
     awayScore: initialAway,
+    advancePick,
     matchStatus,
     points,
     category,
     bonus,
+    advanceBonus,
     actualHomeScore,
     actualAwayScore,
+    winner,
+    duration,
+    extraTimeHomeScore,
+    extraTimeAwayScore,
+    penaltyHomeScore,
+    penaltyAwayScore,
     onSave,
     onAdvance,
     renderExpandedContent,
@@ -422,6 +597,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
 ) {
   const [home, setHome] = useState(initialHome?.toString() ?? '')
   const [away, setAway] = useState(initialAway?.toString() ?? '')
+  const [advance, setAdvance] = useState<AdvanceSide | null>(advancePick ?? null)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [breakdownOpen, setBreakdownOpen] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -429,6 +605,11 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
   const aliveRef = useRef(true)
   const homeInputRef = useRef<HTMLInputElement>(null)
   const awayInputRef = useRef<HTMLInputElement>(null)
+  const advanceFirstRef = useRef<HTMLButtonElement>(null)
+  // Read the latest pick inside the debounced save without re-creating it.
+  const advanceRef = useRef(advance)
+  advanceRef.current = advance
+  const knockout = isKnockoutStage(stage)
   const isLocked =
     matchStatus === 'live' ||
     matchStatus === 'finished' ||
@@ -451,7 +632,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         setStatus('saving')
         // Drive the status off the actual save result, not a fixed timer — a
         // rejected save (e.g. 403 after kickoff) must NOT report "Salvo".
-        Promise.resolve(onSave(matchId, homeVal, awayVal))
+        Promise.resolve(onSave(matchId, homeVal, awayVal, advanceRef.current))
           .then(() => {
             if (!aliveRef.current) return
             setStatus('saved')
@@ -489,7 +670,11 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
     const digits = value.replace(/\D/g, '').slice(0, 2)
     setAway(digits)
     if (home && digits) debouncedSave(home, digits)
-    if (digits.length === 1) onAdvance?.()
+    if (digits.length !== 1) return
+    // On knockout matches, step onto the "who advances" pick before jumping to
+    // the next match; otherwise advance straight to the next match.
+    if (knockout) advanceFirstRef.current?.focus()
+    else onAdvance?.()
   }
 
   function handleAwayKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -497,6 +682,16 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
       e.preventDefault()
       homeInputRef.current?.focus()
     }
+  }
+
+  function handlePick(side: AdvanceSide) {
+    setAdvance(side)
+    advanceRef.current = side
+    // Persist together with the current scoreline (a prediction always has one);
+    // if no scoreline yet, the pick is held until the member enters it.
+    if (home && away) debouncedSave(home, away)
+    // Picking a side completes this card — move on to the next match.
+    onAdvance?.()
   }
 
   return (
@@ -510,7 +705,22 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         hasActualScore={hasActualScore}
         actualHomeScore={actualHomeScore}
         actualAwayScore={actualAwayScore}
+        wentToOvertime={duration === 'extra_time' || duration === 'penalty_shootout'}
       />
+      {isLocked && (
+        <AdvanceResultNote
+          homeTeam={displayTeamName(homeTeam)}
+          awayTeam={displayTeamName(awayTeam)}
+          winner={winner}
+          duration={duration}
+          regHomeScore={actualHomeScore}
+          regAwayScore={actualAwayScore}
+          extraTimeHomeScore={extraTimeHomeScore}
+          extraTimeAwayScore={extraTimeAwayScore}
+          penaltyHomeScore={penaltyHomeScore}
+          penaltyAwayScore={penaltyAwayScore}
+        />
+      )}
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
           <span
@@ -573,6 +783,16 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
           </span>
         </div>
       </div>
+      {knockout && (
+        <AdvancePicker
+          homeTeam={homeTeam}
+          awayTeam={awayTeam}
+          value={advance}
+          locked={isLocked}
+          onPick={handlePick}
+          firstButtonRef={advanceFirstRef}
+        />
+      )}
       <ScoreResultFooter
         status={status}
         matchStatus={matchStatus}
@@ -580,6 +800,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         points={points}
         category={category}
         bonus={bonus}
+        advanceBonus={advanceBonus}
         initialHome={initialHome}
         initialAway={initialAway}
         actualHomeScore={actualHomeScore}

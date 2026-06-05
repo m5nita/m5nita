@@ -1,6 +1,11 @@
-import type { Prediction } from '@m5nita/shared'
+import type { AdvanceSide, Prediction } from '@m5nita/shared'
 
-type ScoreChange = { matchId: string; homeScore: number; awayScore: number }
+type ScoreChange = {
+  matchId: string
+  homeScore: number
+  awayScore: number
+  advancePick?: AdvanceSide | null
+}
 
 /**
  * Apply a just-saved score to the cached prediction list optimistically.
@@ -21,9 +26,11 @@ export function upsertPrediction(list: Prediction[], change: ScoreChange): Predi
             ...p,
             homeScore: change.homeScore,
             awayScore: change.awayScore,
+            advancePick: change.advancePick ?? null,
             points: null,
             category: null,
             bonus: null,
+            advanceBonus: null,
           }
         : p,
     )
@@ -34,6 +41,7 @@ export function upsertPrediction(list: Prediction[], change: ScoreChange): Predi
     matchId: change.matchId,
     homeScore: change.homeScore,
     awayScore: change.awayScore,
+    advancePick: change.advancePick ?? null,
     points: null,
   }
   return [...list, inserted]

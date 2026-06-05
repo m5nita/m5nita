@@ -1,4 +1,5 @@
 import type { MatchPredictionsResponse } from '@m5nita/shared'
+import { knockoutContextFor } from '../../domain/match/KnockoutResult'
 import { Match } from '../../domain/match/Match'
 import type { MatchRepository } from '../../domain/match/MatchRepository.port'
 import { MatchStatus } from '../../domain/match/MatchStatus'
@@ -13,6 +14,10 @@ type Input = {
   viewerUserId: string
   poolId: string
   matchId: string
+}
+
+function toAdvanceSide(value: string | null): 'home' | 'away' | null {
+  return value === 'home' || value === 'away' ? value : null
 }
 
 export class GetMatchPredictionsUseCase {
@@ -86,6 +91,7 @@ export class GetMatchPredictionsUseCase {
         let points: number | null
         let category: number | undefined
         let bonus: number | undefined
+        let advanceBonus: number | undefined
 
         const live: LivePoints = computeLivePoints(predScores, matchState, p.points, scoringPolicy)
 
@@ -101,14 +107,17 @@ export class GetMatchPredictionsUseCase {
             match.homeScore !== null &&
             match.awayScore !== null
           ) {
+            const knockout = knockoutContextFor(matchData, toAdvanceSide(p.advancePick))
             const s = scoringPolicy.score(
               p.homeScore,
               p.awayScore,
               match.homeScore,
               match.awayScore,
+              knockout,
             )
             category = s.breakdown?.category
             bonus = s.breakdown?.bonus
+            advanceBonus = s.breakdown?.advanceBonus
           }
         }
 
@@ -120,6 +129,7 @@ export class GetMatchPredictionsUseCase {
           points,
           category,
           bonus,
+          advanceBonus,
         }
       })
       .sort((a, b) => {

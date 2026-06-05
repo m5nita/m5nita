@@ -25,6 +25,9 @@ export interface Competition {
 }
 export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled'
 export type MatchGroup = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L'
+export type MatchWinner = 'home' | 'away' | 'draw'
+export type MatchDuration = 'regular' | 'extra_time' | 'penalty_shootout'
+export type AdvanceSide = 'home' | 'away'
 
 export interface User {
   id: string
@@ -114,8 +117,16 @@ export interface Match {
   awayTeam: string
   homeFlag: string | null
   awayFlag: string | null
+  /** Graded scoreline = the regular-time (90') score (never extra time / penalties). */
   homeScore: number | null
   awayScore: number | null
+  /** Knockout result detail (null for non-knockout or not-yet-settled). */
+  extraTimeHomeScore?: number | null
+  extraTimeAwayScore?: number | null
+  penaltyHomeScore?: number | null
+  penaltyAwayScore?: number | null
+  winner?: MatchWinner | null
+  duration?: MatchDuration | null
   stage: MatchStage
   group: MatchGroup | null
   matchday: number | null
@@ -128,11 +139,15 @@ export interface Prediction {
   matchId: string
   homeScore: number
   awayScore: number
+  /** Knockout only: which side the member picked to advance past regular time. */
+  advancePick?: AdvanceSide | null
   points: number | null
-  /** Single-match pools only: the category portion of `points` (0/5/7/10). */
+  /** Single-match pools only: the category portion of `points` (0/5/7/8/10). */
   category?: number | null
   /** Single-match pools only: the proximity bonus portion of `points` (0-4). */
   bonus?: number | null
+  /** The +2 advance bonus portion of `points` (knockout settled past regular time). */
+  advanceBonus?: number | null
   match?: Match
 }
 
@@ -142,10 +157,12 @@ export interface MatchPredictor {
   homeScore: number
   awayScore: number
   points: number | null
-  /** Single-match pools only: the category portion (0/5/7/10). */
+  /** Single-match pools only: the category portion (0/5/7/8/10). */
   category?: number | null
   /** Single-match pools only: the proximity bonus portion (0-4). */
   bonus?: number | null
+  /** The +2 advance bonus portion (knockout settled past regular time). */
+  advanceBonus?: number | null
 }
 
 export interface MatchNonPredictor {

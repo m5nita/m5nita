@@ -14,7 +14,12 @@ function makeDeferred<T>() {
 }
 
 function renderInput(
-  onSave: (matchId: string, h: number, a: number) => Promise<unknown>,
+  onSave: (
+    matchId: string,
+    h: number,
+    a: number,
+    advancePick: 'home' | 'away' | null,
+  ) => Promise<unknown>,
   { strict = false }: { strict?: boolean } = {},
 ) {
   const matchDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
@@ -26,6 +31,7 @@ function renderInput(
       homeFlag={null}
       awayFlag={null}
       matchDate={matchDate}
+      stage="group"
       homeScore={null}
       awayScore={null}
       matchStatus="scheduled"
@@ -60,7 +66,7 @@ describe('<ScoreInput /> save status', () => {
     renderInput(onSave)
     typeScore()
 
-    expect(onSave).toHaveBeenCalledWith('m1', 2, 1)
+    expect(onSave).toHaveBeenCalledWith('m1', 2, 1, null)
     expect(screen.getByText('Salvando...')).toBeInTheDocument()
   })
 

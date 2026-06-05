@@ -1,8 +1,11 @@
 export const SCORING = {
   EXACT_MATCH: 10,
+  WINNER_AND_WINNER_GOALS: 8,
   WINNER_AND_DIFF: 7,
   OUTCOME_CORRECT: 5,
   MISS: 0,
+  /** Added when a member names the team that advances past regular time (extra time or penalties). */
+  ADVANCE_BONUS: 2,
 } as const
 
 export const POOL = {
