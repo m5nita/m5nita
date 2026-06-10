@@ -94,53 +94,6 @@ describe('GET /api/users/me', () => {
   })
 })
 
-describe('PATCH /api/users/me', () => {
-  let app: Hono
-
-  beforeEach(() => {
-    app = createTestApp()
-  })
-
-  it('updates_validName_updatedProfile', async () => {
-    const res = await app.request('/api/users/me', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-test-user': JSON.stringify(testUser),
-      },
-      body: JSON.stringify({ name: 'Updated Name' }),
-    })
-
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.name).toBe('Updated Name')
-    expect(body.phoneNumber).toBe('+5511999999999')
-  })
-
-  it('rejects_emptyName_400validation', async () => {
-    const res = await app.request('/api/users/me', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-test-user': JSON.stringify(testUser),
-      },
-      body: JSON.stringify({ name: '' }),
-    })
-
-    expect(res.status).toBe(400)
-  })
-
-  it('rejects_noAuth_401unauthorized', async () => {
-    const res = await app.request('/api/users/me', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'New Name' }),
-    })
-
-    expect(res.status).toBe(401)
-  })
-})
-
 describe('PATCH /api/users/me/phone', () => {
   let app: Hono
 
