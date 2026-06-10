@@ -7,9 +7,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { clearChunkReloadGuard, installChunkReloadHandler } from './lib/chunkReload'
 import { ThemeProvider } from './lib/theme'
 import { routeTree } from './routeTree.gen'
 import './styles/app.css'
+
+// Recover from stale code-split chunks after a deploy (must be registered
+// before the router can trigger a lazy import).
+installChunkReloadHandler()
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,4 +83,6 @@ if (rootElement) {
       </ThemeProvider>
     </StrictMode>,
   )
+  // Booted successfully — allow a future deploy to trigger another reload.
+  clearChunkReloadGuard()
 }

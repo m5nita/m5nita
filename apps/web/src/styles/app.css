@@ -8,10 +8,13 @@
   --color-cream: #f5f0e8;
   --color-red: #c4362a;
   --color-green: #2d6a4f;
-  --color-gray: #8d8677;
-  --color-gray-light: #c4bdb3;
+  /* Light-theme grays darkened for WCAG: text-weight grays clear AA (4.5:1) and
+     the lightest gray (used for large display numbers/decorative bars) clears
+     AA large-text (3:1) on the #f5f0e8 background. Dark theme overrides these. */
+  --color-gray: #6b6459;
+  --color-gray-light: #8a8276;
   --color-gray-dark: #5c564e;
-  --color-gray-muted: #a39e96;
+  --color-gray-muted: #736c61;
   --color-surface: #ffffff;
   --color-border: #e5e0d8;
   --color-row-highlight: rgba(17, 17, 17, 0.03);
@@ -21,7 +24,7 @@
   --color-surface-raised: #ffffff;
   --color-text-primary: #111111;
   --color-text-secondary: #5c564e;
-  --color-text-muted: #8d8677;
+  --color-text-muted: #6b6459;
   --color-accent-red: #c4362a;
   --color-accent-green: #2d6a4f;
 
