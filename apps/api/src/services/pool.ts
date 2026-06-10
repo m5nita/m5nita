@@ -26,6 +26,9 @@ export async function getPoolById(poolId: string, userId: string) {
 
   return {
     ...details,
+    // The invite code lets anyone join; never hand it to a non-member who could
+    // be probing pool ids. Members still receive it for sharing.
+    inviteCode: isMember ? details.inviteCode : '',
     isMember,
     discountPercent: details.coupon?.discountPercent ?? 0,
     originalPlatformFee,

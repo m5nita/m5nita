@@ -43,6 +43,9 @@ export class UpsertPredictionUseCase {
     if (!matchData) {
       throw new PredictionError('MATCH_NOT_FOUND', 'Jogo não encontrado')
     }
+    if (!pool.includesMatch(matchData)) {
+      throw new PredictionError('MATCH_NOT_IN_POOL', 'Este jogo não pertence ao bolão')
+    }
     const match = new Match(
       matchData.id,
       matchData.competitionId,

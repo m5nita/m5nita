@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { EntryFee } from '../shared/EntryFee'
 import { FeePolicy } from '../shared/FeePolicy'
 import { InviteCode } from '../shared/InviteCode'
+import { MatchdayRange } from '../shared/MatchdayRange'
 import { PoolScope } from '../shared/PoolScope'
 import { PoolStatus } from '../shared/PoolStatus'
 import { Pool } from './Pool'
 import { PoolError } from './PoolError'
+
+const MATCH_ID = '11111111-1111-4111-8111-111111111111'
+const OTHER_MATCH_ID = '22222222-2222-4222-8222-222222222222'
 
 function createPool(
   overrides: Partial<{
@@ -117,6 +121,49 @@ describe('Pool', () => {
   it('originalPlatformFee() ignores any discount', () => {
     const pool = createPool({ entryFee: EntryFee.of(5000) })
     expect(pool.originalPlatformFee().centavos).toBe(250)
+  })
+
+  describe('includesMatch()', () => {
+    it('rejects a match from a different competition (whole-competition pool)', () => {
+      const pool = createPool({ competitionId: 'comp-1', scope: PoolScope.wholeCompetition() })
+      expect(pool.includesMatch({ id: MATCH_ID, competitionId: 'comp-2', matchday: 3 })).toBe(false)
+    })
+
+    it('accepts any match of the same competition (whole-competition pool)', () => {
+      const pool = createPool({ competitionId: 'comp-1', scope: PoolScope.wholeCompetition() })
+      expect(pool.includesMatch({ id: MATCH_ID, competitionId: 'comp-1', matchday: 99 })).toBe(true)
+    })
+
+    it('accepts a match whose matchday is inside the range (range pool)', () => {
+      const range = MatchdayRange.create(3, 5) as MatchdayRange
+      const pool = createPool({ competitionId: 'comp-1', scope: PoolScope.fromRange(range) })
+      expect(pool.includesMatch({ id: MATCH_ID, competitionId: 'comp-1', matchday: 4 })).toBe(true)
+    })
+
+    it('rejects a match whose matchday is outside the range (range pool)', () => {
+      const range = MatchdayRange.create(3, 5) as MatchdayRange
+      const pool = createPool({ competitionId: 'comp-1', scope: PoolScope.fromRange(range) })
+      expect(pool.includesMatch({ id: MATCH_ID, competitionId: 'comp-1', matchday: 6 })).toBe(false)
+    })
+
+    it('rejects an in-range matchday from the wrong competition (range pool)', () => {
+      const range = MatchdayRange.create(3, 5) as MatchdayRange
+      const pool = createPool({ competitionId: 'comp-1', scope: PoolScope.fromRange(range) })
+      expect(pool.includesMatch({ id: MATCH_ID, competitionId: 'comp-2', matchday: 4 })).toBe(false)
+    })
+
+    it('accepts only the target match (single-match pool)', () => {
+      const pool = createPool({
+        competitionId: 'comp-1',
+        scope: PoolScope.singleMatch(MATCH_ID),
+      })
+      expect(pool.includesMatch({ id: MATCH_ID, competitionId: 'comp-1', matchday: null })).toBe(
+        true,
+      )
+      expect(
+        pool.includesMatch({ id: OTHER_MATCH_ID, competitionId: 'comp-1', matchday: null }),
+      ).toBe(false)
+    })
   })
 
   it('scope is set at construction and exposed via a readonly field', () => {
