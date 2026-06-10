@@ -69,7 +69,12 @@ export interface PoolRepository {
   updateStatus(id: string, status: PoolStatus): Promise<void>
   getMemberCount(poolId: string): Promise<number>
   isMember(poolId: string, userId: string): Promise<boolean>
-  addMember(poolId: string, userId: string, paymentId: string): Promise<void>
+  /**
+   * Idempotent membership insert (`ON CONFLICT (pool_id, user_id) DO NOTHING`).
+   * Returns true when the membership row was created, false when the user was
+   * already a member.
+   */
+  addMember(poolId: string, userId: string, paymentId: string): Promise<boolean>
   removeMember(poolId: string, userId: string): Promise<void>
   findUserPools(userId: string, status?: PoolListStatusFilter): Promise<PoolListItem[]>
   getMembers(poolId: string): Promise<PoolMemberInfo[]>
