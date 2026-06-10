@@ -1,6 +1,7 @@
 import { AUTH } from '@m5nita/shared'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { APIError } from 'better-auth/api'
 import { magicLink } from 'better-auth/plugins'
 import { phoneNumber } from 'better-auth/plugins/phone-number'
 import { db } from '../db/client'
@@ -45,6 +46,24 @@ export const auth = betterAuth({
     accountLinking: {
       enabled: true,
       trustedProviders: ['google', 'magic-link'],
+    },
+  },
+  databaseHooks: {
+    user: {
+      update: {
+        // The web app renames users through Better Auth's update-user endpoint
+        // (it also refreshes the session cookie cache). Better Auth itself does
+        // not bound `name`, so enforce the same 1..100 rule the legacy
+        // PATCH /users/me route applied, and persist it trimmed.
+        before: async (data) => {
+          if (typeof data.name !== 'string') return
+          const trimmed = data.name.trim()
+          if (trimmed.length < 1 || trimmed.length > 100) {
+            throw new APIError('BAD_REQUEST', { message: 'Nome inválido' })
+          }
+          return { data: { ...data, name: trimmed } }
+        },
+      },
     },
   },
   plugins: [

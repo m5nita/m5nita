@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { apiFetch } from '../lib/api'
+import { authClient } from '../lib/auth'
 import { consumePendingRedirect } from '../lib/authGuard'
 
 function CompleteProfilePage() {
@@ -20,14 +20,12 @@ function CompleteProfilePage() {
     setLoading(true)
     setError('')
     try {
-      const res = await apiFetch('/api/users/me', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.message || 'Erro ao salvar')
+      // Better Auth's own update-user endpoint: saves the name AND re-issues the
+      // session cookie cache, so useSession reflects the new name immediately (a
+      // raw PATCH left the cached session serving the old name for up to 5 min).
+      const { error: updateError } = await authClient.updateUser({ name: trimmed })
+      if (updateError) {
+        setError(updateError.message || 'Erro ao salvar')
         return
       }
       const pending = consumePendingRedirect()

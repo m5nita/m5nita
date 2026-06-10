@@ -29,6 +29,10 @@ usersRoutes.get('/users/me/pending-prizes', async (c) => {
   return c.json(result)
 })
 
+// DEPRECATED: the web app now renames users via Better Auth's update-user
+// endpoint, which also refreshes the session cookie cache (this raw UPDATE
+// does not, so get-session serves the old name for up to 5 minutes). Kept only
+// for already-deployed PWA bundles; remove after the tournament.
 usersRoutes.patch('/users/me', async (c) => {
   const currentUser = c.get('user')
   const body = await c.req.json()

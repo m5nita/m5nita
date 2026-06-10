@@ -106,6 +106,32 @@ describe('US1 — authentication flows', () => {
     expect(userRows).toHaveLength(0)
   })
 
+  it('scenario 7 — Better Auth update-user enforces the 1..100 name rule and trims', async () => {
+    const { app } = buildTestApp()
+
+    const phoneNumber = '+5511911114444'
+    const user = await signInViaPhoneOtp(app, { phoneNumber })
+
+    const post = (name: string) =>
+      user.fetch('/api/auth/update-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+
+    const tooLong = await post('a'.repeat(101))
+    expect(tooLong.status).toBe(400)
+
+    const blank = await post('   ')
+    expect(blank.status).toBe(400)
+
+    const ok = await post('  Maria Atualizada  ')
+    expect(ok.status).toBe(200)
+
+    const rows = await sql`SELECT name FROM "user" WHERE phone_number = ${phoneNumber}`
+    expect(rows).toMatchObject([{ name: 'Maria Atualizada' }])
+  })
+
   it('scenario 6 — OTP rate limit blocks repeated requests', async () => {
     const { app } = buildTestApp()
 
