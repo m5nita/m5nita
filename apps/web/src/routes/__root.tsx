@@ -125,7 +125,19 @@ function RootLayout() {
             </>
           )}
 
-          {!session?.user && !sessionPending && <ThemeSwitcher size="sm" />}
+          {!session?.user && !sessionPending && (
+            <div className="flex items-center gap-3">
+              {!isLogin && (
+                <Link
+                  to="/login"
+                  className="font-display text-xs font-bold uppercase tracking-widest text-black transition-colors hover:text-red cursor-pointer"
+                >
+                  Entrar
+                </Link>
+              )}
+              <ThemeSwitcher size="sm" />
+            </div>
+          )}
         </div>
       </header>
 
