@@ -74,11 +74,6 @@ vi.mock('../../../services/pool', () => ({
   isPoolMember: (...args: unknown[]) => mockIsPoolMember(...args),
 }))
 
-vi.mock('../../../services/payment', () => ({
-  handleCheckoutCompleted: vi.fn(),
-  handleCheckoutExpired: vi.fn(),
-}))
-
 const testUser = { id: 'user-1', name: 'Test', phoneNumber: '+5511999999999' }
 const headers = { 'x-test-user': JSON.stringify(testUser) }
 
