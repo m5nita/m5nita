@@ -57,8 +57,20 @@ export class SyncLiveScoresUseCase {
     const dateFrom = new Date(now.getTime() - DAY_MS).toISOString().split('T')[0] as string
     const dateTo = new Date(now.getTime() + DAY_MS).toISOString().split('T')[0] as string
 
+    // First write every match's live score, collecting the ids that just
+    // transitioned to finished. The heavier per-match points calc runs only
+    // after the whole tick's scores are persisted, so a large pool being scored
+    // no longer delays live-score updates for the other matches in the tick.
+    const finishedMatchIds: string[] = []
     for (const comp of competitions) {
-      await this.syncCompetition(comp, dateFrom, dateTo)
+      finishedMatchIds.push(...(await this.syncCompetition(comp, dateFrom, dateTo)))
+    }
+
+    if (this.deps.onMatchFinished) {
+      for (const matchId of finishedMatchIds) {
+        console.log(`[SyncLiveScores] Match ${matchId} finished, triggering points calc...`)
+        await this.deps.onMatchFinished(matchId)
+      }
     }
 
     if (this.deps.onAllMatchesChecked) {
@@ -72,7 +84,7 @@ export class SyncLiveScoresUseCase {
     comp: CompetitionInfo,
     dateFrom: string,
     dateTo: string,
-  ): Promise<void> {
+  ): Promise<string[]> {
     try {
       const liveMatches = await this.deps.footballApi.fetchLiveMatches(
         comp.externalId,
@@ -82,24 +94,28 @@ export class SyncLiveScoresUseCase {
       const existingMatches = await this.deps.matchRepo.findByCompetition(comp.id)
       const existingByExtId = new Map(existingMatches.map((m) => [m.externalId, m]))
 
+      const finished: string[] = []
       for (const m of liveMatches) {
         const existing = existingByExtId.get(String(m.id))
-        if (existing) await this.applyLiveMatch(m, existing)
+        if (existing) {
+          const finishedId = await this.applyLiveMatch(m, existing)
+          if (finishedId) finished.push(finishedId)
+        }
       }
+      return finished
     } catch (err) {
       console.error(`[SyncLiveScores] Error syncing ${comp.name}:`, err)
+      return []
     }
   }
 
-  private async applyLiveMatch(m: ExternalMatch, existing: MatchData): Promise<void> {
+  /** Persists the live score; returns the match id if it just transitioned to finished. */
+  private async applyLiveMatch(m: ExternalMatch, existing: MatchData): Promise<string | null> {
     const newStatus = mapStatus(m.status, m.score, m.utcDate)
     const wasNotFinished = existing.status !== 'finished'
 
     await this.deps.matchRepo.updateScores(existing.id, toResultUpdate(m.score, newStatus))
 
-    if (wasNotFinished && newStatus === 'finished' && this.deps.onMatchFinished) {
-      console.log(`[SyncLiveScores] Match ${existing.id} finished, triggering points calc...`)
-      await this.deps.onMatchFinished(existing.id)
-    }
+    return wasNotFinished && newStatus === 'finished' ? existing.id : null
   }
 }

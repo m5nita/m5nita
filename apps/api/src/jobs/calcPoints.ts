@@ -32,6 +32,7 @@ export async function calcPointsForMatch(matchId: string) {
     return policy
   }
 
+  const pointUpdates: Array<{ id: string; points: number }> = []
   for (const pred of predictions) {
     const policy = await policyFor(pred.poolId)
     const knockout = knockoutContextFor(matchData, pred.advancePick)
@@ -44,9 +45,13 @@ export async function calcPointsForMatch(matchId: string) {
     ).points
 
     if (pred.id) {
-      await predictionRepo.updatePoints(pred.id, points)
+      pointUpdates.push({ id: pred.id, points })
     }
   }
+
+  // One batched UPDATE instead of N sequential ones — keeps the scoring write
+  // off the critical path of the live-sync tick for large pools.
+  await predictionRepo.updatePointsBatch(pointUpdates)
 
   // Points just changed for these pools — recompute their denormalized standings
   // and drop the cached copy so the next ranking read reflects the finished match.
