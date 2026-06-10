@@ -12,9 +12,13 @@ export class FootballDataApiAdapter implements FootballDataApi {
     return this.request(`/competitions/${competitionExternalId}/matches?season=${season}`)
   }
 
-  async fetchLiveMatches(competitionExternalId: string, date: string): Promise<ExternalMatch[]> {
+  async fetchLiveMatches(
+    competitionExternalId: string,
+    dateFrom: string,
+    dateTo: string,
+  ): Promise<ExternalMatch[]> {
     return this.request(
-      `/competitions/${competitionExternalId}/matches?status=IN_PLAY,PAUSED,FINISHED&dateFrom=${date}&dateTo=${date}`,
+      `/competitions/${competitionExternalId}/matches?status=IN_PLAY,PAUSED,FINISHED&dateFrom=${dateFrom}&dateTo=${dateTo}`,
     )
   }
 

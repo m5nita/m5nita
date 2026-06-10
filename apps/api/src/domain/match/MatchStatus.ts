@@ -15,6 +15,14 @@ export class MatchStatus {
     ['cancelled', MatchStatus.Cancelled],
   ])
 
+  /**
+   * Statuses a match never leaves: finished (played out) or cancelled (will
+   * never be played). Single source of truth for "this match is done", used by
+   * both `isTerminal()` and the pool-closing query — a cancelled match must not
+   * keep its pool open (and its prize stuck) forever.
+   */
+  static readonly TERMINAL_VALUES: readonly MatchStatusValue[] = ['finished', 'cancelled']
+
   readonly value: MatchStatusValue
 
   private constructor(value: MatchStatusValue) {
@@ -40,6 +48,6 @@ export class MatchStatus {
     return this.value === 'scheduled' || this.value === 'live'
   }
   isTerminal(): boolean {
-    return this.value === 'finished' || this.value === 'cancelled'
+    return MatchStatus.TERMINAL_VALUES.includes(this.value)
   }
 }

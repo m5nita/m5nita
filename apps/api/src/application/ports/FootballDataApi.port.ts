@@ -26,5 +26,9 @@ export interface ExternalMatch {
 
 export interface FootballDataApi {
   fetchMatches(competitionExternalId: string, season: string): Promise<ExternalMatch[]>
-  fetchLiveMatches(competitionExternalId: string, date: string): Promise<ExternalMatch[]>
+  fetchLiveMatches(
+    competitionExternalId: string,
+    dateFrom: string,
+    dateTo: string,
+  ): Promise<ExternalMatch[]>
 }

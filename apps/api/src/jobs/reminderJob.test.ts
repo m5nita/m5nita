@@ -261,6 +261,55 @@ describe('sendPredictionReminders', () => {
     expect(mockSendPredictionReminders).not.toHaveBeenCalled()
   })
 
+  it('differentMatch_samePool_sendsNewReminder', async () => {
+    mockFindAllActive.mockResolvedValue([testPool])
+    const userData = [
+      {
+        userId: 'user-9',
+        name: 'Gus',
+        phoneNumber: '+5511955554444',
+        email: null,
+        emailVerified: false,
+      },
+    ]
+
+    // First matchday's match enters the window — reminder goes out.
+    mockSelect.mockReturnValue(
+      createChainableMock([
+        {
+          id: 'match-A',
+          homeTeam: 'A',
+          awayTeam: 'B',
+          matchDate: new Date('2026-06-15T14:50:00Z'),
+        },
+      ]),
+    )
+    mockSelectDistinctOn.mockReturnValue(createDistinctChainableMock(userData))
+
+    const { sendPredictionReminders } = await import('./reminderJob')
+    await sendPredictionReminders()
+    expect(mockSendPredictionReminders).toHaveBeenCalledOnce()
+
+    // A DIFFERENT match in the SAME pool later enters the window. The user must
+    // still be reminded — the old userId:poolId dedup key suppressed every match
+    // after the first for the whole process lifetime.
+    mockSendPredictionReminders.mockClear()
+    mockSelect.mockReturnValue(
+      createChainableMock([
+        {
+          id: 'match-B',
+          homeTeam: 'C',
+          awayTeam: 'D',
+          matchDate: new Date('2026-06-15T14:55:00Z'),
+        },
+      ]),
+    )
+    mockSelectDistinctOn.mockReturnValue(createDistinctChainableMock(userData))
+
+    await sendPredictionReminders()
+    expect(mockSendPredictionReminders).toHaveBeenCalledOnce()
+  })
+
   it('multipleUsers_sendsAllRemindersToNotificationService', async () => {
     mockFindAllActive.mockResolvedValue([testPool])
     mockSelect.mockReturnValue(
