@@ -27,6 +27,13 @@ export const auth = betterAuth({
   session: {
     expiresIn: AUTH.SESSION_EXPIRY_SECONDS,
     updateAge: AUTH.SESSION_UPDATE_AGE_SECONDS,
+    // Cache the session in a signed cookie so getSession() doesn't hit the
+    // Postgres session table on every authenticated request. On a small box the
+    // 30s client polling otherwise makes this the hottest query in the system.
+    cookieCache: {
+      enabled: true,
+      maxAge: AUTH.SESSION_COOKIE_CACHE_SECONDS,
+    },
   },
   socialProviders: {
     google: {
@@ -88,7 +95,6 @@ export const auth = betterAuth({
         }
       },
       expiresIn: AUTH.MAGIC_LINK_EXPIRY_SECONDS,
-      allowedAttempts: AUTH.MAGIC_LINK_ALLOWED_ATTEMPTS,
     }),
   ],
 })

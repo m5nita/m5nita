@@ -121,6 +121,24 @@ export class DrizzlePredictionRepository implements PredictionRepository {
       .where(eq(prediction.id, id))
   }
 
+  // Post-match scoring writes points for every prediction on a match. A single
+  // statement (UPDATE … FROM VALUES) replaces N sequential round-trips so the
+  // live-sync tick isn't held open while a large pool is scored. Atomic by
+  // virtue of being one statement.
+  async updatePointsBatch(updates: Array<{ id: string; points: number }>): Promise<void> {
+    if (updates.length === 0) return
+    const rows = sql.join(
+      updates.map((u) => sql`(${u.id}::uuid, ${u.points}::int)`),
+      sql`, `,
+    )
+    await this.db.execute(sql`
+      UPDATE ${prediction} AS p
+      SET points = v.points, updated_at = now()
+      FROM (VALUES ${rows}) AS v(id, points)
+      WHERE p.id = v.id
+    `)
+  }
+
   async findByMatch(matchId: string): Promise<Prediction[]> {
     const rows = await this.db.query.prediction.findMany({
       where: eq(prediction.matchId, matchId),

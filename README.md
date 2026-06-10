@@ -16,7 +16,7 @@ Bolão da Copa do Mundo 2026 — crie um bolão, convide os amigos, palpite nos 
 
 m5nita (*manita*) is a Brazilian-Portuguese **prediction pool** PWA for the FIFA World Cup 2026. Players create or join a pool, pay a small entry fee, predict match scores, and the highest ranked member at the end of the tournament takes the prize — paid out automatically via PIX.
 
-The codebase is a **pnpm monorepo** with a Hono API, a React 19 PWA, and a shared package for types and schemas. The API follows a **hexagonal architecture** (domain / application / infrastructure) and is designed to run on a single Node process with Postgres + Redis.
+The codebase is a **pnpm monorepo** with a Hono API, a React 19 PWA, and a shared package for types and schemas. The API follows a **hexagonal architecture** (domain / application / infrastructure) and is designed to run on a single Node process with Postgres (caching and rate-limiting are in-process — no Redis).
 
 ## Features
 
@@ -37,7 +37,7 @@ The codebase is a **pnpm monorepo** with a Hono API, a React 19 PWA, and a share
 
 **Frontend** — React 19 · [TanStack Router](https://tanstack.com/router) · [TanStack Query](https://tanstack.com/query) · Tailwind CSS v4 · Vite · vite-plugin-pwa
 
-**Data** — PostgreSQL 16 · Redis 7
+**Data** — PostgreSQL 16
 
 **Tooling** — pnpm workspaces · Biome (lint + format) · Vitest · Playwright · Sentry · GitHub Actions
 
@@ -60,7 +60,7 @@ scripts/      CI and demo-data scripts
 
 - Node.js **≥ 20** (see `.nvmrc`)
 - pnpm **9.15+**
-- Docker (for local Postgres + Redis)
+- Docker (for local Postgres)
 
 ### Install
 
@@ -83,7 +83,7 @@ cp apps/web/.env.example apps/web/.env
 ### Start infrastructure
 
 ```bash
-docker compose up -d          # postgres (5432), postgres-test (5433), redis (6379)
+docker compose up -d          # postgres (5432), postgres-test (5433)
 pnpm --filter @m5nita/api db:migrate
 pnpm --filter @m5nita/api db:seed
 ```

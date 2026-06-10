@@ -97,6 +97,21 @@ export class Pool {
   }
 
   /**
+   * Whether a match belongs to this pool: same competition AND inside the
+   * pool's scope (whole-competition / matchday range / single match). This is
+   * the single source of truth for "is this match part of the pool" — used by
+   * both the read path (viewing predictions) and the write path (submitting
+   * one), so a member cannot accrue ranking points on a match the pool does
+   * not cover.
+   */
+  includesMatch(match: { id: string; competitionId: string; matchday: number | null }): boolean {
+    if (match.competitionId !== this.competitionId) {
+      return false
+    }
+    return this.scope.contains({ id: match.id, matchday: match.matchday })
+  }
+
+  /**
    * Describes which matches must finish for this pool to be closable. The
    * repository adapter translates the query into SQL; callers don't branch
    * on `scope.matchId`.

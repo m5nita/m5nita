@@ -9,10 +9,13 @@ import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
 import type { ActivePoolInfo } from '../domain/pool/PoolRepository.port'
 
-// In-memory dedup: "userId:poolId" — prevents duplicate reminders per user per pool per cycle.
-// Grows monotonically (max ~64K entries for 64 pools x 1000 users ≈ 2MB).
-// Resets on process restart, which may cause a single duplicate — acceptable tradeoff.
+// In-memory dedup: "userId:poolId:matchId" — at most one reminder per user per
+// match (not per pool). Keying on userId:poolId alone meant a pool spanning many
+// matches only ever reminded its members about the FIRST match for the whole
+// process lifetime. Grows with (members x matches) but resets on restart.
 const sentReminders = new Set<string>()
+
+type PendingMatch = ReminderMatch & { matchId: string }
 
 type PendingReminder = {
   userId: string
@@ -21,7 +24,7 @@ type PendingReminder = {
   email: string | null
   poolId: string
   poolName: string
-  matches: ReminderMatch[]
+  matches: PendingMatch[]
 }
 
 // Match-window conditions scoped to this pool's PoolScope (single-match takes
@@ -116,6 +119,7 @@ async function collectRemindersForPool(
         pendingReminders.set(groupKey, entry)
       }
       entry.matches.push({
+        matchId: upcomingMatch.id,
         homeTeam: upcomingMatch.homeTeam,
         awayTeam: upcomingMatch.awayTeam,
         minutesUntil,
@@ -129,8 +133,14 @@ async function collectRemindersForPool(
 function buildRemindersToSend(pendingReminders: Map<string, PendingReminder>): ReminderData[] {
   const remindersToSend: ReminderData[] = []
 
-  for (const [groupKey, reminder] of pendingReminders) {
-    if (sentReminders.has(groupKey)) continue
+  for (const reminder of pendingReminders.values()) {
+    // Keep only matches this user hasn't already been reminded about in this
+    // pool; a pool that already notified about an earlier match still notifies
+    // about a new one.
+    const freshMatches = reminder.matches.filter(
+      (m) => !sentReminders.has(`${reminder.userId}:${reminder.poolId}:${m.matchId}`),
+    )
+    if (freshMatches.length === 0) continue
 
     remindersToSend.push({
       userName: reminder.userName,
@@ -138,10 +148,12 @@ function buildRemindersToSend(pendingReminders: Map<string, PendingReminder>): R
       email: reminder.email,
       poolName: reminder.poolName,
       poolId: reminder.poolId,
-      matches: reminder.matches,
+      matches: freshMatches.map(({ matchId: _matchId, ...rest }) => rest),
     })
 
-    sentReminders.add(groupKey)
+    for (const m of freshMatches) {
+      sentReminders.add(`${reminder.userId}:${reminder.poolId}:${m.matchId}`)
+    }
   }
 
   return remindersToSend

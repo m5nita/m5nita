@@ -119,3 +119,111 @@ describe('<ScoreInput /> save status', () => {
     expect(screen.queryByText('Salvando...')).not.toBeInTheDocument()
   })
 })
+
+function renderKnockout(
+  onSave: (matchId: string, h: number, a: number, advancePick: 'home' | 'away' | null) => unknown,
+  overrides: Record<string, unknown> = {},
+) {
+  const matchDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  return render(
+    <ScoreInput
+      matchId="m1"
+      homeTeam="BRA"
+      awayTeam="ARG"
+      homeFlag={null}
+      awayFlag={null}
+      matchDate={matchDate}
+      stage="round_of_16"
+      homeScore={null}
+      awayScore={null}
+      matchStatus="scheduled"
+      points={null}
+      actualHomeScore={null}
+      actualAwayScore={null}
+      onSave={onSave}
+      {...overrides}
+    />,
+  )
+}
+
+describe('<ScoreInput /> knockout', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  it('offers the advance picker on a scheduled knockout match', () => {
+    renderKnockout(vi.fn(async () => {}))
+    expect(screen.getByText(/Quem se classifica/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'BRA' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ARG' })).toBeInTheDocument()
+  })
+
+  it('persists the advance pick alongside the scoreline', async () => {
+    const onSave = vi.fn(async () => {})
+    renderKnockout(onSave)
+
+    fireEvent.change(screen.getByLabelText('Gols BRA'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Gols ARG'), { target: { value: '2' } })
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'BRA' }))
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+
+    expect(onSave).toHaveBeenCalledWith('m1', 2, 2, 'home')
+  })
+
+  it('shows who advanced when a knockout is decided on penalties', () => {
+    renderKnockout(
+      vi.fn(async () => {}),
+      {
+        matchStatus: 'finished',
+        actualHomeScore: 1,
+        actualAwayScore: 1,
+        winner: 'home',
+        duration: 'penalty_shootout',
+        penaltyHomeScore: 4,
+        penaltyAwayScore: 2,
+        advancePick: 'home',
+      },
+    )
+
+    const note = screen.getByText(/BRA se classificou/)
+    expect(note).toBeInTheDocument()
+    expect(note.textContent).toContain('nos pênaltis')
+  })
+
+  it('shows who advanced when a knockout is decided in extra time', () => {
+    renderKnockout(
+      vi.fn(async () => {}),
+      {
+        matchStatus: 'finished',
+        actualHomeScore: 1,
+        actualAwayScore: 1,
+        winner: 'away',
+        duration: 'extra_time',
+        extraTimeHomeScore: 0,
+        extraTimeAwayScore: 1,
+        advancePick: 'away',
+      },
+    )
+
+    const note = screen.getByText(/ARG se classificou/)
+    expect(note.textContent).toContain('prorrogação')
+  })
+
+  it('does not offer the advance picker for a group-stage match', () => {
+    renderKnockout(
+      vi.fn(async () => {}),
+      { stage: 'group' },
+    )
+    expect(screen.queryByText(/Quem se classifica/)).not.toBeInTheDocument()
+  })
+})

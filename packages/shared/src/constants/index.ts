@@ -25,8 +25,11 @@ export const AUTH = {
   OTP_RATE_LIMIT_WINDOW_SECONDS: 300,
   SESSION_EXPIRY_SECONDS: 60 * 60 * 24 * 90,
   SESSION_UPDATE_AGE_SECONDS: 60 * 60 * 24,
+  // Signed session snapshot cached in the cookie: skips the Postgres session
+  // lookup on every authenticated request for this window. Short enough that a
+  // revoked session stops working quickly.
+  SESSION_COOKIE_CACHE_SECONDS: 300,
   MAGIC_LINK_EXPIRY_SECONDS: 900,
-  MAGIC_LINK_ALLOWED_ATTEMPTS: 3,
   MAGIC_LINK_RATE_LIMIT: 3,
   MAGIC_LINK_RATE_LIMIT_WINDOW_MS: 300_000,
 } as const

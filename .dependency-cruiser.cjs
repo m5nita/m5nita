@@ -64,13 +64,20 @@ module.exports = {
       to: { path: '^apps/api/src/infrastructure' },
     },
     {
-      // Reported but not blocking: container.ts ↔ lib/telegram.ts cycle
-      // predates this guardrail and needs a separate refactor (telegram
-      // notification service should not pull from container).
+      // Blocking, so a NEW cycle fails CI. The pre-existing container.ts ↔
+      // lib/telegram.ts cycle (telegram notification service pulls from the
+      // composition root) is grandfathered via the from-exemption below until
+      // it is refactored; every other cycle is an error.
       name: 'no-circular',
-      severity: 'warn',
+      severity: 'error',
       comment: 'Cycles indicate a layering or abstraction problem.',
-      from: {},
+      // Exempt every module in the grandfathered container ↔ telegram cycle.
+      // A genuinely new cycle elsewhere always has a participant outside this
+      // set, so it is still reported as an error.
+      from: {
+        pathNot:
+          '(container|lib/telegram|infrastructure/external/CompositeNotificationService)\\.ts$',
+      },
       to: { circular: true },
     },
   ],

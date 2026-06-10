@@ -1,16 +1,23 @@
-import { eq, sql } from 'drizzle-orm'
+import { formatBrl } from '@m5nita/shared'
+import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
+import { getContainer } from '../../../container'
 import { db } from '../../../db/client'
-import { user as userTable } from '../../../db/schema/auth'
-import { competition as competitionTable } from '../../../db/schema/competition'
 import { match as matchTable } from '../../../db/schema/match'
-import { pool as poolTable } from '../../../db/schema/pool'
-import { poolMember } from '../../../db/schema/poolMember'
 import { renderPoolOgPng } from '../../../lib/ogImage'
+import { createTtlCache } from '../../../lib/ttlCache'
 import { getPoolByInviteCode } from '../../../services/pool'
 import type { AppEnv } from '../../../types/hono'
 
 const ogRoutes = new Hono<AppEnv>()
+
+// Cache rendered OG PNGs: satori+resvg rasterization is synchronous and CPU
+// bound, and these are public crawler routes (every WhatsApp/Twitter share
+// fetches them). The single-flight cache also collapses concurrent crawler
+// hits into one render. Keyed by member count so a new member busts it; TTL
+// matches the response Cache-Control max-age.
+const OG_IMAGE_CACHE_TTL_MS = 5 * 60_000
+const ogImageCache = createTtlCache<string, Buffer>(OG_IMAGE_CACHE_TTL_MS)
 
 function escapeHtml(input: string): string {
   return input
@@ -19,14 +26,6 @@ function escapeHtml(input: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
-}
-
-function formatBRL(cents: number): string {
-  return (cents / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-  })
 }
 
 const FALLBACK_TITLE = 'm5nita — Crie um bolão com amigos e ganhe em Pix'
@@ -90,8 +89,8 @@ function poolDescription(opts: {
   const author = opts.ownerName ? ` criado por ${opts.ownerName}` : ''
   return (
     `Participe do bolão "${opts.poolName}"${author} do ${opts.competitionName}: ` +
-    `entrada de ${formatBRL(opts.entryFeeCentavos)}, possui ${opts.memberCount} ` +
-    `${participantLabel} e o prêmio acumulado já está em ${formatBRL(opts.prizeCentavos)}.`
+    `entrada de ${formatBrl(opts.entryFeeCentavos)}, possui ${opts.memberCount} ` +
+    `${participantLabel} e o prêmio acumulado já está em ${formatBrl(opts.prizeCentavos)}.`
   )
 }
 
@@ -114,31 +113,11 @@ function fallbackHtml(opts: { url: string; webOrigin: string; imagePath: string 
 }
 
 async function loadPoolForOg(poolId: string) {
-  const row = await db
-    .select({
-      id: poolTable.id,
-      name: poolTable.name,
-      entryFee: poolTable.entryFee,
-      matchId: poolTable.matchId,
-      ownerName: userTable.name,
-      competitionName: competitionTable.name,
-    })
-    .from(poolTable)
-    .innerJoin(competitionTable, eq(competitionTable.id, poolTable.competitionId))
-    .innerJoin(userTable, eq(userTable.id, poolTable.ownerId))
-    .where(eq(poolTable.id, poolId))
-    .limit(1)
-
-  const data = row[0]
-  if (!data) return null
-
-  const [memberCountRow] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(poolMember)
-    .where(eq(poolMember.poolId, poolId))
-
-  const memberCount = memberCountRow?.count ?? 0
-  const prizeTotal = Math.floor(data.entryFee * memberCount * 0.95)
+  // Reuse the repository read-model so the prize is the single, coupon-aware
+  // value (Pool.prize via FeePolicy) instead of a hardcoded 0.95 factor that
+  // ignored discounts and understated the prize on pools with a coupon.
+  const details = await getContainer().poolRepo.findByIdWithDetails(poolId)
+  if (!details) return null
 
   let singleMatch: {
     homeTeam: string
@@ -146,7 +125,7 @@ async function loadPoolForOg(poolId: string) {
     kickoffAt: Date
     stageLabel: string | null
   } | null = null
-  if (data.matchId) {
+  if (details.matchId) {
     const [m] = await db
       .select({
         homeTeam: matchTable.homeTeam,
@@ -156,7 +135,7 @@ async function loadPoolForOg(poolId: string) {
         matchday: matchTable.matchday,
       })
       .from(matchTable)
-      .where(eq(matchTable.id, data.matchId))
+      .where(eq(matchTable.id, details.matchId))
       .limit(1)
     if (m) {
       singleMatch = {
@@ -168,7 +147,15 @@ async function loadPoolForOg(poolId: string) {
     }
   }
 
-  return { ...data, memberCount, prizeTotal, singleMatch }
+  return {
+    name: details.name,
+    entryFee: details.entryFee,
+    competitionName: details.competitionName,
+    ownerName: details.owner.name,
+    memberCount: details.memberCount,
+    prizeTotal: details.prizeTotal,
+    singleMatch,
+  }
 }
 
 // HTML preview routes -------------------------------------------------------
@@ -252,16 +239,18 @@ ogRoutes.get('/og/pool/:poolId/image.png', async (c) => {
   try {
     const data = await loadPoolForOg(poolId)
     if (!data) return c.notFound()
-    const png = await renderPoolOgPng({
-      poolName: data.name,
-      competitionName: data.competitionName,
-      ownerName: data.ownerName,
-      entryFeeCentavos: data.entryFee,
-      memberCount: data.memberCount,
-      prizeCentavos: data.prizeTotal,
-      cta: 'Faça seus palpites · m5nita.com',
-      singleMatch: data.singleMatch ?? undefined,
-    })
+    const png = await ogImageCache.getOrCompute(`pool:${poolId}:${data.memberCount}`, () =>
+      renderPoolOgPng({
+        poolName: data.name,
+        competitionName: data.competitionName,
+        ownerName: data.ownerName,
+        entryFeeCentavos: data.entryFee,
+        memberCount: data.memberCount,
+        prizeCentavos: data.prizeTotal,
+        cta: 'Faça seus palpites · m5nita.com',
+        singleMatch: data.singleMatch ?? undefined,
+      }),
+    )
     return pngResponse(png)
   } catch (err) {
     console.error('[OG image]', err)
@@ -285,16 +274,18 @@ ogRoutes.get('/og/invite/:inviteCode/image.png', async (c) => {
               : (data.singleMatch.stage ?? null),
         }
       : undefined
-    const png = await renderPoolOgPng({
-      poolName: data.name,
-      competitionName: data.competitionName,
-      ownerName: data.owner.name,
-      entryFeeCentavos: data.entryFee,
-      memberCount: data.memberCount,
-      prizeCentavos: data.prizeTotal,
-      cta: 'Entre no bolão · m5nita.com',
-      singleMatch,
-    })
+    const png = await ogImageCache.getOrCompute(`invite:${inviteCode}:${data.memberCount}`, () =>
+      renderPoolOgPng({
+        poolName: data.name,
+        competitionName: data.competitionName,
+        ownerName: data.owner.name,
+        entryFeeCentavos: data.entryFee,
+        memberCount: data.memberCount,
+        prizeCentavos: data.prizeTotal,
+        cta: 'Entre no bolão · m5nita.com',
+        singleMatch,
+      }),
+    )
     return pngResponse(png)
   } catch (err) {
     console.error('[OG image]', err)

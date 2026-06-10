@@ -14,6 +14,15 @@ const MATCH_PREDICTIONS_STATUS_BY_ERROR: Record<string, ContentfulStatusCode> = 
   MATCH_NOT_IN_POOL: 404,
 }
 
+const UPSERT_PREDICTION_STATUS_BY_ERROR: Record<string, ContentfulStatusCode> = {
+  NOT_MEMBER: 403,
+  MATCH_STARTED: 403,
+  POOL_NOT_FOUND: 404,
+  POOL_CLOSED: 409,
+  MATCH_NOT_FOUND: 404,
+  MATCH_NOT_IN_POOL: 404,
+}
+
 const predictionsRoutes = new Hono<AppEnv>()
 
 predictionsRoutes.use('/*', requireAuth)
@@ -77,7 +86,7 @@ predictionsRoutes.put('/pools/:poolId/predictions/:matchId', async (c) => {
     return c.json(result)
   } catch (err) {
     if (err instanceof PredictionError) {
-      const status = err.code === 'NOT_MEMBER' ? 403 : err.code === 'MATCH_STARTED' ? 403 : 400
+      const status = UPSERT_PREDICTION_STATUS_BY_ERROR[err.code] ?? 400
       return c.json({ error: err.code, message: err.message }, status)
     }
     throw err

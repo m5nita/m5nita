@@ -95,7 +95,6 @@ const BASELINE_SERVICES_ROUTES_USING_SCHEMA = new Set<string>([
   'services/competition.ts',
   'services/coupon.ts',
   'services/infinitepay.ts',
-  'services/match.ts',
   'services/payment.ts',
   'services/pool.ts',
   'services/ranking.ts',

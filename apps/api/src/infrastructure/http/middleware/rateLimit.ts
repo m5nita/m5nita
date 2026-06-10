@@ -7,10 +7,14 @@ const IPV6 = /^[0-9a-fA-F:]+$/
 export function getClientIp(c: Context): string {
   const header = c.req.header('x-forwarded-for')
   if (!header) return 'unknown'
-  const first = header.split(',')[0]?.trim()
-  if (!first) return 'unknown'
-  if (!IPV4.test(first) && !IPV6.test(first)) return 'unknown'
-  return first
+  // Use the LAST hop — the value our own reverse proxy appends — not the first.
+  // A client can prepend arbitrary X-Forwarded-For entries and rotate them to
+  // dodge a per-IP limit, but cannot control the trailing hop added by the edge.
+  const parts = header.split(',')
+  const trusted = parts[parts.length - 1]?.trim()
+  if (!trusted) return 'unknown'
+  if (!IPV4.test(trusted) && !IPV6.test(trusted)) return 'unknown'
+  return trusted
 }
 
 export const globalRateLimit = rateLimiter({

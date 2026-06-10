@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, gte, inArray, lte, ne } from 'drizzle-orm'
+import { and, asc, eq, gt, gte, inArray, lte, notInArray } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { match } from '../../db/schema/match'
 import type {
@@ -8,6 +8,7 @@ import type {
   MatchResultUpdate,
   UpsertMatchData,
 } from '../../domain/match/MatchRepository.port'
+import { MatchStatus } from '../../domain/match/MatchStatus'
 import type { UnfinishedMatchesQuery } from '../../domain/pool/Pool'
 
 type MatchRow = typeof match.$inferSelect
@@ -184,7 +185,12 @@ export class DrizzleMatchRepository implements MatchRepository {
     matchdayFrom?: number | null,
     matchdayTo?: number | null,
   ): Promise<boolean> {
-    const conditions = [eq(match.competitionId, competitionId), ne(match.status, 'finished')]
+    // Cancelled counts as terminal alongside finished: a pool whose remaining
+    // matches are cancelled must still be closable, otherwise its prize is stuck.
+    const conditions = [
+      eq(match.competitionId, competitionId),
+      notInArray(match.status, [...MatchStatus.TERMINAL_VALUES]),
+    ]
 
     if (matchdayFrom != null) {
       conditions.push(gte(match.matchday, matchdayFrom))
@@ -205,7 +211,7 @@ export class DrizzleMatchRepository implements MatchRepository {
   async hasUnfinishedFor(query: UnfinishedMatchesQuery): Promise<boolean> {
     if (query.kind === 'single-match') {
       const m = await this.findById(query.matchId)
-      return m === null || m.status !== 'finished'
+      return m === null || !MatchStatus.from(m.status).isTerminal()
     }
     return this.hasUnfinishedMatches(query.competitionId, query.matchdayFrom, query.matchdayTo)
   }

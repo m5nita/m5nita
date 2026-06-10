@@ -74,9 +74,13 @@ usersRoutes.patch('/users/me/phone', async (c) => {
     )
   }
 
+  // A phone change must NOT grant verified status: ownership of the new number
+  // is only proven by completing the phone OTP flow (Better Auth's phone-number
+  // plugin). Setting it false here forces re-verification at next phone sign-in
+  // and prevents claiming/squatting a number the user does not control.
   const [updated] = await db
     .update(user)
-    .set({ phoneNumber: parsed.data, phoneNumberVerified: true, updatedAt: new Date() })
+    .set({ phoneNumber: parsed.data, phoneNumberVerified: false, updatedAt: new Date() })
     .where(eq(user.id, currentUser.id))
     .returning({ id: user.id, phoneNumber: user.phoneNumber })
 

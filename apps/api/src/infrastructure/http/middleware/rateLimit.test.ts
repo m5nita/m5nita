@@ -1,7 +1,40 @@
+import type { Context } from 'hono'
 import { Hono } from 'hono'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { AppEnv } from '../../../types/hono'
-import { otpRateLimit } from './rateLimit'
+import { getClientIp, otpRateLimit } from './rateLimit'
+
+function ipCtx(xff?: string): Context {
+  return {
+    req: { header: (name: string) => (name === 'x-forwarded-for' ? xff : undefined) },
+  } as unknown as Context
+}
+
+describe('getClientIp', () => {
+  it('returns the IP when a single value is present', () => {
+    expect(getClientIp(ipCtx('203.0.113.7'))).toBe('203.0.113.7')
+  })
+
+  it('uses the trusted last hop, ignoring a client-spoofed first value', () => {
+    // Our reverse proxy appends the real connecting IP last; a client can
+    // prepend a fake IP but cannot control the trailing hop.
+    expect(getClientIp(ipCtx('1.1.1.1, 203.0.113.7'))).toBe('203.0.113.7')
+  })
+
+  it('keeps the same key when only the spoofed first value rotates', () => {
+    expect(getClientIp(ipCtx('9.9.9.9, 203.0.113.7'))).toBe(
+      getClientIp(ipCtx('8.8.8.8, 203.0.113.7')),
+    )
+  })
+
+  it('returns "unknown" when the header is absent', () => {
+    expect(getClientIp(ipCtx(undefined))).toBe('unknown')
+  })
+
+  it('returns "unknown" when the trusted value is not a valid IP', () => {
+    expect(getClientIp(ipCtx('203.0.113.7, garbage'))).toBe('unknown')
+  })
+})
 
 function createTestApp() {
   const app = new Hono<AppEnv>()

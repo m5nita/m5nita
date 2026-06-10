@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { formatBrl } from '@m5nita/shared'
 import { Resvg } from '@resvg/resvg-js'
 import satori from 'satori'
 
@@ -47,14 +48,6 @@ function formatKickoffPtBR(date: Date): string {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'America/Sao_Paulo',
-  })
-}
-
-function brl(centavos: number): string {
-  return (centavos / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
   })
 }
 
@@ -349,8 +342,8 @@ function template(input: PoolOgImageInput): Element {
             },
             children: [
               statCell('Jogadores', String(input.memberCount)),
-              statCell('Entrada', brl(input.entryFeeCentavos)),
-              statCell('Prêmio', brl(input.prizeCentavos), COLORS.green),
+              statCell('Entrada', formatBrl(input.entryFeeCentavos)),
+              statCell('Prêmio', formatBrl(input.prizeCentavos), COLORS.green),
             ],
           },
         },

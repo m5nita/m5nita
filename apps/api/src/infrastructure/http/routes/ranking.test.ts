@@ -37,9 +37,10 @@ vi.mock('../../../services/pool', () => ({
   poolHasLiveMatch: (...args: unknown[]) => mockPoolHasLiveMatch(...args),
 }))
 
+const mockIsMember = vi.fn(async () => true)
 vi.mock('../../../container', () => ({
   getContainer: () => ({
-    poolRepo: { findByIdWithDetails: mockFindByIdWithDetails },
+    poolRepo: { findByIdWithDetails: mockFindByIdWithDetails, isMember: mockIsMember },
   }),
 }))
 
@@ -190,5 +191,28 @@ describe('GET /api/pools/:poolId/ranking', () => {
   it('rejects_noAuth_401', async () => {
     const res = await app.request('/api/pools/pool-1/ranking')
     expect(res.status).toBe(401)
+  })
+
+  it('rejects_nonMember_403_withoutLeakingRanking', async () => {
+    mockIsMember.mockResolvedValueOnce(false)
+    mockGetPoolRanking.mockResolvedValue([
+      {
+        position: 1,
+        userId: 'user-2',
+        name: 'Alice',
+        totalPoints: 50,
+        livePoints: 0,
+        exactMatches: 3,
+        isCurrentUser: false,
+      },
+    ])
+
+    const res = await app.request('/api/pools/pool-1/ranking', { headers })
+
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.ranking).toBeUndefined()
+    // A non-member must not trigger the standings read at all.
+    expect(mockGetPoolRanking).not.toHaveBeenCalled()
   })
 })

@@ -16,18 +16,31 @@ vi.mock('../middleware/auth', () => ({
   }),
 }))
 
+const { setSpy, findFirstSpy } = vi.hoisted(() => ({
+  setSpy: vi.fn(),
+  findFirstSpy: vi.fn(async () => null as unknown),
+}))
+
 // Mock database
 vi.mock('../../../db/client', () => ({
   db: {
     update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: vi.fn(() => ({
-          returning: vi.fn(() => [
-            { id: 'user-1', name: 'Updated Name', phoneNumber: '+5511999999999' },
-          ]),
-        })),
-      })),
+      set: vi.fn((payload: unknown) => {
+        setSpy(payload)
+        return {
+          where: vi.fn(() => ({
+            returning: vi.fn(() => [
+              { id: 'user-1', name: 'Updated Name', phoneNumber: '+5511999999999' },
+            ]),
+          })),
+        }
+      }),
     })),
+    query: {
+      user: {
+        findFirst: findFirstSpy,
+      },
+    },
   },
 }))
 
@@ -125,6 +138,62 @@ describe('PATCH /api/users/me', () => {
     })
 
     expect(res.status).toBe(401)
+  })
+})
+
+describe('PATCH /api/users/me/phone', () => {
+  let app: Hono
+
+  beforeEach(() => {
+    app = createTestApp()
+    setSpy.mockClear()
+    findFirstSpy.mockReset()
+    findFirstSpy.mockResolvedValue(null)
+  })
+
+  it('does NOT mark the new phone as verified (no OTP was performed)', async () => {
+    const res = await app.request('/api/users/me/phone', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-user': JSON.stringify(testUser),
+      },
+      body: JSON.stringify({ phoneNumber: '+5511988888888' }),
+    })
+
+    expect(res.status).toBe(200)
+    expect(setSpy).toHaveBeenCalledTimes(1)
+    const payload = setSpy.mock.calls[0]?.[0] as { phoneNumberVerified?: boolean }
+    expect(payload.phoneNumberVerified).toBe(false)
+  })
+
+  it('rejects a number already linked to another account (409)', async () => {
+    findFirstSpy.mockResolvedValue({ id: 'someone-else', phoneNumber: '+5511988888888' })
+
+    const res = await app.request('/api/users/me/phone', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-user': JSON.stringify(testUser),
+      },
+      body: JSON.stringify({ phoneNumber: '+5511988888888' }),
+    })
+
+    expect(res.status).toBe(409)
+    expect(setSpy).not.toHaveBeenCalled()
+  })
+
+  it('rejects an invalid phone number (400)', async () => {
+    const res = await app.request('/api/users/me/phone', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-user': JSON.stringify(testUser),
+      },
+      body: JSON.stringify({ phoneNumber: 'not-a-phone' }),
+    })
+
+    expect(res.status).toBe(400)
   })
 })
 

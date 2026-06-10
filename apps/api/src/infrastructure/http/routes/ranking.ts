@@ -13,11 +13,19 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
   const currentUser = c.get('user')
   const { poolId } = c.req.param()
 
+  // Ranking exposes other members' names, points and the prize total — gate it
+  // on membership (mirrors predictions/stats), otherwise any authenticated user
+  // could read an arbitrary pool's standings by guessing its id.
+  const { poolRepo } = getContainer()
+  const isMember = await poolRepo.isMember(poolId, currentUser.id)
+  if (!isMember) {
+    return c.json({ error: 'NOT_MEMBER', message: 'Você não é membro deste bolão' }, 403)
+  }
+
   const ranking = await getPoolRanking(poolId, currentUser.id)
 
   // findByIdWithDetails already computes prizeTotal AND hasLiveMatch in one read;
   // reuse both instead of re-checking live matches with a second query.
-  const { poolRepo } = getContainer()
   const details = await poolRepo.findByIdWithDetails(poolId)
 
   return c.json({

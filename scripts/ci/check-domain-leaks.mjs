@@ -41,18 +41,15 @@ const RULES = [
     name: 'magic-platform-fee-rate',
     description: 'Literal 0.05 platform fee rate must come from PLATFORM_FEE_RATE constant.',
     pattern: /\b0\.05\b/,
+    // Scan every source file (no `onlyFiles`): a literal 0.05 introduced in a
+    // brand-new production file must be caught, not just in a fixed allowlist.
+    // Exempt the constant's own definition and tests that assert the rate value.
     allow: [
       'packages/shared/src/constants/index.ts',
-      // tests asserting the same invariant the constant encodes:
-      'packages/shared/src/lib/fee.ts',
-    ],
-    onlyFiles: [
-      'apps/web/src/lib/utils.ts',
-      'apps/api/src/services/pool.ts',
-      'apps/api/src/services/coupon.ts',
-      'apps/api/src/infrastructure/http/routes/pools.ts',
-      'apps/api/src/infrastructure/http/routes/ranking.ts',
-      'packages/shared/src/lib/fee.ts',
+      'apps/api/src/domain/prize/PrizeCalculation.test.ts',
+      'apps/api/src/domain/shared/EntryFee.test.ts',
+      'apps/api/src/domain/shared/FeePolicy.test.ts',
+      'apps/web/src/lib/utils.test.ts',
     ],
   },
   {

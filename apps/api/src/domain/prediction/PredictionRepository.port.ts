@@ -47,5 +47,7 @@ export interface PredictionRepository {
   findByPoolMatch(poolId: string, matchId: string): Promise<PredictionWithUser[]>
   save(prediction: Prediction): Promise<Prediction>
   updatePoints(id: string, points: number): Promise<void>
+  /** Write many predictions' points in a single statement (post-match scoring). */
+  updatePointsBatch(updates: Array<{ id: string; points: number }>): Promise<void>
   findByMatch(matchId: string): Promise<Prediction[]>
 }

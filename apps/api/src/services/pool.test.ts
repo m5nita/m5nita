@@ -1,9 +1,13 @@
 import { POOL } from '@m5nita/shared'
 import { describe, expect, it, vi } from 'vitest'
 
+const { findFirstSpy } = vi.hoisted(() => ({
+  findFirstSpy: vi.fn(async () => null as unknown),
+}))
+
 vi.mock('../db/client', () => ({
   db: {
-    query: { poolMember: { findFirst: vi.fn(async () => null) } },
+    query: { poolMember: { findFirst: findFirstSpy } },
     select: vi.fn(() => ({
       from: vi.fn(() => ({ where: vi.fn(() => ({ limit: vi.fn(() => []) })) })),
     })),
@@ -68,6 +72,22 @@ describe('getPoolById HTTP contract', () => {
     expect(result?.matchdayFrom).toBeNull()
     expect(result?.matchdayTo).toBeNull()
     expect(result?.matchId).toBe('match-1')
+  })
+
+  it('hides the inviteCode from non-members (prevents self-joining a private pool)', async () => {
+    findFirstSpy.mockResolvedValueOnce(null) // not a member
+    mockFindByIdWithDetails.mockResolvedValueOnce(repoFixture())
+    const result = await getPoolById('pool-1', 'outsider')
+    expect(result?.isMember).toBe(false)
+    expect(result?.inviteCode).toBe('')
+  })
+
+  it('returns the inviteCode to members (so they can share)', async () => {
+    findFirstSpy.mockResolvedValueOnce({ poolId: 'pool-1', userId: 'user-1' })
+    mockFindByIdWithDetails.mockResolvedValueOnce(repoFixture())
+    const result = await getPoolById('pool-1', 'user-1')
+    expect(result?.isMember).toBe(true)
+    expect(result?.inviteCode).toBe('ABCD1234')
   })
 })
 
