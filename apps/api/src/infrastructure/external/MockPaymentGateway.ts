@@ -1,3 +1,4 @@
+import type { CompleteCheckoutUseCase } from '../../application/payment/CompleteCheckoutUseCase'
 import type {
   CheckoutParams,
   CheckoutResult,
@@ -5,18 +6,18 @@ import type {
 } from '../../application/ports/PaymentGateway.port'
 import type { db as DbClient } from '../../db/client'
 import { payment } from '../../db/schema/payment'
-import { handleCheckoutCompleted } from '../../services/payment'
 
 /**
  * Dev/test gateway: no real provider. Inserts a pending payment with the
  * requested type, then runs the SAME completion path as a real webhook
- * (`handleCheckoutCompleted`) so the dispatch (entry → activate + member;
+ * (CompleteCheckoutUseCase) so the dispatch (entry → activate + member;
  * stats_unlock → grant) is exercised once, with no duplicated logic.
- * `handleCheckoutCompleted` uses the module db, which is this gateway's db in
- * dev (the default container db).
  */
 export class MockPaymentGateway implements PaymentGateway {
-  constructor(private db: typeof DbClient) {}
+  constructor(
+    private db: typeof DbClient,
+    private readonly completeCheckout: CompleteCheckoutUseCase,
+  ) {}
 
   async createCheckoutSession(params: CheckoutParams): Promise<CheckoutResult> {
     const { userId, poolId, amount, platformFee } = params
@@ -41,7 +42,7 @@ export class MockPaymentGateway implements PaymentGateway {
       throw new Error('Failed to create payment record')
     }
 
-    await handleCheckoutCompleted(paymentRecord.id)
+    await this.completeCheckout.execute({ paymentId: paymentRecord.id })
 
     return {
       payment: paymentRecord,
