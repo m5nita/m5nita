@@ -21,4 +21,11 @@ export class DrizzleStatsUnlockRepository implements StatsUnlockRepository {
       .where(eq(statsUnlock.poolId, poolId))
     return rows.map((r) => r.userId)
   }
+
+  async grant(data: { userId: string; poolId: string; paymentId: string }): Promise<void> {
+    await this.db
+      .insert(statsUnlock)
+      .values(data)
+      .onConflictDoNothing({ target: [statsUnlock.userId, statsUnlock.poolId] })
+  }
 }

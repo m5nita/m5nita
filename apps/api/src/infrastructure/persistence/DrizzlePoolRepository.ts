@@ -170,8 +170,13 @@ export class DrizzlePoolRepository implements PoolRepository {
     return !!existing
   }
 
-  async addMember(poolId: string, userId: string, paymentId: string): Promise<void> {
-    await this.db.insert(poolMember).values({ poolId, userId, paymentId })
+  async addMember(poolId: string, userId: string, paymentId: string): Promise<boolean> {
+    const inserted = await this.db
+      .insert(poolMember)
+      .values({ poolId, userId, paymentId })
+      .onConflictDoNothing({ target: [poolMember.poolId, poolMember.userId] })
+      .returning({ id: poolMember.id })
+    return inserted.length > 0
   }
 
   async removeMember(poolId: string, userId: string): Promise<void> {
