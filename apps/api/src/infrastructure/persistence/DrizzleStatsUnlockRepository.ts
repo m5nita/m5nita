@@ -1,10 +1,10 @@
 import { and, eq } from 'drizzle-orm'
-import type { db as DbClient } from '../../db/client'
+import type { DbExecutor } from '../../db/client'
 import { statsUnlock } from '../../db/schema/statsUnlock'
 import type { StatsUnlockRepository } from '../../domain/stats/StatsUnlockRepository.port'
 
 export class DrizzleStatsUnlockRepository implements StatsUnlockRepository {
-  constructor(private db: typeof DbClient) {}
+  constructor(private db: DbExecutor) {}
 
   async isUnlocked(userId: string, poolId: string): Promise<boolean> {
     const row = await this.db.query.statsUnlock.findFirst({

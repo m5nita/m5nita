@@ -1,5 +1,5 @@
 import { and, desc, eq, ne, sql } from 'drizzle-orm'
-import type { db as dbClient } from '../../db/client'
+import type { DbExecutor } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { competition } from '../../db/schema/competition'
 import { match } from '../../db/schema/match'
@@ -26,7 +26,7 @@ type PoolRowWithRelations = PoolRow & {
 }
 
 export class DrizzlePoolRepository implements PoolRepository {
-  constructor(private readonly db: typeof dbClient) {}
+  constructor(private readonly db: DbExecutor) {}
 
   async findById(id: string): Promise<Pool | null> {
     const row = await this.db.query.pool.findFirst({
