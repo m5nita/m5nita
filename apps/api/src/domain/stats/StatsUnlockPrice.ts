@@ -1,4 +1,4 @@
-import { STATS } from '@m5nita/shared'
+import { formatBrl, STATS } from '@m5nita/shared'
 import { Money } from '../shared/Money'
 
 /**
@@ -29,9 +29,6 @@ export class StatsUnlockPrice {
 
   /** Pre-formatted BRL string for the API to hand to the front (FR-005). */
   formatted(): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(this.centavos / 100)
+    return formatBrl(this.centavos)
   }
 }

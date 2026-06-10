@@ -1,3 +1,4 @@
+import { formatBrl } from '@m5nita/shared'
 import { Resend } from 'resend'
 import type { ReminderMatch } from '../application/ports/NotificationService.port'
 
@@ -7,13 +8,6 @@ const FROM = 'M5nita <noreply@notifications.m5nita.com>'
 
 function appUrl(): string {
   return process.env.APP_URL || ''
-}
-
-function formatBrl(centavos: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(centavos / 100)
 }
 
 function escapeHtml(text: string): string {

@@ -1,3 +1,4 @@
+import { formatBrl } from '@m5nita/shared'
 import type { Bot } from 'grammy'
 import type {
   AdminWithdrawalRequestNotification,
@@ -9,13 +10,6 @@ const APP_URL = process.env.APP_URL || ''
 
 function escapeMarkdown(text: string): string {
   return text.replace(/([_*`[\]])/g, '\\$1')
-}
-
-function formatBrl(centavos: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(centavos / 100)
 }
 
 // Telegram transport: sends already-routed messages to a resolved chat. Channel
