@@ -76,11 +76,6 @@ export const upsertPredictionSchema = z.object({
   advancePick: z.enum(['home', 'away']).nullish(),
 })
 
-// User schemas
-export const updateUserSchema = z.object({
-  name: z.string().min(1).max(100),
-})
-
 // Phone schema
 export const phoneSchema = z.string().regex(/^\+55\d{10,11}$/, 'Telefone inválido')
 

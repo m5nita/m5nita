@@ -1,4 +1,4 @@
-import { phoneSchema, updateUserSchema } from '@m5nita/shared'
+import { phoneSchema } from '@m5nita/shared'
 import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { getContainer } from '../../../container'
@@ -29,31 +29,9 @@ usersRoutes.get('/users/me/pending-prizes', async (c) => {
   return c.json(result)
 })
 
-usersRoutes.patch('/users/me', async (c) => {
-  const currentUser = c.get('user')
-  const body = await c.req.json()
-  const parsed = updateUserSchema.safeParse(body)
-
-  if (!parsed.success) {
-    return c.json(
-      { error: 'VALIDATION_ERROR', message: parsed.error.issues[0]?.message ?? 'Dados inválidos' },
-      400,
-    )
-  }
-
-  const [updated] = await db
-    .update(user)
-    .set({ name: parsed.data.name, updatedAt: new Date() })
-    .where(eq(user.id, currentUser.id))
-    .returning({ id: user.id, name: user.name, phoneNumber: user.phoneNumber })
-
-  if (!updated) {
-    return c.json({ error: 'NOT_FOUND', message: 'Usuário não encontrado' }, 404)
-  }
-
-  return c.json(updated)
-})
-
+// Renames go through Better Auth's update-user endpoint (which refreshes the
+// session cookie cache); only the phone change keeps a custom route because it
+// must reset phoneNumberVerified for OTP re-verification.
 usersRoutes.patch('/users/me/phone', async (c) => {
   const currentUser = c.get('user')
   const body = await c.req.json()

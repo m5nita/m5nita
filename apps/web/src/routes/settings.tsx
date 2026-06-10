@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input'
 import { Loading } from '../components/ui/Loading'
 import { PhoneInput } from '../components/ui/PhoneInput'
 import { apiFetch } from '../lib/api'
-import { signOut, useSession } from '../lib/auth'
+import { authClient, signOut, useSession } from '../lib/auth'
 import { requireAuthGuard } from '../lib/authGuard'
 
 const TELEGRAM_BOT_USERNAME = 'm5nita_bot'
@@ -70,12 +70,10 @@ function SettingsPage() {
     if (name.trim().length < 1) return
     setSaving(true)
     try {
-      const res = await apiFetch('/api/users/me', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() }),
-      })
-      if (res.ok) {
+      // Better Auth's update-user: saves the name and refreshes the session
+      // cookie cache, so the new name is visible immediately (see complete-profile).
+      const { error } = await authClient.updateUser({ name: name.trim() })
+      if (!error) {
         await refetch()
         setSaved(true)
         setName('')
@@ -104,6 +102,9 @@ function SettingsPage() {
         setPhoneError(data.message || 'Erro ao salvar telefone')
         return
       }
+      // The phone route updates the DB outside Better Auth; bust the session
+      // cookie cache so the session reflects the new number immediately.
+      await authClient.getSession({ query: { disableCookieCache: true } })
       await refetch()
     } catch {
       setPhoneError('Erro ao salvar telefone')

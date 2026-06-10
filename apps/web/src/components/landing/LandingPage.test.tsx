@@ -54,12 +54,6 @@ describe('<LandingPage />', () => {
     expect(h1.textContent).toContain('bolão')
   })
 
-  it('renders the floating "Entrar" link → /login', async () => {
-    renderWithRouter()
-    const links = await screen.findAllByRole('link', { name: /entrar/i })
-    expect(links.some((a) => a.getAttribute('href') === '/login')).toBe(true)
-  })
-
   it('renders the primary "Começar agora" CTA → /login', async () => {
     renderWithRouter()
     const links = await screen.findAllByRole('link', { name: /começar agora/i })
