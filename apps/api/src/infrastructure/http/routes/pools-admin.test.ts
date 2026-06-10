@@ -18,11 +18,6 @@ vi.mock('../../../services/pool', () => ({
   isPoolMember: vi.fn(() => false),
 }))
 
-vi.mock('../../../services/payment', () => ({
-  handleCheckoutCompleted: vi.fn(),
-  handleCheckoutExpired: vi.fn(),
-}))
-
 const mockPool = {
   id: 'pool-1',
   name: 'Test',

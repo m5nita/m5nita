@@ -1,3 +1,4 @@
+import { CompleteCheckoutUseCase } from './application/payment/CompleteCheckoutUseCase'
 import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
 import { GetPoolDetailsUseCase } from './application/pool/GetPoolDetailsUseCase'
 import { GetUserPoolsUseCase } from './application/pool/GetUserPoolsUseCase'
@@ -30,6 +31,7 @@ import { DrizzlePrizeWithdrawalRepository } from './infrastructure/persistence/D
 import { DrizzleRankingRepository } from './infrastructure/persistence/DrizzleRankingRepository'
 import { DrizzleStatsRepository } from './infrastructure/persistence/DrizzleStatsRepository'
 import { DrizzleStatsUnlockRepository } from './infrastructure/persistence/DrizzleStatsUnlockRepository'
+import { DrizzleUnitOfWork } from './infrastructure/persistence/DrizzleUnitOfWork'
 import { infinitePayConfig } from './lib/infinitepay'
 import { stripe } from './lib/stripe'
 import { bot } from './lib/telegram'
@@ -68,11 +70,14 @@ const GATEWAY_SPECS: Record<string, GatewaySpec> = {
   },
 }
 
-function buildPaymentGateway(db: Db): PaymentGateway {
+function buildPaymentGateway(
+  db: Db,
+  completeCheckoutUseCase: CompleteCheckoutUseCase,
+): PaymentGateway {
   const provider = process.env.PAYMENT_GATEWAY
   const isProd = process.env.NODE_ENV === 'production'
 
-  if (!provider && !isProd) return new MockPaymentGateway(db)
+  if (!provider && !isProd) return new MockPaymentGateway(db, completeCheckoutUseCase)
 
   const spec = provider ? GATEWAY_SPECS[provider] : undefined
   if (!spec) {
@@ -84,7 +89,7 @@ function buildPaymentGateway(db: Db): PaymentGateway {
 
   if (isProd) throw new Error(spec.missingEnvError)
   console.warn(spec.mockReason)
-  return new MockPaymentGateway(db)
+  return new MockPaymentGateway(db, completeCheckoutUseCase)
 }
 
 export function buildContainer(overrides: ContainerOverrides = {}) {
@@ -98,12 +103,15 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const matchRepo = new DrizzleMatchRepository(db)
   const statsUnlockRepo = new DrizzleStatsUnlockRepository(db)
   const statsRepo = new DrizzleStatsRepository(db)
+  const unitOfWork = new DrizzleUnitOfWork(db)
 
   // Cached per-pool stats aggregate loader (sibling of the ranking cache).
   const loadPoolStatsAggregate = (poolId: string) =>
     participantStatsAggregateCache.getOrCompute(poolId, () => statsRepo.poolAggregate(poolId))
 
-  const paymentGateway = overrides.paymentGateway ?? buildPaymentGateway(db)
+  const completeCheckoutUseCase = new CompleteCheckoutUseCase(unitOfWork)
+  const paymentGateway =
+    overrides.paymentGateway ?? buildPaymentGateway(db, completeCheckoutUseCase)
   const notificationService = overrides.notificationService ?? new CompositeNotificationService(bot)
 
   const statsUnlockPriceEnv = process.env.STATS_UNLOCK_PRICE_CENTAVOS
@@ -126,6 +134,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     notificationService,
     paymentGateway,
 
+    completeCheckoutUseCase,
     createPoolUseCase: new CreatePoolUseCase(
       poolRepo,
       paymentGateway,

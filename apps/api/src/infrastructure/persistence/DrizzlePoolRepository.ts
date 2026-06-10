@@ -1,5 +1,5 @@
 import { and, desc, eq, ne, sql } from 'drizzle-orm'
-import type { db as dbClient } from '../../db/client'
+import type { DbExecutor } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { competition } from '../../db/schema/competition'
 import { match } from '../../db/schema/match'
@@ -26,7 +26,7 @@ type PoolRowWithRelations = PoolRow & {
 }
 
 export class DrizzlePoolRepository implements PoolRepository {
-  constructor(private readonly db: typeof dbClient) {}
+  constructor(private readonly db: DbExecutor) {}
 
   async findById(id: string): Promise<Pool | null> {
     const row = await this.db.query.pool.findFirst({
@@ -170,8 +170,13 @@ export class DrizzlePoolRepository implements PoolRepository {
     return !!existing
   }
 
-  async addMember(poolId: string, userId: string, paymentId: string): Promise<void> {
-    await this.db.insert(poolMember).values({ poolId, userId, paymentId })
+  async addMember(poolId: string, userId: string, paymentId: string): Promise<boolean> {
+    const inserted = await this.db
+      .insert(poolMember)
+      .values({ poolId, userId, paymentId })
+      .onConflictDoNothing({ target: [poolMember.poolId, poolMember.userId] })
+      .returning({ id: poolMember.id })
+    return inserted.length > 0
   }
 
   async removeMember(poolId: string, userId: string): Promise<void> {

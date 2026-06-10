@@ -107,3 +107,34 @@ describe('DrizzlePoolRepository.findUserPools', () => {
     expect(result.map((p) => p.id)).toEqual(['p-1', 'p-2', 'p-3'])
   })
 })
+
+describe('DrizzlePoolRepository.addMember', () => {
+  function createInsertDb(returnedRows: Array<{ id: string }>) {
+    const returning = vi.fn().mockResolvedValue(returnedRows)
+    const onConflictDoNothing = vi.fn(() => ({ returning }))
+    const values = vi.fn(() => ({ onConflictDoNothing }))
+    const insert = vi.fn(() => ({ values }))
+    return { insert, values, onConflictDoNothing }
+  }
+
+  it('returns true when the membership row is created', async () => {
+    const db = createInsertDb([{ id: 'member-1' }])
+    const repo = new DrizzlePoolRepository(db as unknown as never)
+
+    await expect(repo.addMember('pool-1', 'user-1', 'pay-1')).resolves.toBe(true)
+
+    expect(db.values).toHaveBeenCalledWith({
+      poolId: 'pool-1',
+      userId: 'user-1',
+      paymentId: 'pay-1',
+    })
+    expect(db.onConflictDoNothing).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns false when the user is already a member (conflict ignored)', async () => {
+    const db = createInsertDb([])
+    const repo = new DrizzlePoolRepository(db as unknown as never)
+
+    await expect(repo.addMember('pool-1', 'user-1', 'pay-1')).resolves.toBe(false)
+  })
+})

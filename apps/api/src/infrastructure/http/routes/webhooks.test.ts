@@ -2,10 +2,14 @@ import { Hono } from 'hono'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { webhooksRoutes } from './webhooks'
 
-const mockHandleCheckoutCompleted = vi.fn()
+const mockCompleteCheckout = vi.fn()
 
-vi.mock('../../../services/payment', () => ({
-  handleCheckoutCompleted: (...args: unknown[]) => mockHandleCheckoutCompleted(...args),
+vi.mock('../../../container', () => ({
+  getContainer: () => ({
+    completeCheckoutUseCase: {
+      execute: (...args: unknown[]) => mockCompleteCheckout(...args),
+    },
+  }),
 }))
 
 const mockStripeConstructEvent = vi.fn()
@@ -73,7 +77,7 @@ describe('POST /api/webhooks/stripe', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(mockHandleCheckoutCompleted).toHaveBeenCalledWith('payment-uuid-456')
+    expect(mockCompleteCheckout).toHaveBeenCalledWith({ paymentId: 'payment-uuid-456' })
   })
 
   it('otherEventTypes_doNotCallHandler', async () => {
@@ -92,7 +96,7 @@ describe('POST /api/webhooks/stripe', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+    expect(mockCompleteCheckout).not.toHaveBeenCalled()
   })
 
   it('missingSignature_returns400', async () => {
@@ -118,7 +122,7 @@ describe('POST /api/webhooks/stripe', () => {
     })
 
     expect(res.status).toBe(400)
-    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+    expect(mockCompleteCheckout).not.toHaveBeenCalled()
   })
 })
 
@@ -239,7 +243,7 @@ describe('POST /api/webhooks/infinitepay', () => {
     const res = await post(JSON.stringify({ order_nsu: PAYMENT_UUID }))
 
     expect(res.status).toBe(200)
-    expect(mockHandleCheckoutCompleted).toHaveBeenCalledWith(PAYMENT_UUID)
+    expect(mockCompleteCheckout).toHaveBeenCalledWith({ paymentId: PAYMENT_UUID })
   })
 
   it('marksPaymentExpiredWhenPaymentCheckReturnsRejected', async () => {
@@ -249,7 +253,7 @@ describe('POST /api/webhooks/infinitepay', () => {
     const res = await post(JSON.stringify({ order_nsu: PAYMENT_UUID }))
 
     expect(res.status).toBe(200)
-    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+    expect(mockCompleteCheckout).not.toHaveBeenCalled()
     expect(mockDbUpdate).toHaveBeenCalled()
     expect(mockUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ status: 'expired' }))
   })
@@ -261,7 +265,7 @@ describe('POST /api/webhooks/infinitepay', () => {
     const res = await post(JSON.stringify({ order_nsu: PAYMENT_UUID }))
 
     expect(res.status).toBe(200)
-    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+    expect(mockCompleteCheckout).not.toHaveBeenCalled()
     expect(mockDbUpdate).not.toHaveBeenCalled()
   })
 
@@ -272,7 +276,7 @@ describe('POST /api/webhooks/infinitepay', () => {
     const res = await post(JSON.stringify({ order_nsu: PAYMENT_UUID }))
 
     expect(res.status).toBe(500)
-    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+    expect(mockCompleteCheckout).not.toHaveBeenCalled()
     expect(mockDbUpdate).not.toHaveBeenCalled()
   })
 
@@ -283,7 +287,7 @@ describe('POST /api/webhooks/infinitepay', () => {
     const res = await post(JSON.stringify({ order_nsu: PAYMENT_UUID }))
 
     expect(res.status).toBe(500)
-    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+    expect(mockCompleteCheckout).not.toHaveBeenCalled()
   })
 
   it('isIdempotentForDuplicateWebhookOnAlreadyCompletedPayment', async () => {
@@ -293,8 +297,8 @@ describe('POST /api/webhooks/infinitepay', () => {
     const res = await post(JSON.stringify({ order_nsu: PAYMENT_UUID }))
 
     expect(res.status).toBe(200)
-    // handleCheckoutCompleted is still called but is itself idempotent (verified in services/payment.ts)
-    expect(mockHandleCheckoutCompleted).toHaveBeenCalledWith(PAYMENT_UUID)
+    // The completion use case is still invoked but is itself idempotent (CAS short-circuit)
+    expect(mockCompleteCheckout).toHaveBeenCalledWith({ paymentId: PAYMENT_UUID })
   })
 
   it('treatsUnknownStatusAsTransientNoop', async () => {
@@ -304,7 +308,7 @@ describe('POST /api/webhooks/infinitepay', () => {
     const res = await post(JSON.stringify({ order_nsu: PAYMENT_UUID }))
 
     expect(res.status).toBe(200)
-    expect(mockHandleCheckoutCompleted).not.toHaveBeenCalled()
+    expect(mockCompleteCheckout).not.toHaveBeenCalled()
     expect(mockDbUpdate).not.toHaveBeenCalled()
   })
 

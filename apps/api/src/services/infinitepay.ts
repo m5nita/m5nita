@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { getContainer } from '../container'
 import { db } from '../db/client'
 import { payment } from '../db/schema/payment'
 import { infinitePayConfig } from '../lib/infinitepay'
-import { handleCheckoutCompleted } from './payment'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const PAYMENT_CHECK_URL = 'https://api.checkout.infinitepay.io/payment_check'
@@ -74,7 +74,9 @@ async function applyStatus(
   upstreamStatus: string,
 ): Promise<ConfirmOutcome> {
   if (upstreamStatus === 'paid' || upstreamStatus === 'approved') {
-    await handleCheckoutCompleted(orderNsu)
+    // getContainer() stays inside the function (lib/telegram.ts precedent):
+    // hoisting it to module scope would build the container at import time.
+    await getContainer().completeCheckoutUseCase.execute({ paymentId: orderNsu })
     return 'completed'
   }
   if (

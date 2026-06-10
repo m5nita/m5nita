@@ -75,11 +75,6 @@ vi.mock('../../../services/pool', () => ({
   isPoolMember: vi.fn(() => false),
 }))
 
-vi.mock('../../../services/payment', () => ({
-  handleCheckoutCompleted: vi.fn(),
-  handleCheckoutExpired: vi.fn(),
-}))
-
 vi.mock('../../../services/coupon', () => ({
   validateCoupon: vi.fn(() => ({ valid: false, reason: 'not_found' })),
 }))

@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import type Stripe from 'stripe'
+import { getContainer } from '../../../container'
 import { stripe } from '../../../lib/stripe'
 import { confirmInfinitePayPayment, PaymentCheckFailedError } from '../../../services/infinitepay'
-import { handleCheckoutCompleted } from '../../../services/payment'
 
 const webhooksRoutes = new Hono()
 
@@ -50,7 +50,7 @@ webhooksRoutes.post('/webhooks/stripe', async (c) => {
     const session = event.data.object
     const paymentId = session.metadata?.paymentId
     if (paymentId) {
-      await handleCheckoutCompleted(paymentId)
+      await getContainer().completeCheckoutUseCase.execute({ paymentId })
     }
   }
 
