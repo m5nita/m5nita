@@ -27,7 +27,7 @@ Auto-generated from all feature plans. Last updated: 2026-06-05
 - PostgreSQL 16 — the existing `postgres-test` service in `docker-compose.yml` (port 5433) and the same image already used by CI (`ci.yml` > `services.postgres`). Template-database cloning (`CREATE DATABASE x TEMPLATE t`) is the reset mechanism. (016-integration-tests-real-db)
 - TypeScript 5.x, Node.js ≥ 22 + Hono (API), Drizzle ORM, Better Auth, grammY (Telegram), React 19, TanStack Router, TanStack Query, Tailwind CSS v4. No new runtime dependencies. (019-single-match-pool)
 - PostgreSQL 16 — adds a nullable `match_id uuid` column to `pool` table, FK to `match.id`, with a CHECK constraint enforcing mutual exclusivity with `matchday_from`/`matchday_to`. (019-single-match-pool)
-- TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing MercadoPago / InfinitePay / Stripe / Mock adapters. **No new runtime dependencies** (charts are inline SVG). (021-estatisticas-participante)
+- TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing InfinitePay / Stripe / Mock adapters (MercadoPago was removed). **No new runtime dependencies** (charts are inline SVG). (021-estatisticas-participante)
 - PostgreSQL 16. Two new additive tables (`stats_unlock`, `participant_pool_stats`); one new accepted value for the existing text column `payment.type`. No prize/fee table touched. (021-estatisticas-participante)
 - TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend (022-email-notification-fallback)
 - PostgreSQL 16 via Drizzle. **No schema changes** — reads existing (022-email-notification-fallback)
@@ -35,10 +35,10 @@ Auto-generated from all feature plans. Last updated: 2026-06-05
 - PostgreSQL 16 via Drizzle. Additive nullable columns on existing `match` and `prediction` tables; one new migration `0011`. No new tables. (023-knockout-scoring)
 
 - TypeScript 5.x (Node.js >= 22) (001-world-cup-pool-app)
-- Backend: Hono, Better Auth, Drizzle ORM, Stripe SDK
+- Backend: Hono, Better Auth, Drizzle ORM; payments via InfinitePay / Stripe / Mock adapters
 - Frontend: React 19, TanStack Router, TanStack Query, Tailwind CSS v4
-- Database: PostgreSQL 16 + Redis
-- Tooling: pnpm, Biome, Vitest, Playwright
+- Database: PostgreSQL 16 (a `redis` container is in docker-compose but is **not** used by the app — cache/rate-limit are in-process `Map`s)
+- Tooling: pnpm, Biome, Vitest (no Playwright is wired up — the `*.spec.ts` files under `apps/web/tests` are not runnable as-is)
 
 ## Project Structure
 
@@ -96,12 +96,28 @@ pre-existing offenders — never extend them.
 ```bash
 pnpm dev                     # Start API + Web dev servers
 pnpm build                   # Production build
-pnpm test                    # Run tests (Vitest)
+pnpm test                    # Run unit tests (Vitest, all workspaces)
+pnpm --filter @m5nita/api exec vitest run path/to/file.test.ts   # Run a single test file
 pnpm biome check --write .   # Lint + format
-pnpm drizzle-kit generate    # Generate migrations
-pnpm drizzle-kit migrate     # Apply migrations
-pnpm drizzle-kit push        # Push schema (dev only)
+pnpm check:leaks             # Domain-leak guardrail (G2)
+pnpm check:arch              # Layer-boundary guardrail (G3, dependency-cruiser)
+
+# drizzle-kit is only a dependency of @m5nita/api (no root binary):
+pnpm --filter @m5nita/api db:generate   # Generate migrations
+pnpm --filter @m5nita/api db:migrate    # Apply migrations
+pnpm --filter @m5nita/api db:push       # Push schema (dev only)
+pnpm --filter @m5nita/api db:seed       # Seed dev data (also db:seed-stats / db:seed-knockout)
+
+# Integration tests run against a real Postgres on port 5433 (docker-compose
+# `postgres-test`); DATABASE_URL must point at it:
+DATABASE_URL=postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test \
+  pnpm --filter @m5nita/api test:integration
 ```
+
+> ⚠️ **Migration gotcha**: boot-time migrate applies migrations in `_journal.json`
+> order. When adding a migration, bump its `when` timestamp in
+> `apps/api/drizzle/meta/_journal.json` above the previous entry — otherwise
+> drizzle-kit silently skips it in production.
 
 ## Code Style
 
@@ -114,7 +130,7 @@ pnpm drizzle-kit push        # Push schema (dev only)
 ## Recent Changes
 - 023-knockout-scoring: Added TypeScript 5.x, Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY (Telegram); React 19 + TanStack Router/Query + Tailwind v4 (web); football-data.org v4 (match data, via `fetch`)
 - 022-email-notification-fallback: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend
-- 021-estatisticas-participante: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing MercadoPago / InfinitePay / Stripe / Mock adapters. **No new runtime dependencies** (charts are inline SVG).
+- 021-estatisticas-participante: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing InfinitePay / Stripe / Mock adapters (MercadoPago was removed). **No new runtime dependencies** (charts are inline SVG).
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
