@@ -110,7 +110,24 @@ export class DrizzlePredictionRepository implements PredictionRepository {
     }
 
     const data = predictionToPersistence(entity)
-    const [created] = await this.db.insert(prediction).values(data).returning()
+    // Atomic upsert: two overlapping PUTs can both pass `findByUserPoolMatch`
+    // (id=null) and race into this insert. ON CONFLICT on the unique triple
+    // makes the loser update instead of violating the index — last write wins.
+    // `points` is intentionally NOT in the SET so a lost race can't clobber an
+    // already-scored row; `createdAt` is preserved.
+    const [created] = await this.db
+      .insert(prediction)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [prediction.userId, prediction.poolId, prediction.matchId],
+        set: {
+          homeScore: data.homeScore,
+          awayScore: data.awayScore,
+          advancePick: data.advancePick,
+          updatedAt: new Date(),
+        },
+      })
+      .returning()
     return predictionToDomain(created as NonNullable<typeof created>)
   }
 
