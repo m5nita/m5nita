@@ -88,27 +88,3 @@ export function buildSections<T extends { matchDate: string; matchday?: number |
   })
   return sections
 }
-
-/** Number of pages needed for `total` items (never less than 1). */
-export function pageCount(total: number, pageSize: number): number {
-  return Math.max(1, Math.ceil(total / pageSize))
-}
-
-/** The slice of `items` for a 1-based `page`. */
-export function paginate<T>(items: T[], page: number, pageSize: number): T[] {
-  const start = (page - 1) * pageSize
-  return items.slice(start, start + pageSize)
-}
-
-/**
- * For a chronologically-sorted list, the 1-based page holding the first match
- * that hasn't finished yet — so "Todos os jogos" opens near the live action
- * instead of the oldest results. Falls back to the last page when everything
- * is finished, and to page 1 when the list is empty.
- */
-export function firstRelevantPage(matches: { status: string }[], pageSize: number): number {
-  if (matches.length === 0) return 1
-  const idx = matches.findIndex((m) => m.status !== 'finished')
-  const targetIdx = idx === -1 ? matches.length - 1 : idx
-  return Math.floor(targetIdx / pageSize) + 1
-}
