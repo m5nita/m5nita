@@ -18,11 +18,8 @@ import { apiFetch } from '../../../lib/api'
 import { matchParamsForPool } from '../../../lib/matchQuery'
 import {
   buildSections,
-  firstRelevantPage,
   type Grouping,
   matchesToday,
-  pageCount,
-  paginate,
   type SectionItem,
   sortByDate,
 } from '../../../lib/matchSchedule'
@@ -101,7 +98,7 @@ type Tab = 'groups' | 'knockout'
 // or league rounds).
 type ViewMode = 'today' | 'all' | 'format'
 
-const ALL_PAGE_SIZE = 20
+const ALL_BATCH_SIZE = 20
 
 type SubTabSelection = {
   tab?: Tab
@@ -225,9 +222,11 @@ function MatchList({
         const leftItems = section.items.filter((item) => item.localIndex % 2 === 0)
         const rightItems = section.items.filter((item) => item.localIndex % 2 === 1)
         return (
-          <div key={section.key}>
+          // Top spacing lives on the section (not the header), so `first:` targets
+          // the real first day — a header is always first-child of its own div.
+          <div key={section.key} className="mt-1 first:mt-0">
             {section.header && (
-              <p className="mb-1 mt-4 first:mt-0 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+              <p className="-mb-1 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
                 {section.header}
               </p>
             )}
@@ -353,34 +352,6 @@ function ScheduleTabBarLeague({
   )
 }
 
-function Pagination({
-  page,
-  totalPages,
-  onPrev,
-  onNext,
-}: {
-  page: number
-  totalPages: number
-  onPrev: () => void
-  onNext: () => void
-}) {
-  const buttonClass =
-    'border-2 border-border px-4 py-2 font-display text-[11px] font-bold uppercase tracking-widest text-black transition-colors enabled:cursor-pointer enabled:hover:border-black disabled:opacity-40 disabled:cursor-not-allowed'
-  return (
-    <div className="mt-4 flex items-center justify-between gap-3">
-      <button type="button" onClick={onPrev} disabled={page <= 1} className={buttonClass}>
-        Anterior
-      </button>
-      <span className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
-        Página {page} de {totalPages}
-      </span>
-      <button type="button" onClick={onNext} disabled={page >= totalPages} className={buttonClass}>
-        Próximo
-      </button>
-    </div>
-  )
-}
-
 function TodayView({
   matches,
   poolId,
@@ -406,8 +377,10 @@ function TodayView({
     )
   }
   return (
-    <>
-      <p className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+    // Single flex child so the parent's gap-6 sits above the label (matching the
+    // day header in "Todos os jogos"), not between the label and the list.
+    <div>
+      <p className="-mb-1 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
         Hoje · {matches.length} {matches.length === 1 ? 'jogo' : 'jogos'}
       </p>
       <MatchList
@@ -417,40 +390,48 @@ function TodayView({
         onSave={onSave}
         highlightMatchId={highlightMatchId}
       />
-    </>
+    </div>
   )
 }
 
 function AllMatchesView({
   matches,
-  page,
-  setPage,
   poolId,
   predictionMap,
   onSave,
   highlightMatchId,
-}: MatchListShared & { matches: Match[]; page: number; setPage: (p: number) => void }) {
-  const totalPages = pageCount(matches.length, ALL_PAGE_SIZE)
-  const safePage = Math.min(page, totalPages)
-  const pageMatches = paginate(matches, safePage, ALL_PAGE_SIZE)
+}: MatchListShared & { matches: Match[] }) {
+  const [visible, setVisible] = useState(ALL_BATCH_SIZE)
+  const shown = matches.slice(0, visible)
+  const hasMore = visible < matches.length
+
+  // Infinite scroll: a sentinel below the list grows the window as it nears the
+  // viewport. A callback ref re-attaches the observer whenever the sentinel
+  // mounts/unmounts (so it stops cleanly once the whole list is revealed).
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+    observerRef.current?.disconnect()
+    if (!node) return
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) setVisible((v) => v + ALL_BATCH_SIZE)
+      },
+      { rootMargin: '400px' },
+    )
+    observerRef.current.observe(node)
+  }, [])
+
   return (
     <>
       <MatchList
         poolId={poolId}
-        matches={pageMatches}
+        matches={shown}
         predictionMap={predictionMap}
         onSave={onSave}
         grouping="day"
         highlightMatchId={highlightMatchId}
       />
-      {totalPages > 1 && (
-        <Pagination
-          page={safePage}
-          totalPages={totalPages}
-          onPrev={() => setPage(Math.max(1, safePage - 1))}
-          onNext={() => setPage(Math.min(totalPages, safePage + 1))}
-        />
-      )}
+      {hasMore && <div ref={sentinelRef} aria-hidden className="h-1" />}
     </>
   )
 }
@@ -798,7 +779,6 @@ function PredictionsContent({
   // Land on "Jogos do dia" by default; a ?match deep-link jumps straight to the
   // competition view that holds that match instead.
   const [viewMode, setViewMode] = useState<ViewMode>(targetMatchId ? 'format' : 'today')
-  const [allPage, setAllPage] = useState(1)
   const [tab, setTab] = useState<Tab>('groups')
   const [activeGroup, setActiveGroup] = useState('A')
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
@@ -968,10 +948,7 @@ function PredictionsContent({
 
   const todayMatches = matchesToday(allMatches, new Date())
   const allSorted = sortByDate(allMatches)
-  const goToAll = () => {
-    setViewMode('all')
-    setAllPage(firstRelevantPage(allSorted, ALL_PAGE_SIZE))
-  }
+  const goToAll = () => setViewMode('all')
 
   const scheduleViews = (
     <>
@@ -988,8 +965,6 @@ function PredictionsContent({
       {viewMode === 'all' && (
         <AllMatchesView
           matches={allSorted}
-          page={allPage}
-          setPage={setAllPage}
           poolId={poolId}
           predictionMap={predictionMap}
           onSave={handleSave}

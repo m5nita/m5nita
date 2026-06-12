@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildSections,
-  firstRelevantPage,
   formatDayHeader,
   localDayKey,
   matchesToday,
-  pageCount,
-  paginate,
   sortByDate,
 } from './matchSchedule'
 
@@ -111,39 +108,5 @@ describe('buildSections', () => {
 
     expect(out.map((s) => s.header)).toEqual(['1ª Rodada', '2ª Rodada'])
     expect(out.map((s) => s.items.map((i) => i.match.id))).toEqual([['a', 'b'], ['c']])
-  })
-})
-
-describe('paginate / pageCount', () => {
-  const items = Array.from({ length: 25 }, (_, i) => i)
-
-  it('returns the slice for a 1-based page', () => {
-    expect(paginate(items, 1, 10)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    expect(paginate(items, 3, 10)).toEqual([20, 21, 22, 23, 24])
-  })
-
-  it('computes the page count with a floor of 1', () => {
-    expect(pageCount(25, 10)).toBe(3)
-    expect(pageCount(10, 10)).toBe(1)
-    expect(pageCount(0, 10)).toBe(1)
-  })
-})
-
-describe('firstRelevantPage', () => {
-  it('returns 1 for an empty list', () => {
-    expect(firstRelevantPage([], 10)).toBe(1)
-  })
-
-  it('lands on the page holding the first not-finished match', () => {
-    const ms = Array.from({ length: 25 }, (_, i) => ({
-      status: i < 12 ? 'finished' : 'scheduled',
-    }))
-    // first non-finished is index 12 -> floor(12/10)+1 = 2
-    expect(firstRelevantPage(ms, 10)).toBe(2)
-  })
-
-  it('falls back to the last page when every match is finished', () => {
-    const ms = Array.from({ length: 15 }, () => ({ status: 'finished' }))
-    expect(firstRelevantPage(ms, 10)).toBe(2)
   })
 })
