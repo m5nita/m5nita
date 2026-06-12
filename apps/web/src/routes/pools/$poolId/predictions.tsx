@@ -8,7 +8,7 @@ import {
 } from '@m5nita/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { PoolHub } from '../../../components/pool/PoolHub'
 import { MatchPredictionsList } from '../../../components/prediction/MatchPredictionsList'
 import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
@@ -16,6 +16,16 @@ import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import { MatchCardSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
 import { matchParamsForPool } from '../../../lib/matchQuery'
+import {
+  buildSections,
+  firstRelevantPage,
+  type Grouping,
+  matchesToday,
+  pageCount,
+  paginate,
+  type SectionItem,
+  sortByDate,
+} from '../../../lib/matchSchedule'
 import { upsertPrediction } from '../../../lib/optimisticPredictions'
 import { livePollMs } from '../../../lib/poll'
 
@@ -86,6 +96,13 @@ const knockoutStageOrder = ['round-of-32', 'round-of-16', 'quarter', 'semi', 'th
 
 type Tab = 'groups' | 'knockout'
 
+// 'today' / 'all' are the universal schedule views (every multi-match format);
+// 'format' falls back to the competition-shaped navigation (groups + knockout,
+// or league rounds).
+type ViewMode = 'today' | 'all' | 'format'
+
+const ALL_PAGE_SIZE = 20
+
 type SubTabSelection = {
   tab?: Tab
   group?: string
@@ -111,7 +128,7 @@ function MatchList({
   matches,
   predictionMap,
   onSave,
-  matchdayHeaders,
+  grouping,
   highlightMatchId,
 }: {
   poolId: string
@@ -123,7 +140,7 @@ function MatchList({
     awayScore: number,
     advancePick: AdvanceSide | null,
   ) => void
-  matchdayHeaders?: boolean
+  grouping?: Grouping
   highlightMatchId?: string | null
 }) {
   const refs = useRef<(ScoreInputHandle | null)[]>([])
@@ -151,24 +168,9 @@ function MatchList({
     [poolId, matches],
   )
 
-  type SectionItem = { match: Match; originalIndex: number; localIndex: number }
-  const sections: { key: string; header: string | null; items: SectionItem[] }[] = []
-  matches.forEach((match, originalIndex) => {
-    const sectionKey = matchdayHeaders ? String(match.matchday ?? 'none') : 'all'
-    let current = sections[sections.length - 1]
-    if (!current || current.key !== sectionKey) {
-      const header = matchdayHeaders
-        ? match.matchday && match.matchday > 0
-          ? `${match.matchday}ª Rodada`
-          : 'Rodada'
-        : null
-      current = { key: sectionKey, header, items: [] }
-      sections.push(current)
-    }
-    current.items.push({ match, originalIndex, localIndex: current.items.length })
-  })
+  const sections = buildSections(matches, grouping ?? 'none')
 
-  function renderCard({ match, originalIndex, localIndex }: SectionItem) {
+  function renderCard({ match, originalIndex, localIndex }: SectionItem<Match>) {
     const pred = predictionMap.get(match.id)
     return (
       <div
@@ -274,44 +276,186 @@ type MatchListShared = {
   highlightMatchId: string | null
 }
 
-function GroupKnockoutTabBar({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+function TopTab({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
   return (
-    <div className="flex gap-2" role="tablist">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === 'groups'}
-        onClick={() => setTab('groups')}
-        className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'groups' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
-      >
-        Fase de Grupos
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+        active
+          ? 'bg-black text-white'
+          : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+      }`}
+    >
+      {label}
+    </button>
+  )
+}
+
+// Cup pools: the universal Jogos do dia / Todos os jogos row sits with the
+// format toggle in one grid — 2×2 on mobile, a single row of 4 on desktop.
+function ScheduleTabBarCup({
+  viewMode,
+  tab,
+  onSelectToday,
+  onSelectAll,
+  onSelectFormat,
+}: {
+  viewMode: ViewMode
+  tab: Tab
+  onSelectToday: () => void
+  onSelectAll: () => void
+  onSelectFormat: (t: Tab) => void
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="tablist">
+      <TopTab label="Jogos do dia" active={viewMode === 'today'} onClick={onSelectToday} />
+      <TopTab label="Todos os jogos" active={viewMode === 'all'} onClick={onSelectAll} />
+      <TopTab
+        label="Fase de Grupos"
+        active={viewMode === 'format' && tab === 'groups'}
+        onClick={() => onSelectFormat('groups')}
+      />
+      <TopTab
+        label="Mata-Mata"
+        active={viewMode === 'format' && tab === 'knockout'}
+        onClick={() => onSelectFormat('knockout')}
+      />
+    </div>
+  )
+}
+
+// League pools: the universal row pairs with the round selector below it.
+function ScheduleTabBarLeague({
+  viewMode,
+  onSelectToday,
+  onSelectAll,
+}: {
+  viewMode: ViewMode
+  onSelectToday: () => void
+  onSelectAll: () => void
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2" role="tablist">
+      <TopTab label="Jogos do dia" active={viewMode === 'today'} onClick={onSelectToday} />
+      <TopTab label="Todos os jogos" active={viewMode === 'all'} onClick={onSelectAll} />
+    </div>
+  )
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onPrev,
+  onNext,
+}: {
+  page: number
+  totalPages: number
+  onPrev: () => void
+  onNext: () => void
+}) {
+  const buttonClass =
+    'border-2 border-border px-4 py-2 font-display text-[11px] font-bold uppercase tracking-widest text-black transition-colors enabled:cursor-pointer enabled:hover:border-black disabled:opacity-40 disabled:cursor-not-allowed'
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3">
+      <button type="button" onClick={onPrev} disabled={page <= 1} className={buttonClass}>
+        Anterior
       </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === 'knockout'}
-        onClick={() => setTab('knockout')}
-        className={`flex-1 py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${tab === 'knockout' ? 'bg-black text-white' : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'}`}
-      >
-        Mata-Mata
+      <span className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+        Página {page} de {totalPages}
+      </span>
+      <button type="button" onClick={onNext} disabled={page >= totalPages} className={buttonClass}>
+        Próximo
       </button>
     </div>
   )
 }
 
-function LeagueMatchdayView({
-  leagueMatches,
-  activeMatchday,
-  setActiveMatchday,
+function TodayView({
+  matches,
   poolId,
   predictionMap,
   onSave,
   highlightMatchId,
-}: MatchListShared & {
-  leagueMatches: Match[]
-  activeMatchday: number | null
-  setActiveMatchday: (md: number) => void
-}) {
+  onSeeAll,
+}: MatchListShared & { matches: Match[]; onSeeAll: () => void }) {
+  if (matches.length === 0) {
+    return (
+      <div className="border-2 border-dashed border-border py-10 text-center">
+        <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
+          Nenhum jogo hoje
+        </p>
+        <button
+          type="button"
+          onClick={onSeeAll}
+          className="mt-2 font-display text-[11px] font-bold uppercase tracking-widest text-black underline underline-offset-4 transition-colors hover:text-red cursor-pointer"
+        >
+          Ver todos os jogos
+        </button>
+      </div>
+    )
+  }
+  return (
+    <>
+      <p className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
+        Hoje · {matches.length} {matches.length === 1 ? 'jogo' : 'jogos'}
+      </p>
+      <MatchList
+        poolId={poolId}
+        matches={matches}
+        predictionMap={predictionMap}
+        onSave={onSave}
+        highlightMatchId={highlightMatchId}
+      />
+    </>
+  )
+}
+
+function AllMatchesView({
+  matches,
+  page,
+  setPage,
+  poolId,
+  predictionMap,
+  onSave,
+  highlightMatchId,
+}: MatchListShared & { matches: Match[]; page: number; setPage: (p: number) => void }) {
+  const totalPages = pageCount(matches.length, ALL_PAGE_SIZE)
+  const safePage = Math.min(page, totalPages)
+  const pageMatches = paginate(matches, safePage, ALL_PAGE_SIZE)
+  return (
+    <>
+      <MatchList
+        poolId={poolId}
+        matches={pageMatches}
+        predictionMap={predictionMap}
+        onSave={onSave}
+        grouping="day"
+        highlightMatchId={highlightMatchId}
+      />
+      {totalPages > 1 && (
+        <Pagination
+          page={safePage}
+          totalPages={totalPages}
+          onPrev={() => setPage(Math.max(1, safePage - 1))}
+          onNext={() => setPage(Math.min(totalPages, safePage + 1))}
+        />
+      )}
+    </>
+  )
+}
+
+function leagueMatchdayModel(leagueMatches: Match[], activeMatchday: number | null) {
   const byMatchday = new Map<number, Match[]>()
   for (const m of leagueMatches) {
     const md = m.matchday ?? 0
@@ -326,30 +470,59 @@ function LeagueMatchdayView({
     firstUnfinishedMatchday ?? sortedMatchdays[sortedMatchdays.length - 1] ?? 0
   const currentMatchday = activeMatchday ?? defaultMatchday
   const currentMatches = byMatchday.get(currentMatchday) ?? []
+  return { sortedMatchdays, currentMatchday, currentMatches }
+}
 
+// Always visible for league pools, so the user can return to a round from the
+// today/all views; highlighted only while the round view is active.
+function LeagueRoundTabs({
+  sortedMatchdays,
+  currentMatchday,
+  active,
+  onSelect,
+}: {
+  sortedMatchdays: number[]
+  currentMatchday: number
+  active: boolean
+  onSelect: (md: number) => void
+}) {
   return (
-    <>
-      <div
-        className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
-        role="tablist"
-        aria-label="Rodadas"
-      >
-        {sortedMatchdays.map((md) => (
+    <div
+      className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible"
+      role="tablist"
+      aria-label="Rodadas"
+    >
+      {sortedMatchdays.map((md) => {
+        const selected = active && currentMatchday === md
+        return (
           <button
             key={md}
             type="button"
             role="tab"
-            aria-selected={currentMatchday === md}
-            onClick={() => setActiveMatchday(md)}
+            aria-selected={selected}
+            onClick={() => onSelect(md)}
             className={`shrink-0 font-display text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 transition-colors cursor-pointer ${
-              currentMatchday === md ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
+              selected ? 'bg-black text-white' : 'text-gray-muted hover:text-black'
             }`}
           >
             {md}ª
           </button>
-        ))}
-      </div>
+        )
+      })}
+    </div>
+  )
+}
 
+function LeagueRoundMatches({
+  currentMatchday,
+  currentMatches,
+  poolId,
+  predictionMap,
+  onSave,
+  highlightMatchId,
+}: MatchListShared & { currentMatchday: number; currentMatches: Match[] }) {
+  return (
+    <>
       <p className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
         {currentMatchday}ª Rodada
       </p>
@@ -413,7 +586,7 @@ function GroupStageView({
           matches={[...filteredGroupMatches].sort((a, b) => (a.matchday ?? 0) - (b.matchday ?? 0))}
           predictionMap={predictionMap}
           onSave={onSave}
-          matchdayHeaders
+          grouping="matchday"
           highlightMatchId={highlightMatchId}
         />
       )}
@@ -485,6 +658,133 @@ function KnockoutStagesView({
   )
 }
 
+// Cup pools: universal schedule row + Fase de Grupos / Mata-Mata, with the
+// group/knockout sub-views shown only while the competition view is active.
+function CupSchedule({
+  viewMode,
+  setViewMode,
+  tab,
+  setTab,
+  onSelectAll,
+  scheduleViews,
+  groupMatches,
+  knockoutMatches,
+  activeGroup,
+  setActiveGroup,
+  activeKnockoutStage,
+  setActiveKnockoutStage,
+  poolId,
+  predictionMap,
+  onSave,
+  highlightMatchId,
+}: MatchListShared & {
+  viewMode: ViewMode
+  setViewMode: (m: ViewMode) => void
+  tab: Tab
+  setTab: (t: Tab) => void
+  onSelectAll: () => void
+  scheduleViews: ReactNode
+  groupMatches: Match[]
+  knockoutMatches: Match[]
+  activeGroup: string
+  setActiveGroup: (g: string) => void
+  activeKnockoutStage: string | null
+  setActiveKnockoutStage: (s: string) => void
+}) {
+  return (
+    <>
+      <ScheduleTabBarCup
+        viewMode={viewMode}
+        tab={tab}
+        onSelectToday={() => setViewMode('today')}
+        onSelectAll={onSelectAll}
+        onSelectFormat={(t) => {
+          setViewMode('format')
+          setTab(t)
+        }}
+      />
+      {scheduleViews}
+      {viewMode === 'format' && tab === 'groups' && (
+        <GroupStageView
+          groupMatches={groupMatches}
+          activeGroup={activeGroup}
+          setActiveGroup={setActiveGroup}
+          poolId={poolId}
+          predictionMap={predictionMap}
+          onSave={onSave}
+          highlightMatchId={highlightMatchId}
+        />
+      )}
+      {viewMode === 'format' && tab === 'knockout' && (
+        <KnockoutStagesView
+          knockoutMatches={knockoutMatches}
+          activeKnockoutStage={activeKnockoutStage}
+          setActiveKnockoutStage={setActiveKnockoutStage}
+          poolId={poolId}
+          predictionMap={predictionMap}
+          onSave={onSave}
+          highlightMatchId={highlightMatchId}
+        />
+      )}
+    </>
+  )
+}
+
+// League pools: universal schedule row + always-visible round selector, with
+// the selected round's matches shown only while the round view is active.
+function LeagueSchedule({
+  viewMode,
+  setViewMode,
+  activeMatchday,
+  setActiveMatchday,
+  leagueMatches,
+  onSelectAll,
+  scheduleViews,
+  poolId,
+  predictionMap,
+  onSave,
+  highlightMatchId,
+}: MatchListShared & {
+  viewMode: ViewMode
+  setViewMode: (m: ViewMode) => void
+  activeMatchday: number | null
+  setActiveMatchday: (md: number) => void
+  leagueMatches: Match[]
+  onSelectAll: () => void
+  scheduleViews: ReactNode
+}) {
+  const league = leagueMatchdayModel(leagueMatches, activeMatchday)
+  return (
+    <>
+      <ScheduleTabBarLeague
+        viewMode={viewMode}
+        onSelectToday={() => setViewMode('today')}
+        onSelectAll={onSelectAll}
+      />
+      <LeagueRoundTabs
+        sortedMatchdays={league.sortedMatchdays}
+        currentMatchday={league.currentMatchday}
+        active={viewMode === 'format'}
+        onSelect={(md) => {
+          setViewMode('format')
+          setActiveMatchday(md)
+        }}
+      />
+      {scheduleViews}
+      {viewMode === 'format' && (
+        <LeagueRoundMatches
+          currentMatchday={league.currentMatchday}
+          currentMatches={league.currentMatches}
+          poolId={poolId}
+          predictionMap={predictionMap}
+          onSave={onSave}
+          highlightMatchId={highlightMatchId}
+        />
+      )}
+    </>
+  )
+}
+
 function PredictionsContent({
   pool,
   poolId,
@@ -495,6 +795,10 @@ function PredictionsContent({
   targetMatchId?: string
 }) {
   const queryClient = useQueryClient()
+  // Land on "Jogos do dia" by default; a ?match deep-link jumps straight to the
+  // competition view that holds that match instead.
+  const [viewMode, setViewMode] = useState<ViewMode>(targetMatchId ? 'format' : 'today')
+  const [allPage, setAllPage] = useState(1)
   const [tab, setTab] = useState<Tab>('groups')
   const [activeGroup, setActiveGroup] = useState('A')
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
@@ -598,6 +902,7 @@ function PredictionsContent({
     handledTargetRef.current = targetMatchId
 
     const sel = subTabForMatch(target)
+    setViewMode('format')
     if (sel.tab) setTab(sel.tab)
     if (sel.group) setActiveGroup(sel.group)
     if (sel.matchday != null) setActiveMatchday(sel.matchday)
@@ -648,47 +953,43 @@ function PredictionsContent({
   const knockoutMatches = allMatches.filter((m) => m.stage !== 'group' && m.stage !== 'league')
   const leagueMatches = allMatches.filter((m) => m.stage === 'league')
 
-  return (
+  // Single-match pools have exactly one game — the schedule tabs add nothing.
+  if (pool.matchId != null) {
+    return (
+      <MatchList
+        poolId={poolId}
+        matches={allMatches}
+        predictionMap={predictionMap}
+        onSave={handleSave}
+        highlightMatchId={highlightMatchId}
+      />
+    )
+  }
+
+  const todayMatches = matchesToday(allMatches, new Date())
+  const allSorted = sortByDate(allMatches)
+  const goToAll = () => {
+    setViewMode('all')
+    setAllPage(firstRelevantPage(allSorted, ALL_PAGE_SIZE))
+  }
+
+  const scheduleViews = (
     <>
-      {pool.matchId != null ? (
-        <MatchList
-          poolId={poolId}
-          matches={allMatches}
-          predictionMap={predictionMap}
-          onSave={handleSave}
-          highlightMatchId={highlightMatchId}
-        />
-      ) : hasLeagueMatches ? (
-        <LeagueMatchdayView
-          leagueMatches={leagueMatches}
-          activeMatchday={activeMatchday}
-          setActiveMatchday={setActiveMatchday}
+      {viewMode === 'today' && (
+        <TodayView
+          matches={todayMatches}
           poolId={poolId}
           predictionMap={predictionMap}
           onSave={handleSave}
           highlightMatchId={highlightMatchId}
-        />
-      ) : (
-        <GroupKnockoutTabBar tab={tab} setTab={setTab} />
-      )}
-
-      {!hasLeagueMatches && tab === 'groups' && (
-        <GroupStageView
-          groupMatches={groupMatches}
-          activeGroup={activeGroup}
-          setActiveGroup={setActiveGroup}
-          poolId={poolId}
-          predictionMap={predictionMap}
-          onSave={handleSave}
-          highlightMatchId={highlightMatchId}
+          onSeeAll={goToAll}
         />
       )}
-
-      {!hasLeagueMatches && tab === 'knockout' && (
-        <KnockoutStagesView
-          knockoutMatches={knockoutMatches}
-          activeKnockoutStage={activeKnockoutStage}
-          setActiveKnockoutStage={setActiveKnockoutStage}
+      {viewMode === 'all' && (
+        <AllMatchesView
+          matches={allSorted}
+          page={allPage}
+          setPage={setAllPage}
           poolId={poolId}
           predictionMap={predictionMap}
           onSave={handleSave}
@@ -696,6 +997,45 @@ function PredictionsContent({
         />
       )}
     </>
+  )
+
+  if (hasLeagueMatches) {
+    return (
+      <LeagueSchedule
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        activeMatchday={activeMatchday}
+        setActiveMatchday={setActiveMatchday}
+        leagueMatches={leagueMatches}
+        onSelectAll={goToAll}
+        scheduleViews={scheduleViews}
+        poolId={poolId}
+        predictionMap={predictionMap}
+        onSave={handleSave}
+        highlightMatchId={highlightMatchId}
+      />
+    )
+  }
+
+  return (
+    <CupSchedule
+      viewMode={viewMode}
+      setViewMode={setViewMode}
+      tab={tab}
+      setTab={setTab}
+      onSelectAll={goToAll}
+      scheduleViews={scheduleViews}
+      groupMatches={groupMatches}
+      knockoutMatches={knockoutMatches}
+      activeGroup={activeGroup}
+      setActiveGroup={setActiveGroup}
+      activeKnockoutStage={activeKnockoutStage}
+      setActiveKnockoutStage={setActiveKnockoutStage}
+      poolId={poolId}
+      predictionMap={predictionMap}
+      onSave={handleSave}
+      highlightMatchId={highlightMatchId}
+    />
   )
 }
 
