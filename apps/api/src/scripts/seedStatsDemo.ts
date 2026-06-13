@@ -525,7 +525,7 @@ async function printGuide(
 
   for (const [i, { scenario: sc, poolId }] of built.entries()) {
     console.log(`[${i + 1}] ${sc.name}`)
-    console.log(`    Abrir:      /pools/${poolId}/estatisticas`)
+    console.log(`    Abrir:      /pools/${poolId}/stats`)
     console.log(`    Demonstra:  ${sc.explanation}`)
     console.log(`    Por quê:    ${sc.why}`)
     if (sc.unlock) {

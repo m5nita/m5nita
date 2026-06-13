@@ -47,6 +47,6 @@ function StatisticsPage() {
   )
 }
 
-export const Route = createFileRoute('/pools/$poolId/estatisticas')({
+export const Route = createFileRoute('/pools/$poolId/stats')({
   component: StatisticsPage,
 })

@@ -2,7 +2,7 @@ import type { FormOutcome, RecentFormBlock } from './types'
 
 const CELL: Record<FormOutcome, { cls: string; label: string }> = {
   exact: { cls: 'bg-green', label: 'Placar exato' },
-  result: { cls: 'bg-amber', label: 'Só o resultado' },
+  result: { cls: 'bg-amber', label: 'Acertou o resultado' },
   miss: { cls: 'bg-border', label: 'Errou' },
 }
 
