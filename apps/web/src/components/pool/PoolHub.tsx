@@ -17,10 +17,7 @@ interface PoolHubProps {
   children: (pool: PoolDetail) => ReactNode
 }
 
-type TabTarget =
-  | '/pools/$poolId/predictions'
-  | '/pools/$poolId/ranking'
-  | '/pools/$poolId/estatisticas'
+type TabTarget = '/pools/$poolId/predictions' | '/pools/$poolId/ranking' | '/pools/$poolId/stats'
 
 function TabLink({
   poolId,
@@ -161,6 +158,12 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
 
   const isOwner = session?.user?.id === pool.ownerId
   const canInvite = pool.status !== 'closed' && !!pool.inviteCode
+  // Single-match pools (one fixture) carry no meaningful per-participant stats
+  // panel — hide the tab, and redirect if someone lands on it by URL.
+  const isSingleMatch = pool.matchId != null
+  if (isSingleMatch && activeTab === 'statistics') {
+    return <Navigate to="/pools/$poolId/predictions" params={{ poolId }} replace />
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -227,18 +230,16 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         <TabLink poolId={poolId} to="/pools/$poolId/ranking" active={activeTab === 'ranking'}>
           Ranking
         </TabLink>
-        <TabLink
-          poolId={poolId}
-          to="/pools/$poolId/estatisticas"
-          active={activeTab === 'statistics'}
-        >
-          <span className="inline-flex items-center justify-center gap-1.5">
-            Estatísticas
-            <span className="rounded-sm bg-red px-1 py-0.5 text-[9px] font-black leading-none tracking-widest text-white">
-              BETA
+        {!isSingleMatch && (
+          <TabLink poolId={poolId} to="/pools/$poolId/stats" active={activeTab === 'statistics'}>
+            <span className="inline-flex items-center justify-center gap-1.5">
+              Estatísticas
+              <span className="rounded-sm bg-red px-1 py-0.5 text-[9px] font-black leading-none tracking-widest text-white">
+                BETA
+              </span>
             </span>
-          </span>
-        </TabLink>
+          </TabLink>
+        )}
       </div>
 
       {pool.status === 'closed' && <PrizeWithdrawal poolId={poolId} />}

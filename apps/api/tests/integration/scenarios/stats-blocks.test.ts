@@ -14,7 +14,7 @@ const KICKOFF = new Date('2026-06-01T15:00:00Z')
 const AFTER = new Date('2026-06-01T18:00:00Z')
 
 /**
- * US2 — the four comparison blocks. Covers T026: an unlocked panel returns the
+ * US2 — the panel blocks. Covers T026: an unlocked panel returns the visual
  * blocks, reflects a finished match (freshness via calcPoints), and the locked
  * payload exposes no computed/third-party data.
  */
@@ -56,28 +56,47 @@ describe('US2 — stats blocks', () => {
     const body = (await resp.json()) as {
       unlocked: boolean
       blocks: {
-        hitRateVsAverage: { exactPct: { you: number }; state: string }
-        rankingEvolution: {
-          perRound: { matchday: number; points: number }[]
+        hitRate: { exactPct: { you: number }; state: string }
+        ranking: {
           position: number | null
+          memberCount: number
           gapToLeader: number
           trend: string
           state: string
         }
-        pointsLeftOnTable: { earned: number; maxPossible: number; state: string }
+        evolution: {
+          rounds: number[]
+          you: number[]
+          leader: number[]
+          average: number[]
+          state: string
+        }
+        efficiency: { earned: number; maxPossible: number; state: string }
+        distribution: { exact: number; total: number }
+        recentForm: { outcomes: string[]; currentStreak: number }
       }
     }
 
     expect(body.unlocked).toBe(true)
-    expect(body.blocks.hitRateVsAverage.state).toBe('ok')
-    expect(body.blocks.hitRateVsAverage.exactPct.you).toBeCloseTo(1) // 1/1 exact prediction
-    // Block B (ranking evolution): only member → position 1, no gap, no prior snapshot → stable.
-    expect(body.blocks.rankingEvolution.perRound).toEqual([{ matchday: 1, points: 10 }])
-    expect(body.blocks.rankingEvolution.position).toBe(1)
-    expect(body.blocks.rankingEvolution.gapToLeader).toBe(0)
-    expect(body.blocks.rankingEvolution.trend).toBe('stable')
-    expect(body.blocks.pointsLeftOnTable.earned).toBe(10)
-    expect(body.blocks.pointsLeftOnTable.maxPossible).toBe(10) // range pool: 1 finished * 10
+    expect(body.blocks.hitRate.state).toBe('ok')
+    expect(body.blocks.hitRate.exactPct.you).toBeCloseTo(1) // 1/1 exact prediction
+    // Hero: only member → position 1, no gap, no prior snapshot → stable.
+    expect(body.blocks.ranking.position).toBe(1)
+    expect(body.blocks.ranking.memberCount).toBe(1)
+    expect(body.blocks.ranking.gapToLeader).toBe(0)
+    expect(body.blocks.ranking.trend).toBe('stable')
+    // Evolution: single member is its own leader and average.
+    expect(body.blocks.evolution.rounds).toEqual([1])
+    expect(body.blocks.evolution.you).toEqual([10])
+    expect(body.blocks.evolution.leader).toEqual([10])
+    expect(body.blocks.evolution.average).toEqual([10])
+    expect(body.blocks.efficiency.earned).toBe(10)
+    expect(body.blocks.efficiency.maxPossible).toBe(10) // range pool: 1 finished * 10
+    // Distribution + form reflect the single exact hit.
+    expect(body.blocks.distribution.exact).toBe(1)
+    expect(body.blocks.distribution.total).toBe(1)
+    expect(body.blocks.recentForm.outcomes).toEqual(['exact'])
+    expect(body.blocks.recentForm.currentStreak).toBe(1)
   })
 
   it('locked_payload_carries_no_computed_blocks', async () => {

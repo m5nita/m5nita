@@ -12,10 +12,6 @@ export type ParticipantStatsRow = {
   exactCount: number
   resultCount: number
   pointsTotal: number
-  homeCorrect: number
-  homeTotal: number
-  awayCorrect: number
-  awayTotal: number
   lowGoalsCorrect: number
   lowGoalsTotal: number
   highGoalsCorrect: number
@@ -35,10 +31,19 @@ export type PoolStatsAggregateRow = {
   pointsTotal: number
 }
 
-/** The viewer's points in a single finished round (Block B series). */
-export type RoundPointsRow = {
+/** Per-member points in a finished round — the basis for the evolution lines. */
+export type PoolRoundPointsRow = {
+  userId: string
   matchday: number
   points: number
+}
+
+/** One of the viewer's recent finished predictions — raw scores; domain classifies. */
+export type FormSampleRow = {
+  predHome: number
+  predAway: number
+  actualHome: number
+  actualAway: number
 }
 
 export interface StatsRepository {
@@ -49,10 +54,10 @@ export interface StatsRepository {
   participantRow(poolId: string, userId: string): Promise<ParticipantStatsRow | null>
   /** Per-member raw aggregates for the whole pool (average + leader baseline). */
   poolAggregate(poolId: string): Promise<PoolStatsAggregateRow[]>
-  /** The viewer's points grouped by finished matchday (Block B). */
-  roundPoints(poolId: string, userId: string): Promise<RoundPointsRow[]>
+  /** Per-member points by finished matchday for the whole pool (evolution lines). */
+  poolRoundPoints(poolId: string): Promise<PoolRoundPointsRow[]>
+  /** The viewer's last `limit` finished predictions, most recent last (form strip). */
+  recentForm(poolId: string, userId: string, limit: number): Promise<FormSampleRow[]>
   /** Recompute and upsert the per-user snapshot (run at match finish + on grant). */
   recomputeSnapshot(poolId: string, userId: string): Promise<void>
-  // pendingMatches() is added in US3 — its scope-aware match selection must go
-  // through the Pool aggregate to stay leak-free, so it lands with that work.
 }

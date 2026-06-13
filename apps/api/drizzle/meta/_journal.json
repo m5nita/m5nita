@@ -85,6 +85,13 @@
       "when": 1781510900000,
       "tag": "0011_clumsy_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1781511000000,
+      "tag": "0012_noisy_steve_rogers",
+      "breakpoints": true
     }
   ]
 }

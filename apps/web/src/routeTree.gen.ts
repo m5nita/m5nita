@@ -20,10 +20,10 @@ import { Route as PoolsPaymentSuccessRouteImport } from './routes/pools/payment-
 import { Route as PoolsCreateRouteImport } from './routes/pools/create'
 import { Route as InviteInviteCodeRouteImport } from './routes/invite/$inviteCode'
 import { Route as PoolsPoolIdIndexRouteImport } from './routes/pools/$poolId/index'
+import { Route as PoolsPoolIdStatsRouteImport } from './routes/pools/$poolId/stats'
 import { Route as PoolsPoolIdRankingRouteImport } from './routes/pools/$poolId/ranking'
 import { Route as PoolsPoolIdPredictionsRouteImport } from './routes/pools/$poolId/predictions'
 import { Route as PoolsPoolIdManageRouteImport } from './routes/pools/$poolId/manage'
-import { Route as PoolsPoolIdEstatisticasRouteImport } from './routes/pools/$poolId/estatisticas'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -80,6 +80,11 @@ const PoolsPoolIdIndexRoute = PoolsPoolIdIndexRouteImport.update({
   path: '/$poolId/',
   getParentRoute: () => PoolsRouteRoute,
 } as any)
+const PoolsPoolIdStatsRoute = PoolsPoolIdStatsRouteImport.update({
+  id: '/$poolId/stats',
+  path: '/$poolId/stats',
+  getParentRoute: () => PoolsRouteRoute,
+} as any)
 const PoolsPoolIdRankingRoute = PoolsPoolIdRankingRouteImport.update({
   id: '/$poolId/ranking',
   path: '/$poolId/ranking',
@@ -95,11 +100,6 @@ const PoolsPoolIdManageRoute = PoolsPoolIdManageRouteImport.update({
   path: '/$poolId/manage',
   getParentRoute: () => PoolsRouteRoute,
 } as any)
-const PoolsPoolIdEstatisticasRoute = PoolsPoolIdEstatisticasRouteImport.update({
-  id: '/$poolId/estatisticas',
-  path: '/$poolId/estatisticas',
-  getParentRoute: () => PoolsRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -112,10 +112,10 @@ export interface FileRoutesByFullPath {
   '/invite/$inviteCode': typeof InviteInviteCodeRoute
   '/pools/create': typeof PoolsCreateRoute
   '/pools/payment-success': typeof PoolsPaymentSuccessRoute
-  '/pools/$poolId/estatisticas': typeof PoolsPoolIdEstatisticasRoute
   '/pools/$poolId/manage': typeof PoolsPoolIdManageRoute
   '/pools/$poolId/predictions': typeof PoolsPoolIdPredictionsRoute
   '/pools/$poolId/ranking': typeof PoolsPoolIdRankingRoute
+  '/pools/$poolId/stats': typeof PoolsPoolIdStatsRoute
   '/pools/$poolId/': typeof PoolsPoolIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -129,10 +129,10 @@ export interface FileRoutesByTo {
   '/invite/$inviteCode': typeof InviteInviteCodeRoute
   '/pools/create': typeof PoolsCreateRoute
   '/pools/payment-success': typeof PoolsPaymentSuccessRoute
-  '/pools/$poolId/estatisticas': typeof PoolsPoolIdEstatisticasRoute
   '/pools/$poolId/manage': typeof PoolsPoolIdManageRoute
   '/pools/$poolId/predictions': typeof PoolsPoolIdPredictionsRoute
   '/pools/$poolId/ranking': typeof PoolsPoolIdRankingRoute
+  '/pools/$poolId/stats': typeof PoolsPoolIdStatsRoute
   '/pools/$poolId': typeof PoolsPoolIdIndexRoute
 }
 export interface FileRoutesById {
@@ -147,10 +147,10 @@ export interface FileRoutesById {
   '/invite/$inviteCode': typeof InviteInviteCodeRoute
   '/pools/create': typeof PoolsCreateRoute
   '/pools/payment-success': typeof PoolsPaymentSuccessRoute
-  '/pools/$poolId/estatisticas': typeof PoolsPoolIdEstatisticasRoute
   '/pools/$poolId/manage': typeof PoolsPoolIdManageRoute
   '/pools/$poolId/predictions': typeof PoolsPoolIdPredictionsRoute
   '/pools/$poolId/ranking': typeof PoolsPoolIdRankingRoute
+  '/pools/$poolId/stats': typeof PoolsPoolIdStatsRoute
   '/pools/$poolId/': typeof PoolsPoolIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -166,10 +166,10 @@ export interface FileRouteTypes {
     | '/invite/$inviteCode'
     | '/pools/create'
     | '/pools/payment-success'
-    | '/pools/$poolId/estatisticas'
     | '/pools/$poolId/manage'
     | '/pools/$poolId/predictions'
     | '/pools/$poolId/ranking'
+    | '/pools/$poolId/stats'
     | '/pools/$poolId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -183,10 +183,10 @@ export interface FileRouteTypes {
     | '/invite/$inviteCode'
     | '/pools/create'
     | '/pools/payment-success'
-    | '/pools/$poolId/estatisticas'
     | '/pools/$poolId/manage'
     | '/pools/$poolId/predictions'
     | '/pools/$poolId/ranking'
+    | '/pools/$poolId/stats'
     | '/pools/$poolId'
   id:
     | '__root__'
@@ -200,10 +200,10 @@ export interface FileRouteTypes {
     | '/invite/$inviteCode'
     | '/pools/create'
     | '/pools/payment-success'
-    | '/pools/$poolId/estatisticas'
     | '/pools/$poolId/manage'
     | '/pools/$poolId/predictions'
     | '/pools/$poolId/ranking'
+    | '/pools/$poolId/stats'
     | '/pools/$poolId/'
   fileRoutesById: FileRoutesById
 }
@@ -297,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PoolsPoolIdIndexRouteImport
       parentRoute: typeof PoolsRouteRoute
     }
+    '/pools/$poolId/stats': {
+      id: '/pools/$poolId/stats'
+      path: '/$poolId/stats'
+      fullPath: '/pools/$poolId/stats'
+      preLoaderRoute: typeof PoolsPoolIdStatsRouteImport
+      parentRoute: typeof PoolsRouteRoute
+    }
     '/pools/$poolId/ranking': {
       id: '/pools/$poolId/ranking'
       path: '/$poolId/ranking'
@@ -318,33 +325,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PoolsPoolIdManageRouteImport
       parentRoute: typeof PoolsRouteRoute
     }
-    '/pools/$poolId/estatisticas': {
-      id: '/pools/$poolId/estatisticas'
-      path: '/$poolId/estatisticas'
-      fullPath: '/pools/$poolId/estatisticas'
-      preLoaderRoute: typeof PoolsPoolIdEstatisticasRouteImport
-      parentRoute: typeof PoolsRouteRoute
-    }
   }
 }
 
 interface PoolsRouteRouteChildren {
   PoolsCreateRoute: typeof PoolsCreateRoute
   PoolsPaymentSuccessRoute: typeof PoolsPaymentSuccessRoute
-  PoolsPoolIdEstatisticasRoute: typeof PoolsPoolIdEstatisticasRoute
   PoolsPoolIdManageRoute: typeof PoolsPoolIdManageRoute
   PoolsPoolIdPredictionsRoute: typeof PoolsPoolIdPredictionsRoute
   PoolsPoolIdRankingRoute: typeof PoolsPoolIdRankingRoute
+  PoolsPoolIdStatsRoute: typeof PoolsPoolIdStatsRoute
   PoolsPoolIdIndexRoute: typeof PoolsPoolIdIndexRoute
 }
 
 const PoolsRouteRouteChildren: PoolsRouteRouteChildren = {
   PoolsCreateRoute: PoolsCreateRoute,
   PoolsPaymentSuccessRoute: PoolsPaymentSuccessRoute,
-  PoolsPoolIdEstatisticasRoute: PoolsPoolIdEstatisticasRoute,
   PoolsPoolIdManageRoute: PoolsPoolIdManageRoute,
   PoolsPoolIdPredictionsRoute: PoolsPoolIdPredictionsRoute,
   PoolsPoolIdRankingRoute: PoolsPoolIdRankingRoute,
+  PoolsPoolIdStatsRoute: PoolsPoolIdStatsRoute,
   PoolsPoolIdIndexRoute: PoolsPoolIdIndexRoute,
 }
 

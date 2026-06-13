@@ -4,7 +4,7 @@ description: "Task list for Per-Participant Pool Statistics (021)"
 
 # Tasks: Per-Participant Pool Statistics
 
-**Input**: Design documents from `/specs/021-estatisticas-participante/`
+**Input**: Design documents from `/specs/021-participant-stats/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 
 **Tests**: INCLUDED — the constitution (Principle II) and plan mandate TDD (domain 100% coverage) and real-DB integration tests for the gate, idempotency and prize-invariance. Domain/unit tests are co-located (`src/**/*.test.ts`); integration tests live in `apps/api/tests/integration/` (spec 016 real-DB harness, excluded from the default `vitest` run).
@@ -102,7 +102,7 @@ description: "Task list for Per-Participant Pool Statistics (021)"
 - [x] T030 [US2] Implement `apps/api/src/domain/stats/StatsComparisonPolicy.ts` (deltas vs avg/leader, efficiency; anonymized). (depends on T024)
 - [x] T031 [US2] Implement `apps/api/src/domain/stats/ParticipantPoolStats.ts` aggregate (blocks A–D; `pointsMax = finished_count × scoringPolicy.maxPoints()`). (depends on T025, T030, T008)
 - [x] T032 [US2] Extend `GetParticipantStatsUseCase` unlocked payload with blocks A–D (read snapshot via `DrizzleStatsRepository` + pool aggregate via `statsCache.getOrCompute`). (depends on T027, T028, T031)
-- [x] T033 [P] [US2] Add `'statistics'` to the `activeTab` union + an "Estatísticas" tab `Link` in `apps/web/src/components/pool/PoolHub.tsx`, and create route `apps/web/src/routes/pools/$poolId/estatisticas.tsx` (uses `apiFetch`, refetch-on-focus + long interval, **not** `livePollMs()`).
+- [x] T033 [P] [US2] Add `'statistics'` to the `activeTab` union + an "Estatísticas" tab `Link` in `apps/web/src/components/pool/PoolHub.tsx`, and create route `apps/web/src/routes/pools/$poolId/stats.tsx` (uses `apiFetch`, refetch-on-focus + long interval, **not** `livePollMs()`).
 - [x] T034 [P] [US2] Create `apps/web/src/components/pool/stats/StatsPaywall.tsx` — teaser + `formatCurrency` price + unlock CTA (POST `/stats/unlock` → `window.location.href = checkoutUrl` → `payment-success` polling → back to tab), reusing the `PrizeWithdrawal` locked-state pattern.
 - [x] T035 [US2] Create `apps/web/src/components/pool/stats/StatsPanel.tsx` (blocks A–D) + `Sparkline.tsx` + `CompareBar.tsx` (zero-dep inline SVG, `@theme` tokens, dark/light). (depends on T033)
 

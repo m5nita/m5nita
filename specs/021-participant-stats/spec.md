@@ -1,6 +1,6 @@
 # Feature Specification: Per-Participant Pool Statistics
 
-**Feature Branch**: `021-estatisticas-participante`
+**Feature Branch**: `021-participant-stats`
 **Created**: 2026-06-03
 **Status**: Draft
 **Input**: User description: "estatísticas por participante, por bolão — produto pago simbólico que compara o desempenho do participante com o resto do bolão e ajuda a fechar palpites pendentes"

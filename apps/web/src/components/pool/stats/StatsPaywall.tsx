@@ -10,10 +10,10 @@ type PaywallProps = {
 }
 
 const SAMPLE_BLOCKS = [
-  'Aproveitamento vs média',
-  'Evolução no ranking',
-  'Forças e fraquezas',
-  'Pontos deixados na mesa',
+  'Sua posição no ranking',
+  'Aproveitamento vs média e líder',
+  'Evolução por rodada',
+  'Forma recente e eficiência',
 ]
 
 /**

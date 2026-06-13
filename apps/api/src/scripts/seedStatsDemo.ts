@@ -48,11 +48,11 @@ const TARGET_PHONE = argValue('--phone') ?? '+5511990009999'
 const CLEAN_ONLY = args.includes('--clean')
 
 type Score = [number, number]
-type Profile = 'exact' | 'homeBias' | 'awayBias' | 'lowAce' | 'average' | 'weak'
+type Profile = 'exact' | 'lowAce' | 'average' | 'weak'
 
 // Demo "group stage": rounds 81/82/83 with 5/6/7 fixtures (uneven → non-flat
-// chart). Scores chosen so every dimension clears the suggestion threshold:
-// 7 home wins, 6 away wins, 5 draws; 10 low (<=2 goals), 8 high.
+// chart). Scores chosen so the goal-volume dimension clears the takeaway
+// threshold: 10 low (<=2 goals), 8 high.
 const FINISHED: Array<{ md: number; home: string; away: string; actual: Score }> = [
   // round 81 (5)
   { md: 81, home: 'Brasil', away: 'Sérvia', actual: [1, 0] },
@@ -88,10 +88,6 @@ function predict(profile: Profile, [h, a]: Score): Score {
   switch (profile) {
     case 'exact':
       return [h, a]
-    case 'homeBias':
-      return [2, 1]
-    case 'awayBias':
-      return [1, 2]
     case 'lowAce':
       return h + a <= 2 ? [h, a] : [0, 0]
     case 'average':
@@ -128,38 +124,39 @@ const SCENARIOS: Scenario[] = [
     trend: 'rising',
     predictUpcoming: true,
     explanation: 'Painel de quem lidera o bolão (melhor caso).',
-    why: 'Você cravou o placar de todos os jogos → líder: gap 0, aproveitamento 100%/100%, eficiência máxima. O gráfico de rodadas sobe (5/6/7 jogos → 50/60/70 pts). Sem dica (forte em tudo). Tendência "subindo".',
+    why: 'Você cravou o placar de todos os jogos → líder: gap 0, aproveitamento 100%/100%, eficiência máxima, forma 100% verde (10 seguidos). Na evolução sua linha coincide com a do líder. Hero "Subiu".',
   },
   {
-    name: `${POOL_NAME_PREFIX}Mando de campo forte`,
+    name: `${POOL_NAME_PREFIX}Subindo no ranking`,
     scope: GROUP,
-    target: 'homeBias',
+    target: 'average',
     rivals: ['exact', 'average', 'weak'],
+    unlock: true,
+    trend: 'rising',
+    predictUpcoming: true,
+    explanation: 'Hero "▲ Subiu" + linha de evolução (você vs líder vs média).',
+    why: 'Aproveitamento médio, mas a posição melhorou desde a última atualização → o hero mostra "Subiu". Na evolução, a linha do líder (rival que cravou tudo) dispara à frente da sua e da média.',
+  },
+  {
+    name: `${POOL_NAME_PREFIX}Caindo no ranking`,
+    scope: GROUP,
+    target: 'weak',
+    rivals: ['exact', 'average', 'average'],
     unlock: true,
     trend: 'falling',
     predictUpcoming: true,
-    explanation: 'Dispara a dica "mando de campo" + comparação com o líder.',
-    why: 'Você sempre aposta no mandante → acerta 100% dos 7 jogos que o mandante venceu e 0% dos 6 que o visitante venceu → dica de mando. Um rival cravou tudo (líder). Tendência "caindo".',
+    explanation: 'Hero "▼ Caiu" + eficiência baixa + distribuição puxada para "erro".',
+    why: 'Você sempre chuta 3×3 → erra quase tudo → eficiência baixa, distribuição com muitos "erros", forma recente fria (sem sequência). A posição piorou → o hero mostra "Caiu".',
   },
   {
-    name: `${POOL_NAME_PREFIX}Visitante forte`,
-    scope: GROUP,
-    target: 'awayBias',
-    rivals: ['exact', 'average', 'weak'],
-    unlock: true,
-    predictUpcoming: true,
-    explanation: 'Dispara a dica "visitante".',
-    why: 'Você só aposta no visitante → acerta os 6 jogos de virada de fora e erra os de mando → dica de visitante.',
-  },
-  {
-    name: `${POOL_NAME_PREFIX}Placares baixos`,
+    name: `${POOL_NAME_PREFIX}Forte em placares baixos`,
     scope: GROUP,
     target: 'lowAce',
     rivals: ['exact', 'average', 'weak'],
     unlock: true,
     predictUpcoming: true,
-    explanation: 'Dispara a dica "placares baixos".',
-    why: 'Você crava os 10 jogos de poucos gols (≤2) e erra os 8 de muitos → acerto em poucos gols >> muitos gols → dica de placares baixos.',
+    explanation: 'Forças por tipo de jogo: takeaway "vai melhor em jogos truncados".',
+    why: 'Você crava os 10 jogos de poucos gols (≤2) e erra os 8 de muitos → acerto em poucos gols >> muitos gols → a seção Forças mostra "→ Você vai melhor em jogos truncados".',
   },
   {
     name: `${POOL_NAME_PREFIX}Disputa apertada (impacto ALTO)`,
@@ -179,7 +176,7 @@ const SCENARIOS: Scenario[] = [
     unlock: true,
     predictUpcoming: true,
     explanation: 'Estado "dados insuficientes ainda".',
-    why: 'Bolão só das oitavas (ainda não jogadas) → nenhum jogo finalizado → os 4 blocos mostram "Dados insuficientes ainda", mas os jogos pendentes continuam listados.',
+    why: 'Bolão só das oitavas (ainda não jogadas) → nenhum jogo finalizado → os blocos mostram "Dados insuficientes ainda", mas os jogos pendentes continuam listados.',
   },
   {
     name: `${POOL_NAME_PREFIX}Jogo único (máx 14 pts)`,
@@ -528,7 +525,7 @@ async function printGuide(
 
   for (const [i, { scenario: sc, poolId }] of built.entries()) {
     console.log(`[${i + 1}] ${sc.name}`)
-    console.log(`    Abrir:      /pools/${poolId}/estatisticas`)
+    console.log(`    Abrir:      /pools/${poolId}/stats`)
     console.log(`    Demonstra:  ${sc.explanation}`)
     console.log(`    Por quê:    ${sc.why}`)
     if (sc.unlock) {
@@ -549,7 +546,6 @@ async function printGuide(
         console.log(
           `    Dados:      pos ${snap.lastPosition ?? '—'} · ${snap.pointsTotal} pts (líder ${leader?.name ?? '?'} ${leader?.pts ?? 0}) · ` +
             `exatos ${snap.exactCount}/${snap.finishedCount} · resultado ${snap.resultCount}/${snap.finishedCount} · ` +
-            `mando ${snap.homeCorrect}/${snap.homeTotal} · fora ${snap.awayCorrect}/${snap.awayTotal} · ` +
             `poucos ${snap.lowGoalsCorrect}/${snap.lowGoalsTotal} · muitos ${snap.highGoalsCorrect}/${snap.highGoalsTotal}`,
         )
       } else {

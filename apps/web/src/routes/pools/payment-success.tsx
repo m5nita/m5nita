@@ -138,7 +138,7 @@ function PaymentSuccessPage() {
   const isStats = search.type === 'stats_unlock'
   function goToContext() {
     if (poolId && isStats) {
-      navigate({ to: '/pools/$poolId/estatisticas', params: { poolId } })
+      navigate({ to: '/pools/$poolId/stats', params: { poolId } })
     } else if (poolId) {
       navigate({ to: '/pools/$poolId/predictions', params: { poolId } })
     } else {

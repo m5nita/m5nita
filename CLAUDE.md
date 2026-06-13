@@ -27,8 +27,8 @@ Auto-generated from all feature plans. Last updated: 2026-06-05
 - PostgreSQL 16 — the existing `postgres-test` service in `docker-compose.yml` (port 5433) and the same image already used by CI (`ci.yml` > `services.postgres`). Template-database cloning (`CREATE DATABASE x TEMPLATE t`) is the reset mechanism. (016-integration-tests-real-db)
 - TypeScript 5.x, Node.js ≥ 22 + Hono (API), Drizzle ORM, Better Auth, grammY (Telegram), React 19, TanStack Router, TanStack Query, Tailwind CSS v4. No new runtime dependencies. (019-single-match-pool)
 - PostgreSQL 16 — adds a nullable `match_id uuid` column to `pool` table, FK to `match.id`, with a CHECK constraint enforcing mutual exclusivity with `matchday_from`/`matchday_to`. (019-single-match-pool)
-- TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing InfinitePay / Stripe / Mock adapters (MercadoPago was removed). **No new runtime dependencies** (charts are inline SVG). (021-estatisticas-participante)
-- PostgreSQL 16. Two new additive tables (`stats_unlock`, `participant_pool_stats`); one new accepted value for the existing text column `payment.type`. No prize/fee table touched. (021-estatisticas-participante)
+- TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing InfinitePay / Stripe / Mock adapters (MercadoPago was removed). **No new runtime dependencies** (charts are inline SVG). (021-participant-stats)
+- PostgreSQL 16. Two new additive tables (`stats_unlock`, `participant_pool_stats`); one new accepted value for the existing text column `payment.type`. No prize/fee table touched. (021-participant-stats)
 - TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend (022-email-notification-fallback)
 - PostgreSQL 16 via Drizzle. **No schema changes** — reads existing (022-email-notification-fallback)
 - TypeScript 5.x, Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY (Telegram); React 19 + TanStack Router/Query + Tailwind v4 (web); football-data.org v4 (match data, via `fetch`) (023-knockout-scoring)
@@ -130,7 +130,7 @@ DATABASE_URL=postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test \
 ## Recent Changes
 - 023-knockout-scoring: Added TypeScript 5.x, Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY (Telegram); React 19 + TanStack Router/Query + Tailwind v4 (web); football-data.org v4 (match data, via `fetch`)
 - 022-email-notification-fallback: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend
-- 021-estatisticas-participante: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing InfinitePay / Stripe / Mock adapters (MercadoPago was removed). **No new runtime dependencies** (charts are inline SVG).
+- 021-participant-stats: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing InfinitePay / Stripe / Mock adapters (MercadoPago was removed). **No new runtime dependencies** (charts are inline SVG).
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

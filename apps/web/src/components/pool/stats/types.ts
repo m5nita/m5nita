@@ -1,4 +1,14 @@
 export type BlockState = 'ok' | 'insufficient_data'
+export type Trend = 'rising' | 'falling' | 'stable'
+
+/** Hero: the viewer's standing at a glance. */
+export type RankingHeroBlock = {
+  position: number | null
+  memberCount: number
+  gapToLeader: number
+  trend: Trend
+  state: BlockState
+}
 
 export type HitRateBlock = {
   exactPct: { you: number; average: number; leader: number }
@@ -6,25 +16,7 @@ export type HitRateBlock = {
   state: BlockState
 }
 
-export type RankingEvolutionBlock = {
-  perRound: { matchday: number; points: number }[]
-  position: number | null
-  gapToLeader: number
-  trend: 'rising' | 'falling' | 'stable'
-  state: BlockState
-}
-
-export type DimensionStat = { correct: number; total: number; pct: number }
-
-export type StrengthsBlock = {
-  home: DimensionStat
-  away: DimensionStat
-  lowGoals: DimensionStat
-  highGoals: DimensionStat
-  state: BlockState
-}
-
-export type PointsLeftBlock = {
+export type EfficiencyBlock = {
   earned: number
   maxPossible: number
   leftOnTable: number
@@ -33,11 +25,52 @@ export type PointsLeftBlock = {
   state: BlockState
 }
 
+/** Cumulative points per finished round — viewer vs leader vs pool average. */
+export type EvolutionBlock = {
+  rounds: number[]
+  you: number[]
+  leader: number[]
+  average: number[]
+  state: BlockState
+}
+
+export type FormOutcome = 'exact' | 'result' | 'miss'
+
+/** The viewer's last N finished predictions (most recent last) + current streak. */
+export type RecentFormBlock = {
+  outcomes: FormOutcome[]
+  currentStreak: number
+  state: BlockState
+}
+
+/** All-time composition of the viewer's finished predictions. exact ⊆ result. */
+export type DistributionBlock = {
+  exact: number
+  resultOnly: number
+  miss: number
+  total: number
+  state: BlockState
+}
+
+export type DimensionStat = { correct: number; total: number; pct: number }
+
+/** Goal-volume strengths (no home/away — meaningless at neutral WC venues). */
+export type StrengthsBlock = {
+  lowGoals: DimensionStat
+  highGoals: DimensionStat
+  /** Which side the viewer predicts clearly better, if any (the 1-line takeaway). */
+  betterAt: 'low' | 'high' | null
+  state: BlockState
+}
+
 export type StatsBlocks = {
-  hitRateVsAverage: HitRateBlock
-  rankingEvolution: RankingEvolutionBlock
-  strengthsWeaknesses: StrengthsBlock
-  pointsLeftOnTable: PointsLeftBlock
+  ranking: RankingHeroBlock
+  hitRate: HitRateBlock
+  efficiency: EfficiencyBlock
+  distribution: DistributionBlock
+  evolution: EvolutionBlock
+  recentForm: RecentFormBlock
+  strengths: StrengthsBlock
 }
 
 export type PendingMatchImpact = {
@@ -52,13 +85,6 @@ export type PendingMatchImpact = {
   reachableRivals: number
 }
 
-export type Suggestion = {
-  kind: string
-  text: string
-  detail: string
-  basis: 'own_history'
-}
-
 export type StatsResponse =
   | {
       unlocked: false
@@ -69,5 +95,4 @@ export type StatsResponse =
       unlocked: true
       blocks: StatsBlocks
       pendingImpact: PendingMatchImpact[]
-      suggestions: Suggestion[]
     }

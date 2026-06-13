@@ -1,5 +1,5 @@
 import { STATS } from '@m5nita/shared'
-import { and, eq, isNotNull, sql } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { match as matchTable } from '../../db/schema/match'
 import { participantPoolStats } from '../../db/schema/participantPoolStats'
@@ -7,9 +7,10 @@ import { poolMember } from '../../db/schema/poolMember'
 import { poolStanding } from '../../db/schema/poolStanding'
 import { prediction } from '../../db/schema/prediction'
 import type {
+  FormSampleRow,
   ParticipantStatsRow,
+  PoolRoundPointsRow,
   PoolStatsAggregateRow,
-  RoundPointsRow,
   StatsRepository,
 } from '../../domain/stats/StatsRepository.port'
 
@@ -32,10 +33,6 @@ export class DrizzleStatsRepository implements StatsRepository {
       exactCount: row.exactCount,
       resultCount: row.resultCount,
       pointsTotal: row.pointsTotal,
-      homeCorrect: row.homeCorrect,
-      homeTotal: row.homeTotal,
-      awayCorrect: row.awayCorrect,
-      awayTotal: row.awayTotal,
       lowGoalsCorrect: row.lowGoalsCorrect,
       lowGoalsTotal: row.lowGoalsTotal,
       highGoalsCorrect: row.highGoalsCorrect,
@@ -74,9 +71,14 @@ export class DrizzleStatsRepository implements StatsRepository {
       .groupBy(poolMember.userId)
   }
 
-  async roundPoints(poolId: string, userId: string): Promise<RoundPointsRow[]> {
+  // Per-member points by finished matchday for the whole pool. The domain builds
+  // the viewer / leader / average evolution lines from this. Pool-wide and
+  // immutable until the next match finish → cached by the caller (like the
+  // aggregate). Bounded by members × finished matchdays.
+  async poolRoundPoints(poolId: string): Promise<PoolRoundPointsRow[]> {
     return this.db
       .select({
+        userId: prediction.userId,
         matchday: sql<number>`${matchTable.matchday}::int`.as('matchday'),
         points: sql<number>`coalesce(sum(${prediction.points}), 0)::int`.as('points'),
       })
@@ -85,13 +87,36 @@ export class DrizzleStatsRepository implements StatsRepository {
       .where(
         and(
           eq(prediction.poolId, poolId),
-          eq(prediction.userId, userId),
           eq(matchTable.status, 'finished'),
           isNotNull(matchTable.matchday),
         ),
       )
-      .groupBy(matchTable.matchday)
+      .groupBy(prediction.userId, matchTable.matchday)
       .orderBy(matchTable.matchday)
+  }
+
+  // The viewer's last `limit` finished predictions (most recent first). Returns
+  // raw predicted/actual scores; the domain classifies exact/result/miss so the
+  // scoring rule stays in one place.
+  async recentForm(poolId: string, userId: string, limit: number): Promise<FormSampleRow[]> {
+    const rows = await this.db
+      .select({
+        predHome: prediction.homeScore,
+        predAway: prediction.awayScore,
+        actualHome: matchTable.homeScore,
+        actualAway: matchTable.awayScore,
+      })
+      .from(prediction)
+      .innerJoin(matchTable, eq(matchTable.id, prediction.matchId))
+      .where(and(eq(prediction.poolId, poolId), eq(prediction.userId, userId), FINISHED))
+      .orderBy(desc(matchTable.matchDate))
+      .limit(limit)
+    return rows.map((r) => ({
+      predHome: r.predHome,
+      predAway: r.predAway,
+      actualHome: r.actualHome ?? 0,
+      actualAway: r.actualAway ?? 0,
+    }))
   }
 
   // Recompute the user's finished-match aggregates + current ranking position
@@ -114,22 +139,6 @@ export class DrizzleStatsRepository implements StatsRepository {
             'result_count',
           ),
         pointsTotal: sql<number>`coalesce(sum(${prediction.points}), 0)::int`.as('points_total'),
-        homeTotal:
-          sql<number>`count(case when ${FINISHED} and ${matchTable.homeScore} > ${matchTable.awayScore} then 1 end)::int`.as(
-            'home_total',
-          ),
-        homeCorrect:
-          sql<number>`count(case when ${FINISHED} and ${matchTable.homeScore} > ${matchTable.awayScore} and ${prediction.homeScore} > ${prediction.awayScore} then 1 end)::int`.as(
-            'home_correct',
-          ),
-        awayTotal:
-          sql<number>`count(case when ${FINISHED} and ${matchTable.awayScore} > ${matchTable.homeScore} then 1 end)::int`.as(
-            'away_total',
-          ),
-        awayCorrect:
-          sql<number>`count(case when ${FINISHED} and ${matchTable.awayScore} > ${matchTable.homeScore} and ${prediction.awayScore} > ${prediction.homeScore} then 1 end)::int`.as(
-            'away_correct',
-          ),
         lowGoalsTotal:
           sql<number>`count(case when ${FINISHED} and ${TOTAL_GOALS} <= ${lowMax} then 1 end)::int`.as(
             'low_goals_total',
@@ -166,10 +175,6 @@ export class DrizzleStatsRepository implements StatsRepository {
         exactCount: agg?.exactCount ?? 0,
         resultCount: agg?.resultCount ?? 0,
         pointsTotal: agg?.pointsTotal ?? 0,
-        homeCorrect: agg?.homeCorrect ?? 0,
-        homeTotal: agg?.homeTotal ?? 0,
-        awayCorrect: agg?.awayCorrect ?? 0,
-        awayTotal: agg?.awayTotal ?? 0,
         lowGoalsCorrect: agg?.lowGoalsCorrect ?? 0,
         lowGoalsTotal: agg?.lowGoalsTotal ?? 0,
         highGoalsCorrect: agg?.highGoalsCorrect ?? 0,
@@ -184,10 +189,6 @@ export class DrizzleStatsRepository implements StatsRepository {
           exactCount: sql`excluded.exact_count`,
           resultCount: sql`excluded.result_count`,
           pointsTotal: sql`excluded.points_total`,
-          homeCorrect: sql`excluded.home_correct`,
-          homeTotal: sql`excluded.home_total`,
-          awayCorrect: sql`excluded.away_correct`,
-          awayTotal: sql`excluded.away_total`,
           lowGoalsCorrect: sql`excluded.low_goals_correct`,
           lowGoalsTotal: sql`excluded.low_goals_total`,
           highGoalsCorrect: sql`excluded.high_goals_correct`,

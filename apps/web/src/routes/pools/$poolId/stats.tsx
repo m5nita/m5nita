@@ -35,14 +35,7 @@ function StatisticsContent({ poolId }: { poolId: string }) {
     )
   }
 
-  return (
-    <StatsPanel
-      poolId={poolId}
-      blocks={data.blocks}
-      pendingImpact={data.pendingImpact}
-      suggestions={data.suggestions}
-    />
-  )
+  return <StatsPanel poolId={poolId} blocks={data.blocks} pendingImpact={data.pendingImpact} />
 }
 
 function StatisticsPage() {
@@ -54,6 +47,6 @@ function StatisticsPage() {
   )
 }
 
-export const Route = createFileRoute('/pools/$poolId/estatisticas')({
+export const Route = createFileRoute('/pools/$poolId/stats')({
   component: StatisticsPage,
 })

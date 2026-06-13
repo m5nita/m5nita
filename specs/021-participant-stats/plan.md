@@ -1,7 +1,7 @@
 # Implementation Plan: Per-Participant Pool Statistics
 
-**Branch**: `021-estatisticas-participante` | **Date**: 2026-06-03 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/021-estatisticas-participante/spec.md`
+**Branch**: `021-participant-stats` | **Date**: 2026-06-03 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/021-participant-stats/spec.md`
 
 ## Summary
 
@@ -13,7 +13,7 @@ Technical approach mirrors the existing ranking machine exactly:
 - **Scoring is reused, never re-derived.** Stats only aggregate the already-persisted `prediction.points` (`db/schema/prediction.ts:23`). Max points per match come from a new `ScoringPolicy.maxPoints()` (10 range / 14 single-match) so the 10/14 constant is never hardcoded in stats (avoids a G2 leak).
 - **Two-level cache mirrors ranking.** A sibling in-process aggregate cache (`services/statsCache.ts`, TTL 25s, single-flight) keyed by `poolId`, invalidated at the same point as ranking in `jobs/calcPoints.ts:50`; plus a persisted per-user snapshot table (`participant_pool_stats`) recomputed at match-finish only for unlocked users (a small, bounded set). The tab is OFF the 30s live-poll path.
 - **Payment reuses the existing gateway/webhook.** A new `payment.type = 'stats_unlock'`, threaded through `PaymentGateway.createCheckoutSession`, with the completion handled by the existing idempotent CAS in `services/payment.ts:10`. Entitlement is a new `stats_unlock` table, unique `(user_id, pool_id)`, granted `ON CONFLICT DO NOTHING`. Prize is provably untouched because `PrizeCalculation` (`domain/prize/PrizeCalculation.ts:8`) and `getPoolPrizeTotal` (`services/ranking.ts`) derive prize from `poolMember` count × `entryFee`, and the stats_unlock branch never writes `poolMember`.
-- **Front** adds an `Estatísticas` tab to `components/pool/PoolHub.tsx` and a route `routes/pools/$poolId/estatisticas.tsx`, reusing the Pix checkout → `payment-success` polling flow and zero-dependency inline SVG for charts (no chart lib in the repo).
+- **Front** adds an `Estatísticas` tab to `components/pool/PoolHub.tsx` and a route `routes/pools/$poolId/stats.tsx`, reusing the Pix checkout → `payment-success` polling flow and zero-dependency inline SVG for charts (no chart lib in the repo).
 
 ## Technical Context
 
@@ -50,7 +50,7 @@ Technical approach mirrors the existing ranking machine exactly:
 ### Documentation (this feature)
 
 ```text
-specs/021-estatisticas-participante/
+specs/021-participant-stats/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 output
 ├── data-model.md        # Phase 1 output
@@ -117,7 +117,7 @@ packages/shared/src/constants/index.ts          # EDIT — PAYMENT.TYPES += 'sta
 
 apps/web/src/
 ├── routes/pools/$poolId/
-│   └── estatisticas.tsx                         # NEW route (tab content)
+│   └── stats.tsx                         # NEW route (tab content)
 ├── components/pool/
 │   ├── PoolHub.tsx                              # EDIT — add 'statistics' tab
 │   └── stats/                                   # NEW presentational components

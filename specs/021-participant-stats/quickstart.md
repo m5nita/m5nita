@@ -25,7 +25,7 @@ Additive only — no change to prize/fee/`payment` column DDL (`payment.type` is
 
 1. **Domain (TDD, Vitest first)** — `domain/scoring` `maxPoints()`, then `domain/stats/`: `StatsUnlockPrice`, `StatsComparisonPolicy`, `PendingMatchImpactPolicy`, `ParticipantPoolStats`, + ports. Red → green → refactor. Target 100% coverage (constitution II).
 2. **Infrastructure + application + cache + payment + migration** — Drizzle schemas/repos, `services/statsCache.ts`, `UnlockStatsUseCase`, `GetParticipantStatsUseCase`, `payment.type` plumbing through the gateway adapters, the `handleCheckoutCompleted` dispatch branch, the `calcPoints.ts` snapshot recompute + cache invalidation, and wiring in `container.ts` + `app.ts`.
-3. **Frontend** — `estatisticas.tsx` route + `PoolHub` tab + `StatsPaywall`/`StatsPanel`/`Sparkline`/`CompareBar`, reusing the Pix → `payment-success` flow.
+3. **Frontend** — `stats.tsx` route + `PoolHub` tab + `StatsPaywall`/`StatsPanel`/`Sparkline`/`CompareBar`, reusing the Pix → `payment-success` flow.
 
 ## Run
 
