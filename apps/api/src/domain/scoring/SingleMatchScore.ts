@@ -1,17 +1,16 @@
-import { SCORING } from '@m5nita/shared'
+import { SCORING, SINGLE_MATCH_MAX_POINTS } from '@m5nita/shared'
 import { Score } from './Score'
 
-const BONUS_CAP = 4
-
-/** Max points obtainable on a single-match prediction: exact (10) + full bonus (4). */
-export const SINGLE_MATCH_MAX_POINTS = SCORING.EXACT_MATCH + BONUS_CAP
+// Re-exported from the shared single source of truth so the front-end and the
+// scoring policy share one definition of the single-match ceiling.
+export { SINGLE_MATCH_MAX_POINTS }
 
 export const SingleMatchScore = {
   /**
    * Single-match scoring: base category (Score.calculate) + a proximity bonus
-   * capped at 4 points that rewards being numerically close. Returns a `Score`
-   * VO with the breakdown attached so callers can both treat it uniformly
-   * (`.points`) and inspect category/bonus when displaying.
+   * capped at `SCORING.PROXIMITY_BONUS_CAP` points that rewards being numerically
+   * close. Returns a `Score` VO with the breakdown attached so callers can both
+   * treat it uniformly (`.points`) and inspect category/bonus when displaying.
    */
   calculate(
     predictedHome: number,
@@ -21,7 +20,7 @@ export const SingleMatchScore = {
   ): Score {
     const category = Score.calculate(predictedHome, predictedAway, actualHome, actualAway).points
     const distance = computeDistance(predictedHome, predictedAway, actualHome, actualAway)
-    const bonus = Math.max(0, BONUS_CAP - distance)
+    const bonus = Math.max(0, SCORING.PROXIMITY_BONUS_CAP - distance)
     return Score.fromBreakdown({ category, bonus, distance, advanceBonus: 0 })
   },
 }

@@ -6,7 +6,12 @@ export const SCORING = {
   MISS: 0,
   /** Added when a member names the team that advances past regular time (extra time or penalties). */
   ADVANCE_BONUS: 2,
+  /** Single-match pools only: max proximity bonus added on top of the category points. */
+  PROXIMITY_BONUS_CAP: 4,
 } as const
+
+/** Max points obtainable on a single-match prediction: exact placar + full proximity bonus. */
+export const SINGLE_MATCH_MAX_POINTS = SCORING.EXACT_MATCH + SCORING.PROXIMITY_BONUS_CAP
 
 export const POOL = {
   MIN_ENTRY_FEE: 500,
