@@ -1,4 +1,4 @@
-import { SCORING } from '@m5nita/shared'
+import { SCORING, SINGLE_MATCH_MAX_POINTS } from '@m5nita/shared'
 import { createFileRoute } from '@tanstack/react-router'
 
 const steps = [
@@ -119,6 +119,31 @@ function HowItWorksPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+            Jogo único
+          </h2>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+        <div className="flex items-start gap-3 py-2">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center bg-black font-display text-lg font-black text-white">
+            +{SCORING.PROXIMITY_BONUS_CAP}
+          </span>
+          <p className="text-sm leading-relaxed text-gray-dark">
+            Em bolões de <strong className="text-black">um jogo só</strong>, além dos pontos da
+            categoria acima, você ganha um{' '}
+            <strong className="text-black">bônus de proximidade</strong> de até{' '}
+            <strong className="text-black">+{SCORING.PROXIMITY_BONUS_CAP} pts</strong>: quanto mais
+            perto do placar real, maior o bônus, até o máximo de{' '}
+            <strong className="text-black">{SINGLE_MATCH_MAX_POINTS} pts</strong> por jogo. Ex.:
+            palpite 2×1 com resultado 3×1 vale 8 pts (5 pelo vencedor + 3 de proximidade). Errar o
+            vencedor pesa mais e costuma zerar o bônus — palpite 2×1 com resultado 1×2 fica em 0
+            pts.
+          </p>
         </div>
       </section>
 
