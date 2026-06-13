@@ -52,9 +52,7 @@ export function PendingImpactSection({
           Jogos que mais importam
         </h2>
         <p className="text-xs leading-snug text-text-secondary">
-          Seus próximos jogos, ordenados pelo quanto podem mexer na sua posição. O selo é o impacto
-          e a linha explica o porquê (pontos em jogo + rivais ao seu alcance). Palpite ou revise
-          antes de cada um começar.
+          Próximos jogos, ordenados pelo quanto mexem na sua posição.
         </p>
       </div>
       {items.length === 0 ? (

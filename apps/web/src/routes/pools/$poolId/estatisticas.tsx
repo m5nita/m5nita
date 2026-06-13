@@ -35,14 +35,7 @@ function StatisticsContent({ poolId }: { poolId: string }) {
     )
   }
 
-  return (
-    <StatsPanel
-      poolId={poolId}
-      blocks={data.blocks}
-      pendingImpact={data.pendingImpact}
-      suggestions={data.suggestions}
-    />
-  )
+  return <StatsPanel poolId={poolId} blocks={data.blocks} pendingImpact={data.pendingImpact} />
 }
 
 function StatisticsPage() {

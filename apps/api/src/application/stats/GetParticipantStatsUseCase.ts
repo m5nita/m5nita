@@ -10,12 +10,12 @@ import {
 import { StatsError } from '../../domain/stats/StatsError'
 import type {
   ParticipantStatsRow,
+  PoolRoundPointsRow,
   PoolStatsAggregateRow,
   StatsRepository,
 } from '../../domain/stats/StatsRepository.port'
 import type { StatsUnlockPrice } from '../../domain/stats/StatsUnlockPrice'
 import type { StatsUnlockRepository } from '../../domain/stats/StatsUnlockRepository.port'
-import { type Suggestion, SuggestionPolicy } from '../../domain/stats/SuggestionPolicy'
 
 export type StatsTeaser = {
   blocks: string[]
@@ -24,8 +24,7 @@ export type StatsTeaser = {
 
 /**
  * The gated read result. Locked → teaser + price only (no computed statistic).
- * Unlocked → the four blocks + pending-match impact; `suggestions` is populated
- * by US4.
+ * Unlocked → the visual blocks + pending-match impact.
  */
 export type ParticipantStatsResult =
   | {
@@ -37,23 +36,20 @@ export type ParticipantStatsResult =
       unlocked: true
       blocks: StatsBlocks
       pendingImpact: PendingMatchImpact[]
-      suggestions: Suggestion[]
     }
 
 const TEASER: StatsTeaser = {
-  blocks: ['hitRateVsAverage', 'rankingEvolution', 'strengthsWeaknesses', 'pointsLeftOnTable'],
+  blocks: ['ranking', 'hitRate', 'efficiency', 'evolution', 'recentForm', 'strengths'],
   headline: 'Veja como você se compara ao bolão',
 }
+
+const RECENT_FORM_LIMIT = 10
 
 const EMPTY_ROW: ParticipantStatsRow = {
   finishedCount: 0,
   exactCount: 0,
   resultCount: 0,
   pointsTotal: 0,
-  homeCorrect: 0,
-  homeTotal: 0,
-  awayCorrect: 0,
-  awayTotal: 0,
   lowGoalsCorrect: 0,
   lowGoalsTotal: 0,
   highGoalsCorrect: 0,
@@ -65,9 +61,9 @@ const EMPTY_ROW: ParticipantStatsRow = {
 /**
  * Server-side gate for a pool's participant statistics. Requires membership +
  * entitlement. The front never decides access nor computes price. Unlocked
- * reads are served from the persisted snapshot + the cached pool aggregate
- * (no per-request re-aggregation); a freshly-unlocked user's snapshot is
- * bootstrapped once on first read.
+ * reads are served from the persisted snapshot + the cached pool aggregate and
+ * per-round series (no per-request re-aggregation); a freshly-unlocked user's
+ * snapshot is bootstrapped once on first read.
  */
 export class GetParticipantStatsUseCase {
   constructor(
@@ -76,6 +72,7 @@ export class GetParticipantStatsUseCase {
     private readonly price: StatsUnlockPrice,
     private readonly statsRepo: StatsRepository,
     private readonly loadPoolAggregate: (poolId: string) => Promise<PoolStatsAggregateRow[]>,
+    private readonly loadPoolRounds: (poolId: string) => Promise<PoolRoundPointsRow[]>,
     private readonly matchRepo: MatchRepository,
     private readonly predictionRepo: PredictionRepository,
     private readonly clock: Clock,
@@ -97,13 +94,21 @@ export class GetParticipantStatsUseCase {
     }
 
     const viewer = await this.loadViewerSnapshot(input.poolId, input.userId)
-    const [aggregate, rounds] = await Promise.all([
+    const [aggregate, poolRounds, recentForm] = await Promise.all([
       this.loadPoolAggregate(input.poolId),
-      this.statsRepo.roundPoints(input.poolId, input.userId),
+      this.loadPoolRounds(input.poolId),
+      this.statsRepo.recentForm(input.poolId, input.userId, RECENT_FORM_LIMIT),
     ])
 
     const scoringPolicy = pool.scoringPolicy()
-    const blocks = ParticipantPoolStats.build({ viewer, aggregate, rounds, scoringPolicy })
+    const blocks = ParticipantPoolStats.build({
+      viewerUserId: input.userId,
+      viewer,
+      aggregate,
+      poolRounds,
+      recentForm,
+      scoringPolicy,
+    })
 
     const pendingImpact = await this.buildPendingImpact(pool, input.userId, {
       viewerPoints: viewer.pointsTotal,
@@ -113,9 +118,7 @@ export class GetParticipantStatsUseCase {
       maxPoints: scoringPolicy.maxPoints(),
     })
 
-    const suggestions = SuggestionPolicy.suggest(viewer)
-
-    return { unlocked: true, blocks, pendingImpact, suggestions }
+    return { unlocked: true, blocks, pendingImpact }
   }
 
   // The viewer's own not-yet-started matches (predicted or not), ranked by

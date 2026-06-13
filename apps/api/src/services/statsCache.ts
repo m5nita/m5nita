@@ -1,4 +1,7 @@
-import type { PoolStatsAggregateRow } from '../domain/stats/StatsRepository.port'
+import type {
+  PoolRoundPointsRow,
+  PoolStatsAggregateRow,
+} from '../domain/stats/StatsRepository.port'
 import { createTtlCache } from '../lib/ttlCache'
 
 // Sibling of rankingCache: the per-pool stats aggregate (per-member finished
@@ -15,7 +18,15 @@ export const participantStatsAggregateCache = createTtlCache<string, PoolStatsAg
   PARTICIPANT_STATS_AGGREGATE_TTL_MS,
 )
 
-/** Bust a pool's cached stats aggregate (called on match finish, with ranking). */
+// Same lifecycle as the aggregate: pool-wide per-round points feed the evolution
+// lines (viewer / leader / average). Anonymized, shared across viewers, busted
+// on match finish.
+export const participantStatsRoundsCache = createTtlCache<string, PoolRoundPointsRow[]>(
+  PARTICIPANT_STATS_AGGREGATE_TTL_MS,
+)
+
+/** Bust a pool's cached stats reads (called on match finish, with ranking). */
 export function invalidateParticipantStatsAggregate(poolId: string): void {
   participantStatsAggregateCache.invalidate(poolId)
+  participantStatsRoundsCache.invalidate(poolId)
 }

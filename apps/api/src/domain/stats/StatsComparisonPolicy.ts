@@ -8,6 +8,8 @@ export type PoolComparison = {
   efficiency: ComparisonStat
   /** The leader's finished-match points (for the gap-to-leader figure). */
   leaderPoints: number
+  /** The leader's user id (to pick their evolution line); null when no rated member. */
+  leaderUserId: string | null
   /** Members with at least one finished prediction — the basis for averages. */
   ratedMembers: number
 }
@@ -38,6 +40,7 @@ export const StatsComparisonPolicy = {
         leader: leader ? effRate(leader, maxPoints) : 0,
       },
       leaderPoints: leader?.pointsTotal ?? 0,
+      leaderUserId: leader?.userId ?? null,
       ratedMembers: rated.length,
     }
   },

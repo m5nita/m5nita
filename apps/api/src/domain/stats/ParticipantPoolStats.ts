@@ -1,13 +1,24 @@
+import { Score } from '../scoring/Score'
 import type { ScoringPolicy } from '../scoring/ScoringPolicy'
 import { type PoolComparison, StatsComparisonPolicy } from './StatsComparisonPolicy'
 import type {
+  FormSampleRow,
   ParticipantStatsRow,
+  PoolRoundPointsRow,
   PoolStatsAggregateRow,
-  RoundPointsRow,
 } from './StatsRepository.port'
 
 export type BlockState = 'ok' | 'insufficient_data'
 export type Trend = 'rising' | 'falling' | 'stable'
+export type FormOutcome = 'exact' | 'result' | 'miss'
+
+export type RankingHeroBlock = {
+  position: number | null
+  memberCount: number
+  gapToLeader: number
+  trend: Trend
+  state: BlockState
+}
 
 export type HitRateBlock = {
   exactPct: { you: number; average: number; leader: number }
@@ -15,25 +26,7 @@ export type HitRateBlock = {
   state: BlockState
 }
 
-export type RankingEvolutionBlock = {
-  perRound: { matchday: number; points: number }[]
-  position: number | null
-  gapToLeader: number
-  trend: Trend
-  state: BlockState
-}
-
-export type DimensionStat = { correct: number; total: number; pct: number }
-
-export type StrengthsBlock = {
-  home: DimensionStat
-  away: DimensionStat
-  lowGoals: DimensionStat
-  highGoals: DimensionStat
-  state: BlockState
-}
-
-export type PointsLeftBlock = {
+export type EfficiencyBlock = {
   earned: number
   maxPossible: number
   leftOnTable: number
@@ -42,38 +35,82 @@ export type PointsLeftBlock = {
   state: BlockState
 }
 
+export type DistributionBlock = {
+  exact: number
+  resultOnly: number
+  miss: number
+  total: number
+  state: BlockState
+}
+
+export type EvolutionBlock = {
+  rounds: number[]
+  you: number[]
+  leader: number[]
+  average: number[]
+  state: BlockState
+}
+
+export type RecentFormBlock = {
+  outcomes: FormOutcome[]
+  currentStreak: number
+  state: BlockState
+}
+
+export type DimensionStat = { correct: number; total: number; pct: number }
+
+export type StrengthsBlock = {
+  lowGoals: DimensionStat
+  highGoals: DimensionStat
+  betterAt: 'low' | 'high' | null
+  state: BlockState
+}
+
 export type StatsBlocks = {
-  hitRateVsAverage: HitRateBlock
-  rankingEvolution: RankingEvolutionBlock
-  strengthsWeaknesses: StrengthsBlock
-  pointsLeftOnTable: PointsLeftBlock
+  ranking: RankingHeroBlock
+  hitRate: HitRateBlock
+  efficiency: EfficiencyBlock
+  distribution: DistributionBlock
+  evolution: EvolutionBlock
+  recentForm: RecentFormBlock
+  strengths: StrengthsBlock
 }
 
 export type BuildInput = {
+  viewerUserId: string
   viewer: ParticipantStatsRow
   aggregate: PoolStatsAggregateRow[]
-  rounds: RoundPointsRow[]
+  poolRounds: PoolRoundPointsRow[]
+  recentForm: FormSampleRow[]
   scoringPolicy: ScoringPolicy
 }
 
+// A dimension needs at least this many finished samples on BOTH sides before we
+// claim a tendency, and the gap must clear MARGIN to surface the takeaway.
+const MIN_SAMPLES = 3
+const MARGIN = 0.15
+
 /**
- * Builds the four comparison blocks from the viewer's raw finished-match counts,
- * the anonymized pool aggregate, and the per-round series. Pure: it does not
- * touch the DB and never re-derives scoring (it consumes already-persisted
- * points). Max points per match come from the pool's scoring policy (10 range /
- * 14 single-match), never a hardcoded constant.
+ * Builds every panel block from the viewer's raw finished-match counts, the
+ * anonymized pool aggregate, the pool-wide per-round series, and the viewer's
+ * recent finished predictions. Pure: it does not touch the DB and never
+ * re-derives scoring beyond classifying form via `Score`. Max points per match
+ * come from the pool's scoring policy (10 range / 14 single-match).
  */
 export const ParticipantPoolStats = {
   build(input: BuildInput): StatsBlocks {
-    const { viewer, aggregate, rounds, scoringPolicy } = input
+    const { viewerUserId, viewer, aggregate, poolRounds, recentForm, scoringPolicy } = input
     const maxPoints = scoringPolicy.maxPoints()
     const comparison = StatsComparisonPolicy.compute(aggregate, maxPoints)
 
     return {
-      hitRateVsAverage: buildHitRate(viewer, comparison),
-      rankingEvolution: buildRankingEvolution(viewer, rounds, comparison),
-      strengthsWeaknesses: buildStrengths(viewer),
-      pointsLeftOnTable: buildPointsLeft(viewer, comparison, maxPoints),
+      ranking: buildRanking(viewer, aggregate.length, comparison),
+      hitRate: buildHitRate(viewer, comparison),
+      efficiency: buildEfficiency(viewer, comparison, maxPoints),
+      distribution: buildDistribution(viewer),
+      evolution: buildEvolution(viewerUserId, viewer, poolRounds, comparison),
+      recentForm: buildRecentForm(viewer, recentForm),
+      strengths: buildStrengths(viewer),
     }
   },
 }
@@ -84,6 +121,27 @@ function ratio(correct: number, total: number): number {
 
 function stateFor(total: number): BlockState {
   return total > 0 ? 'ok' : 'insufficient_data'
+}
+
+function trendOf(position: number | null, prev: number | null): Trend {
+  if (position == null || prev == null) return 'stable'
+  if (position < prev) return 'rising'
+  if (position > prev) return 'falling'
+  return 'stable'
+}
+
+function buildRanking(
+  viewer: ParticipantStatsRow,
+  memberCount: number,
+  c: PoolComparison,
+): RankingHeroBlock {
+  return {
+    position: viewer.position,
+    memberCount,
+    gapToLeader: Math.max(0, c.leaderPoints - viewer.pointsTotal),
+    trend: trendOf(viewer.position, viewer.prevPosition),
+    state: viewer.position != null ? 'ok' : 'insufficient_data',
+  }
 }
 
 function buildHitRate(viewer: ParticipantStatsRow, c: PoolComparison): HitRateBlock {
@@ -102,46 +160,11 @@ function buildHitRate(viewer: ParticipantStatsRow, c: PoolComparison): HitRateBl
   }
 }
 
-function trendOf(position: number | null, prev: number | null): Trend {
-  if (position == null || prev == null) return 'stable'
-  if (position < prev) return 'rising'
-  if (position > prev) return 'falling'
-  return 'stable'
-}
-
-function buildRankingEvolution(
-  viewer: ParticipantStatsRow,
-  rounds: RoundPointsRow[],
-  c: PoolComparison,
-): RankingEvolutionBlock {
-  return {
-    perRound: rounds.map((r) => ({ matchday: r.matchday, points: r.points })),
-    position: viewer.position,
-    gapToLeader: Math.max(0, c.leaderPoints - viewer.pointsTotal),
-    trend: trendOf(viewer.position, viewer.prevPosition),
-    state: stateFor(rounds.length),
-  }
-}
-
-function dimension(correct: number, total: number): DimensionStat {
-  return { correct, total, pct: ratio(correct, total) }
-}
-
-function buildStrengths(viewer: ParticipantStatsRow): StrengthsBlock {
-  return {
-    home: dimension(viewer.homeCorrect, viewer.homeTotal),
-    away: dimension(viewer.awayCorrect, viewer.awayTotal),
-    lowGoals: dimension(viewer.lowGoalsCorrect, viewer.lowGoalsTotal),
-    highGoals: dimension(viewer.highGoalsCorrect, viewer.highGoalsTotal),
-    state: stateFor(viewer.finishedCount),
-  }
-}
-
-function buildPointsLeft(
+function buildEfficiency(
   viewer: ParticipantStatsRow,
   c: PoolComparison,
   maxPoints: number,
-): PointsLeftBlock {
+): EfficiencyBlock {
   const maxPossible = viewer.finishedCount * maxPoints
   const efficiency = maxPossible > 0 ? viewer.pointsTotal / maxPossible : 0
   return {
@@ -150,6 +173,101 @@ function buildPointsLeft(
     leftOnTable: Math.max(0, maxPossible - viewer.pointsTotal),
     efficiency,
     efficiencyVsAverage: efficiency - c.efficiency.average,
+    state: stateFor(viewer.finishedCount),
+  }
+}
+
+// exact ⊆ result (an exact score also gets the result right), so the three
+// slices partition the finished predictions.
+function buildDistribution(viewer: ParticipantStatsRow): DistributionBlock {
+  return {
+    exact: viewer.exactCount,
+    resultOnly: Math.max(0, viewer.resultCount - viewer.exactCount),
+    miss: Math.max(0, viewer.finishedCount - viewer.resultCount),
+    total: viewer.finishedCount,
+    state: stateFor(viewer.finishedCount),
+  }
+}
+
+function buildEvolution(
+  viewerUserId: string,
+  viewer: ParticipantStatsRow,
+  poolRounds: PoolRoundPointsRow[],
+  c: PoolComparison,
+): EvolutionBlock {
+  const rounds = [...new Set(poolRounds.map((r) => r.matchday))].sort((a, b) => a - b)
+  const byUser = new Map<string, Map<number, number>>()
+  for (const r of poolRounds) {
+    const m = byUser.get(r.userId) ?? new Map<number, number>()
+    m.set(r.matchday, r.points)
+    byUser.set(r.userId, m)
+  }
+
+  const cumulativeFor = (userId: string | null): number[] => {
+    const m = userId ? byUser.get(userId) : undefined
+    let acc = 0
+    return rounds.map((md) => {
+      acc += m?.get(md) ?? 0
+      return acc
+    })
+  }
+
+  const you = cumulativeFor(viewerUserId)
+  const leader = cumulativeFor(c.leaderUserId)
+
+  // Average = mean cumulative across the rated members (those present in the
+  // per-round series). Each member's cumulative is computed once, then averaged
+  // per round. Falls back to 0 when none.
+  const allCumulative = [...byUser.keys()].map((u) => cumulativeFor(u))
+  const average = rounds.map((_, i) => {
+    if (allCumulative.length === 0) return 0
+    const sum = allCumulative.reduce((s, arr) => s + (arr[i] ?? 0), 0)
+    return Math.round(sum / allCumulative.length)
+  })
+
+  return { rounds, you, leader, average, state: stateFor(viewer.finishedCount) }
+}
+
+function classifyForm(s: FormSampleRow): FormOutcome {
+  // Exact/result/miss is the policy-agnostic category ladder (same for range and
+  // single-match pools — bonuses only change points, not the category), so we
+  // read it straight off Score, not via a pool scoring policy.
+  const score = Score.calculate(s.predHome, s.predAway, s.actualHome, s.actualAway) // leak-allow: policy-agnostic category, not policy-scored points
+  if (score.points === 0) return 'miss'
+  return score.isExact ? 'exact' : 'result'
+}
+
+function buildRecentForm(viewer: ParticipantStatsRow, samples: FormSampleRow[]): RecentFormBlock {
+  // samples come most-recent first. Streak = leading run of non-miss hits.
+  let currentStreak = 0
+  for (const s of samples) {
+    if (classifyForm(s) === 'miss') break
+    currentStreak += 1
+  }
+  // Display oldest → newest.
+  const outcomes = samples.map(classifyForm).reverse()
+  return { outcomes, currentStreak, state: stateFor(viewer.finishedCount) }
+}
+
+function dimension(correct: number, total: number): DimensionStat {
+  return { correct, total, pct: ratio(correct, total) }
+}
+
+function betterSide(low: DimensionStat, high: DimensionStat): 'low' | 'high' | null {
+  if (low.total < MIN_SAMPLES || high.total < MIN_SAMPLES) return null
+  const diff = low.pct - high.pct
+  if (diff >= MARGIN) return 'low'
+  if (-diff >= MARGIN) return 'high'
+  return null
+}
+
+function buildStrengths(viewer: ParticipantStatsRow): StrengthsBlock {
+  const low = dimension(viewer.lowGoalsCorrect, viewer.lowGoalsTotal)
+  const high = dimension(viewer.highGoalsCorrect, viewer.highGoalsTotal)
+  return {
+    lowGoals: low,
+    highGoals: high,
+    betterAt: betterSide(low, high),
     state: stateFor(viewer.finishedCount),
   }
 }
