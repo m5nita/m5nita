@@ -103,8 +103,19 @@ type Element = {
   props: { style?: Record<string, unknown>; children?: unknown }
 }
 
-function fitTitleFontSize(name: string): number {
+export function fitTitleFontSize(name: string, hasSingleMatch = false): number {
   const len = name.length
+  // Single-match pools render a "Jogo único — TeamA × TeamB" banner plus a
+  // kickoff line above the title, stealing ~77px of the fixed-height hero. A
+  // shorter ladder keeps the headline from overflowing and colliding with the
+  // "Criado por" line below it.
+  if (hasSingleMatch) {
+    if (len <= 14) return 84
+    if (len <= 20) return 76
+    if (len <= 28) return 66
+    if (len <= 36) return 58
+    return 50
+  }
   if (len <= 14) return 132
   if (len <= 20) return 112
   if (len <= 28) return 92
@@ -115,7 +126,7 @@ function fitTitleFontSize(name: string): number {
 function template(input: PoolOgImageInput): Element {
   const cta = (input.cta ?? 'Entre no bolão · m5nita.com').toUpperCase()
   const poolName = input.poolName.length > 48 ? `${input.poolName.slice(0, 47)}…` : input.poolName
-  const titleFontSize = fitTitleFontSize(poolName)
+  const titleFontSize = fitTitleFontSize(poolName, Boolean(input.singleMatch))
 
   return {
     type: 'div',
