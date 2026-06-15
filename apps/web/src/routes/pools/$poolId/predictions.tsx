@@ -174,11 +174,9 @@ function MatchList({
         key={match.id}
         id={`match-${match.id}`}
         style={{ order: localIndex }}
-        className={
-          highlightMatchId === match.id
-            ? 'bg-red/5 transition-colors duration-700'
-            : 'transition-colors duration-700'
-        }
+        className={`scroll-mt-24 transition-colors duration-700 ${
+          highlightMatchId === match.id ? 'bg-red/5' : ''
+        }`}
       >
         <ScoreInput
           ref={(el) => {
@@ -401,9 +399,35 @@ function AllMatchesView({
   onSave,
   highlightMatchId,
 }: MatchListShared & { matches: Match[] }) {
-  const [visible, setVisible] = useState(ALL_BATCH_SIZE)
+  // On open, land on the next game to play. Matches are date-sorted, so the
+  // first not-yet-finished one is the earliest live/upcoming fixture.
+  const firstUnfinishedIndex = matches.findIndex((m) => m.status !== 'finished')
+
+  // Reveal enough batches up front so that target card is in the DOM and we can
+  // scroll to it (otherwise it sits past the initial infinite-scroll window).
+  const [visible, setVisible] = useState(() =>
+    firstUnfinishedIndex < 0
+      ? ALL_BATCH_SIZE
+      : Math.ceil((firstUnfinishedIndex + 1) / ALL_BATCH_SIZE) * ALL_BATCH_SIZE,
+  )
   const shown = matches.slice(0, visible)
   const hasMore = visible < matches.length
+
+  // Once the revealed cards have mounted, bring the first unfinished one to the
+  // top (the card carries scroll-mt to clear the sticky header). Mount-only:
+  // live-poll refetches must not yank the user back here.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll once on open
+  useEffect(() => {
+    if (firstUnfinishedIndex < 0) return
+    const target = matches[firstUnfinishedIndex]
+    if (!target) return
+    const timer = setTimeout(() => {
+      document
+        .getElementById(`match-${target.id}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 120)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Infinite scroll: a sentinel below the list grows the window as it nears the
   // viewport. A callback ref re-attaches the observer whenever the sentinel
