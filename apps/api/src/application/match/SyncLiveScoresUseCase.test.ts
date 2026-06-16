@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatchData, MatchRepository } from '../../domain/match/MatchRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
 import type { ExternalMatch, FootballDataApi } from '../ports/FootballDataApi.port'
@@ -66,6 +66,18 @@ function makeUseCase(opts: { live?: ExternalMatch[]; existing?: MatchData[]; now
 }
 
 describe('SyncLiveScoresUseCase', () => {
+  // mapStatus()/StaleMatchPolicy read the real wall clock (`new Date()`), not the
+  // injected Clock, to decide "stale live → finished after 12h". Pin the system
+  // time so the fixed 2026-06-15 fixture dates stay inside the live window no
+  // matter when the suite runs (otherwise an IN_PLAY fixture is forced finished).
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-15T03:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('queries a UTC window spanning the previous and next day (catches matches crossing midnight)', async () => {
     const { uc, fetchLiveMatches } = makeUseCase({ now: new Date('2026-06-15T03:00:00Z') })
     await uc.execute()
