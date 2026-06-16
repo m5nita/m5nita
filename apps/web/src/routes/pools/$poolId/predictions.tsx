@@ -433,10 +433,10 @@ function AllMatchesView({
       if (done) return
       const card = document.getElementById(`match-${target.id}`)
       if (!card) return
-      // When the target is the first match of its day group, anchor on the day
-      // header (the section top) so it sits flush at the top; otherwise the
-      // previous day's last (finished) match peeks above it. Mid-day targets
-      // keep their own card as the anchor.
+      // First match of its day → anchor on the day header (section top) so the
+      // header sits at the top. Otherwise (a mid-day target, with earlier
+      // finished matches the same day) anchor on the card itself so none of
+      // those finished matches show above it.
       const section = card.closest('[data-day-section]')
       const firstCard = section
         ? [...section.querySelectorAll('[id^="match-"]')].sort(
@@ -444,7 +444,10 @@ function AllMatchesView({
           )[0]
         : null
       const anchor = section && firstCard === card ? section : card
-      anchor.scrollIntoView({ block: 'start' })
+      // Scroll the anchor flush to the top. The sticky header doesn't actually
+      // pin on this page, so scrollIntoView's scroll-margin would only reveal
+      // the preceding match — scroll to the anchor's exact offset instead.
+      window.scrollTo({ top: Math.max(0, anchor.getBoundingClientRect().top + window.scrollY) })
     }
     align()
     const observer =
