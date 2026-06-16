@@ -32,6 +32,8 @@ const matchColumns = {
   matchday: match.matchday,
   matchDate: match.matchDate,
   status: match.status,
+  minute: match.minute,
+  injuryTime: match.injuryTime,
 }
 
 // GET /api/matches — List matches with filters

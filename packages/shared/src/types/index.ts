@@ -125,6 +125,9 @@ export interface Match {
   extraTimeAwayScore?: number | null
   penaltyHomeScore?: number | null
   penaltyAwayScore?: number | null
+  /** Live elapsed clock (only meaningful while status = 'live'); null otherwise. */
+  minute?: number | null
+  injuryTime?: number | null
   winner?: MatchWinner | null
   duration?: MatchDuration | null
   stage: MatchStage
