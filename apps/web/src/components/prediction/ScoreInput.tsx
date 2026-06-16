@@ -268,7 +268,7 @@ function LiveResultHeader({
       ) : (
         <span>{finishedLabel}</span>
       )}
-      {clock && <span>· {clock}</span>}
+      {clock && <span>{clock}</span>}
       {hasActualScore && (
         <span className="flex items-center gap-1.5">
           <span>{actualHomeScore}</span>

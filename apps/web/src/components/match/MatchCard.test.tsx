@@ -29,12 +29,12 @@ describe('<MatchCard /> live minute', () => {
 
   it('appends the running minute to the "Ao Vivo" badge when live', () => {
     render(<MatchCard match={liveMatch()} />)
-    expect(screen.getByText(/Ao Vivo · 67'/)).toBeInTheDocument()
+    expect(screen.getByText(/Ao Vivo 67'/)).toBeInTheDocument()
   })
 
   it('shows stoppage time as MM+N', () => {
     render(<MatchCard match={liveMatch({ minute: 90, injuryTime: 4 })} />)
-    expect(screen.getByText(/Ao Vivo · 90\+4'/)).toBeInTheDocument()
+    expect(screen.getByText(/Ao Vivo 90\+4'/)).toBeInTheDocument()
   })
 
   it('shows no minute for a scheduled match', () => {

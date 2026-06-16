@@ -23,8 +23,8 @@ This feature surfaces that clock next to the live indicator the app already show
 ### Session 2026-06-16
 
 - Q: How much detail should the live clock show? → A: **Minute + injury time.** Show `67'` normally and `45+2'` / `90+N'` during stoppage. Persist both `minute` and `injuryTime`. (Halftime "Intervalo" labelling was considered and explicitly left out — it would require propagating the `PAUSED` status, which today collapses to `live`.)
-- Q: Where and how does the minute appear? → A: **Inline, between the "Ao Vivo" indicator and the score, on the same line** (no new line): `• AO VIVO · 67'   0 X 0`.
-- Q: In which surfaces? → A: **Both** the prediction screen header (`LiveResultHeader` in `ScoreInput`) **and** the matches-list card (`MatchCard`), with the same `· 67'` format. On the card the minute is appended to the existing "Ao Vivo" badge.
+- Q: Where and how does the minute appear? → A: **Inline, between the "Ao Vivo" indicator and the score, on the same line** (no new line), space-separated (no separator glyph): `• AO VIVO 67'   0 X 0`.
+- Q: In which surfaces? → A: **Both** the prediction screen header (`LiveResultHeader` in `ScoreInput`) **and** the matches-list card (`MatchCard`), with the same `67'` format (space-separated, no separator glyph). On the card the minute is appended to the existing "Ao Vivo" badge.
 - Q: Should the displayed minute "tick" between syncs? → A: **No.** Show the minute from the last sync; it refreshes on the next poll. Client-side extrapolation is rejected because it breaks at halftime (`PAUSED`→`live`, minute frozen near 45) and during stoppage, and we will not raise the sync frequency (production runs on a small box and live polling is already the scaling limit). Worst-case staleness is ~1–1.5 min — imperceptible for a minute counter and never wrong.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -39,8 +39,8 @@ As someone watching a live match in the pool, I want to see the current match mi
 
 **Acceptance Scenarios**:
 
-1. **Given** a live match whose feed reports `minute: 67, injuryTime: null`, **When** the user views the prediction header, **Then** it reads `• AO VIVO · 67'   <score>` on one line.
-2. **Given** the same live match, **When** the user views it in the matches list (`MatchCard`), **Then** the "Ao Vivo" badge reads `• AO VIVO · 67'`.
+1. **Given** a live match whose feed reports `minute: 67, injuryTime: null`, **When** the user views the prediction header, **Then** it reads `• AO VIVO 67'   <score>` on one line.
+2. **Given** the same live match, **When** the user views it in the matches list (`MatchCard`), **Then** the "Ao Vivo" badge reads `• AO VIVO 67'`.
 3. **Given** a live match in first-half stoppage with `minute: 45, injuryTime: 2`, **When** the user views either surface, **Then** the clock reads `45+2'`.
 4. **Given** a live match whose feed reports no minute (`minute: null`), **When** the user views either surface, **Then** the "Ao Vivo" indicator renders exactly as today (no minute, no stray separator).
 5. **Given** a finished match, **When** the user views either surface, **Then** no live minute is shown (the existing "Final" / "Resultado oficial" treatment is unchanged), even though a `minute` value may remain stored.
@@ -86,8 +86,8 @@ As someone watching a live match in the pool, I want to see the current match mi
    - returns `null` when `minute == null`;
    - returns `` `${minute}+${injuryTime}'` `` when `injuryTime` is a positive number;
    - returns `` `${minute}'` `` otherwise.
-2. **`apps/web/src/components/prediction/ScoreInput.tsx`** (`LiveResultHeader`) — accept `minute`/`injuryTime` props and, when `matchStatus === 'live'` and a formatted clock exists, render a `<span>· {clock}</span>` **between** the "Ao Vivo" span and the score span (the container is already a single-line flex with `gap-2`). Thread `minute`/`injuryTime` from the match data into `ScoreInput` and down to `LiveResultHeader`.
-3. **`apps/web/src/components/match/MatchCard.tsx`** — append `· {clock}` inside the existing live badge span (line ~56–61), keeping the pulsing dot and "Ao Vivo" label.
+2. **`apps/web/src/components/prediction/ScoreInput.tsx`** (`LiveResultHeader`) — accept `minute`/`injuryTime` props and, when `matchStatus === 'live'` and a formatted clock exists, render a `<span>{clock}</span>` **between** the "Ao Vivo" span and the score span (the container is already a single-line flex with `gap-2`). Thread `minute`/`injuryTime` from the match data into `ScoreInput` and down to `LiveResultHeader`.
+3. **`apps/web/src/components/match/MatchCard.tsx`** — append ` {clock}` (space-separated) inside the existing live badge span (line ~56–61), keeping the pulsing dot and "Ao Vivo" label.
 
 ### Freshness
 The minute is written by the existing 1-minute live sync and read by the existing 30-second frontend poll; it is shown as last synced (no client ticking). No change to sync or poll frequency.

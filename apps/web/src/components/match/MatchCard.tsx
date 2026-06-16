@@ -57,7 +57,7 @@ export function MatchCard({ match }: MatchCardProps) {
         {isLive && (
           <span className="flex items-center gap-1 font-display text-[9px] font-bold uppercase tracking-widest text-red">
             <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-            Ao Vivo{liveMinute ? ` · ${liveMinute}` : ''}
+            Ao Vivo{liveMinute ? ` ${liveMinute}` : ''}
           </span>
         )}
         {isFinished && (
