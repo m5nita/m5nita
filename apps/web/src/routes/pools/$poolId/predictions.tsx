@@ -224,7 +224,7 @@ function MatchList({
         return (
           // Top spacing lives on the section (not the header), so `first:` targets
           // the real first day — a header is always first-child of its own div.
-          <div key={section.key} className="mt-1 first:mt-0">
+          <div key={section.key} data-day-section className="mt-1 first:mt-0">
             {section.header && (
               <p className="-mb-1 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
                 {section.header}
@@ -415,33 +415,60 @@ function AllMatchesView({
   const shown = matches.slice(0, visible)
   const hasMore = visible < matches.length
 
-  // Once the revealed cards have mounted, bring the first unfinished one to the
-  // top (the card carries scroll-mt to clear the sticky header). Mount-only:
-  // live-poll refetches must not yank the user back here.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll once on open
+  // On open, bring the first unfinished match to the top (its card carries
+  // scroll-mt to clear the sticky header). The content ABOVE the target keeps
+  // growing after first paint — web fonts swap in (Barlow Condensed/Inter,
+  // display=swap), flag images decode, and the infinite-scroll window expands —
+  // and each push moves the target down, so a single well-timed scroll lands
+  // stale and strands the target mid-screen. Re-assert the scroll on every
+  // layout change until the user takes over or a short window elapses.
+  // Mount-only: live-poll refetches must not yank the user back here.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: align once on open
   useEffect(() => {
     if (firstUnfinishedIndex < 0) return
     const target = matches[firstUnfinishedIndex]
     if (!target) return
-    let cancelled = false
-    const scrollToTarget = () => {
-      if (cancelled) return
-      document
-        .getElementById(`match-${target.id}`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    let done = false
+    const align = () => {
+      if (done) return
+      const card = document.getElementById(`match-${target.id}`)
+      if (!card) return
+      // When the target is the first match of its day group, anchor on the day
+      // header (the section top) so it sits flush at the top; otherwise the
+      // previous day's last (finished) match peeks above it. Mid-day targets
+      // keep their own card as the anchor.
+      const section = card.closest('[data-day-section]')
+      const firstCard = section
+        ? [...section.querySelectorAll('[id^="match-"]')].sort(
+            (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+          )[0]
+        : null
+      const anchor = section && firstCard === card ? section : card
+      anchor.scrollIntoView({ block: 'start' })
     }
-    // Wait for the web fonts (Barlow Condensed/Inter, loaded with display=swap)
-    // before scrolling: they swap in after first paint and reflow the finished
-    // cards above the target, so scrolling on a fixed timer landed on a stale,
-    // too-high offset and stranded the target mid-screen. fonts.ready + two
-    // frames for the post-swap layout to commit makes the landing reliable.
-    const ready = document.fonts ? document.fonts.ready : Promise.resolve()
-    ready.then(() => {
-      if (cancelled) return
-      requestAnimationFrame(() => requestAnimationFrame(scrollToTarget))
-    })
+    align()
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => requestAnimationFrame(align))
+        : null
+    observer?.observe(document.body)
+    const stop = () => {
+      done = true
+      observer?.disconnect()
+    }
+    // Stop as soon as the user scrolls (don't fight them) and after a bounded
+    // backstop so a late refetch never re-snaps the view.
+    window.addEventListener('wheel', stop, { passive: true, once: true })
+    window.addEventListener('touchmove', stop, { passive: true, once: true })
+    window.addEventListener('keydown', stop, { once: true })
+    const timer = window.setTimeout(stop, 1500)
     return () => {
-      cancelled = true
+      done = true
+      observer?.disconnect()
+      window.clearTimeout(timer)
+      window.removeEventListener('wheel', stop)
+      window.removeEventListener('touchmove', stop)
+      window.removeEventListener('keydown', stop)
     }
   }, [])
 
