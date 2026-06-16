@@ -175,6 +175,8 @@ export class DrizzleMatchRepository implements MatchRepository {
         extraTimeAwayScore: result.extraTimeAwayScore ?? null,
         penaltyHomeScore: result.penaltyHomeScore ?? null,
         penaltyAwayScore: result.penaltyAwayScore ?? null,
+        minute: result.minute ?? null,
+        injuryTime: result.injuryTime ?? null,
         updatedAt: new Date(),
       })
       .where(eq(match.id, id))

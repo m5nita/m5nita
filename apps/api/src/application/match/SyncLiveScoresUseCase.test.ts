@@ -119,4 +119,39 @@ describe('SyncLiveScoresUseCase', () => {
 
     expect(onMatchFinished).not.toHaveBeenCalled()
   })
+
+  it('persists the live minute and injury time reported by the provider', async () => {
+    const { uc, updateScores } = makeUseCase({
+      existing: [existingMatch({ status: 'live' })],
+      live: [
+        externalMatch({
+          status: 'IN_PLAY',
+          minute: 45,
+          injuryTime: 2,
+          score: { fullTime: { home: 1, away: 0 } },
+        }),
+      ],
+    })
+
+    await uc.execute()
+
+    expect(updateScores).toHaveBeenCalledWith(
+      'm1',
+      expect.objectContaining({ minute: 45, injuryTime: 2 }),
+    )
+  })
+
+  it('defaults minute/injuryTime to null when the provider omits them', async () => {
+    const { uc, updateScores } = makeUseCase({
+      existing: [existingMatch({ status: 'live' })],
+      live: [externalMatch({ status: 'IN_PLAY', score: { fullTime: { home: 0, away: 0 } } })],
+    })
+
+    await uc.execute()
+
+    expect(updateScores).toHaveBeenCalledWith(
+      'm1',
+      expect.objectContaining({ minute: null, injuryTime: null }),
+    )
+  })
 })
