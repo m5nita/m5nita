@@ -26,7 +26,9 @@ export class FootballDataApiAdapter implements FootballDataApi {
     await this.rateLimit()
 
     const res = await fetch(`${FOOTBALL_DATA_BASE}${endpoint}`, {
-      headers: { 'X-Auth-Token': this.apiToken },
+      // X-Api-Version v4.1 unlocks the live `minute`/`injuryTime` fields on the
+      // Livescore plan; the default v4 omits them to keep stable responses.
+      headers: { 'X-Auth-Token': this.apiToken, 'X-Api-Version': 'v4.1' },
     })
 
     if (!res.ok) {
