@@ -423,12 +423,26 @@ function AllMatchesView({
     if (firstUnfinishedIndex < 0) return
     const target = matches[firstUnfinishedIndex]
     if (!target) return
-    const timer = setTimeout(() => {
+    let cancelled = false
+    const scrollToTarget = () => {
+      if (cancelled) return
       document
         .getElementById(`match-${target.id}`)
         ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 120)
-    return () => clearTimeout(timer)
+    }
+    // Wait for the web fonts (Barlow Condensed/Inter, loaded with display=swap)
+    // before scrolling: they swap in after first paint and reflow the finished
+    // cards above the target, so scrolling on a fixed timer landed on a stale,
+    // too-high offset and stranded the target mid-screen. fonts.ready + two
+    // frames for the post-swap layout to commit makes the landing reliable.
+    const ready = document.fonts ? document.fonts.ready : Promise.resolve()
+    ready.then(() => {
+      if (cancelled) return
+      requestAnimationFrame(() => requestAnimationFrame(scrollToTarget))
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Infinite scroll: a sentinel below the list grows the window as it nears the
