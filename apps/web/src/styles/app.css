@@ -51,7 +51,10 @@
   --color-text-secondary: #c4bdb3;
   --color-text-muted: #a39e96;
   --color-gray: #a39e96;
-  --color-gray-light: #3a342c;
+  /* Must stay distinct from --color-border (#3a342c): gray-light is the MÉDIA
+     fill drawn over the border-colored track in the stats compare/evolution
+     charts, so matching the track makes it invisible. Muted warm gray. */
+  --color-gray-light: #7a7468;
   --color-gray-dark: #c4bdb3;
   --color-gray-muted: #a39e96;
   --color-red: #e55344;
