@@ -10,7 +10,7 @@ import {
 import { StatsError } from '../../domain/stats/StatsError'
 import type {
   ParticipantStatsRow,
-  PoolRoundPointsRow,
+  PoolMatchPointsRow,
   PoolStatsAggregateRow,
   StatsRepository,
 } from '../../domain/stats/StatsRepository.port'
@@ -62,7 +62,7 @@ const EMPTY_ROW: ParticipantStatsRow = {
  * Server-side gate for a pool's participant statistics. Requires membership +
  * entitlement. The front never decides access nor computes price. Unlocked
  * reads are served from the persisted snapshot + the cached pool aggregate and
- * per-round series (no per-request re-aggregation); a freshly-unlocked user's
+ * per-match series (no per-request re-aggregation); a freshly-unlocked user's
  * snapshot is bootstrapped once on first read.
  */
 export class GetParticipantStatsUseCase {
@@ -72,7 +72,7 @@ export class GetParticipantStatsUseCase {
     private readonly price: StatsUnlockPrice,
     private readonly statsRepo: StatsRepository,
     private readonly loadPoolAggregate: (poolId: string) => Promise<PoolStatsAggregateRow[]>,
-    private readonly loadPoolRounds: (poolId: string) => Promise<PoolRoundPointsRow[]>,
+    private readonly loadPoolMatches: (poolId: string) => Promise<PoolMatchPointsRow[]>,
     private readonly matchRepo: MatchRepository,
     private readonly predictionRepo: PredictionRepository,
     private readonly clock: Clock,
@@ -94,9 +94,9 @@ export class GetParticipantStatsUseCase {
     }
 
     const viewer = await this.loadViewerSnapshot(input.poolId, input.userId)
-    const [aggregate, poolRounds, recentForm] = await Promise.all([
+    const [aggregate, poolMatches, recentForm] = await Promise.all([
       this.loadPoolAggregate(input.poolId),
-      this.loadPoolRounds(input.poolId),
+      this.loadPoolMatches(input.poolId),
       this.statsRepo.recentForm(input.poolId, input.userId, RECENT_FORM_LIMIT),
     ])
 
@@ -105,7 +105,7 @@ export class GetParticipantStatsUseCase {
       viewerUserId: input.userId,
       viewer,
       aggregate,
-      poolRounds,
+      poolMatches,
       recentForm,
       scoringPolicy,
     })

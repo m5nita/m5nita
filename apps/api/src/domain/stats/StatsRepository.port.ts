@@ -31,10 +31,11 @@ export type PoolStatsAggregateRow = {
   pointsTotal: number
 }
 
-/** Per-member points in a finished round — the basis for the evolution lines. */
-export type PoolRoundPointsRow = {
+/** Per-member points for one finished match — the basis for the evolution lines. */
+export type PoolMatchPointsRow = {
   userId: string
-  matchday: number
+  matchId: string
+  matchDate: Date
   points: number
 }
 
@@ -54,8 +55,8 @@ export interface StatsRepository {
   participantRow(poolId: string, userId: string): Promise<ParticipantStatsRow | null>
   /** Per-member raw aggregates for the whole pool (average + leader baseline). */
   poolAggregate(poolId: string): Promise<PoolStatsAggregateRow[]>
-  /** Per-member points by finished matchday for the whole pool (evolution lines). */
-  poolRoundPoints(poolId: string): Promise<PoolRoundPointsRow[]>
+  /** Per-member points for each finished match in the pool (evolution lines). */
+  poolMatchPoints(poolId: string): Promise<PoolMatchPointsRow[]>
   /** The viewer's last `limit` finished predictions, most recent last (form strip). */
   recentForm(poolId: string, userId: string, limit: number): Promise<FormSampleRow[]>
   /** Recompute and upsert the per-user snapshot (run at match finish + on grant). */

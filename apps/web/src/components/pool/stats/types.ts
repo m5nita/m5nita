@@ -25,9 +25,10 @@ export type EfficiencyBlock = {
   state: BlockState
 }
 
-/** Cumulative points per finished round — viewer vs leader vs pool average. */
+/** Cumulative points per finished match — viewer vs leader vs pool average. */
 export type EvolutionBlock = {
-  rounds: number[]
+  /** ISO kickoff dates, one per finished match, in chronological order. */
+  dates: string[]
   you: number[]
   leader: number[]
   average: number[]

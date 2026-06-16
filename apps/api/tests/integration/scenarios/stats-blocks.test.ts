@@ -65,7 +65,7 @@ describe('US2 — stats blocks', () => {
           state: string
         }
         evolution: {
-          rounds: number[]
+          dates: string[]
           you: number[]
           leader: number[]
           average: number[]
@@ -85,8 +85,9 @@ describe('US2 — stats blocks', () => {
     expect(body.blocks.ranking.memberCount).toBe(1)
     expect(body.blocks.ranking.gapToLeader).toBe(0)
     expect(body.blocks.ranking.trend).toBe('stable')
-    // Evolution: single member is its own leader and average.
-    expect(body.blocks.evolution.rounds).toEqual([1])
+    // Evolution: one step per finished match, dated by kickoff; single member is
+    // its own leader and average.
+    expect(body.blocks.evolution.dates).toEqual([KICKOFF.toISOString()])
     expect(body.blocks.evolution.you).toEqual([10])
     expect(body.blocks.evolution.leader).toEqual([10])
     expect(body.blocks.evolution.average).toEqual([10])

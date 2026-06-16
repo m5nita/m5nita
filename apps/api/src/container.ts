@@ -37,7 +37,7 @@ import { stripe } from './lib/stripe'
 import { bot } from './lib/telegram'
 import { getCompetitionById } from './services/competition'
 import { incrementUsage, validateCoupon } from './services/coupon'
-import { participantStatsAggregateCache, participantStatsRoundsCache } from './services/statsCache'
+import { participantStatsAggregateCache, participantStatsMatchesCache } from './services/statsCache'
 
 type Db = typeof defaultDb
 
@@ -106,12 +106,12 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const unitOfWork = new DrizzleUnitOfWork(db)
 
   // Cached per-pool stats loaders (siblings of the ranking cache): the aggregate
-  // (per-member counts) and the per-round series (evolution lines). Both are
+  // (per-member counts) and the per-match series (evolution lines). Both are
   // anonymized, shared across viewers, and busted on match finish.
   const loadPoolStatsAggregate = (poolId: string) =>
     participantStatsAggregateCache.getOrCompute(poolId, () => statsRepo.poolAggregate(poolId))
-  const loadPoolStatsRounds = (poolId: string) =>
-    participantStatsRoundsCache.getOrCompute(poolId, () => statsRepo.poolRoundPoints(poolId))
+  const loadPoolStatsMatches = (poolId: string) =>
+    participantStatsMatchesCache.getOrCompute(poolId, () => statsRepo.poolMatchPoints(poolId))
 
   const completeCheckoutUseCase = new CompleteCheckoutUseCase(unitOfWork)
   const paymentGateway =
@@ -197,7 +197,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
       statsUnlockPrice,
       statsRepo,
       loadPoolStatsAggregate,
-      loadPoolStatsRounds,
+      loadPoolStatsMatches,
       matchRepo,
       predictionRepo,
       clock,
