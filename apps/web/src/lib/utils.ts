@@ -12,3 +12,15 @@ export function formatDate(date: string): string {
     minute: '2-digit',
   }).format(new Date(date))
 }
+
+/**
+ * Live match clock for display: `67'`, or `45+2'` during stoppage.
+ * Returns null when there is no minute to show (so callers render nothing).
+ */
+export function formatMatchMinute(
+  minute: number | null | undefined,
+  injuryTime: number | null | undefined,
+): string | null {
+  if (minute == null) return null
+  return injuryTime && injuryTime > 0 ? `${minute}+${injuryTime}'` : `${minute}'`
+}
