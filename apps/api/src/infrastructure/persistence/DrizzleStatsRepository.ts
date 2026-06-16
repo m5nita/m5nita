@@ -1,5 +1,5 @@
 import { STATS } from '@m5nita/shared'
-import { and, desc, eq, isNotNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { match as matchTable } from '../../db/schema/match'
 import { participantPoolStats } from '../../db/schema/participantPoolStats'
@@ -9,7 +9,7 @@ import { prediction } from '../../db/schema/prediction'
 import type {
   FormSampleRow,
   ParticipantStatsRow,
-  PoolRoundPointsRow,
+  PoolMatchPointsRow,
   PoolStatsAggregateRow,
   StatsRepository,
 } from '../../domain/stats/StatsRepository.port'
@@ -71,28 +71,22 @@ export class DrizzleStatsRepository implements StatsRepository {
       .groupBy(poolMember.userId)
   }
 
-  // Per-member points by finished matchday for the whole pool. The domain builds
-  // the viewer / leader / average evolution lines from this. Pool-wide and
-  // immutable until the next match finish → cached by the caller (like the
-  // aggregate). Bounded by members × finished matchdays.
-  async poolRoundPoints(poolId: string): Promise<PoolRoundPointsRow[]> {
+  // Per-member points for each finished match in the pool, in kickoff order. The
+  // domain builds the viewer / leader / average evolution lines from this, one
+  // step per game. Pool-wide and immutable until the next match finish → cached
+  // by the caller (like the aggregate). Bounded by members × finished matches.
+  async poolMatchPoints(poolId: string): Promise<PoolMatchPointsRow[]> {
     return this.db
       .select({
         userId: prediction.userId,
-        matchday: sql<number>`${matchTable.matchday}::int`.as('matchday'),
-        points: sql<number>`coalesce(sum(${prediction.points}), 0)::int`.as('points'),
+        matchId: matchTable.id,
+        matchDate: matchTable.matchDate,
+        points: sql<number>`coalesce(${prediction.points}, 0)::int`.as('points'),
       })
       .from(prediction)
       .innerJoin(matchTable, eq(matchTable.id, prediction.matchId))
-      .where(
-        and(
-          eq(prediction.poolId, poolId),
-          eq(matchTable.status, 'finished'),
-          isNotNull(matchTable.matchday),
-        ),
-      )
-      .groupBy(prediction.userId, matchTable.matchday)
-      .orderBy(matchTable.matchday)
+      .where(and(eq(prediction.poolId, poolId), eq(matchTable.status, 'finished')))
+      .orderBy(asc(matchTable.matchDate), asc(matchTable.id))
   }
 
   // The viewer's last `limit` finished predictions (most recent first). Returns

@@ -4,7 +4,7 @@ import { ParticipantPoolStats } from './ParticipantPoolStats'
 import type {
   FormSampleRow,
   ParticipantStatsRow,
-  PoolRoundPointsRow,
+  PoolMatchPointsRow,
   PoolStatsAggregateRow,
 } from './StatsRepository.port'
 
@@ -29,18 +29,21 @@ const aggregate: PoolStatsAggregateRow[] = [
   { userId: 'me', finishedCount: 10, exactCount: 3, resultCount: 7, pointsTotal: 50 },
 ]
 
-const poolRounds: PoolRoundPointsRow[] = [
-  { userId: 'me', matchday: 1, points: 20 },
-  { userId: 'me', matchday: 2, points: 30 },
-  { userId: 'a', matchday: 1, points: 40 },
-  { userId: 'a', matchday: 2, points: 40 },
+const D1 = new Date('2026-06-14T18:00:00Z')
+const D2 = new Date('2026-06-15T18:00:00Z')
+
+const poolMatches: PoolMatchPointsRow[] = [
+  { userId: 'me', matchId: 'm1', matchDate: D1, points: 20 },
+  { userId: 'me', matchId: 'm2', matchDate: D2, points: 30 },
+  { userId: 'a', matchId: 'm1', matchDate: D1, points: 40 },
+  { userId: 'a', matchId: 'm2', matchDate: D2, points: 40 },
 ]
 
 function build(
   over: Partial<ParticipantStatsRow> = {},
   opts: {
     aggregate?: PoolStatsAggregateRow[]
-    poolRounds?: PoolRoundPointsRow[]
+    poolMatches?: PoolMatchPointsRow[]
     recentForm?: FormSampleRow[]
     policy?: typeof RangeScoringPolicy | typeof SingleMatchScoringPolicy
   } = {},
@@ -49,7 +52,7 @@ function build(
     viewerUserId: 'me',
     viewer: viewer(over),
     aggregate: opts.aggregate ?? aggregate,
-    poolRounds: opts.poolRounds ?? poolRounds,
+    poolMatches: opts.poolMatches ?? poolMatches,
     recentForm: opts.recentForm ?? [],
     scoringPolicy: opts.policy ?? RangeScoringPolicy,
   })
@@ -100,12 +103,29 @@ describe('ParticipantPoolStats.build', () => {
     expect(b.distribution.total).toBe(10)
   })
 
-  it('evolution_cumulates_you_leader_and_average', () => {
+  it('evolution_cumulates_per_match_with_dates', () => {
     const b = build()
-    expect(b.evolution.rounds).toEqual([1, 2])
+    // One step per finished match, in kickoff order, labelled by ISO date.
+    expect(b.evolution.dates).toEqual([D1.toISOString(), D2.toISOString()])
     expect(b.evolution.you).toEqual([20, 50])
     expect(b.evolution.leader).toEqual([40, 80])
-    expect(b.evolution.average).toEqual([30, 65]) // mean of me + a per round
+    expect(b.evolution.average).toEqual([30, 65]) // mean of me + a per match
+  })
+
+  it('evolution_orders_matches_chronologically_regardless_of_input_order', () => {
+    const D0 = new Date('2026-06-10T18:00:00Z')
+    const b = build(
+      {},
+      {
+        poolMatches: [
+          { userId: 'me', matchId: 'm2', matchDate: D2, points: 30 },
+          { userId: 'me', matchId: 'm0', matchDate: D0, points: 5 },
+          { userId: 'me', matchId: 'm1', matchDate: D1, points: 20 },
+        ],
+      },
+    )
+    expect(b.evolution.dates).toEqual([D0.toISOString(), D1.toISOString(), D2.toISOString()])
+    expect(b.evolution.you).toEqual([5, 25, 55]) // cumulative in date order
   })
 
   it('recent_form_classifies_and_counts_streak', () => {
@@ -135,7 +155,7 @@ describe('ParticipantPoolStats.build', () => {
   it('degrades_to_insufficient_data_with_no_finished_matches', () => {
     const b = build(
       { finishedCount: 0, exactCount: 0, resultCount: 0, pointsTotal: 0, position: null },
-      { aggregate: [], poolRounds: [] },
+      { aggregate: [], poolMatches: [] },
     )
     expect(b.hitRate.state).toBe('insufficient_data')
     expect(b.strengths.state).toBe('insufficient_data')

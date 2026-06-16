@@ -29,13 +29,20 @@ export function matchesToday<T extends { matchDate: string }>(matches: T[], now:
   return sortByDate(matches.filter((m) => localDayKey(m.matchDate) === today))
 }
 
+/** Compact day/month label in the viewer's timezone, e.g. `"11/06"`. */
+export function formatDayMonth(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(
+    new Date(iso),
+  )
+}
+
 /** Human day header, e.g. `"Qui · 11/06"`. */
 export function formatDayHeader(iso: string): string {
-  const d = new Date(iso)
-  const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(d).replace('.', '')
-  const dayMonth = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(d)
+  const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' })
+    .format(new Date(iso))
+    .replace('.', '')
   const capitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1)
-  return `${capitalized} · ${dayMonth}`
+  return `${capitalized} · ${formatDayMonth(iso)}`
 }
 
 export type Grouping = 'matchday' | 'day' | 'none'

@@ -4,7 +4,7 @@ import { type PoolComparison, StatsComparisonPolicy } from './StatsComparisonPol
 import type {
   FormSampleRow,
   ParticipantStatsRow,
-  PoolRoundPointsRow,
+  PoolMatchPointsRow,
   PoolStatsAggregateRow,
 } from './StatsRepository.port'
 
@@ -44,7 +44,8 @@ export type DistributionBlock = {
 }
 
 export type EvolutionBlock = {
-  rounds: number[]
+  /** ISO kickoff dates, one per finished match, in chronological order. */
+  dates: string[]
   you: number[]
   leader: number[]
   average: number[]
@@ -80,7 +81,7 @@ export type BuildInput = {
   viewerUserId: string
   viewer: ParticipantStatsRow
   aggregate: PoolStatsAggregateRow[]
-  poolRounds: PoolRoundPointsRow[]
+  poolMatches: PoolMatchPointsRow[]
   recentForm: FormSampleRow[]
   scoringPolicy: ScoringPolicy
 }
@@ -99,7 +100,7 @@ const MARGIN = 0.15
  */
 export const ParticipantPoolStats = {
   build(input: BuildInput): StatsBlocks {
-    const { viewerUserId, viewer, aggregate, poolRounds, recentForm, scoringPolicy } = input
+    const { viewerUserId, viewer, aggregate, poolMatches, recentForm, scoringPolicy } = input
     const maxPoints = scoringPolicy.maxPoints()
     const comparison = StatsComparisonPolicy.compute(aggregate, maxPoints)
 
@@ -108,7 +109,7 @@ export const ParticipantPoolStats = {
       hitRate: buildHitRate(viewer, comparison),
       efficiency: buildEfficiency(viewer, comparison, maxPoints),
       distribution: buildDistribution(viewer),
-      evolution: buildEvolution(viewerUserId, viewer, poolRounds, comparison),
+      evolution: buildEvolution(viewerUserId, viewer, poolMatches, comparison),
       recentForm: buildRecentForm(viewer, recentForm),
       strengths: buildStrengths(viewer),
     }
@@ -192,22 +193,31 @@ function buildDistribution(viewer: ParticipantStatsRow): DistributionBlock {
 function buildEvolution(
   viewerUserId: string,
   viewer: ParticipantStatsRow,
-  poolRounds: PoolRoundPointsRow[],
+  poolMatches: PoolMatchPointsRow[],
   c: PoolComparison,
 ): EvolutionBlock {
-  const rounds = [...new Set(poolRounds.map((r) => r.matchday))].sort((a, b) => a - b)
-  const byUser = new Map<string, Map<number, number>>()
-  for (const r of poolRounds) {
-    const m = byUser.get(r.userId) ?? new Map<number, number>()
-    m.set(r.matchday, r.points)
+  // One step per finished match, chronological by kickoff. De-duplicate matches
+  // (one row per member) keeping a single date each, then sort by date (id as a
+  // stable tiebreaker) so the x-axis is independent of the query's row order.
+  const dateByMatch = new Map<string, Date>()
+  for (const r of poolMatches) dateByMatch.set(r.matchId, r.matchDate)
+  const matches = [...dateByMatch.entries()].sort(
+    ([ix, dx], [iy, dy]) => dx.getTime() - dy.getTime() || (ix < iy ? -1 : ix > iy ? 1 : 0),
+  )
+  const matchIds = matches.map(([id]) => id)
+
+  const byUser = new Map<string, Map<string, number>>()
+  for (const r of poolMatches) {
+    const m = byUser.get(r.userId) ?? new Map<string, number>()
+    m.set(r.matchId, r.points)
     byUser.set(r.userId, m)
   }
 
   const cumulativeFor = (userId: string | null): number[] => {
     const m = userId ? byUser.get(userId) : undefined
     let acc = 0
-    return rounds.map((md) => {
-      acc += m?.get(md) ?? 0
+    return matchIds.map((id) => {
+      acc += m?.get(id) ?? 0
       return acc
     })
   }
@@ -216,16 +226,18 @@ function buildEvolution(
   const leader = cumulativeFor(c.leaderUserId)
 
   // Average = mean cumulative across the rated members (those present in the
-  // per-round series). Each member's cumulative is computed once, then averaged
-  // per round. Falls back to 0 when none.
+  // per-match series). Each member's cumulative is computed once, then averaged
+  // per match. Falls back to 0 when none.
   const allCumulative = [...byUser.keys()].map((u) => cumulativeFor(u))
-  const average = rounds.map((_, i) => {
+  const average = matchIds.map((_, i) => {
     if (allCumulative.length === 0) return 0
     const sum = allCumulative.reduce((s, arr) => s + (arr[i] ?? 0), 0)
     return Math.round(sum / allCumulative.length)
   })
 
-  return { rounds, you, leader, average, state: stateFor(viewer.finishedCount) }
+  const dates = matches.map(([, d]) => d.toISOString())
+
+  return { dates, you, leader, average, state: stateFor(viewer.finishedCount) }
 }
 
 function classifyForm(s: FormSampleRow): FormOutcome {

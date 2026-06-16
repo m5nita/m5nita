@@ -1,3 +1,4 @@
+import { formatDayMonth } from '../../../lib/matchSchedule'
 import type { EvolutionBlock } from './types'
 
 const W = 320
@@ -14,12 +15,12 @@ const SERIES: { key: SeriesKey; label: string; stroke: string; dot: string; widt
 ]
 
 /**
- * Cumulative points per finished round, three lines: the viewer, the leader and
- * the pool average. The story at a glance — am I keeping pace, pulling away, or
+ * Cumulative points game by game, three lines: the viewer, the leader and the
+ * pool average. The story at a glance — am I keeping pace, pulling away, or
  * falling behind. Pure inline SVG, no chart lib.
  */
 export function EvolutionLineChart({ block }: { block: EvolutionBlock }) {
-  const n = block.rounds.length
+  const n = block.dates.length
   const max = Math.max(1, ...block.you, ...block.leader, ...block.average)
   const plotW = W - PAD_X * 2
   const plotH = H - PAD_TOP - PAD_BOTTOM
@@ -29,13 +30,16 @@ export function EvolutionLineChart({ block }: { block: EvolutionBlock }) {
 
   const points = (vals: number[]) => vals.map((v, i) => `${x(i)},${y(v)}`).join(' ')
 
+  const firstDate = block.dates[0]
+  const lastDate = block.dates[n - 1]
+
   return (
     <div className="flex flex-col gap-2">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="h-auto w-full"
         role="img"
-        aria-label="Evolução de pontos acumulados por rodada"
+        aria-label="Evolução de pontos acumulados jogo a jogo"
       >
         {/* baseline */}
         <line
@@ -63,8 +67,8 @@ export function EvolutionLineChart({ block }: { block: EvolutionBlock }) {
               ))}
           </g>
         ))}
-        {/* round labels (first / last to avoid clutter) */}
-        {n > 0 && (
+        {/* match-date labels (first / last to avoid clutter) */}
+        {firstDate && (
           <>
             <text
               x={PAD_X}
@@ -73,9 +77,9 @@ export function EvolutionLineChart({ block }: { block: EvolutionBlock }) {
               fontSize="9"
               textAnchor="start"
             >
-              R{block.rounds[0]}
+              {formatDayMonth(firstDate)}
             </text>
-            {n > 1 && (
+            {n > 1 && lastDate && (
               <text
                 x={W - PAD_X}
                 y={H - 6}
@@ -83,7 +87,7 @@ export function EvolutionLineChart({ block }: { block: EvolutionBlock }) {
                 fontSize="9"
                 textAnchor="end"
               >
-                R{block.rounds[n - 1]}
+                {formatDayMonth(lastDate)}
               </text>
             )}
           </>
