@@ -227,3 +227,47 @@ describe('<ScoreInput /> knockout', () => {
     expect(screen.queryByText(/Quem se classifica/)).not.toBeInTheDocument()
   })
 })
+
+function renderLive(overrides: Record<string, unknown> = {}) {
+  const matchDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  return render(
+    <ScoreInput
+      matchId="m1"
+      homeTeam="BRA"
+      awayTeam="ARG"
+      homeFlag={null}
+      awayFlag={null}
+      matchDate={matchDate}
+      stage="group"
+      homeScore={null}
+      awayScore={null}
+      matchStatus="live"
+      points={null}
+      actualHomeScore={0}
+      actualAwayScore={0}
+      onSave={vi.fn(async () => {})}
+      {...overrides}
+    />,
+  )
+}
+
+describe('<ScoreInput /> live minute', () => {
+  afterEach(() => cleanup())
+
+  it('shows the running minute next to "Ao Vivo" when live', () => {
+    renderLive({ minute: 67 })
+    expect(screen.getByText('Ao Vivo')).toBeInTheDocument()
+    expect(screen.getByText(/67'/)).toBeInTheDocument()
+  })
+
+  it('shows stoppage time as MM+N', () => {
+    renderLive({ minute: 45, injuryTime: 2 })
+    expect(screen.getByText(/45\+2'/)).toBeInTheDocument()
+  })
+
+  it('shows no minute when the feed omits it', () => {
+    renderLive({ minute: null })
+    expect(screen.getByText('Ao Vivo')).toBeInTheDocument()
+    expect(screen.queryByText(/\d+'/)).not.toBeInTheDocument()
+  })
+})

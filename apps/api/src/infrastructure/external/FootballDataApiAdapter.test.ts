@@ -58,4 +58,14 @@ describe('FootballDataApiAdapter', () => {
     expect(result).toEqual([])
     expect(console.error).toHaveBeenCalled()
   })
+
+  it('sends the X-Api-Version: v4.1 header so the live minute/injuryTime fields are returned', async () => {
+    const fetchMock = stubFetch({ ok: true, body: { matches: [] } })
+    const adapter = new FootballDataApiAdapter('test-token')
+
+    await adapter.fetchMatches('WC', '2026')
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect((init.headers as Record<string, string>)['X-Api-Version']).toBe('v4.1')
+  })
 })

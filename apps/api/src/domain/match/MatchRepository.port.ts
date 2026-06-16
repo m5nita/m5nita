@@ -43,6 +43,9 @@ export type MatchResultUpdate = {
   extraTimeAwayScore?: number | null
   penaltyHomeScore?: number | null
   penaltyAwayScore?: number | null
+  /** Live elapsed clock from the provider (v4.1); null when not playing / not reported. */
+  minute?: number | null
+  injuryTime?: number | null
 }
 
 import type { UnfinishedMatchesQuery } from '../pool/Pool'

@@ -21,6 +21,9 @@ export const match = pgTable(
     extraTimeAwayScore: integer('extra_time_away_score'),
     penaltyHomeScore: integer('penalty_home_score'),
     penaltyAwayScore: integer('penalty_away_score'),
+    // Live elapsed clock (football-data v4.1); only meaningful while status = 'live'.
+    minute: integer('minute'),
+    injuryTime: integer('injury_time'),
     // 'home' | 'away' | 'draw' — the advancing/winning side as reported by the provider
     winner: text('winner'),
     // 'regular' | 'extra_time' | 'penalty_shootout' — how the match was decided

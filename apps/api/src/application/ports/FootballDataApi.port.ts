@@ -7,6 +7,9 @@ export interface ExternalMatch {
   stage: string
   group: string | null
   matchday: number | null
+  // Live elapsed clock — only present when the request carries X-Api-Version: v4.1.
+  minute?: number | null
+  injuryTime?: number | null
   homeTeam: { name: string; crest: string }
   awayTeam: { name: string; crest: string }
   score: {

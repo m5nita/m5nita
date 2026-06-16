@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { formatDate } from '../../lib/utils'
+import { formatDate, formatMatchMinute } from '../../lib/utils'
 
 export interface ScoreInputHandle {
   focusHome: () => void
@@ -40,6 +40,8 @@ interface ScoreInputProps {
   extraTimeAwayScore?: number | null
   penaltyHomeScore?: number | null
   penaltyAwayScore?: number | null
+  minute?: number | null
+  injuryTime?: number | null
   onSave: (
     matchId: string,
     homeScore: number,
@@ -234,6 +236,8 @@ function LiveResultHeader({
   actualHomeScore,
   actualAwayScore,
   wentToOvertime,
+  minute,
+  injuryTime,
 }: {
   matchStatus: string
   isLocked: boolean
@@ -241,11 +245,15 @@ function LiveResultHeader({
   actualHomeScore: number | null
   actualAwayScore: number | null
   wentToOvertime: boolean
+  minute?: number | null
+  injuryTime?: number | null
 }) {
   if (!((isLocked && hasActualScore) || matchStatus === 'live')) return null
   // For matches that went past 90', the displayed score is the regular-time
   // score (what predictions grade against), so label it as such.
   const finishedLabel = wentToOvertime ? 'Tempo normal' : 'Resultado oficial'
+  // Live clock sits between the "Ao Vivo" indicator and the score, same line.
+  const clock = matchStatus === 'live' ? formatMatchMinute(minute, injuryTime) : null
   return (
     <div
       className={`mb-1 flex items-center justify-center gap-2 font-display text-[10px] font-bold uppercase leading-none tracking-widest ${
@@ -260,6 +268,7 @@ function LiveResultHeader({
       ) : (
         <span>{finishedLabel}</span>
       )}
+      {clock && <span>{clock}</span>}
       {hasActualScore && (
         <span className="flex items-center gap-1.5">
           <span>{actualHomeScore}</span>
@@ -589,6 +598,8 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
     extraTimeAwayScore,
     penaltyHomeScore,
     penaltyAwayScore,
+    minute,
+    injuryTime,
     onSave,
     onAdvance,
     renderExpandedContent,
@@ -706,6 +717,8 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         actualHomeScore={actualHomeScore}
         actualAwayScore={actualAwayScore}
         wentToOvertime={duration === 'extra_time' || duration === 'penalty_shootout'}
+        minute={minute}
+        injuryTime={injuryTime}
       />
       {isLocked && (
         <AdvanceResultNote

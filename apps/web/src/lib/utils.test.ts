@@ -1,5 +1,6 @@
 import { computePlatformFee } from '@m5nita/shared'
 import { describe, expect, it } from 'vitest'
+import { formatMatchMinute } from './utils'
 
 describe('computePlatformFee (shared)', () => {
   it('returns full fee with 0% discount', () => {
@@ -20,5 +21,25 @@ describe('computePlatformFee (shared)', () => {
 
   it('handles large entry fee', () => {
     expect(computePlatformFee(100000, 50)).toBe(2500)
+  })
+})
+
+describe('formatMatchMinute', () => {
+  it('formats a plain running minute', () => {
+    expect(formatMatchMinute(67, null)).toBe("67'")
+  })
+
+  it('formats stoppage time as MM+N', () => {
+    expect(formatMatchMinute(45, 2)).toBe("45+2'")
+    expect(formatMatchMinute(90, 4)).toBe("90+4'")
+  })
+
+  it('ignores zero injury time', () => {
+    expect(formatMatchMinute(90, 0)).toBe("90'")
+  })
+
+  it('returns null when there is no minute', () => {
+    expect(formatMatchMinute(null, null)).toBeNull()
+    expect(formatMatchMinute(undefined, 3)).toBeNull()
   })
 })

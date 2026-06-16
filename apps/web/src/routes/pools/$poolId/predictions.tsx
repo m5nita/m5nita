@@ -199,6 +199,8 @@ function MatchList({
           advanceBonus={pred?.advanceBonus ?? null}
           actualHomeScore={match.homeScore}
           actualAwayScore={match.awayScore}
+          minute={match.minute}
+          injuryTime={match.injuryTime}
           winner={match.winner}
           duration={match.duration}
           extraTimeHomeScore={match.extraTimeHomeScore}

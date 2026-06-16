@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatchData, MatchRepository } from '../../domain/match/MatchRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
 import type { ExternalMatch, FootballDataApi } from '../ports/FootballDataApi.port'
@@ -66,6 +66,18 @@ function makeUseCase(opts: { live?: ExternalMatch[]; existing?: MatchData[]; now
 }
 
 describe('SyncLiveScoresUseCase', () => {
+  // mapStatus()/StaleMatchPolicy read the real wall clock (`new Date()`), not the
+  // injected Clock, to decide "stale live → finished after 12h". Pin the system
+  // time so the fixed 2026-06-15 fixture dates stay inside the live window no
+  // matter when the suite runs (otherwise an IN_PLAY fixture is forced finished).
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-15T03:00:00Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('queries a UTC window spanning the previous and next day (catches matches crossing midnight)', async () => {
     const { uc, fetchLiveMatches } = makeUseCase({ now: new Date('2026-06-15T03:00:00Z') })
     await uc.execute()
@@ -106,5 +118,40 @@ describe('SyncLiveScoresUseCase', () => {
     await uc.execute()
 
     expect(onMatchFinished).not.toHaveBeenCalled()
+  })
+
+  it('persists the live minute and injury time reported by the provider', async () => {
+    const { uc, updateScores } = makeUseCase({
+      existing: [existingMatch({ status: 'live' })],
+      live: [
+        externalMatch({
+          status: 'IN_PLAY',
+          minute: 45,
+          injuryTime: 2,
+          score: { fullTime: { home: 1, away: 0 } },
+        }),
+      ],
+    })
+
+    await uc.execute()
+
+    expect(updateScores).toHaveBeenCalledWith(
+      'm1',
+      expect.objectContaining({ minute: 45, injuryTime: 2 }),
+    )
+  })
+
+  it('defaults minute/injuryTime to null when the provider omits them', async () => {
+    const { uc, updateScores } = makeUseCase({
+      existing: [existingMatch({ status: 'live' })],
+      live: [externalMatch({ status: 'IN_PLAY', score: { fullTime: { home: 0, away: 0 } } })],
+    })
+
+    await uc.execute()
+
+    expect(updateScores).toHaveBeenCalledWith(
+      'm1',
+      expect.objectContaining({ minute: null, injuryTime: null }),
+    )
   })
 })

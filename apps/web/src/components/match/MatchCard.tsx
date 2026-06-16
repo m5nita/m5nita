@@ -1,5 +1,5 @@
 import type { Match } from '@m5nita/shared'
-import { formatDate } from '../../lib/utils'
+import { formatDate, formatMatchMinute } from '../../lib/utils'
 
 interface MatchCardProps {
   match: Match
@@ -23,6 +23,7 @@ function TeamName({ name }: { name: string }) {
 export function MatchCard({ match }: MatchCardProps) {
   const isLive = match.status === 'live'
   const isFinished = match.status === 'finished'
+  const liveMinute = isLive ? formatMatchMinute(match.minute, match.injuryTime) : null
 
   return (
     <div
@@ -56,7 +57,7 @@ export function MatchCard({ match }: MatchCardProps) {
         {isLive && (
           <span className="flex items-center gap-1 font-display text-[9px] font-bold uppercase tracking-widest text-red">
             <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-            Ao Vivo
+            Ao Vivo{liveMinute ? ` ${liveMinute}` : ''}
           </span>
         )}
         {isFinished && (

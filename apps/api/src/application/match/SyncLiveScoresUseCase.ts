@@ -27,8 +27,9 @@ export type SyncLiveScoresDeps = {
   onAllMatchesChecked?: () => Promise<void>
 }
 
-/** Maps a provider score to a persisted result: graded scoreline = 90' (regular time), never extra time/penalties. */
-function toResultUpdate(score: ExternalMatch['score'], status: string): MatchResultUpdate {
+/** Maps a provider match to a persisted result: graded scoreline = 90' (regular time), never extra time/penalties. */
+function toResultUpdate(m: ExternalMatch, status: string): MatchResultUpdate {
+  const { score } = m
   const graded = gradedScoreline({ fullTime: score.fullTime, regularTime: score.regularTime })
   return {
     homeScore: graded.home ?? 0,
@@ -40,6 +41,8 @@ function toResultUpdate(score: ExternalMatch['score'], status: string): MatchRes
     extraTimeAwayScore: score.extraTime?.away ?? null,
     penaltyHomeScore: score.penalties?.home ?? null,
     penaltyAwayScore: score.penalties?.away ?? null,
+    minute: m.minute ?? null,
+    injuryTime: m.injuryTime ?? null,
   }
 }
 
@@ -114,7 +117,7 @@ export class SyncLiveScoresUseCase {
     const newStatus = mapStatus(m.status, m.score, m.utcDate)
     const wasNotFinished = existing.status !== 'finished'
 
-    await this.deps.matchRepo.updateScores(existing.id, toResultUpdate(m.score, newStatus))
+    await this.deps.matchRepo.updateScores(existing.id, toResultUpdate(m, newStatus))
 
     return wasNotFinished && newStatus === 'finished' ? existing.id : null
   }
