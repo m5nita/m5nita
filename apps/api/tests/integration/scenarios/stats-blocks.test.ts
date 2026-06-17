@@ -74,6 +74,8 @@ describe('US2 — stats blocks', () => {
         efficiency: { earned: number; maxPossible: number; state: string }
         distribution: { exact: number; total: number }
         recentForm: { outcomes: string[]; currentStreak: number }
+        profile: { state: string }
+        climb: { state: string; position: number | null; leads: boolean; nextMatch: unknown | null }
       }
     }
 
@@ -98,6 +100,13 @@ describe('US2 — stats blocks', () => {
     expect(body.blocks.distribution.total).toBe(1)
     expect(body.blocks.recentForm.outcomes).toEqual(['exact'])
     expect(body.blocks.recentForm.currentStreak).toBe(1)
+    // Climb: sole member leads; no pending match left (the only match finished).
+    expect(body.blocks.climb.state).toBe('ok')
+    expect(body.blocks.climb.position).toBe(1)
+    expect(body.blocks.climb.leads).toBe(true)
+    expect(body.blocks.climb.nextMatch).toBeNull()
+    // Profile needs more history than a single game → omitted for now.
+    expect(body.blocks.profile.state).toBe('insufficient_data')
   })
 
   it('locked_payload_carries_no_computed_blocks', async () => {

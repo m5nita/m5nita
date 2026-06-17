@@ -12,24 +12,21 @@ const NOW = new Date('2026-06-01T12:00:00Z')
 const K1 = new Date('2026-06-05T15:00:00Z')
 const K2 = new Date('2026-06-06T15:00:00Z')
 
-const EXPECTED_KEYS = [
+const NEXT_MATCH_KEYS = [
   'action',
   'awayTeam',
   'hasPrediction',
   'homeTeam',
-  'impact',
   'kickoff',
   'matchId',
-  'pointsAtStake',
-  'reachableRivals',
 ].sort()
 
 /**
- * US3 (T037) — the impact list covers ALL the viewer's not-yet-started matches,
- * predicted or not, with a submit/change action, and exposes no third-party
- * prediction or consensus (FR-016/019, FR-021/022, SC-009).
+ * "Caminho até o topo" — the climb surfaces the SOONEST not-yet-started match the
+ * viewer can still act on (submit/change) and exposes no third-party prediction
+ * or consensus for it (FR-010/013, FR-018/019).
  */
-describe('US3 — pending-match impact', () => {
+describe('Caminho até o topo — climb next match', () => {
   let sql: ReturnType<typeof postgres>
 
   beforeEach(() => {
@@ -40,7 +37,7 @@ describe('US3 — pending-match impact', () => {
     await sql.end({ timeout: 2 })
   })
 
-  it('lists_all_not_started_matches_with_submit_or_change', async () => {
+  it('surfaces_the_soonest_actionable_match_without_leaking', async () => {
     const { app } = buildTestApp({ initialNow: NOW })
     const comp = await makeCompetition(sql)
     const owner = await signInViaPhoneOtp(app, { phoneNumber: '+5511977770001' })
@@ -52,9 +49,9 @@ describe('US3 — pending-match impact', () => {
     await deliverInfinitePayPaidWebhook(app, payment.id)
 
     const m1 = await makeMatch(sql, { competitionId: comp.id, matchDate: K1, matchday: 1 })
-    const m2 = await makeMatch(sql, { competitionId: comp.id, matchDate: K2, matchday: 2 })
+    await makeMatch(sql, { competitionId: comp.id, matchDate: K2, matchday: 2 })
 
-    // Predict only m1 → m1 should be "change", m2 should be "submit".
+    // Predict only m1 → it is the soonest, so the climb's next match is m1/"change".
     await owner.fetch(`/api/pools/${pool.id}/predictions/${m1.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -64,27 +61,23 @@ describe('US3 — pending-match impact', () => {
     const resp = await owner.fetch(`/api/pools/${pool.id}/stats`)
     expect(resp.status).toBe(200)
     const body = (await resp.json()) as {
-      pendingImpact: Array<{
-        matchId: string
-        action: string
-        hasPrediction: boolean
-      }>
+      blocks: {
+        climb: {
+          state: string
+          position: number | null
+          nextMatch: { matchId: string; action: string; hasPrediction: boolean } | null
+        }
+      }
     }
 
-    const ids = body.pendingImpact.map((p) => p.matchId)
-    expect(ids).toContain(m1.id)
-    expect(ids).toContain(m2.id)
-
-    const im1 = body.pendingImpact.find((p) => p.matchId === m1.id)
-    const im2 = body.pendingImpact.find((p) => p.matchId === m2.id)
-    expect(im1?.hasPrediction).toBe(true)
-    expect(im1?.action).toBe('change')
-    expect(im2?.hasPrediction).toBe(false)
-    expect(im2?.action).toBe('submit')
+    // No finished matches yet → no personal standing, but the next match still shows.
+    expect(body.blocks.climb.state).toBe('insufficient_data')
+    expect(body.blocks.climb.position).toBeNull()
+    expect(body.blocks.climb.nextMatch?.matchId).toBe(m1.id) // soonest (K1 < K2)
+    expect(body.blocks.climb.nextMatch?.action).toBe('change')
+    expect(body.blocks.climb.nextMatch?.hasPrediction).toBe(true)
 
     // No third-party prediction / consensus leaks: only the defined keys exist.
-    for (const item of body.pendingImpact) {
-      expect(Object.keys(item).sort()).toEqual(EXPECTED_KEYS)
-    }
+    expect(Object.keys(body.blocks.climb.nextMatch ?? {}).sort()).toEqual(NEXT_MATCH_KEYS)
   })
 })
