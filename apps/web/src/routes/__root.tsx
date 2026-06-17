@@ -1,5 +1,6 @@
 import { createRootRoute, Link, Outlet, useLocation, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import { AnnouncementBanner } from '../components/ui/AnnouncementBanner'
 import { ThemeSwitcher } from '../components/ui/ThemeSwitcher'
 import { TopProgressBar } from '../components/ui/TopProgressBar'
 import { authClient, useSession } from '../lib/auth'
@@ -140,6 +141,8 @@ function RootLayout() {
           )}
         </div>
       </header>
+
+      <AnnouncementBanner />
 
       {menuOpen && (
         <>

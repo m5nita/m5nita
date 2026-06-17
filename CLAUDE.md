@@ -1,6 +1,6 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-06-05
+Auto-generated from all feature plans. Last updated: 2026-06-17
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 22) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
@@ -33,6 +33,8 @@ Auto-generated from all feature plans. Last updated: 2026-06-05
 - PostgreSQL 16 via Drizzle. **No schema changes** — reads existing (022-email-notification-fallback)
 - TypeScript 5.x, Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY (Telegram); React 19 + TanStack Router/Query + Tailwind v4 (web); football-data.org v4 (match data, via `fetch`) (023-knockout-scoring)
 - PostgreSQL 16 via Drizzle. Additive nullable columns on existing `match` and `prediction` tables; one new migration `0011`. No new tables. (023-knockout-scoring)
+- TypeScript 5.x (strict), Node.js ≥ 22 (build only); runtime target is the browser + React 19, TanStack Router, Tailwind CSS v4 (`@theme` tokens in `apps/web/src/styles/app.css`). **No new runtime dependencies.** (027-announcement-banner)
+- Browser `sessionStorage` for per-session dismissal (key `m5nita.banner.dismissed`). Banner content lives in build-time Vite env (`import.meta.env.VITE_BANNER_*`). No database. (027-announcement-banner)
 
 - TypeScript 5.x (Node.js >= 22) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM; payments via InfinitePay / Stripe / Mock adapters
@@ -128,9 +130,9 @@ DATABASE_URL=postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test \
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 027-announcement-banner: Added TypeScript 5.x (strict), Node.js ≥ 22 (build only); runtime target is the browser + React 19, TanStack Router, Tailwind CSS v4 (`@theme` tokens in `apps/web/src/styles/app.css`). **No new runtime dependencies.**
 - 023-knockout-scoring: Added TypeScript 5.x, Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY (Telegram); React 19 + TanStack Router/Query + Tailwind v4 (web); football-data.org v4 (match data, via `fetch`)
 - 022-email-notification-fallback: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), grammY (Telegram), Resend
-- 021-participant-stats: Added TypeScript 5.x, Node.js ≥ 22 + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY; React 19, TanStack Router/Query, Tailwind CSS v4. Payment via existing InfinitePay / Stripe / Mock adapters (MercadoPago was removed). **No new runtime dependencies** (charts are inline SVG).
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

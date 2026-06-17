@@ -45,6 +45,7 @@ function renderLayoutAt(initialPath: string) {
 }
 
 beforeEach(() => {
+  vi.stubEnv('VITE_BANNER_ENABLED', '')
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: false,
     media: query,
@@ -60,6 +61,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
   vi.clearAllMocks()
 })
 
@@ -91,5 +93,25 @@ describe('<RootLayout /> header', () => {
 
     await screen.findByRole('navigation', { name: /navegação principal/i })
     expect(screen.queryByRole('link', { name: /entrar/i })).toBeNull()
+  })
+})
+
+describe('<RootLayout /> announcement banner', () => {
+  it('mounts the announcement banner region app-wide when configured', async () => {
+    mockUseSession.mockReturnValue({ data: null, isPending: false })
+    vi.stubEnv('VITE_BANNER_ENABLED', 'true')
+    vi.stubEnv('VITE_BANNER_MESSAGE', 'Aviso de teste')
+    vi.stubEnv('VITE_BANNER_LINK', '/login')
+    renderLayoutAt('/')
+
+    expect(await screen.findByRole('region', { name: /aviso/i })).toBeInTheDocument()
+  })
+
+  it('renders no banner when disabled', async () => {
+    mockUseSession.mockReturnValue({ data: null, isPending: false })
+    renderLayoutAt('/')
+
+    await screen.findByRole('banner')
+    expect(screen.queryByRole('region', { name: /aviso/i })).toBeNull()
   })
 })
