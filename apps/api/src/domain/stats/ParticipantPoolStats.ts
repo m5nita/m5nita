@@ -1,11 +1,12 @@
 import { Score } from '../scoring/Score'
 import type { ScoringPolicy } from '../scoring/ScoringPolicy'
+import { type PredictorProfileBlock, PredictorProfilePolicy } from './PredictorProfilePolicy'
 import { type PoolComparison, StatsComparisonPolicy } from './StatsComparisonPolicy'
 import type {
-  FormSampleRow,
   ParticipantStatsRow,
   PoolMatchPointsRow,
   PoolStatsAggregateRow,
+  ProfileFactRow,
 } from './StatsRepository.port'
 
 export type BlockState = 'ok' | 'insufficient_data'
@@ -58,15 +59,6 @@ export type RecentFormBlock = {
   state: BlockState
 }
 
-export type DimensionStat = { correct: number; total: number; pct: number }
-
-export type StrengthsBlock = {
-  lowGoals: DimensionStat
-  highGoals: DimensionStat
-  betterAt: 'low' | 'high' | null
-  state: BlockState
-}
-
 export type StatsBlocks = {
   ranking: RankingHeroBlock
   hitRate: HitRateBlock
@@ -74,7 +66,7 @@ export type StatsBlocks = {
   distribution: DistributionBlock
   evolution: EvolutionBlock
   recentForm: RecentFormBlock
-  strengths: StrengthsBlock
+  profile: PredictorProfileBlock
 }
 
 export type BuildInput = {
@@ -82,26 +74,24 @@ export type BuildInput = {
   viewer: ParticipantStatsRow
   aggregate: PoolStatsAggregateRow[]
   poolMatches: PoolMatchPointsRow[]
-  recentForm: FormSampleRow[]
+  /** The viewer's finished predictions, most-recent first (form + profile). */
+  profileFacts: ProfileFactRow[]
   scoringPolicy: ScoringPolicy
 }
 
-// A dimension needs at least this many finished samples on BOTH sides before we
-// claim a tendency, and the gap must clear MARGIN to surface the takeaway.
-const MIN_SAMPLES = 3
-const MARGIN = 0.15
+const RECENT_FORM_LIMIT = 10
 
 /**
  * Builds every panel block from the viewer's raw finished-match counts, the
- * anonymized pool aggregate, the pool-wide per-round series, and the viewer's
- * recent finished predictions. Pure: it does not touch the DB and never
- * re-derives scoring beyond classifying form via `Score`. Max points per match
- * come from the pool's scoring policy (10 range / 14 single-match).
+ * anonymized pool aggregate, the pool-wide per-match series, and the viewer's
+ * finished predictions. Pure: it does not touch the DB and never re-derives
+ * scoring beyond classifying form via `Score`. Max points per match come from
+ * the pool's scoring policy (10 range / 14 single-match / knockout per policy).
  */
 export const ParticipantPoolStats = {
   build(input: BuildInput): StatsBlocks {
-    const { viewerUserId, viewer, aggregate, poolMatches, recentForm, scoringPolicy } = input
-    const maxPoints = scoringPolicy.maxPoints()
+    const { viewerUserId, viewer, aggregate, poolMatches, profileFacts } = input
+    const maxPoints = input.scoringPolicy.maxPoints()
     const comparison = StatsComparisonPolicy.compute(aggregate, maxPoints)
 
     return {
@@ -110,8 +100,8 @@ export const ParticipantPoolStats = {
       efficiency: buildEfficiency(viewer, comparison, maxPoints),
       distribution: buildDistribution(viewer),
       evolution: buildEvolution(viewerUserId, viewer, poolMatches, comparison),
-      recentForm: buildRecentForm(viewer, recentForm),
-      strengths: buildStrengths(viewer),
+      recentForm: buildRecentForm(viewer, profileFacts.slice(0, RECENT_FORM_LIMIT)),
+      profile: PredictorProfilePolicy.build(profileFacts, maxPoints),
     }
   },
 }
@@ -240,7 +230,7 @@ function buildEvolution(
   return { dates, you, leader, average, state: stateFor(viewer.finishedCount) }
 }
 
-function classifyForm(s: FormSampleRow): FormOutcome {
+function classifyForm(s: ProfileFactRow): FormOutcome {
   // Exact/result/miss is the policy-agnostic category ladder (same for range and
   // single-match pools — bonuses only change points, not the category), so we
   // read it straight off Score, not via a pool scoring policy.
@@ -249,7 +239,7 @@ function classifyForm(s: FormSampleRow): FormOutcome {
   return score.isExact ? 'exact' : 'result'
 }
 
-function buildRecentForm(viewer: ParticipantStatsRow, samples: FormSampleRow[]): RecentFormBlock {
+function buildRecentForm(viewer: ParticipantStatsRow, samples: ProfileFactRow[]): RecentFormBlock {
   // samples come most-recent first. Streak = leading run of non-miss hits.
   let currentStreak = 0
   for (const s of samples) {
@@ -259,27 +249,4 @@ function buildRecentForm(viewer: ParticipantStatsRow, samples: FormSampleRow[]):
   // Display oldest → newest.
   const outcomes = samples.map(classifyForm).reverse()
   return { outcomes, currentStreak, state: stateFor(viewer.finishedCount) }
-}
-
-function dimension(correct: number, total: number): DimensionStat {
-  return { correct, total, pct: ratio(correct, total) }
-}
-
-function betterSide(low: DimensionStat, high: DimensionStat): 'low' | 'high' | null {
-  if (low.total < MIN_SAMPLES || high.total < MIN_SAMPLES) return null
-  const diff = low.pct - high.pct
-  if (diff >= MARGIN) return 'low'
-  if (-diff >= MARGIN) return 'high'
-  return null
-}
-
-function buildStrengths(viewer: ParticipantStatsRow): StrengthsBlock {
-  const low = dimension(viewer.lowGoalsCorrect, viewer.lowGoalsTotal)
-  const high = dimension(viewer.highGoalsCorrect, viewer.highGoalsTotal)
-  return {
-    lowGoals: low,
-    highGoals: high,
-    betterAt: betterSide(low, high),
-    state: stateFor(viewer.finishedCount),
-  }
 }

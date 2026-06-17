@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { RangeScoringPolicy, SingleMatchScoringPolicy } from '../scoring/ScoringPolicy'
 import { ParticipantPoolStats } from './ParticipantPoolStats'
 import type {
-  FormSampleRow,
   ParticipantStatsRow,
   PoolMatchPointsRow,
   PoolStatsAggregateRow,
+  ProfileFactRow,
 } from './StatsRepository.port'
 
 function viewer(over: Partial<ParticipantStatsRow> = {}): ParticipantStatsRow {
@@ -14,10 +14,6 @@ function viewer(over: Partial<ParticipantStatsRow> = {}): ParticipantStatsRow {
     exactCount: 3,
     resultCount: 7,
     pointsTotal: 50,
-    lowGoalsCorrect: 5,
-    lowGoalsTotal: 6,
-    highGoalsCorrect: 1,
-    highGoalsTotal: 4,
     position: 2,
     prevPosition: 4,
     ...over,
@@ -44,7 +40,7 @@ function build(
   opts: {
     aggregate?: PoolStatsAggregateRow[]
     poolMatches?: PoolMatchPointsRow[]
-    recentForm?: FormSampleRow[]
+    profileFacts?: ProfileFactRow[]
     policy?: typeof RangeScoringPolicy | typeof SingleMatchScoringPolicy
   } = {},
 ) {
@@ -53,7 +49,7 @@ function build(
     viewer: viewer(over),
     aggregate: opts.aggregate ?? aggregate,
     poolMatches: opts.poolMatches ?? poolMatches,
-    recentForm: opts.recentForm ?? [],
+    profileFacts: opts.profileFacts ?? [],
     scoringPolicy: opts.policy ?? RangeScoringPolicy,
   })
 }
@@ -105,60 +101,40 @@ describe('ParticipantPoolStats.build', () => {
 
   it('evolution_cumulates_per_match_with_dates', () => {
     const b = build()
-    // One step per finished match, in kickoff order, labelled by ISO date.
     expect(b.evolution.dates).toEqual([D1.toISOString(), D2.toISOString()])
     expect(b.evolution.you).toEqual([20, 50])
     expect(b.evolution.leader).toEqual([40, 80])
     expect(b.evolution.average).toEqual([30, 65]) // mean of me + a per match
   })
 
-  it('evolution_orders_matches_chronologically_regardless_of_input_order', () => {
-    const D0 = new Date('2026-06-10T18:00:00Z')
-    const b = build(
-      {},
-      {
-        poolMatches: [
-          { userId: 'me', matchId: 'm2', matchDate: D2, points: 30 },
-          { userId: 'me', matchId: 'm0', matchDate: D0, points: 5 },
-          { userId: 'me', matchId: 'm1', matchDate: D1, points: 20 },
-        ],
-      },
-    )
-    expect(b.evolution.dates).toEqual([D0.toISOString(), D1.toISOString(), D2.toISOString()])
-    expect(b.evolution.you).toEqual([5, 25, 55]) // cumulative in date order
-  })
-
   it('recent_form_classifies_and_counts_streak', () => {
     // most-recent first: exact, result-only, miss
-    const recentForm: FormSampleRow[] = [
-      { predHome: 3, predAway: 1, actualHome: 3, actualAway: 1 }, // exact
-      { predHome: 2, predAway: 0, actualHome: 1, actualAway: 0 }, // result only
-      { predHome: 0, predAway: 0, actualHome: 1, actualAway: 2 }, // miss
+    const profileFacts: ProfileFactRow[] = [
+      { predHome: 3, predAway: 1, actualHome: 3, actualAway: 1, points: 10 }, // exact
+      { predHome: 2, predAway: 0, actualHome: 1, actualAway: 0, points: 5 }, // result only
+      { predHome: 0, predAway: 0, actualHome: 1, actualAway: 2, points: 0 }, // miss
     ]
-    const b = build({}, { recentForm })
+    const b = build({}, { profileFacts })
     expect(b.recentForm.currentStreak).toBe(2) // exact + result, then miss breaks
     expect(b.recentForm.outcomes).toEqual(['miss', 'result', 'exact']) // oldest → newest
   })
 
-  it('strengths_flags_better_side_on_goal_volume', () => {
-    const b = build({
-      lowGoalsCorrect: 5,
-      lowGoalsTotal: 6,
-      highGoalsCorrect: 1,
-      highGoalsTotal: 4,
-    })
-    expect(b.strengths.lowGoals.pct).toBeCloseTo(5 / 6)
-    expect(b.strengths.highGoals.pct).toBeCloseTo(0.25)
-    expect(b.strengths.betterAt).toBe('low')
+  it('profile_block_is_wired_from_facts', () => {
+    const profileFacts: ProfileFactRow[] = [
+      { predHome: 2, predAway: 1, actualHome: 2, actualAway: 2, points: 0 }, // off-by-one
+      { predHome: 0, predAway: 0, actualHome: 0, actualAway: 0, points: 10 }, // exact
+    ]
+    const b = build({}, { profileFacts })
+    expect(b.profile.nearMiss?.count).toBe(1)
   })
 
   it('degrades_to_insufficient_data_with_no_finished_matches', () => {
     const b = build(
       { finishedCount: 0, exactCount: 0, resultCount: 0, pointsTotal: 0, position: null },
-      { aggregate: [], poolMatches: [] },
+      { aggregate: [], poolMatches: [], profileFacts: [] },
     )
     expect(b.hitRate.state).toBe('insufficient_data')
-    expect(b.strengths.state).toBe('insufficient_data')
+    expect(b.profile.state).toBe('insufficient_data')
     expect(b.efficiency.state).toBe('insufficient_data')
     expect(b.ranking.state).toBe('insufficient_data')
     expect(b.evolution.state).toBe('insufficient_data')

@@ -545,8 +545,7 @@ async function printGuide(
       if (snap && snap.finishedCount > 0) {
         console.log(
           `    Dados:      pos ${snap.lastPosition ?? '—'} · ${snap.pointsTotal} pts (líder ${leader?.name ?? '?'} ${leader?.pts ?? 0}) · ` +
-            `exatos ${snap.exactCount}/${snap.finishedCount} · resultado ${snap.resultCount}/${snap.finishedCount} · ` +
-            `poucos ${snap.lowGoalsCorrect}/${snap.lowGoalsTotal} · muitos ${snap.highGoalsCorrect}/${snap.highGoalsTotal}`,
+            `exatos ${snap.exactCount}/${snap.finishedCount} · resultado ${snap.resultCount}/${snap.finishedCount}`,
         )
       } else {
         console.log('    Dados:      sem jogos finalizados → blocos em "dados insuficientes"')

@@ -74,6 +74,7 @@ describe('US2 — stats blocks', () => {
         efficiency: { earned: number; maxPossible: number; state: string }
         distribution: { exact: number; total: number }
         recentForm: { outcomes: string[]; currentStreak: number }
+        profile: { state: string }
       }
     }
 
@@ -98,6 +99,8 @@ describe('US2 — stats blocks', () => {
     expect(body.blocks.distribution.total).toBe(1)
     expect(body.blocks.recentForm.outcomes).toEqual(['exact'])
     expect(body.blocks.recentForm.currentStreak).toBe(1)
+    // Profile needs more history than a single game → omitted for now.
+    expect(body.blocks.profile.state).toBe('insufficient_data')
   })
 
   it('locked_payload_carries_no_computed_blocks', async () => {

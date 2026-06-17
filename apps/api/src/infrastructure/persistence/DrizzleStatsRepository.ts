@@ -1,4 +1,3 @@
-import { STATS } from '@m5nita/shared'
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { match as matchTable } from '../../db/schema/match'
@@ -7,10 +6,10 @@ import { poolMember } from '../../db/schema/poolMember'
 import { poolStanding } from '../../db/schema/poolStanding'
 import { prediction } from '../../db/schema/prediction'
 import type {
-  FormSampleRow,
   ParticipantStatsRow,
   PoolMatchPointsRow,
   PoolStatsAggregateRow,
+  ProfileFactRow,
   StatsRepository,
 } from '../../domain/stats/StatsRepository.port'
 
@@ -18,7 +17,6 @@ import type {
 // matching how ranking computes exact counts — never re-deriving scoring.
 const FINISHED = sql`${matchTable.status} = 'finished'`
 const RESULT_CORRECT = sql`sign(${prediction.homeScore} - ${prediction.awayScore}) = sign(${matchTable.homeScore} - ${matchTable.awayScore})`
-const TOTAL_GOALS = sql`(${matchTable.homeScore} + ${matchTable.awayScore})`
 
 export class DrizzleStatsRepository implements StatsRepository {
   constructor(private readonly db: typeof dbClient) {}
@@ -33,10 +31,6 @@ export class DrizzleStatsRepository implements StatsRepository {
       exactCount: row.exactCount,
       resultCount: row.resultCount,
       pointsTotal: row.pointsTotal,
-      lowGoalsCorrect: row.lowGoalsCorrect,
-      lowGoalsTotal: row.lowGoalsTotal,
-      highGoalsCorrect: row.highGoalsCorrect,
-      highGoalsTotal: row.highGoalsTotal,
       position: row.lastPosition,
       prevPosition: row.prevPosition,
     }
@@ -89,36 +83,36 @@ export class DrizzleStatsRepository implements StatsRepository {
       .orderBy(asc(matchTable.matchDate), asc(matchTable.id))
   }
 
-  // The viewer's last `limit` finished predictions (most recent first). Returns
-  // raw predicted/actual scores; the domain classifies exact/result/miss so the
-  // scoring rule stays in one place.
-  async recentForm(poolId: string, userId: string, limit: number): Promise<FormSampleRow[]> {
+  // All the viewer's finished predictions (most recent first): raw predicted/
+  // actual scores plus the points already persisted. Powers both the recent-form
+  // strip (latest N) and the predictor profile (all of them). Bounded by the
+  // viewer's finished matches in this pool; the scoring rule stays in the domain.
+  async viewerFinishedPredictions(poolId: string, userId: string): Promise<ProfileFactRow[]> {
     const rows = await this.db
       .select({
         predHome: prediction.homeScore,
         predAway: prediction.awayScore,
         actualHome: matchTable.homeScore,
         actualAway: matchTable.awayScore,
+        points: sql<number>`coalesce(${prediction.points}, 0)::int`.as('points'),
       })
       .from(prediction)
       .innerJoin(matchTable, eq(matchTable.id, prediction.matchId))
       .where(and(eq(prediction.poolId, poolId), eq(prediction.userId, userId), FINISHED))
       .orderBy(desc(matchTable.matchDate))
-      .limit(limit)
     return rows.map((r) => ({
       predHome: r.predHome,
       predAway: r.predAway,
       actualHome: r.actualHome ?? 0,
       actualAway: r.actualAway ?? 0,
+      points: r.points,
     }))
   }
 
   // Recompute the user's finished-match aggregates + current ranking position
   // and upsert the snapshot. Run at match finish (for unlocked users) and once
-  // on first read after unlock. Goal-band cutoff comes from the shared constant.
+  // on first read after unlock.
   async recomputeSnapshot(poolId: string, userId: string): Promise<void> {
-    const lowMax = STATS.LOW_GOALS_MAX
-
     const [agg] = await this.db
       .select({
         finishedCount: sql<number>`count(case when ${FINISHED} then 1 end)::int`.as(
@@ -133,22 +127,6 @@ export class DrizzleStatsRepository implements StatsRepository {
             'result_count',
           ),
         pointsTotal: sql<number>`coalesce(sum(${prediction.points}), 0)::int`.as('points_total'),
-        lowGoalsTotal:
-          sql<number>`count(case when ${FINISHED} and ${TOTAL_GOALS} <= ${lowMax} then 1 end)::int`.as(
-            'low_goals_total',
-          ),
-        lowGoalsCorrect:
-          sql<number>`count(case when ${FINISHED} and ${TOTAL_GOALS} <= ${lowMax} and ${RESULT_CORRECT} then 1 end)::int`.as(
-            'low_goals_correct',
-          ),
-        highGoalsTotal:
-          sql<number>`count(case when ${FINISHED} and ${TOTAL_GOALS} > ${lowMax} then 1 end)::int`.as(
-            'high_goals_total',
-          ),
-        highGoalsCorrect:
-          sql<number>`count(case when ${FINISHED} and ${TOTAL_GOALS} > ${lowMax} and ${RESULT_CORRECT} then 1 end)::int`.as(
-            'high_goals_correct',
-          ),
       })
       .from(prediction)
       .innerJoin(matchTable, eq(matchTable.id, prediction.matchId))
@@ -169,10 +147,6 @@ export class DrizzleStatsRepository implements StatsRepository {
         exactCount: agg?.exactCount ?? 0,
         resultCount: agg?.resultCount ?? 0,
         pointsTotal: agg?.pointsTotal ?? 0,
-        lowGoalsCorrect: agg?.lowGoalsCorrect ?? 0,
-        lowGoalsTotal: agg?.lowGoalsTotal ?? 0,
-        highGoalsCorrect: agg?.highGoalsCorrect ?? 0,
-        highGoalsTotal: agg?.highGoalsTotal ?? 0,
         lastPosition: position,
         prevPosition: existing?.lastPosition ?? null,
       })
@@ -183,10 +157,6 @@ export class DrizzleStatsRepository implements StatsRepository {
           exactCount: sql`excluded.exact_count`,
           resultCount: sql`excluded.result_count`,
           pointsTotal: sql`excluded.points_total`,
-          lowGoalsCorrect: sql`excluded.low_goals_correct`,
-          lowGoalsTotal: sql`excluded.low_goals_total`,
-          highGoalsCorrect: sql`excluded.high_goals_correct`,
-          highGoalsTotal: sql`excluded.high_goals_total`,
           lastPosition: sql`excluded.last_position`,
           prevPosition: sql`excluded.prev_position`,
           updatedAt: sql`now()`,

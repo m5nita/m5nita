@@ -198,9 +198,6 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
       statsRepo,
       loadPoolStatsAggregate,
       loadPoolStatsMatches,
-      matchRepo,
-      predictionRepo,
-      clock,
     ),
   }
 }

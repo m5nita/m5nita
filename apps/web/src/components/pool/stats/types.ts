@@ -55,12 +55,42 @@ export type DistributionBlock = {
 
 export type DimensionStat = { correct: number; total: number; pct: number }
 
-/** Goal-volume strengths (no home/away — meaningless at neutral WC venues). */
-export type StrengthsBlock = {
-  lowGoals: DimensionStat
-  highGoals: DimensionStat
-  /** Which side the viewer predicts clearly better, if any (the 1-line takeaway). */
+// ── Predictor profile ("Seu perfil de palpiteiro") ──────────────────────────
+// Each card is null when its gate is not met (omitted, not shown empty).
+
+/** You bet draws far less often than they actually happen — the unmissed point. */
+export type DrawBlindnessCard = {
+  yourRate: number
+  realRate: number
+  yourCount: number
+  realCount: number
+}
+
+/** Predictions one goal from the exact score, and the points that would add. */
+export type NearMissCard = { count: number; points: number }
+
+export type SignatureScoreline = { home: number; away: number; sharePct: number }
+
+/** Whether you inflate scorelines and lean on one signature scoreline. */
+export type GoalCalibrationCard = {
+  yourAvg: number
+  realAvg: number
+  lean: 'inflate' | 'economize' | 'calibrated'
+  signature: SignatureScoreline | null
+}
+
+/** Accuracy in low- vs high-scoring games, with the clearly stronger side. */
+export type GoalTypeCard = {
+  low: DimensionStat
+  high: DimensionStat
   betterAt: 'low' | 'high' | null
+}
+
+export type PredictorProfileBlock = {
+  drawBlindness: DrawBlindnessCard | null
+  nearMiss: NearMissCard | null
+  goalCalibration: GoalCalibrationCard | null
+  goalType: GoalTypeCard | null
   state: BlockState
 }
 
@@ -71,19 +101,7 @@ export type StatsBlocks = {
   distribution: DistributionBlock
   evolution: EvolutionBlock
   recentForm: RecentFormBlock
-  strengths: StrengthsBlock
-}
-
-export type PendingMatchImpact = {
-  matchId: string
-  homeTeam: string
-  awayTeam: string
-  kickoff: string
-  hasPrediction: boolean
-  action: 'submit' | 'change'
-  impact: 'high' | 'medium' | 'low'
-  pointsAtStake: number
-  reachableRivals: number
+  profile: PredictorProfileBlock
 }
 
 export type StatsResponse =
@@ -95,5 +113,4 @@ export type StatsResponse =
   | {
       unlocked: true
       blocks: StatsBlocks
-      pendingImpact: PendingMatchImpact[]
     }

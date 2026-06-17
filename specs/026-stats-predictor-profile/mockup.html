@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>manita · Stats redesign — 2 direções</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #1a1613;
+    --surface: #242019;
+    --raised: #2e2922;
+    --border: #3a342c;
+    --cream: #f5f0e8;
+    --text: #f5f0e8;
+    --text-2: #c4bdb3;
+    --muted: #a39e96;
+    --gray-light: #7a7468;
+    --red: #e55344;
+    --green: #4fa67b;
+    --amber: #d99a2b;
+    --fd: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --fb: "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(900px 500px at 15% -5%, #221d18 0%, transparent 60%),
+      radial-gradient(900px 500px at 90% 0%, #20322a22 0%, transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--fb);
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 24px 80px;
+    min-height: 100vh;
+  }
+  .page-head { max-width: 880px; margin: 0 auto 36px; }
+  .kicker {
+    font-family: var(--fd); text-transform: uppercase; letter-spacing: .18em;
+    font-size: 12px; font-weight: 700; color: var(--red);
+  }
+  .page-head h1 {
+    font-family: var(--fd); text-transform: uppercase; letter-spacing: -.02em;
+    font-size: 42px; line-height: .95; font-weight: 900; margin-top: 8px;
+  }
+  .page-head p { color: var(--text-2); font-size: 14px; margin-top: 12px; max-width: 640px; line-height: 1.5; }
+  .page-head .note { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+  .page-head .note b { color: var(--text-2); font-weight: 600; }
+
+  .stage {
+    display: flex; gap: 40px; justify-content: center; align-items: flex-start;
+    flex-wrap: wrap; max-width: 980px; margin: 0 auto;
+  }
+  .col { width: 390px; }
+  .col-label {
+    text-align: center; margin-bottom: 14px;
+  }
+  .col-label .tag {
+    display: inline-block; font-family: var(--fd); text-transform: uppercase;
+    letter-spacing: .12em; font-weight: 800; font-size: 13px;
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px;
+    color: var(--text);
+  }
+  .col-label .tag.a { border-color: var(--red); color: var(--red); }
+  .col-label .tag.b { border-color: var(--green); color: var(--green); }
+  .col-label .sub { display: block; color: var(--muted); font-size: 12px; margin-top: 8px; line-height: 1.4; }
+
+  /* phone frame */
+  .phone {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 16px 14px 22px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(245,240,232,.02) inset;
+  }
+  .screen { display: flex; flex-direction: column; gap: 26px; }
+
+  /* section header (matches app: left accent bar) */
+  .sec { display: flex; flex-direction: column; gap: 12px; padding-left: 14px; border-left: 4px solid var(--cream); }
+  .sec > .h { display: flex; flex-direction: column; gap: 3px; }
+  .sec h2 { font-family: var(--fd); text-transform: uppercase; letter-spacing: .04em; font-size: 15px; font-weight: 700; }
+  .sec .hint { font-size: 12px; color: var(--text-2); line-height: 1.35; }
+
+  .num { font-family: var(--fd); font-weight: 900; letter-spacing: -.01em; line-height: .9; }
+  .up { font-family: var(--fd); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+
+  /* ============ DIRECTION A — TREINADOR ============ */
+  .a-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 15px; display: flex; flex-direction: column; gap: 9px;
+  }
+  .a-top { display: flex; align-items: flex-start; gap: 11px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 4px; flex: none; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 16%, transparent); }
+  .dot.red { background: var(--red); color: var(--red); }
+  .dot.amber { background: var(--amber); color: var(--amber); }
+  .dot.green { background: var(--green); color: var(--green); }
+  .a-titlewrap { flex: 1; }
+  .a-title { font-family: var(--fd); text-transform: uppercase; letter-spacing: .04em; font-size: 14px; font-weight: 800; }
+  .a-verdict { font-size: 12.5px; color: var(--text-2); line-height: 1.35; margin-top: 1px; }
+  .a-figure { display: flex; align-items: baseline; gap: 8px; padding-left: 22px; }
+  .a-figure .big { font-size: 34px; }
+  .a-figure .big.red { color: var(--red); }
+  .a-figure .big.amber { color: var(--amber); }
+  .a-figure .vs { font-size: 12px; color: var(--muted); }
+  .a-figure .vs b { color: var(--text-2); font-weight: 600; }
+  .a-chip {
+    align-self: flex-start; margin-left: 22px; font-family: var(--fd); text-transform: uppercase;
+    letter-spacing: .08em; font-size: 10.5px; font-weight: 700; color: var(--text-2);
+    border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px;
+  }
+  .a-tip {
+    margin-left: 22px; font-size: 11.5px; color: var(--muted); line-height: 1.4;
+    border-top: 1px dashed var(--border); padding-top: 8px;
+  }
+  .a-tip b { color: var(--green); font-weight: 600; }
+
+  /* cream hero (inverted, matches app RankingHero in dark) */
+  .hero {
+    background: var(--cream); color: #1a1613; border-radius: 16px; padding: 18px 18px 16px;
+  }
+  .hero .lead { font-family: var(--fd); font-weight: 900; font-size: 40px; line-height: .92; }
+  .hero .lead small { font-size: 17px; font-weight: 700; opacity: .55; }
+  .hero .sub { font-family: var(--fd); text-transform: uppercase; letter-spacing: .06em; font-size: 12px; font-weight: 700; color: #5c4a2e; margin-top: 8px; }
+  .hero .rival { font-size: 12px; color: #4a443b; margin-top: 9px; line-height: 1.4; }
+  .hero .rival b { color: #1a1613; font-weight: 700; }
+  .next {
+    margin-top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .next .lbl { font-family: var(--fd); text-transform: uppercase; letter-spacing: .1em; font-size: 10px; color: var(--muted); font-weight: 700; }
+  .next .match { font-family: var(--fd); font-weight: 800; font-size: 15px; margin-top: 2px; }
+  .next .when { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .cta {
+    flex: none; font-family: var(--fd); text-transform: uppercase; letter-spacing: .06em; font-weight: 800;
+    font-size: 13px; color: #1a1613; background: var(--red); border: none; border-radius: 10px; padding: 9px 14px; cursor: pointer;
+  }
+
+  /* ============ DIRECTION B — RAIO-X ============ */
+  .b-row { display: flex; flex-direction: column; gap: 8px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+  .b-row:last-child { border-bottom: none; }
+  .b-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .b-name { font-family: var(--fd); text-transform: uppercase; letter-spacing: .06em; font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .b-flag { font-size: 11px; font-family: var(--fd); font-weight: 800; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; }
+  .b-flag.red { color: var(--red); border: 1px solid color-mix(in srgb, var(--red) 45%, transparent); }
+  .b-flag.amber { color: var(--amber); border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent); }
+  .b-key { font-family: var(--fd); font-weight: 900; font-size: 22px; }
+  .b-key.red { color: var(--red); }
+  .b-key.amber { color: var(--amber); }
+  .bars { display: flex; flex-direction: column; gap: 6px; }
+  .bar-line { display: grid; grid-template-columns: 38px 1fr 40px; align-items: center; gap: 9px; }
+  .bar-lbl { font-family: var(--fd); text-transform: uppercase; font-size: 10px; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+  .track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .fill { height: 100%; border-radius: 4px; }
+  .fill.you { background: var(--red); }
+  .fill.real { background: var(--gray-light); }
+  .bar-val { font-family: var(--fd); font-weight: 700; font-size: 12px; text-align: right; color: var(--text-2); }
+  .b-tip { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .b-tip b { color: var(--text-2); font-weight: 600; }
+  .dots-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .pip { width: 13px; height: 13px; border-radius: 3px; }
+  .pip.hit { background: var(--amber); }
+  .pip.miss { background: var(--border); }
+  .b-signchip { font-family: var(--fd); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; font-weight: 700; color: var(--text-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px; }
+
+  /* ladder for Caminho (B) */
+  .ladder { display: flex; flex-direction: column; gap: 5px; }
+  .lad-row { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px; padding: 8px 11px; border-radius: 10px; background: var(--surface); border: 1px solid transparent; }
+  .lad-row.you { background: var(--cream); color: #1a1613; }
+  .lad-row.podium { border-color: color-mix(in srgb, var(--green) 40%, transparent); }
+  .lad-pos { font-family: var(--fd); font-weight: 800; font-size: 14px; color: var(--muted); }
+  .lad-row.you .lad-pos { color: #5c4a2e; }
+  .lad-name { font-family: var(--fd); font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: .02em; }
+  .lad-gap { font-family: var(--fd); font-weight: 800; font-size: 14px; }
+  .lad-gap.ahead { color: var(--green); }
+  .lad-gap.behind { color: var(--muted); }
+  .lad-row.you .lad-gap { color: #1a1613; }
+  .b-hero-line { font-family: var(--fd); text-transform: uppercase; letter-spacing: .04em; font-weight: 800; font-size: 13px; color: var(--text); margin-top: 4px; }
+  .b-hero-line .pts { color: var(--green); font-size: 18px; }
+  .legend { display: flex; gap: 14px; margin-top: 2px; }
+  .legend span { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--muted); font-family: var(--fd); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .footer-note { max-width: 880px; margin: 44px auto 0; color: var(--muted); font-size: 12.5px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 18px; }
+  .footer-note b { color: var(--text-2); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="page-head">
+    <div class="kicker">manita · redesign da tela de stats</div>
+    <h1>Seu perfil de palpiteiro + Caminho até o topo</h1>
+    <p>Duas direções visuais para as <b>duas seções novas</b>. Mesmo conteúdo, dois jeitos de mostrar. O resto da tela (ranking, eficiência, distribuição, evolução, forma recente) continua igual — isto substitui o antigo "Forças por tipo de jogo" e o "Jogos que mais importam".</p>
+    <p class="note"><b>Números são ilustrativos.</b> Tudo aqui é calculável com os dados que já existem (seus palpites vs. o que de fato aconteceu nos jogos) — sem expor palpite de ninguém.</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- ============================ DIRECTION A ============================ -->
+    <div class="col">
+      <div class="col-label">
+        <span class="tag a">Direção A · Treinador</span>
+        <span class="sub">Conversa com você. Veredito + dica em cada cartão.<br>Acolhedor, lidera pela frase.</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+
+          <section class="sec">
+            <div class="h">
+              <h2>Seu perfil de palpiteiro</h2>
+              <p class="hint">O que seus palpites revelam sobre você.</p>
+            </div>
+
+            <div class="a-card">
+              <div class="a-top">
+                <span class="dot red"></span>
+                <div class="a-titlewrap">
+                  <div class="a-title">🤝 Empate cego</div>
+                  <div class="a-verdict">Você quase nunca aposta no empate — e ele acontece bastante.</div>
+                </div>
+              </div>
+              <div class="a-figure">
+                <span class="num big red">4%</span>
+                <span class="vs">dos seus palpites &nbsp;·&nbsp; <b>25%</b> dos jogos empataram</span>
+              </div>
+              <div class="a-tip">💡 <b>Cravar 1×1</b> num jogo parelho rende pontos que o bolão inteiro deixa passar.</div>
+            </div>
+
+            <div class="a-card">
+              <div class="a-top">
+                <span class="dot amber"></span>
+                <div class="a-titlewrap">
+                  <div class="a-title">🎯 Quase lá</div>
+                  <div class="a-verdict">Você passou raspando do placar exato em vários jogos.</div>
+                </div>
+              </div>
+              <div class="a-figure">
+                <span class="num big amber">+27</span>
+                <span class="vs"><b>pts</b> a 1 gol de distância — em 9 jogos</span>
+              </div>
+              <div class="a-tip">💡 Você acertou o resultado e furou o placar por <b>1 gol só</b>. Ajuste fino vale muito ponto.</div>
+            </div>
+
+            <div class="a-card">
+              <div class="a-top">
+                <span class="dot amber"></span>
+                <div class="a-titlewrap">
+                  <div class="a-title">⚽ Mão pesada nos gols</div>
+                  <div class="a-verdict">Seus placares somam mais gols que a realidade — e repetem.</div>
+                </div>
+              </div>
+              <div class="a-figure">
+                <span class="num big">3,4</span>
+                <span class="vs">gols/jogo &nbsp;·&nbsp; real <b>2,5</b></span>
+              </div>
+              <div class="a-chip">🔁 placar-assinatura: 2×1 (38%)</div>
+              <div class="a-tip">💡 Baixar um gol e <b>variar o placar</b> aproxima do exato.</div>
+            </div>
+          </section>
+
+          <section class="sec">
+            <div class="h">
+              <h2>Caminho até o topo</h2>
+              <p class="hint">O que falta — e o próximo passo.</p>
+            </div>
+            <div class="hero">
+              <div class="lead">6 pts <small>do pódio</small></div>
+              <div class="sub">1 placar exato e você passa o 3º</div>
+              <div class="rival">⚠️ <b>Diego</b> está colado: 4 pts atrás de você.</div>
+            </div>
+            <div class="next">
+              <div>
+                <div class="lbl">Próximo decisivo</div>
+                <div class="match">Flamengo × Palmeiras</div>
+                <div class="when">Sáb, 16:00 · fecha 15:45</div>
+              </div>
+              <button type="button" class="cta">Palpitar →</button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================ DIRECTION B ============================ -->
+    <div class="col">
+      <div class="col-label">
+        <span class="tag b">Direção B · Raio-X</span>
+        <span class="sub">Relatório de scout. Barras você-vs-realidade.<br>Denso, lidera pelo número.</span>
+      </div>
+      <div class="phone">
+        <div class="screen">
+
+          <section class="sec">
+            <div class="h">
+              <h2>Seu perfil de palpiteiro</h2>
+              <p class="hint">Seus palpites contra o que de fato aconteceu.</p>
+            </div>
+
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 15px;">
+              <!-- empate cego -->
+              <div class="b-row">
+                <div class="b-head">
+                  <div class="b-name">🤝 Empate cego <span class="b-flag red">ponto cego</span></div>
+                </div>
+                <div class="bars">
+                  <div class="bar-line">
+                    <span class="bar-lbl">você</span>
+                    <span class="track"><span class="fill you" style="width:16%"></span></span>
+                    <span class="bar-val">4%</span>
+                  </div>
+                  <div class="bar-line">
+                    <span class="bar-lbl">real</span>
+                    <span class="track"><span class="fill real" style="width:25%"></span></span>
+                    <span class="bar-val">25%</span>
+                  </div>
+                </div>
+                <div class="b-tip">Você aposta empate em <b>1 a cada 25</b>. Quem arrisca 1×1 num jogo parelho pega ponto raro.</div>
+              </div>
+
+              <!-- quase lá -->
+              <div class="b-row">
+                <div class="b-head">
+                  <div class="b-name">🎯 Quase lá</div>
+                  <div class="b-key amber">+27 pts</div>
+                </div>
+                <div class="dots-row">
+                  <span class="pip hit"></span><span class="pip hit"></span><span class="pip hit"></span>
+                  <span class="pip hit"></span><span class="pip hit"></span><span class="pip hit"></span>
+                  <span class="pip hit"></span><span class="pip hit"></span><span class="pip hit"></span>
+                  <span style="font-size:11px;color:var(--muted);margin-left:4px;font-family:var(--fd);font-weight:700;">9 jogos a 1 gol do exato</span>
+                </div>
+                <div class="b-tip">Resultado certo, placar furado por <b>1 gol</b>. Ajuste fino = +27 pts na conta.</div>
+              </div>
+
+              <!-- calibração -->
+              <div class="b-row">
+                <div class="b-head">
+                  <div class="b-name">⚽ Calibração de gols <span class="b-flag amber">infla</span></div>
+                  <span class="b-signchip">🔁 2×1 · 38%</span>
+                </div>
+                <div class="bars">
+                  <div class="bar-line">
+                    <span class="bar-lbl">seus</span>
+                    <span class="track"><span class="fill you" style="width:68%"></span></span>
+                    <span class="bar-val">3,4</span>
+                  </div>
+                  <div class="bar-line">
+                    <span class="bar-lbl">real</span>
+                    <span class="track"><span class="fill real" style="width:50%"></span></span>
+                    <span class="bar-val">2,5</span>
+                  </div>
+                </div>
+                <div class="b-tip">Gols/jogo. Você <b>infla e repete o 2×1</b> — baixe e varie pra cravar mais.</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sec">
+            <div class="h">
+              <h2>Caminho até o topo</h2>
+              <p class="hint">Onde você está na briga.</p>
+            </div>
+            <div class="ladder">
+              <div class="lad-row"><span class="lad-pos">2º</span><span class="lad-name">Carlos</span><span class="lad-gap ahead">+9</span></div>
+              <div class="lad-row podium"><span class="lad-pos">3º</span><span class="lad-name">Bia · pódio</span><span class="lad-gap ahead">+6</span></div>
+              <div class="lad-row you"><span class="lad-pos">4º</span><span class="lad-name">Você</span><span class="lad-gap">128 pts</span></div>
+              <div class="lad-row"><span class="lad-pos">5º</span><span class="lad-name">Diego</span><span class="lad-gap behind">−4</span></div>
+            </div>
+            <div class="b-hero-line">A <span class="pts">6 pts</span> do pódio · 1 cravada te coloca em 3º</div>
+            <div class="next">
+              <div>
+                <div class="lbl">Próximo decisivo</div>
+                <div class="match">Flamengo × Palmeiras</div>
+                <div class="when">Sáb, 16:00 · fecha 15:45</div>
+              </div>
+              <button type="button" class="cta">Palpitar →</button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-note">
+    <b>Como ler:</b> vermelho = você · cinza = a realidade dos jogos · âmbar = oportunidade/atenção · verde = vantagem.<br>
+    <b>Direção A (Treinador)</b> aposta na frase + dica: mais acolhedor, ótimo pra quem quer ser guiado, porém com mais texto.<br>
+    <b>Direção B (Raio-X)</b> aposta no número + barra de comparação: mais enxuto e "analista", lidera pelo dado. Dá pra misturar — ex.: cartões do A com a barra você-vs-real do B.
+  </div>
+</body>
+</html>
