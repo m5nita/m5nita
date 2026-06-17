@@ -78,6 +78,7 @@ A user who has already seen and read the banner closes it so it stops taking up 
 - **Destination equals current page**: the configured destination is the page the user is already on → activation still resolves without error.
 - **Logged-out visitor**: an unauthenticated visitor on the landing/home page also sees the banner.
 - **Dismiss then quick navigation**: immediately navigating after dismissing keeps the banner hidden (no flicker/re-show within the session).
+- **Scheduled window**: before the start (or after the end) instant the banner is hidden; it appears/disappears on the next render after the boundary (e.g. on navigation or reload). An unparseable start/end value hides the banner rather than guessing.
 
 ## Requirements *(mandatory)*
 
@@ -95,6 +96,7 @@ A user who has already seen and read the banner closes it so it stops taking up 
 - **FR-010**: The banner MUST be accessible — exposed to assistive technology as an announcement/notification, with a keyboard-operable, accessibly-labeled dismiss control and a clear affordance that the banner is clickable.
 - **FR-011**: The system MUST validate that the configured destination is a well-formed internal route or external URL; an enabled banner with an invalid destination MUST be hidden rather than render a broken link.
 - **FR-012**: The banner MUST be visually consistent with the app's existing design language (typography, colors, spacing) and MUST NOT obscure or break the existing header/navigation behavior.
+- **FR-013**: The system MUST support an optional scheduling window with a start and/or end instant. When a window is configured, the banner MUST appear only within it and MUST appear/disappear automatically when a boundary is reached (without requiring a new deploy). An unparseable start/end value MUST hide the banner (fail closed). When no window is configured, the banner is governed solely by the enabled flag.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -111,6 +113,7 @@ A user who has already seen and read the banner closes it so it stops taking up 
 - **SC-004**: An operator can launch, change, or retire an announcement by editing configuration only (no layout/page code changes) and have it live after a single deploy, completing the edit in under 5 minutes.
 - **SC-005**: The banner introduces no perceptible load delay and zero layout shift — it appears within the same render as the page — on both mobile and desktop and in light and dark themes.
 - **SC-006**: The banner passes accessibility checks: keyboard-operable dismiss, screen-reader announcement, and AA color contrast in both themes.
+- **SC-007**: A banner configured with a future start instant is deployed once and then appears automatically at that time (and, if an end is set, disappears automatically) with no further deploy.
 
 ## Assumptions
 
@@ -120,7 +123,7 @@ A user who has already seen and read the banner closes it so it stops taking up 
 - The message is short (a single line/sentence). The destination is typically an external page about the upcoming championships, but internal app routes are also supported.
 - The banner is shown to all visitors (authenticated or not), because the announcement is general.
 - Click-through analytics/tracking is not required for the first version.
-- Date-based scheduling (auto start/stop) is out of scope for the first version; the operator enables and disables the banner manually around the campaign window.
+- Date-based scheduling is supported via an optional start/end window: the operator can deploy the banner ahead of time and it appears/disappears automatically at those instants. The window is evaluated against the visitor's browser clock — acceptable for a non-critical announcement (a wrong/manipulated clock could shift it by minutes). Times are ISO 8601; including the timezone offset (e.g. `-03:00`) avoids ambiguity.
 
 ## Dependencies
 
@@ -132,4 +135,4 @@ A user who has already seen and read the banner closes it so it stops taking up 
 - An admin UI for editing the banner live without a deploy.
 - Multiple or segmented banners, and per-pool/per-user targeting.
 - Persistent (cross-session) dismissal.
-- A/B testing, date-based scheduling, and click-through analytics.
+- A/B testing and click-through analytics.

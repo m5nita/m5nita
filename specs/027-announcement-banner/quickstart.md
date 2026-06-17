@@ -61,6 +61,17 @@ pnpm biome check --write apps/web
 
 3. **Redeploy** the web service (a rebuild is required — Vite inlines `VITE_*` at build time). The banner goes live app-wide.
 
+### Scheduling (deploy now, appears later)
+
+Set an optional window — the dates are baked at build time but compared against the visitor's clock at runtime, so the banner appears/disappears on its own with **no extra deploy**:
+
+```
+VITE_BANNER_START=2026-07-10T00:00:00-03:00   # hidden before this
+VITE_BANNER_END=2026-08-01T00:00:00-03:00     # hidden after this (optional)
+```
+
+Use the full ISO 8601 form with the `-03:00` offset for Brazil. Either bound is optional; leave both empty for "show now while enabled". An unparseable value hides the banner (so a typo fails safe, not silently-wrong).
+
 ### Turning it off / changing it later
 
 - **Off**: set `VITE_BANNER_ENABLED=false` (or clear it) → redeploy.

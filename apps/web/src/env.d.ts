@@ -6,4 +6,6 @@ interface ImportMetaEnv {
   readonly VITE_BANNER_MESSAGE?: string
   readonly VITE_BANNER_LINK?: string
   readonly VITE_BANNER_ID?: string
+  readonly VITE_BANNER_START?: string
+  readonly VITE_BANNER_END?: string
 }

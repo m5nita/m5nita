@@ -78,3 +78,45 @@ describe('parseAnnouncementConfig', () => {
     expect(different?.id).not.toBe(a?.id)
   })
 })
+
+describe('parseAnnouncementConfig — scheduling window', () => {
+  const now = Date.parse('2026-06-17T12:00:00-03:00')
+
+  it('shows when there are no date bounds', () => {
+    expect(parseAnnouncementConfig(base, now)).not.toBeNull()
+  })
+
+  it('hides before the start date', () => {
+    const env = { ...base, VITE_BANNER_START: '2026-07-01T00:00:00-03:00' }
+    expect(parseAnnouncementConfig(env, now)).toBeNull()
+  })
+
+  it('shows on/after the start date', () => {
+    const env = { ...base, VITE_BANNER_START: '2026-06-10T00:00:00-03:00' }
+    expect(parseAnnouncementConfig(env, now)).not.toBeNull()
+  })
+
+  it('hides after the end date', () => {
+    const env = { ...base, VITE_BANNER_END: '2026-06-10T00:00:00-03:00' }
+    expect(parseAnnouncementConfig(env, now)).toBeNull()
+  })
+
+  it('shows within the start–end window', () => {
+    const env = {
+      ...base,
+      VITE_BANNER_START: '2026-06-10T00:00:00-03:00',
+      VITE_BANNER_END: '2026-08-01T00:00:00-03:00',
+    }
+    expect(parseAnnouncementConfig(env, now)).not.toBeNull()
+  })
+
+  it('hides (fail closed) when a date bound is unparseable', () => {
+    expect(parseAnnouncementConfig({ ...base, VITE_BANNER_START: 'not-a-date' }, now)).toBeNull()
+    expect(parseAnnouncementConfig({ ...base, VITE_BANNER_END: 'soon' }, now)).toBeNull()
+  })
+
+  it('ignores empty/blank bounds', () => {
+    const env = { ...base, VITE_BANNER_START: '', VITE_BANNER_END: '   ' }
+    expect(parseAnnouncementConfig(env, now)).not.toBeNull()
+  })
+})

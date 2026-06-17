@@ -141,3 +141,28 @@ describe('<AnnouncementBanner /> — dismissal', () => {
     expect(await screen.findByRole('region', { name: /aviso/i })).toBeInTheDocument()
   })
 })
+
+describe('<AnnouncementBanner /> — scheduling', () => {
+  it('does not render before the configured start date', async () => {
+    setBannerEnv({ VITE_BANNER_START: '2099-01-01T00:00:00Z' })
+    renderBanner()
+    await waitForLayout()
+    expect(screen.queryByRole('region', { name: /aviso/i })).toBeNull()
+  })
+
+  it('does not render after the configured end date', async () => {
+    setBannerEnv({ VITE_BANNER_END: '2000-01-01T00:00:00Z' })
+    renderBanner()
+    await waitForLayout()
+    expect(screen.queryByRole('region', { name: /aviso/i })).toBeNull()
+  })
+
+  it('renders within the configured start–end window', async () => {
+    setBannerEnv({
+      VITE_BANNER_START: '2000-01-01T00:00:00Z',
+      VITE_BANNER_END: '2099-01-01T00:00:00Z',
+    })
+    renderBanner()
+    expect(await screen.findByRole('region', { name: /aviso/i })).toBeInTheDocument()
+  })
+})
