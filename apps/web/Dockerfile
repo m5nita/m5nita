@@ -20,6 +20,12 @@ COPY package.json pnpm-workspace.yaml tsconfig.json ./
 COPY apps/web/ ./apps/web/
 COPY packages/shared/ ./packages/shared/
 ARG VITE_API_URL
+# Announcement banner (optional, global). Set these as Coolify build-time variables.
+# Omitting VITE_BANNER_ENABLED (or setting it to anything but "true") hides the banner.
+ARG VITE_BANNER_ENABLED
+ARG VITE_BANNER_MESSAGE
+ARG VITE_BANNER_LINK
+ARG VITE_BANNER_ID
 ARG SOURCE_COMMIT=unknown
 ENV VITE_COMMIT_HASH=${SOURCE_COMMIT}
 # Cap memory so vite/esbuild won't compete with sibling builds on the host.
