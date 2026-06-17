@@ -47,6 +47,19 @@ export type FormSampleRow = {
   actualAway: number
 }
 
+/**
+ * One of the viewer's finished predictions — raw scores plus the points already
+ * persisted for it. Powers both the recent-form strip and the predictor profile
+ * (draws, near-miss, goal calibration, goal-type strength) in the domain.
+ */
+export type ProfileFactRow = {
+  predHome: number
+  predAway: number
+  actualHome: number
+  actualAway: number
+  points: number
+}
+
 export interface StatsRepository {
   /**
    * The viewer's persisted finished-match snapshot, or null when no snapshot row
