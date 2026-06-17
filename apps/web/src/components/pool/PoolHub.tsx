@@ -232,12 +232,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         </TabLink>
         {!isSingleMatch && (
           <TabLink poolId={poolId} to="/pools/$poolId/stats" active={activeTab === 'statistics'}>
-            <span className="inline-flex items-center justify-center gap-1.5">
-              Estatísticas
-              <span className="rounded-sm bg-red px-1 py-0.5 text-[9px] font-black leading-none tracking-widest text-white">
-                BETA
-              </span>
-            </span>
+            Estatísticas
           </TabLink>
         )}
       </div>
