@@ -133,7 +133,7 @@ function signatureOf(facts: ProfileFactRow[]): SignatureScoreline | null {
   }
   const sharePct = best / facts.length
   if (sharePct < SIGNATURE_MIN_SHARE) return null
-  const [home, away] = bestKey.split('-').map(Number)
+  const [home = 0, away = 0] = bestKey.split('-').map(Number)
   return { home, away, sharePct }
 }
 

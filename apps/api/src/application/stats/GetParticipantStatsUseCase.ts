@@ -2,11 +2,8 @@ import type { MatchRepository } from '../../domain/match/MatchRepository.port'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
 import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
+import type { PendingMatchInput } from '../../domain/stats/ClimbPolicy'
 import { ParticipantPoolStats, type StatsBlocks } from '../../domain/stats/ParticipantPoolStats'
-import {
-  type PendingMatchImpact,
-  PendingMatchImpactPolicy,
-} from '../../domain/stats/PendingMatchImpactPolicy'
 import { StatsError } from '../../domain/stats/StatsError'
 import type {
   ParticipantStatsRow,
@@ -24,7 +21,7 @@ export type StatsTeaser = {
 
 /**
  * The gated read result. Locked → teaser + price only (no computed statistic).
- * Unlocked → the visual blocks + pending-match impact.
+ * Unlocked → the visual blocks (profile and climb included).
  */
 export type ParticipantStatsResult =
   | {
@@ -35,25 +32,18 @@ export type ParticipantStatsResult =
   | {
       unlocked: true
       blocks: StatsBlocks
-      pendingImpact: PendingMatchImpact[]
     }
 
 const TEASER: StatsTeaser = {
-  blocks: ['ranking', 'hitRate', 'efficiency', 'evolution', 'recentForm', 'strengths'],
+  blocks: ['ranking', 'hitRate', 'efficiency', 'evolution', 'profile', 'climb'],
   headline: 'Veja como você se compara ao bolão',
 }
-
-const RECENT_FORM_LIMIT = 10
 
 const EMPTY_ROW: ParticipantStatsRow = {
   finishedCount: 0,
   exactCount: 0,
   resultCount: 0,
   pointsTotal: 0,
-  lowGoalsCorrect: 0,
-  lowGoalsTotal: 0,
-  highGoalsCorrect: 0,
-  highGoalsTotal: 0,
   position: null,
   prevPosition: null,
 }
@@ -62,8 +52,9 @@ const EMPTY_ROW: ParticipantStatsRow = {
  * Server-side gate for a pool's participant statistics. Requires membership +
  * entitlement. The front never decides access nor computes price. Unlocked
  * reads are served from the persisted snapshot + the cached pool aggregate and
- * per-match series (no per-request re-aggregation); a freshly-unlocked user's
- * snapshot is bootstrapped once on first read.
+ * per-match series, plus the viewer's own finished predictions and not-yet-
+ * started matches (read-time, bounded); a freshly-unlocked user's snapshot is
+ * bootstrapped once on first read.
  */
 export class GetParticipantStatsUseCase {
   constructor(
@@ -94,57 +85,46 @@ export class GetParticipantStatsUseCase {
     }
 
     const viewer = await this.loadViewerSnapshot(input.poolId, input.userId)
-    const [aggregate, poolMatches, recentForm] = await Promise.all([
+    const [aggregate, poolMatches, profileFacts, pendingMatches] = await Promise.all([
       this.loadPoolAggregate(input.poolId),
       this.loadPoolMatches(input.poolId),
-      this.statsRepo.recentForm(input.poolId, input.userId, RECENT_FORM_LIMIT),
+      this.statsRepo.viewerFinishedPredictions(input.poolId, input.userId),
+      this.loadPendingMatches(pool, input.userId),
     ])
 
-    const scoringPolicy = pool.scoringPolicy()
     const blocks = ParticipantPoolStats.build({
       viewerUserId: input.userId,
       viewer,
       aggregate,
       poolMatches,
-      recentForm,
-      scoringPolicy,
+      profileFacts,
+      pendingMatches,
+      scoringPolicy: pool.scoringPolicy(),
     })
 
-    const pendingImpact = await this.buildPendingImpact(pool, input.userId, {
-      viewerPoints: viewer.pointsTotal,
-      // ALL members' points (not just unlocked) — rival density reflects the
-      // whole race. Anonymized numbers only; no individual prediction.
-      memberPoints: aggregate.map((a) => a.pointsTotal),
-      maxPoints: scoringPolicy.maxPoints(),
-    })
-
-    return { unlocked: true, blocks, pendingImpact }
+    return { unlocked: true, blocks }
   }
 
-  // The viewer's own not-yet-started matches (predicted or not), ranked by
-  // impact, each flagged submit/change. Reads only the viewer's prediction
-  // existence — never another member's prediction (FR-016/019/021).
-  private async buildPendingImpact(
+  // The viewer's own not-yet-started matches (predicted or not), each flagged
+  // submit/change for the climb's next-match step. Reads only the viewer's
+  // prediction existence — never another member's prediction (FR-018/019).
+  private async loadPendingMatches(
     pool: NonNullable<Awaited<ReturnType<PoolRepository['findById']>>>,
     userId: string,
-    ctx: { viewerPoints: number; memberPoints: number[]; maxPoints: number },
-  ): Promise<PendingMatchImpact[]> {
+  ): Promise<PendingMatchInput[]> {
     const [pending, predicted] = await Promise.all([
       this.matchRepo.findPendingFor(pool.unfinishedMatchesQuery(), this.clock.now()),
       this.predictionRepo.findByUserPool(userId, pool.id),
     ])
     const predictedIds = new Set(predicted.map((p) => p.matchId))
 
-    return PendingMatchImpactPolicy.rank(
-      pending.map((m) => ({
-        matchId: m.id,
-        homeTeam: m.homeTeam,
-        awayTeam: m.awayTeam,
-        matchDate: m.matchDate,
-        hasPrediction: predictedIds.has(m.id),
-      })),
-      ctx,
-    )
+    return pending.map((m) => ({
+      matchId: m.id,
+      homeTeam: m.homeTeam,
+      awayTeam: m.awayTeam,
+      matchDate: m.matchDate,
+      hasPrediction: predictedIds.has(m.id),
+    }))
   }
 
   // Serve the persisted snapshot; bootstrap it once if a just-unlocked user has

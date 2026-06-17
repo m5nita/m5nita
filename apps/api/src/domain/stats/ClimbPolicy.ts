@@ -107,8 +107,8 @@ function byStanding(a: PoolStatsAggregateRow, b: PoolStatsAggregateRow): number 
 }
 
 function pickNextMatch(pending: PendingMatchInput[]): ClimbNextMatch | null {
-  if (pending.length === 0) return null
   const soonest = [...pending].sort((a, b) => a.matchDate.getTime() - b.matchDate.getTime())[0]
+  if (!soonest) return null
   return {
     matchId: soonest.matchId,
     homeTeam: soonest.homeTeam,
