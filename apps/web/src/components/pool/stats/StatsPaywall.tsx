@@ -13,7 +13,7 @@ const SAMPLE_BLOCKS = [
   'Sua posição no ranking',
   'Aproveitamento vs média e líder',
   'Seu perfil de palpiteiro + dicas',
-  'Caminho até o topo e próximo jogo',
+  'Evolução, forma recente e eficiência',
 ]
 
 /**

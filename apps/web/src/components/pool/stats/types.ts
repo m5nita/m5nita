@@ -94,30 +94,6 @@ export type PredictorProfileBlock = {
   state: BlockState
 }
 
-// ── Climb ("Caminho até o topo") ─────────────────────────────────────────────
-
-export type ClimbNextMatch = {
-  matchId: string
-  homeTeam: string
-  awayTeam: string
-  kickoff: string
-  hasPrediction: boolean
-  action: 'submit' | 'change'
-}
-
-export type ClimbBlock = {
-  position: number | null
-  memberCount: number
-  leads: boolean
-  /** Gap to the rank immediately above, in points and whole exact-scores. */
-  nextUp: { gap: number; exactsToClose: number } | null
-  /** The member one rank below and how close they are. */
-  chaser: { name: string | null; gap: number; close: boolean } | null
-  /** The soonest match the viewer can still act on. */
-  nextMatch: ClimbNextMatch | null
-  state: BlockState
-}
-
 export type StatsBlocks = {
   ranking: RankingHeroBlock
   hitRate: HitRateBlock
@@ -126,7 +102,6 @@ export type StatsBlocks = {
   evolution: EvolutionBlock
   recentForm: RecentFormBlock
   profile: PredictorProfileBlock
-  climb: ClimbBlock
 }
 
 export type StatsResponse =

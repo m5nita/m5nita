@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { RangeScoringPolicy, SingleMatchScoringPolicy } from '../scoring/ScoringPolicy'
-import type { PendingMatchInput } from './ClimbPolicy'
 import { ParticipantPoolStats } from './ParticipantPoolStats'
 import type {
   ParticipantStatsRow,
@@ -22,22 +21,8 @@ function viewer(over: Partial<ParticipantStatsRow> = {}): ParticipantStatsRow {
 }
 
 const aggregate: PoolStatsAggregateRow[] = [
-  {
-    userId: 'a',
-    displayName: 'Ana',
-    finishedCount: 10,
-    exactCount: 5,
-    resultCount: 9,
-    pointsTotal: 80,
-  },
-  {
-    userId: 'me',
-    displayName: 'Você',
-    finishedCount: 10,
-    exactCount: 3,
-    resultCount: 7,
-    pointsTotal: 50,
-  },
+  { userId: 'a', finishedCount: 10, exactCount: 5, resultCount: 9, pointsTotal: 80 },
+  { userId: 'me', finishedCount: 10, exactCount: 3, resultCount: 7, pointsTotal: 50 },
 ]
 
 const D1 = new Date('2026-06-14T18:00:00Z')
@@ -56,7 +41,6 @@ function build(
     aggregate?: PoolStatsAggregateRow[]
     poolMatches?: PoolMatchPointsRow[]
     profileFacts?: ProfileFactRow[]
-    pendingMatches?: PendingMatchInput[]
     policy?: typeof RangeScoringPolicy | typeof SingleMatchScoringPolicy
   } = {},
 ) {
@@ -66,7 +50,6 @@ function build(
     aggregate: opts.aggregate ?? aggregate,
     poolMatches: opts.poolMatches ?? poolMatches,
     profileFacts: opts.profileFacts ?? [],
-    pendingMatches: opts.pendingMatches ?? [],
     scoringPolicy: opts.policy ?? RangeScoringPolicy,
   })
 }
@@ -99,14 +82,7 @@ describe('ParticipantPoolStats.build', () => {
       { finishedCount: 2, pointsTotal: 14 },
       {
         aggregate: [
-          {
-            userId: 'me',
-            displayName: 'Você',
-            finishedCount: 2,
-            exactCount: 1,
-            resultCount: 2,
-            pointsTotal: 14,
-          },
+          { userId: 'me', finishedCount: 2, exactCount: 1, resultCount: 2, pointsTotal: 14 },
         ],
         policy: SingleMatchScoringPolicy,
       },
@@ -152,13 +128,6 @@ describe('ParticipantPoolStats.build', () => {
     expect(b.profile.nearMiss?.count).toBe(1)
   })
 
-  it('climb_block_is_wired_from_aggregate', () => {
-    const b = build({ pointsTotal: 50 })
-    expect(b.climb.position).toBe(2) // a (80) then me (50)
-    expect(b.climb.nextUp?.gap).toBe(30) // 80 - 50
-    expect(b.climb.state).toBe('ok')
-  })
-
   it('degrades_to_insufficient_data_with_no_finished_matches', () => {
     const b = build(
       { finishedCount: 0, exactCount: 0, resultCount: 0, pointsTotal: 0, position: null },
@@ -166,7 +135,6 @@ describe('ParticipantPoolStats.build', () => {
     )
     expect(b.hitRate.state).toBe('insufficient_data')
     expect(b.profile.state).toBe('insufficient_data')
-    expect(b.climb.state).toBe('insufficient_data')
     expect(b.efficiency.state).toBe('insufficient_data')
     expect(b.ranking.state).toBe('insufficient_data')
     expect(b.evolution.state).toBe('insufficient_data')

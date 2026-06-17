@@ -1,8 +1,4 @@
-import type { MatchRepository } from '../../domain/match/MatchRepository.port'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
-import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
-import type { Clock } from '../../domain/shared/Clock'
-import type { PendingMatchInput } from '../../domain/stats/ClimbPolicy'
 import { ParticipantPoolStats, type StatsBlocks } from '../../domain/stats/ParticipantPoolStats'
 import { StatsError } from '../../domain/stats/StatsError'
 import type {
@@ -21,7 +17,7 @@ export type StatsTeaser = {
 
 /**
  * The gated read result. Locked → teaser + price only (no computed statistic).
- * Unlocked → the visual blocks (profile and climb included).
+ * Unlocked → the visual blocks (the predictor profile included).
  */
 export type ParticipantStatsResult =
   | {
@@ -35,7 +31,7 @@ export type ParticipantStatsResult =
     }
 
 const TEASER: StatsTeaser = {
-  blocks: ['ranking', 'hitRate', 'efficiency', 'evolution', 'profile', 'climb'],
+  blocks: ['ranking', 'hitRate', 'efficiency', 'evolution', 'profile'],
   headline: 'Veja como você se compara ao bolão',
 }
 
@@ -52,9 +48,9 @@ const EMPTY_ROW: ParticipantStatsRow = {
  * Server-side gate for a pool's participant statistics. Requires membership +
  * entitlement. The front never decides access nor computes price. Unlocked
  * reads are served from the persisted snapshot + the cached pool aggregate and
- * per-match series, plus the viewer's own finished predictions and not-yet-
- * started matches (read-time, bounded); a freshly-unlocked user's snapshot is
- * bootstrapped once on first read.
+ * per-match series, plus the viewer's own finished predictions (read-time,
+ * bounded); a freshly-unlocked user's snapshot is bootstrapped once on first
+ * read.
  */
 export class GetParticipantStatsUseCase {
   constructor(
@@ -64,9 +60,6 @@ export class GetParticipantStatsUseCase {
     private readonly statsRepo: StatsRepository,
     private readonly loadPoolAggregate: (poolId: string) => Promise<PoolStatsAggregateRow[]>,
     private readonly loadPoolMatches: (poolId: string) => Promise<PoolMatchPointsRow[]>,
-    private readonly matchRepo: MatchRepository,
-    private readonly predictionRepo: PredictionRepository,
-    private readonly clock: Clock,
   ) {}
 
   async execute(input: { userId: string; poolId: string }): Promise<ParticipantStatsResult> {
@@ -85,11 +78,10 @@ export class GetParticipantStatsUseCase {
     }
 
     const viewer = await this.loadViewerSnapshot(input.poolId, input.userId)
-    const [aggregate, poolMatches, profileFacts, pendingMatches] = await Promise.all([
+    const [aggregate, poolMatches, profileFacts] = await Promise.all([
       this.loadPoolAggregate(input.poolId),
       this.loadPoolMatches(input.poolId),
       this.statsRepo.viewerFinishedPredictions(input.poolId, input.userId),
-      this.loadPendingMatches(pool, input.userId),
     ])
 
     const blocks = ParticipantPoolStats.build({
@@ -98,33 +90,10 @@ export class GetParticipantStatsUseCase {
       aggregate,
       poolMatches,
       profileFacts,
-      pendingMatches,
       scoringPolicy: pool.scoringPolicy(),
     })
 
     return { unlocked: true, blocks }
-  }
-
-  // The viewer's own not-yet-started matches (predicted or not), each flagged
-  // submit/change for the climb's next-match step. Reads only the viewer's
-  // prediction existence — never another member's prediction (FR-018/019).
-  private async loadPendingMatches(
-    pool: NonNullable<Awaited<ReturnType<PoolRepository['findById']>>>,
-    userId: string,
-  ): Promise<PendingMatchInput[]> {
-    const [pending, predicted] = await Promise.all([
-      this.matchRepo.findPendingFor(pool.unfinishedMatchesQuery(), this.clock.now()),
-      this.predictionRepo.findByUserPool(userId, pool.id),
-    ])
-    const predictedIds = new Set(predicted.map((p) => p.matchId))
-
-    return pending.map((m) => ({
-      matchId: m.id,
-      homeTeam: m.homeTeam,
-      awayTeam: m.awayTeam,
-      matchDate: m.matchDate,
-      hasPrediction: predictedIds.has(m.id),
-    }))
   }
 
   // Serve the persisted snapshot; bootstrap it once if a just-unlocked user has

@@ -1,6 +1,5 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
-import { user } from '../../db/schema/auth'
 import { match as matchTable } from '../../db/schema/match'
 import { participantPoolStats } from '../../db/schema/participantPoolStats'
 import { poolMember } from '../../db/schema/poolMember'
@@ -38,13 +37,11 @@ export class DrizzleStatsRepository implements StatsRepository {
   }
 
   // One grouped pass over the pool's predictions → per-member finished-match
-  // counts plus the leaderboard-public name (for the climb). Same cost class as
-  // recomputeStandings; cached by the caller.
+  // counts. Same cost class as recomputeStandings; cached by the caller.
   async poolAggregate(poolId: string): Promise<PoolStatsAggregateRow[]> {
     return this.db
       .select({
         userId: poolMember.userId,
-        displayName: sql<string | null>`max(${user.name})`.as('display_name'),
         finishedCount: sql<number>`count(case when ${FINISHED} then 1 end)::int`.as(
           'finished_count',
         ),
@@ -64,7 +61,6 @@ export class DrizzleStatsRepository implements StatsRepository {
         sql`${prediction.userId} = ${poolMember.userId} and ${prediction.poolId} = ${poolMember.poolId}`,
       )
       .leftJoin(matchTable, eq(matchTable.id, prediction.matchId))
-      .leftJoin(user, eq(user.id, poolMember.userId))
       .where(eq(poolMember.poolId, poolId))
       .groupBy(poolMember.userId)
   }

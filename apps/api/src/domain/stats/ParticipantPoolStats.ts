@@ -1,6 +1,5 @@
 import { Score } from '../scoring/Score'
 import type { ScoringPolicy } from '../scoring/ScoringPolicy'
-import { type ClimbBlock, ClimbPolicy, type PendingMatchInput } from './ClimbPolicy'
 import { type PredictorProfileBlock, PredictorProfilePolicy } from './PredictorProfilePolicy'
 import { type PoolComparison, StatsComparisonPolicy } from './StatsComparisonPolicy'
 import type {
@@ -68,7 +67,6 @@ export type StatsBlocks = {
   evolution: EvolutionBlock
   recentForm: RecentFormBlock
   profile: PredictorProfileBlock
-  climb: ClimbBlock
 }
 
 export type BuildInput = {
@@ -78,8 +76,6 @@ export type BuildInput = {
   poolMatches: PoolMatchPointsRow[]
   /** The viewer's finished predictions, most-recent first (form + profile). */
   profileFacts: ProfileFactRow[]
-  /** The viewer's not-yet-started matches (their own prediction state only). */
-  pendingMatches: PendingMatchInput[]
   scoringPolicy: ScoringPolicy
 }
 
@@ -94,7 +90,7 @@ const RECENT_FORM_LIMIT = 10
  */
 export const ParticipantPoolStats = {
   build(input: BuildInput): StatsBlocks {
-    const { viewerUserId, viewer, aggregate, poolMatches, profileFacts, pendingMatches } = input
+    const { viewerUserId, viewer, aggregate, poolMatches, profileFacts } = input
     const maxPoints = input.scoringPolicy.maxPoints()
     const comparison = StatsComparisonPolicy.compute(aggregate, maxPoints)
 
@@ -106,7 +102,6 @@ export const ParticipantPoolStats = {
       evolution: buildEvolution(viewerUserId, viewer, poolMatches, comparison),
       recentForm: buildRecentForm(viewer, profileFacts.slice(0, RECENT_FORM_LIMIT)),
       profile: PredictorProfilePolicy.build(profileFacts, maxPoints),
-      climb: ClimbPolicy.build({ aggregate, viewerUserId, maxPoints, pendingMatches }),
     }
   },
 }

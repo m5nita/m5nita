@@ -1,10 +1,9 @@
 /**
  * Raw aggregated reads for participant statistics. Infrastructure returns
  * sums/counts per dimension (RAW); the domain (`ParticipantPoolStats`,
- * `StatsComparisonPolicy`, `PredictorProfilePolicy`, `ClimbPolicy`) derives
- * percentages, deltas, efficiency, trend, the profile and the climb. Same split
- * as the ranking machine (infra aggregates, domain positions). No statistic math
- * lives here.
+ * `StatsComparisonPolicy`, `PredictorProfilePolicy`) derives percentages,
+ * deltas, efficiency, trend and the profile. Same split as the ranking machine
+ * (infra aggregates, domain positions). No statistic math lives here.
  */
 
 /** One participant's finished-match aggregates (the viewer). */
@@ -19,12 +18,9 @@ export type ParticipantStatsRow = {
   prevPosition: number | null
 }
 
-/** Per-member aggregates used to derive the pool average, the leader, and the
- * climb standings. `displayName` is the leaderboard-public name (null when the
- * user has none); only the climb uses it (comparison baselines ignore it). */
+/** Per-member aggregates used to derive the pool average and the leader. */
 export type PoolStatsAggregateRow = {
   userId: string
-  displayName: string | null
   finishedCount: number
   exactCount: number
   resultCount: number
@@ -58,7 +54,7 @@ export interface StatsRepository {
    * exists yet (the caller may bootstrap it via `recomputeSnapshot`).
    */
   participantRow(poolId: string, userId: string): Promise<ParticipantStatsRow | null>
-  /** Per-member raw aggregates for the whole pool (average + leader + climb baseline). */
+  /** Per-member raw aggregates for the whole pool (average + leader baseline). */
   poolAggregate(poolId: string): Promise<PoolStatsAggregateRow[]>
   /** Per-member points for each finished match in the pool (evolution lines). */
   poolMatchPoints(poolId: string): Promise<PoolMatchPointsRow[]>

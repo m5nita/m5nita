@@ -5,6 +5,12 @@
 **Status**: Draft
 **Input**: User description: "Quero melhorar essa tela de stats com estatísticas que realmente ajudem os usuários. Não estou vendo diferencial no 'Jogos que mais importam'; talvez focar em 'Forças por tipo de jogo' com mais dicas ao usuário."
 
+> **Update (post-implementation review):** the "Caminho até o topo" / climb
+> section (User Story 2 below) was **dropped** — its inverted-hero layout
+> duplicated the existing RankingHero at the top of the panel, adding no new
+> read. The shipped redesign is the **predictor profile** (User Story 1). The
+> single next-match nudge can be re-added elsewhere later if wanted.
+
 ## Problem
 
 The paid statistics panel (spec 021) is today ~80% **scoreboard** (where you stand: ranking, hit rate, efficiency, distribution, evolution, recent form) and ~20% **coach** (why, and what to do). The value a participant pays R$1,99 for lives in the coach half — and that half underperforms:

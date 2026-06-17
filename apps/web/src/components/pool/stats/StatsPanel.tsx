@@ -1,5 +1,4 @@
 import { AccuracyDonut } from './AccuracyDonut'
-import { ClimbCard } from './ClimbCard'
 import { CompareBar } from './CompareBar'
 import { EfficiencyDonut } from './EfficiencyDonut'
 import { EvolutionLineChart } from './EvolutionLineChart'
@@ -38,9 +37,8 @@ function Insufficient() {
   )
 }
 
-export function StatsPanel({ poolId, blocks }: { poolId: string; blocks: StatsBlocks }) {
-  const { ranking, hitRate, efficiency, distribution, evolution, recentForm, profile, climb } =
-    blocks
+export function StatsPanel({ blocks }: { blocks: StatsBlocks }) {
+  const { ranking, hitRate, efficiency, distribution, evolution, recentForm, profile } = blocks
 
   return (
     <div className="flex flex-col gap-8">
@@ -107,10 +105,6 @@ export function StatsPanel({ poolId, blocks }: { poolId: string; blocks: StatsBl
         ) : (
           <PredictorProfile block={profile} />
         )}
-      </Section>
-
-      <Section title="Caminho até o topo" hint="O que falta — e o próximo passo.">
-        <ClimbCard poolId={poolId} block={climb} />
       </Section>
     </div>
   )

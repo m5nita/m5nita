@@ -5,7 +5,6 @@ import type { PoolStatsAggregateRow } from './StatsRepository.port'
 function row(over: Partial<PoolStatsAggregateRow> & { userId: string }): PoolStatsAggregateRow {
   return {
     userId: over.userId,
-    displayName: over.displayName ?? null,
     finishedCount: over.finishedCount ?? 10,
     exactCount: over.exactCount ?? 0,
     resultCount: over.resultCount ?? 0,
