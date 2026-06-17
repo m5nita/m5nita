@@ -22,9 +22,12 @@ export type ParticipantStatsRow = {
   prevPosition: number | null
 }
 
-/** Per-member aggregates used to derive the pool average and the leader. */
+/** Per-member aggregates used to derive the pool average, the leader, and the
+ * climb standings. `displayName` is the leaderboard-public name (null when the
+ * user has none); only the climb uses it (comparison baselines ignore it). */
 export type PoolStatsAggregateRow = {
   userId: string
+  displayName: string | null
   finishedCount: number
   exactCount: number
   resultCount: number
