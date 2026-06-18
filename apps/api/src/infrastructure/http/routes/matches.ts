@@ -10,6 +10,29 @@ const matchesRoutes = new Hono<AppEnv>()
 
 matchesRoutes.use('/*', requireAuth)
 
+/**
+ * Parse the `status` query param into a list of statuses. Accepts either a
+ * single value ("scheduled") or a comma-separated list ("scheduled,live"),
+ * trimming blanks — so the home screen can ask for upcoming + live in one call.
+ */
+export function parseStatusFilter(raw: string | undefined): string[] {
+  if (!raw) return []
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/**
+ * Build the Drizzle WHERE condition for the `status` filter, or null when no
+ * status was requested. Accepts one or many statuses — `IN (...)` matches a
+ * single value just like equality, so the home can ask for upcoming + live.
+ */
+function buildStatusCondition(raw: string | undefined) {
+  const statuses = parseStatusFilter(raw)
+  return statuses.length > 0 ? inArray(match.status, statuses) : null
+}
+
 // Only the columns in the shared Match type — skip external_id/created_at/
 // updated_at, which the client never reads, to trim the payload.
 const matchColumns = {
@@ -67,7 +90,8 @@ matchesRoutes.get('/matches', async (c) => {
   if (matchdayTo) conditions.push(lte(match.matchday, Number(matchdayTo)))
   if (stage) conditions.push(eq(match.stage, stage))
   if (group) conditions.push(eq(match.group, group))
-  if (status) conditions.push(eq(match.status, status))
+  const statusCondition = buildStatusCondition(status)
+  if (statusCondition) conditions.push(statusCondition)
 
   if (conditions.length > 0) {
     query = query.where(and(...conditions))

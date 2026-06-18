@@ -90,10 +90,18 @@ function UpcomingMatchesSection() {
   } = useQuery({
     queryKey: ['matches', 'upcoming'],
     queryFn: async () => {
-      // Only 4 are rendered (.slice below) — let the server cap the payload.
-      const res = await apiFetch('/api/matches?status=scheduled&featured=true&limit=4')
+      // Upcoming + live (in-progress) games; live ones sort first since their
+      // matchDate is earlier. Only 4 are rendered (.slice below) — let the
+      // server cap the payload.
+      const res = await apiFetch('/api/matches?status=scheduled,live&featured=true&limit=4')
       if (!res.ok) throw new Error('Failed to fetch matches')
       return res.json() as Promise<{ matches: Match[] }>
+    },
+    // Refresh live scores while a match is in progress, then go quiet — same
+    // conditional-polling pattern as the pools query below.
+    refetchInterval: (query) => {
+      const matches = query.state.data?.matches
+      return matches?.some((m) => m.status === 'live') ? livePollMs() : false
     },
   })
   const upcomingMatches = (matchesData?.matches ?? []).slice(0, 4)
