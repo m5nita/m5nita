@@ -66,7 +66,10 @@ export async function poolHasLiveMatch(
 export async function getPoolByInviteCode(inviteCode: string) {
   const { poolRepo } = getContainer()
   const details = await poolRepo.findByInviteCode(inviteCode)
-  if (details?.status !== 'active') return null
+  // Return the pool whenever it exists — even closed/cancelled. The invite route
+  // distinguishes "join allowed" via `isOpen` (false once closed) and answers
+  // POOL_CLOSED → "Bolão fechado". Returning null here would 404 → "Convite inválido".
+  if (!details) return null
 
   const feePolicy = FeePolicy.from(details.coupon?.discountPercent ?? null)
   const entryMoney = Money.of(details.entryFee)
