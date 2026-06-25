@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isValidCpf } from '../lib/cpf'
 
 // Strips HTML tags/entities and trims. Pool names are rendered in email
 // templates and Telegram messages where React's auto-escape doesn't help.
@@ -83,7 +84,12 @@ export const phoneSchema = z.string().regex(/^\+55\d{10,11}$/, 'Telefone inváli
 export const otpSchema = z.string().length(6).regex(/^\d+$/, 'Código deve ter 6 dígitos')
 
 // PIX key schemas
-const pixKeyCpfSchema = z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos')
+// Accepts a CPF either plain (12345678909) or formatted (123.456.789-09);
+// `isValidCpf` strips the dots/dash before checking the verification digits.
+const pixKeyCpfSchema = z
+  .string()
+  .regex(/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/, 'CPF deve ter 11 dígitos')
+  .refine(isValidCpf, 'CPF inválido')
 const pixKeyEmailSchema = z.string().email('E-mail inválido')
 const pixKeyPhoneSchema = z
   .string()
@@ -98,7 +104,7 @@ const pixKeyRandomSchema = z
 export const pixKeyTypeSchema = z.enum(['cpf', 'email', 'phone', 'random'])
 
 export function validatePixKey(type: string, key: string): { success: boolean; error?: string } {
-  const schemas: Record<string, z.ZodString> = {
+  const schemas: Record<string, z.ZodType<string>> = {
     cpf: pixKeyCpfSchema,
     email: pixKeyEmailSchema,
     phone: pixKeyPhoneSchema,

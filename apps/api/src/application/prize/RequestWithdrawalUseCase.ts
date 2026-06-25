@@ -55,7 +55,12 @@ export class RequestWithdrawalUseCase {
       )
     }
 
-    const pixKey = PixKey.create(input.pixKeyType, input.pixKey)
+    let pixKey: PixKey
+    try {
+      pixKey = PixKey.create(input.pixKeyType, input.pixKey)
+    } catch {
+      throw new PrizeWithdrawalError('INVALID_PIX_KEY', 'Chave PIX inválida.')
+    }
 
     const feePolicy = FeePolicy.from(poolDetails.coupon?.discountPercent ?? null)
     const prizeTotal = PrizeCalculation.calculatePrizeTotal(
