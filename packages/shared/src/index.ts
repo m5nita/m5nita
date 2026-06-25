@@ -1,4 +1,5 @@
 export * from './constants/index'
+export * from './lib/cpf'
 export * from './lib/fee'
 export * from './lib/money'
 export * from './schemas/index'

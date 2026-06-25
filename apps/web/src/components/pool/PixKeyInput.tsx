@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Input } from '../ui/Input'
 
 const PIX_KEY_OPTIONS: { value: PixKeyType; label: string; placeholder: string }[] = [
-  { value: 'cpf', label: 'CPF', placeholder: '00000000000' },
+  { value: 'cpf', label: 'CPF', placeholder: '123.456.789-09' },
   { value: 'email', label: 'E-mail', placeholder: 'email@exemplo.com' },
   { value: 'phone', label: 'Telefone', placeholder: '+5511999999999' },
   {

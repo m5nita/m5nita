@@ -1,3 +1,5 @@
+import { isValidCpf } from '@m5nita/shared'
+
 const VALID_TYPES = ['cpf', 'email', 'phone', 'random'] as const
 type PixKeyType = (typeof VALID_TYPES)[number]
 
@@ -15,8 +17,17 @@ export class PixKey {
       throw new Error(`Invalid PIX key type: ${type}`)
     }
     const t = type as PixKeyType
-    if (t === 'cpf' && !/^\d{11}$/.test(value)) {
-      throw new Error('CPF must be exactly 11 digits')
+    if (t === 'cpf') {
+      // Accept "123.456.789-09" or "12345678909"; store the normalized digits
+      // (a PIX CPF key is always 11 digits, never formatted).
+      const digits = value.replace(/\D/g, '')
+      if (digits.length !== 11) {
+        throw new Error('CPF must be exactly 11 digits')
+      }
+      if (!isValidCpf(digits)) {
+        throw new Error('Invalid CPF')
+      }
+      return new PixKey(t, digits)
     }
     if (t === 'email' && (!value.includes('@') || !value.includes('.'))) {
       throw new Error('Email must contain @ and .')
