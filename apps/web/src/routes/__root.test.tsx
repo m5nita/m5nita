@@ -46,6 +46,10 @@ function renderLayoutAt(initialPath: string) {
 
 beforeEach(() => {
   vi.stubEnv('VITE_BANNER_ENABLED', '')
+  // Neutralize the ambient .env(.local) scheduling window so the banner-mount
+  // test doesn't depend on today's date being inside VITE_BANNER_START/END.
+  vi.stubEnv('VITE_BANNER_START', '')
+  vi.stubEnv('VITE_BANNER_END', '')
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: false,
     media: query,

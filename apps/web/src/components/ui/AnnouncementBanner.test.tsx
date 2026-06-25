@@ -15,6 +15,11 @@ function setBannerEnv(overrides: Record<string, string> = {}) {
     VITE_BANNER_MESSAGE: 'A Copa está acabando, mas o m5nita continua!',
     VITE_BANNER_LINK: '/how-it-works',
     VITE_BANNER_ID: 'test-campaign',
+    // Neutralize the scheduling window by default so the render tests don't
+    // depend on the ambient .env(.local) VITE_BANNER_START/END or today's date.
+    // The scheduling tests override these explicitly.
+    VITE_BANNER_START: '',
+    VITE_BANNER_END: '',
     ...overrides,
   }
   for (const [key, value] of Object.entries(values)) vi.stubEnv(key, value)
