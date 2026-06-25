@@ -4,13 +4,27 @@ import { PixKey } from './PixKey'
 describe('PixKey', () => {
   describe('PixKey.create()', () => {
     it('creates a valid CPF key with 11 digits', () => {
-      const key = PixKey.create('cpf', '12345678901')
+      const key = PixKey.create('cpf', '12345678909')
       expect(key.type).toBe('cpf')
-      expect(key.value).toBe('12345678901')
+      expect(key.value).toBe('12345678909')
     })
 
     it('rejects CPF with wrong length', () => {
       expect(() => PixKey.create('cpf', '1234567890')).toThrow('CPF must be exactly 11 digits')
+    })
+
+    it('rejects an 11-digit CPF with invalid check digits', () => {
+      expect(() => PixKey.create('cpf', '12345678901')).toThrow('Invalid CPF')
+    })
+
+    it('rejects a CPF made of a single repeated digit', () => {
+      expect(() => PixKey.create('cpf', '00000000000')).toThrow('Invalid CPF')
+    })
+
+    it('accepts a CPF with dots and dash, storing it normalized (digits only)', () => {
+      const key = PixKey.create('cpf', '123.456.789-09')
+      expect(key.type).toBe('cpf')
+      expect(key.value).toBe('12345678909')
     })
 
     it('creates a valid email key', () => {
@@ -39,8 +53,8 @@ describe('PixKey', () => {
 
   describe('masked()', () => {
     it('hides all but last 4 characters', () => {
-      const key = PixKey.create('cpf', '12345678901')
-      expect(key.masked()).toBe('*******8901')
+      const key = PixKey.create('cpf', '12345678909')
+      expect(key.masked()).toBe('*******8909')
     })
 
     it('returns full value when length is 4 or less', () => {

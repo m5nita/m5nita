@@ -149,7 +149,7 @@ describe('US4 — prize withdrawal', () => {
     const requestResp = await exactPredictor.fetch(`/api/pools/${poolId}/prize/withdraw`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pixKeyType: 'cpf', pixKey: '12345678901' }),
+      body: JSON.stringify({ pixKeyType: 'cpf', pixKey: '12345678909' }),
     })
     expect(requestResp.status).toBe(201)
     const requestBody = (await requestResp.json()) as { id: string }
@@ -188,5 +188,48 @@ describe('US4 — prize withdrawal', () => {
 
     // No admin notification fired for the rejected attempt.
     expect(telegramStub.sends()).toHaveLength(0)
+  })
+
+  it('scenario 4 — winner with an invalid CPF is rejected with 400 (not 500); no row created', async () => {
+    const { exactPredictor, poolId } = await seedClosedPoolWithWinner(4)
+
+    const resp = await exactPredictor.fetch(`/api/pools/${poolId}/prize/withdraw`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // 11 digits but invalid check digits — must be rejected, not stored.
+      body: JSON.stringify({ pixKeyType: 'cpf', pixKey: '12345678901' }),
+    })
+    expect(resp.status).toBe(400)
+    const body = (await resp.json()) as { error: string }
+    expect(body.error).toBe('INVALID_PIX_KEY')
+
+    const rows = await sql`
+      SELECT id FROM "prize_withdrawal" WHERE pool_id = ${poolId}
+    `
+    expect(rows).toHaveLength(0)
+    expect(telegramStub.sends()).toHaveLength(0)
+  })
+
+  it('scenario 5 — a formatted CPF (123.456.789-09) is accepted and stored normalized to digits', async () => {
+    const { exactPredictor, poolId } = await seedClosedPoolWithWinner(5)
+
+    const resp = await exactPredictor.fetch(`/api/pools/${poolId}/prize/withdraw`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pixKeyType: 'cpf', pixKey: '123.456.789-09' }),
+    })
+    expect(resp.status).toBe(201)
+
+    const rows = await sql<{ pix_key: string; pix_key_type: string }[]>`
+      SELECT pix_key, pix_key_type FROM "prize_withdrawal"
+      WHERE pool_id = ${poolId} AND user_id = ${exactPredictor.id}
+    `
+    expect(rows).toHaveLength(1)
+    const stored = rows[0]
+    if (!stored) throw new Error('prize_withdrawal row not found')
+    // Stored encrypted; once decrypted it must be the 11-digit form, not the
+    // formatted input the user typed.
+    expect(stored.pix_key_type).toBe('cpf')
+    expect(decryptPixKey(stored.pix_key)).toBe('12345678909')
   })
 })

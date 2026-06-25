@@ -99,6 +99,29 @@ describe('getPoolByInviteCode HTTP contract', () => {
     expect(result?.matchdayFrom).toBe(18)
     expect(result?.matchdayTo).toBe(18)
   })
+
+  it('returns a closed single-match pool (isOpen=false) instead of null so the invite route can answer POOL_CLOSED, not 404', async () => {
+    // A single-match pool flips to status='closed' (isOpen=false) once its match
+    // finishes. Opening the invite must show "Bolão fechado", not "Convite inválido".
+    mockFindByInviteCode.mockResolvedValueOnce(
+      repoFixture({
+        status: 'closed',
+        isOpen: false,
+        matchId: 'match-1',
+        matchdayFrom: null,
+        matchdayTo: null,
+      }),
+    )
+    const result = await getPoolByInviteCode('ABCD1234')
+    expect(result).not.toBeNull()
+    expect(result?.isOpen).toBe(false)
+  })
+
+  it('returns null only when the invite code matches no pool at all', async () => {
+    mockFindByInviteCode.mockResolvedValueOnce(null)
+    const result = await getPoolByInviteCode('UNKNOWN1')
+    expect(result).toBeNull()
+  })
 })
 
 // Unit tests for pool business logic (pure functions)

@@ -121,9 +121,20 @@ describe('US2 — pool lifecycle', () => {
     const poolAfterClose = await sql`SELECT is_open FROM "pool" WHERE id = ${pool.id}`
     expect(poolAfterClose).toMatchObject([{ is_open: false }])
 
+    // A member (the admin) opening the closed pool's invite is sent INTO the pool
+    // (ALREADY_MEMBER → the front redirects to /pools/:id), never blocked.
+    const memberLookup = await admin.fetch(`/api/pools/invite/${pool.inviteCode}`)
+    expect(memberLookup.status).toBe(409)
+    const memberBody = (await memberLookup.json()) as { error: string; poolId?: string }
+    expect(memberBody.error).toBe('ALREADY_MEMBER')
+    expect(memberBody.poolId).toBe(pool.id)
+
+    // A non-member still gets the "pool closed" answer.
     const latecomer = await signInViaPhoneOtp(app, { phoneNumber: '+5511922220022' })
     const inviteLookup = await latecomer.fetch(`/api/pools/invite/${pool.inviteCode}`)
     expect(inviteLookup.status).toBe(409)
+    const latecomerBody = (await inviteLookup.json()) as { error: string }
+    expect(latecomerBody.error).toBe('POOL_CLOSED')
 
     const joinResp = await latecomer.fetch(`/api/pools/${pool.id}/join`, { method: 'POST' })
     expect(joinResp.status).toBeGreaterThanOrEqual(400)

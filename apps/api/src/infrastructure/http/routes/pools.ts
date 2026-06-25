@@ -134,10 +134,9 @@ poolsRoutes.get('/pools/invite/:inviteCode', async (c) => {
     return c.json({ error: 'NOT_FOUND', message: 'Convite inválido' }, 404)
   }
 
-  if (!poolInfo.isOpen) {
-    return c.json({ error: 'POOL_CLOSED', message: 'Este bolão não aceita novas entradas' }, 409)
-  }
-
+  // Members are always sent into the pool — even a closed one (the front
+  // redirects ALREADY_MEMBER to the pool page). So this check comes before the
+  // isOpen gate, which only blocks non-members from joining a closed pool.
   const alreadyMember = await isPoolMember(poolInfo.id, currentUser.id)
   if (alreadyMember) {
     return c.json(
@@ -148,6 +147,10 @@ poolsRoutes.get('/pools/invite/:inviteCode', async (c) => {
       },
       409,
     )
+  }
+
+  if (!poolInfo.isOpen) {
+    return c.json({ error: 'POOL_CLOSED', message: 'Este bolão não aceita novas entradas' }, 409)
   }
 
   return c.json(poolInfo)
