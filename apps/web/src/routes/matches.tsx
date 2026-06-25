@@ -2,7 +2,7 @@ import type { CompetitionListItem, Match } from '@m5nita/shared'
 import { MATCH } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MatchCard } from '../components/match/MatchCard'
 import { ErrorMessage } from '../components/ui/ErrorMessage'
 import { Loading } from '../components/ui/Loading'
@@ -95,10 +95,90 @@ function MatchesGrid({ filtered, activeStage }: { filtered: Match[]; activeStage
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-3 lg:gap-4">
       {filtered.map((m) => (
-        <MatchCard key={m.id} match={m} />
+        // id anchors the "Todos" auto-scroll to the next game to play.
+        <div key={m.id} id={`match-${m.id}`}>
+          <MatchCard match={m} />
+        </div>
       ))}
     </div>
   )
+}
+
+/**
+ * Auto-scroll the "Todos" view to the next game to play — the first fixture
+ * that isn't finished. The API returns matches date-sorted, so that's the
+ * earliest live/upcoming one. Mirrors the predictions "Todos os jogos"
+ * behaviour: assert the scroll on open, re-assert through post-paint layout
+ * shifts (web-font swap, flag decode), then bow out the instant the user
+ * scrolls or after a short backstop — so the 30s live-poll refetch never yanks
+ * the view back.
+ *
+ * Scoped to the cup "Todos" view (not the league/knockout sub-tabs, which are
+ * narrow filtered lists where landing on the next game isn't wanted). Aligns
+ * once per competition, never on refetch.
+ */
+function useScrollToNextMatch(
+  matches: Match[] | undefined,
+  isLeagueSelected: boolean,
+  activeStage: string,
+  competitionId: string | null,
+) {
+  const alignedKeyRef = useRef<string | null>(null)
+  const active = !isLeagueSelected && activeStage === 'all'
+  const resetKey = competitionId ?? 'featured'
+  const list = matches ?? []
+  const hasMatches = list.length > 0
+  // `list` is intentionally excluded from the deps: its identity changes on
+  // every live-poll refetch, and re-aligning then would yank a user who has
+  // already scrolled away. We align once per (view activates / competition
+  // changes) instead, reading the current list inside the effect.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: align once per view, not per refetch
+  useEffect(() => {
+    if (!active) {
+      // Left the "Todos" view — arm a fresh alignment for when we return.
+      alignedKeyRef.current = null
+      return
+    }
+    if (!hasMatches || alignedKeyRef.current === resetKey) return
+    alignedKeyRef.current = resetKey
+
+    const target = list.find((m) => m.status !== 'finished')
+    if (!target) return
+
+    let done = false
+    const align = () => {
+      if (done) return
+      const card = document.getElementById(`match-${target.id}`)
+      if (!card) return
+      // Scroll the card flush to the top. The app's "sticky" header doesn't
+      // actually pin (an overflow-x-hidden ancestor on the root scrolls it away),
+      // so a scroll-margin would only reveal the previous finished match — scroll
+      // to the card's exact offset instead, mirroring the predictions all-view.
+      window.scrollTo({ top: Math.max(0, card.getBoundingClientRect().top + window.scrollY) })
+    }
+    align()
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => requestAnimationFrame(align))
+        : null
+    observer?.observe(document.body)
+    const stop = () => {
+      done = true
+      observer?.disconnect()
+    }
+    window.addEventListener('wheel', stop, { passive: true, once: true })
+    window.addEventListener('touchmove', stop, { passive: true, once: true })
+    window.addEventListener('keydown', stop, { once: true })
+    const timer = window.setTimeout(stop, 1500)
+    return () => {
+      done = true
+      observer?.disconnect()
+      window.clearTimeout(timer)
+      window.removeEventListener('wheel', stop)
+      window.removeEventListener('touchmove', stop)
+      window.removeEventListener('keydown', stop)
+    }
+  }, [active, hasMatches, resetKey])
 }
 
 function MatchesPage() {
@@ -139,6 +219,10 @@ function MatchesPage() {
       return matches?.some((m) => m.status === 'live') ? 30_000 : false
     },
   })
+
+  // On the cup "Todos" view, land on the next game to play (skip past finished
+  // fixtures) — the same jump the predictions "Todos os jogos" tab makes.
+  useScrollToNextMatch(data?.matches, isLeagueSelected, activeStage, effectiveCompetition)
 
   if (isPending) return <Loading />
   if (error) return <ErrorMessage message={error.message} onRetry={() => refetch()} />
