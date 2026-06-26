@@ -92,12 +92,8 @@ describe('calcPointsForMatch', () => {
             updates.push(...batch),
         },
         poolRepo: { findById: async () => null },
-        rankingRepo: { recomputeStandings: async () => {} },
         statsUnlockRepo: { listUnlockedUsers: async () => [] },
         statsRepo: { recomputeSnapshot: async () => {} },
-        unitOfWork: {
-          run: async (work: (r: unknown) => Promise<unknown>) => work({}),
-        },
       }),
     }))
     const { calcPointsForMatch } = await import('./calcPoints')

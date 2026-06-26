@@ -63,11 +63,15 @@ export async function calcPointsForMatch(matchId: string) {
     }
   })
 
-  // After the commit, bust the in-process caches and refresh per-user stats
-  // snapshots so the next read reflects the finished match immediately.
+  // Bust every affected pool's ranking cache first (cheap, synchronous) so the
+  // just-finished match's points are reflected immediately — before the slower
+  // per-user stats recompute, which would otherwise hold a warm pre-finish
+  // ranking cache for later pools and briefly re-hide the match's points.
   for (const poolId of affectedPools) {
     invalidateRankingAggregate(poolId)
+  }
 
+  for (const poolId of affectedPools) {
     const unlockedUsers = await statsUnlockRepo.listUnlockedUsers(poolId)
     for (const userId of unlockedUsers) {
       await statsRepo.recomputeSnapshot(poolId, userId)
