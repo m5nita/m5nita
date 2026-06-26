@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, or, sql } from 'drizzle-orm'
 import { getContainer } from '../container'
 import { db } from '../db/client'
 import { match as matchTable } from '../db/schema/match'
@@ -32,13 +32,19 @@ export async function getPoolRanking(poolId: string, currentUserId: string) {
   return Ranking.build(entries, currentUserId)
 }
 
+/** How long after a match flips to `finished` we keep treating its unscored
+ * predictions as provisional (covers the in-tick window before calcPoints runs,
+ * even when several matches finish at once and are scored sequentially). */
+const JUST_FINISHED_WINDOW_MS = 30 * 60_000
+
 async function computeLivePointsByUser(
   poolId: string,
   scoringPolicy: ScoringPolicy,
 ): Promise<Map<string, number>> {
-  // Resolve the (few) live matches first via match_status_idx, then read only
-  // this pool's predictions for them through prediction_pool_id_match_id_idx —
-  // instead of seq-scanning all ~63k pool predictions to find the handful live.
+  // Candidate matches: live, OR finished within the last JUST_FINISHED_WINDOW_MS
+  // (scoring may not have run yet). Both resolve via match_status_idx and the
+  // recently-finished set is tiny, so this stays cheap.
+  const since = new Date(Date.now() - JUST_FINISHED_WINDOW_MS)
   const liveMatches = await db
     .select({
       id: matchTable.id,
@@ -46,11 +52,22 @@ async function computeLivePointsByUser(
       away: matchTable.awayScore,
     })
     .from(matchTable)
-    .where(eq(matchTable.status, 'live'))
+    .where(
+      and(
+        sql`${matchTable.homeScore} is not null and ${matchTable.awayScore} is not null`,
+        or(
+          eq(matchTable.status, 'live'),
+          and(eq(matchTable.status, 'finished'), gt(matchTable.updatedAt, since)),
+        ),
+      ),
+    )
 
   if (liveMatches.length === 0) return new Map()
 
   const scoreByMatch = new Map(liveMatches.map((m) => [m.id, m]))
+  // Only UNSCORED predictions are provisional. The moment calcPoints writes
+  // `points`, the prediction is finalized into pool_standing instead, so this
+  // `points is null` filter is what prevents double counting at the transition.
   const livePreds = await db
     .select({
       userId: prediction.userId,
@@ -62,6 +79,7 @@ async function computeLivePointsByUser(
     .where(
       and(
         eq(prediction.poolId, poolId),
+        sql`${prediction.points} is null`,
         inArray(
           prediction.matchId,
           liveMatches.map((m) => m.id),
