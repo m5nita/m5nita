@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { RangeScoringPolicy } from '../domain/scoring/ScoringPolicy'
 
 describe('calcPointsForMatch', () => {
   beforeEach(() => {
@@ -10,45 +11,55 @@ describe('calcPointsForMatch', () => {
     const updates: Array<{ id: string; points: number }> = []
     let batchCalls = 0
 
-    vi.doMock('../container', () => ({
-      getContainer: () => ({
-        matchRepo: {
-          findById: async () => ({
-            id: matchId,
-            status: 'finished',
-            homeScore: 2,
-            awayScore: 1,
-          }),
+    vi.doMock('../container', () => {
+      const predictionRepo = {
+        findByMatch: async () => [
+          { id: 'p1', poolId: 'pool-single', homeScore: 3, awayScore: 2 },
+          { id: 'p2', poolId: 'pool-range', homeScore: 3, awayScore: 2 },
+          { id: 'p3', poolId: 'pool-single', homeScore: 2, awayScore: 1 }, // exact
+        ],
+        updatePointsBatch: async (batch: Array<{ id: string; points: number }>) => {
+          batchCalls++
+          updates.push(...batch)
         },
-        predictionRepo: {
-          findByMatch: async () => [
-            { id: 'p1', poolId: 'pool-single', homeScore: 3, awayScore: 2 },
-            { id: 'p2', poolId: 'pool-range', homeScore: 3, awayScore: 2 },
-            { id: 'p3', poolId: 'pool-single', homeScore: 2, awayScore: 1 }, // exact
-          ],
-          updatePointsBatch: async (batch: Array<{ id: string; points: number }>) => {
-            batchCalls++
-            updates.push(...batch)
+      }
+      const rankingRepo = {
+        recomputeStandings: async () => {},
+      }
+      return {
+        getContainer: () => ({
+          matchRepo: {
+            findById: async () => ({
+              id: matchId,
+              status: 'finished',
+              homeScore: 2,
+              awayScore: 1,
+            }),
           },
-        },
-        poolRepo: {
-          findById: async (poolId: string) => {
-            const { RangeScoringPolicy, SingleMatchScoringPolicy } = await import(
-              '../domain/scoring/ScoringPolicy'
-            )
-            const isSingle = poolId === 'pool-single'
-            return {
-              id: poolId,
-              scope: { kind: isSingle ? 'single-match' : 'whole-competition' },
-              scoringPolicy: () => (isSingle ? SingleMatchScoringPolicy : RangeScoringPolicy),
-            }
+          predictionRepo,
+          poolRepo: {
+            findById: async (poolId: string) => {
+              const { RangeScoringPolicy, SingleMatchScoringPolicy } = await import(
+                '../domain/scoring/ScoringPolicy'
+              )
+              const isSingle = poolId === 'pool-single'
+              return {
+                id: poolId,
+                scope: { kind: isSingle ? 'single-match' : 'whole-competition' },
+                scoringPolicy: () => (isSingle ? SingleMatchScoringPolicy : RangeScoringPolicy),
+              }
+            },
           },
-        },
-        rankingRepo: { recomputeStandings: async () => {} },
-        statsUnlockRepo: { listUnlockedUsers: async () => [] },
-        statsRepo: { recomputeSnapshot: async () => {} },
-      }),
-    }))
+          rankingRepo,
+          statsUnlockRepo: { listUnlockedUsers: async () => [] },
+          statsRepo: { recomputeSnapshot: async () => {} },
+          unitOfWork: {
+            run: async (work: (r: unknown) => Promise<unknown>) =>
+              work({ predictions: predictionRepo, ranking: rankingRepo }),
+          },
+        }),
+      }
+    })
 
     const { calcPointsForMatch } = await import('./calcPoints')
     await calcPointsForMatch(matchId)
@@ -84,10 +95,65 @@ describe('calcPointsForMatch', () => {
         rankingRepo: { recomputeStandings: async () => {} },
         statsUnlockRepo: { listUnlockedUsers: async () => [] },
         statsRepo: { recomputeSnapshot: async () => {} },
+        unitOfWork: {
+          run: async (work: (r: unknown) => Promise<unknown>) => work({}),
+        },
       }),
     }))
     const { calcPointsForMatch } = await import('./calcPoints')
     await calcPointsForMatch('m1')
     expect(updates).toEqual([])
+  })
+
+  it('writes points and recomputes standings inside one unit-of-work, in order', async () => {
+    const order: string[] = []
+    const matchId = 'm1'
+
+    vi.resetModules()
+    vi.doMock('../container', () => {
+      const predictionRepo = {
+        findByMatch: async () => [
+          {
+            id: 'p1',
+            poolId: 'pool1',
+            userId: 'u1',
+            homeScore: 2,
+            awayScore: 1,
+            advancePick: null,
+          },
+        ],
+        updatePointsBatch: async () => {
+          order.push('updatePointsBatch')
+        },
+      }
+      const rankingRepo = {
+        recomputeStandings: async () => {
+          order.push('recomputeStandings')
+        },
+      }
+      return {
+        getContainer: () => ({
+          matchRepo: {
+            findById: async () => ({ id: matchId, status: 'finished', homeScore: 2, awayScore: 1 }),
+          },
+          predictionRepo,
+          rankingRepo,
+          poolRepo: { findById: async () => ({ scoringPolicy: () => RangeScoringPolicy }) },
+          statsRepo: { recomputeSnapshot: async () => {} },
+          statsUnlockRepo: { listUnlockedUsers: async () => [] },
+          // The unit of work runs `work` with tx-bound repos; here it reuses the
+          // same spies so we can assert ordering.
+          unitOfWork: {
+            run: async (work: (r: unknown) => Promise<unknown>) =>
+              work({ predictions: predictionRepo, ranking: rankingRepo }),
+          },
+        }),
+      }
+    })
+
+    const { calcPointsForMatch } = await import('./calcPoints')
+    await calcPointsForMatch(matchId)
+
+    expect(order).toEqual(['updatePointsBatch', 'recomputeStandings'])
   })
 })

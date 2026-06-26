@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
-import type { db as dbClient } from '../../db/client'
+import type { DbExecutor } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { match as matchTable } from '../../db/schema/match'
 import { poolMember } from '../../db/schema/poolMember'
@@ -15,7 +15,7 @@ import type {
 export type { RankingEntry, RankingRepository }
 
 export class DrizzleRankingRepository implements RankingRepository {
-  constructor(private readonly db: typeof dbClient) {}
+  constructor(private readonly db: DbExecutor) {}
 
   // Read the precomputed standings: one row per current member (poolMember is
   // authoritative for membership; pool_standing supplies points, 0 if a member

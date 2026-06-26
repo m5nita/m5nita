@@ -1,5 +1,5 @@
 import { and, asc, eq, sql } from 'drizzle-orm'
-import type { db as dbClient } from '../../db/client'
+import type { DbExecutor } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { prediction } from '../../db/schema/prediction'
 import type { Prediction } from '../../domain/prediction/Prediction'
@@ -11,7 +11,7 @@ import type {
 import { predictionToDomain, predictionToPersistence } from './mappers/PredictionMapper'
 
 export class DrizzlePredictionRepository implements PredictionRepository {
-  constructor(private readonly db: typeof dbClient) {}
+  constructor(private readonly db: DbExecutor) {}
 
   async findByUserPoolMatch(
     userId: string,
