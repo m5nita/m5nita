@@ -4,7 +4,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import { useSession } from '../../lib/auth'
-import { livePollMs } from '../../lib/poll'
+import { matchesPollMs, poolsPollMs } from '../../lib/poll'
 import { MatchCard } from '../match/MatchCard'
 import { PoolCard } from '../pool/PoolCard'
 import { Button } from '../ui/Button'
@@ -97,12 +97,10 @@ function UpcomingMatchesSection() {
       if (!res.ok) throw new Error('Failed to fetch matches')
       return res.json() as Promise<{ matches: Match[] }>
     },
-    // Refresh live scores while a match is in progress, then go quiet — same
-    // conditional-polling pattern as the pools query below.
-    refetchInterval: (query) => {
-      const matches = query.state.data?.matches
-      return matches?.some((m) => m.status === 'live') ? livePollMs() : false
-    },
+    // Live → 30–40s; about-to-start → 60–90s heartbeat so the card flips to live
+    // on its own; otherwise no interval (focus/reconnect refresh covers it).
+    staleTime: 0,
+    refetchInterval: (query) => matchesPollMs(query.state.data?.matches),
   })
   const upcomingMatches = (matchesData?.matches ?? []).slice(0, 4)
 
@@ -169,10 +167,7 @@ export function DashboardHome() {
       if (!res.ok) throw new Error('Failed to fetch pools')
       return res.json() as Promise<{ pools: PoolListItem[] }>
     },
-    refetchInterval: (query) => {
-      const pools = query.state.data?.pools
-      return pools?.some((p) => p.hasLiveMatch) ? livePollMs() : false
-    },
+    refetchInterval: (query) => poolsPollMs(query.state.data?.pools),
   })
 
   const activePools = poolsData?.pools ?? []
