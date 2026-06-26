@@ -5,7 +5,7 @@ import { invalidateRankingAggregate } from '../services/rankingCache'
 import { invalidateParticipantStatsAggregate } from '../services/statsCache'
 
 export async function calcPointsForMatch(matchId: string) {
-  const { matchRepo, predictionRepo, poolRepo, rankingRepo, statsRepo, statsUnlockRepo } =
+  const { matchRepo, predictionRepo, poolRepo, unitOfWork, statsRepo, statsUnlockRepo } =
     getContainer()
 
   const matchData = await matchRepo.findById(matchId)
@@ -49,18 +49,29 @@ export async function calcPointsForMatch(matchId: string) {
     }
   }
 
-  // One batched UPDATE instead of N sequential ones — keeps the scoring write
-  // off the critical path of the live-sync tick for large pools.
-  await predictionRepo.updatePointsBatch(pointUpdates)
+  const affectedPools = [...new Set(predictions.map((p) => p.poolId))]
 
-  // Points just changed for these pools — recompute their denormalized standings
-  // and drop the cached copy so the next ranking read reflects the finished match.
-  // Then refresh the per-user stats snapshot for the (small) set of unlocked
-  // participants and bust the sibling stats aggregate, mirroring the ranking path.
-  for (const poolId of new Set(predictions.map((p) => p.poolId))) {
-    await rankingRepo.recomputeStandings(poolId)
+  // Atomic: write every prediction's points AND recompute the affected pools'
+  // standings in one transaction, so a concurrent ranking read sees either the
+  // pre-finish state (points still null → counted as provisional) or the
+  // post-finish state (points set → counted in standings), never the gap where
+  // a just-finished match's points belong to neither bucket.
+  await unitOfWork.run(async (repos) => {
+    await repos.predictions.updatePointsBatch(pointUpdates)
+    for (const poolId of affectedPools) {
+      await repos.ranking.recomputeStandings(poolId)
+    }
+  })
+
+  // Bust every affected pool's ranking cache first (cheap, synchronous) so the
+  // just-finished match's points are reflected immediately — before the slower
+  // per-user stats recompute, which would otherwise hold a warm pre-finish
+  // ranking cache for later pools and briefly re-hide the match's points.
+  for (const poolId of affectedPools) {
     invalidateRankingAggregate(poolId)
+  }
 
+  for (const poolId of affectedPools) {
     const unlockedUsers = await statsUnlockRepo.listUnlockedUsers(poolId)
     for (const userId of unlockedUsers) {
       await statsRepo.recomputeSnapshot(poolId, userId)

@@ -137,6 +137,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     statsRepo,
     notificationService,
     paymentGateway,
+    unitOfWork,
 
     completeCheckoutUseCase,
     createPoolUseCase: new CreatePoolUseCase(

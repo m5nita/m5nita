@@ -1,11 +1,15 @@
 import type { PaymentRepository } from '../../domain/payment/PaymentRepository.port'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
+import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
+import type { RankingRepository } from '../../domain/ranking/RankingRepository.port'
 import type { StatsUnlockRepository } from '../../domain/stats/StatsUnlockRepository.port'
 
 export type TransactionalRepositories = {
   payments: PaymentRepository
   pools: PoolRepository
   statsUnlocks: StatsUnlockRepository
+  predictions: PredictionRepository
+  ranking: RankingRepository
 }
 
 /**

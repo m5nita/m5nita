@@ -6,9 +6,11 @@ import type { ServerType } from '@hono/node-server'
 import { serve } from '@hono/node-server'
 import * as Sentry from '@sentry/node'
 import { buildApp } from './app'
+import { createLiveSyncCompetitionProvider } from './application/match/liveSyncCompetitionProvider'
 import { SyncFixturesUseCase } from './application/match/SyncFixturesUseCase'
 import { SyncLiveScoresUseCase } from './application/match/SyncLiveScoresUseCase'
 import { getContainer } from './container'
+import { CallBudget } from './domain/shared/CallBudget'
 import { FootballDataApiAdapter } from './infrastructure/external/FootballDataApiAdapter'
 import { calcPointsForMatch } from './jobs/calcPoints'
 import { checkAndClosePools } from './jobs/closePoolsJob'
@@ -16,6 +18,9 @@ import { sendPredictionReminders } from './jobs/reminderJob'
 import { findActiveCompetitionsForSync } from './services/competition'
 
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY ?? ''
+// football-data.org limit: 20 calls/min today, 10/min after the World Cup.
+// The live-sync self-throttles to stay at or under this; flip it via env, no deploy code change.
+const FOOTBALL_DATA_MAX_CALLS_PER_MIN = Number(process.env.FOOTBALL_DATA_MAX_CALLS_PER_MIN ?? '20')
 
 /**
  * Match-sync runners backed by the hexagonal use cases. Built lazily (the
@@ -32,11 +37,20 @@ function buildMatchSyncRunners() {
     findActiveCompetitions: findActiveCompetitionsForSync,
     onMatchFinished: calcPointsForMatch,
   })
+  const liveSyncBudget = new CallBudget(FOOTBALL_DATA_MAX_CALLS_PER_MIN)
+  const liveSyncCompetitions = createLiveSyncCompetitionProvider({
+    listActive: findActiveCompetitionsForSync,
+    findLiveOrImminentCompetitionIds: (now) =>
+      matchRepo.findCompetitionIdsWithLiveOrImminent(10 * 60_000, 30 * 60_000, now),
+    budget: liveSyncBudget,
+    clock,
+  })
+
   const syncLiveScoresUseCase = new SyncLiveScoresUseCase({
     footballApi,
     matchRepo,
     clock,
-    findActiveCompetitions: findActiveCompetitionsForSync,
+    findActiveCompetitions: liveSyncCompetitions,
     onMatchFinished: calcPointsForMatch,
     onAllMatchesChecked: checkAndClosePools,
   })
@@ -145,7 +159,10 @@ const server: ServerType = serve({ fetch: app.fetch, port }, () => {
   scheduleCron({
     slug: 'live-score-sync',
     crontab: '* * * * *',
-    intervalMs: 60 * 1000,
+    // 30s tick: only competitions with a live/imminent match are actually
+    // fetched, and the per-minute call budget caps external calls — so idle
+    // ticks just run one cheap indexed DB query and return.
+    intervalMs: 30 * 1000,
     checkinMargin: 2,
     maxRuntime: 5,
     run: matchSync.syncLiveScores,

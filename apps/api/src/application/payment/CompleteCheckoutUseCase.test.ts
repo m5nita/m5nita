@@ -78,7 +78,14 @@ function makeUseCase(repos: {
   pools: PoolRepository
   statsUnlocks: StatsUnlockRepository
 }) {
-  const unitOfWork: UnitOfWork = { run: (work) => work(repos) }
+  const unitOfWork: UnitOfWork = {
+    run: (work) =>
+      work({
+        ...repos,
+        predictions: {} as never,
+        ranking: {} as never,
+      }),
+  }
   return new CompleteCheckoutUseCase(unitOfWork)
 }
 

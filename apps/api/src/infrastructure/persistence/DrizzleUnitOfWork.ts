@@ -2,6 +2,8 @@ import type { TransactionalRepositories, UnitOfWork } from '../../application/po
 import type { db as DbClient } from '../../db/client'
 import { DrizzlePaymentRepository } from './DrizzlePaymentRepository'
 import { DrizzlePoolRepository } from './DrizzlePoolRepository'
+import { DrizzlePredictionRepository } from './DrizzlePredictionRepository'
+import { DrizzleRankingRepository } from './DrizzleRankingRepository'
 import { DrizzleStatsUnlockRepository } from './DrizzleStatsUnlockRepository'
 
 /**
@@ -18,6 +20,8 @@ export class DrizzleUnitOfWork implements UnitOfWork {
         payments: new DrizzlePaymentRepository(tx),
         pools: new DrizzlePoolRepository(tx),
         statsUnlocks: new DrizzleStatsUnlockRepository(tx),
+        predictions: new DrizzlePredictionRepository(tx),
+        ranking: new DrizzleRankingRepository(tx),
       }),
     )
   }

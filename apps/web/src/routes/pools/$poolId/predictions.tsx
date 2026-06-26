@@ -24,7 +24,7 @@ import {
   sortByDate,
 } from '../../../lib/matchSchedule'
 import { upsertPrediction } from '../../../lib/optimisticPredictions'
-import { livePollMs } from '../../../lib/poll'
+import { livePollMs, matchesPollMs } from '../../../lib/poll'
 
 function MatchPredictionsAccordion({
   poolId,
@@ -872,10 +872,8 @@ function PredictionsContent({
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json()
     },
-    refetchInterval: (query) => {
-      const matches = query.state.data?.matches
-      return matches?.some((m) => m.status === 'live') ? livePollMs() : false
-    },
+    staleTime: 0,
+    refetchInterval: (query) => matchesPollMs(query.state.data?.matches),
   })
 
   const hasLiveMatch = (matchesData?.matches ?? []).some((m) => m.status === 'live')

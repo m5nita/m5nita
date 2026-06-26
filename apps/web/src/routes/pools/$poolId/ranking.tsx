@@ -25,6 +25,7 @@ function RankingContent({ poolId }: { poolId: string }) {
         hasLiveMatch: boolean
       }>
     },
+    staleTime: 0,
     refetchInterval: (query) => (query.state.data?.hasLiveMatch ? livePollMs() : false),
   })
 

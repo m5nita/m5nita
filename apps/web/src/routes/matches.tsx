@@ -8,6 +8,7 @@ import { ErrorMessage } from '../components/ui/ErrorMessage'
 import { Loading } from '../components/ui/Loading'
 import { apiFetch } from '../lib/api'
 import { requireAuthGuard } from '../lib/authGuard'
+import { matchesPollMs } from '../lib/poll'
 
 const stageLabels: Record<string, string> = {
   all: 'Todos',
@@ -214,10 +215,10 @@ function MatchesPage() {
       if (!res.ok) throw new Error('Erro ao carregar jogos')
       return res.json() as Promise<{ matches: Match[] }>
     },
-    refetchInterval: (query) => {
-      const matches = query.state.data?.matches
-      return matches?.some((m) => m.status === 'live') ? 30_000 : false
-    },
+    // Was a hardcoded live-only 30s; now jittered live + imminent heartbeat, and
+    // staleTime 0 so returning to the app shows the freshest scores immediately.
+    staleTime: 0,
+    refetchInterval: (query) => matchesPollMs(query.state.data?.matches),
   })
 
   // On the cup "Todos" view, land on the next game to play (skip past finished

@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { db as DbClient } from '../../db/client'
 import { DrizzlePaymentRepository } from './DrizzlePaymentRepository'
 import { DrizzlePoolRepository } from './DrizzlePoolRepository'
+import { DrizzlePredictionRepository } from './DrizzlePredictionRepository'
+import { DrizzleRankingRepository } from './DrizzleRankingRepository'
 import { DrizzleStatsUnlockRepository } from './DrizzleStatsUnlockRepository'
 import { DrizzleUnitOfWork } from './DrizzleUnitOfWork'
 
@@ -20,11 +22,15 @@ describe('DrizzleUnitOfWork', () => {
       expect(repos.payments).toBeInstanceOf(DrizzlePaymentRepository)
       expect(repos.pools).toBeInstanceOf(DrizzlePoolRepository)
       expect(repos.statsUnlocks).toBeInstanceOf(DrizzleStatsUnlockRepository)
+      expect(repos.predictions).toBeInstanceOf(DrizzlePredictionRepository)
+      expect(repos.ranking).toBeInstanceOf(DrizzleRankingRepository)
       // the binding is the atomicity guarantee — every repo must hold the tx,
       // not the root client
       expect((repos.payments as unknown as { db: unknown }).db).toBe(tx)
       expect((repos.pools as unknown as { db: unknown }).db).toBe(tx)
       expect((repos.statsUnlocks as unknown as { db: unknown }).db).toBe(tx)
+      expect((repos.predictions as unknown as { db: unknown }).db).toBe(tx)
+      expect((repos.ranking as unknown as { db: unknown }).db).toBe(tx)
       return 'done'
     })
 
