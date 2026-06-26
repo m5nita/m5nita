@@ -73,4 +73,11 @@ export interface MatchRepository {
    * so callers never branch on scope.
    */
   findPendingFor(query: UnfinishedMatchesQuery, now: Date): Promise<MatchData[]>
+  /** Distinct competition ids that have a live match, or a scheduled/timed match
+   * kicking off within [now - postKickoffGraceMs, now + preKickoffMs]. */
+  findCompetitionIdsWithLiveOrImminent(
+    preKickoffMs: number,
+    postKickoffGraceMs: number,
+    now: Date,
+  ): Promise<string[]>
 }

@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, gte, inArray, lte, notInArray } from 'drizzle-orm'
+import { and, asc, eq, gt, gte, inArray, lte, notInArray, or } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { match } from '../../db/schema/match'
 import type {
@@ -103,6 +103,29 @@ export class DrizzleMatchRepository implements MatchRepository {
       where: eq(match.status, 'live'),
     })
     return rows.map(toMatchData)
+  }
+
+  async findCompetitionIdsWithLiveOrImminent(
+    preKickoffMs: number,
+    postKickoffGraceMs: number,
+    now: Date,
+  ): Promise<string[]> {
+    const from = new Date(now.getTime() - postKickoffGraceMs)
+    const to = new Date(now.getTime() + preKickoffMs)
+    const rows = await this.db
+      .selectDistinct({ competitionId: match.competitionId })
+      .from(match)
+      .where(
+        or(
+          eq(match.status, 'live'),
+          and(
+            inArray(match.status, ['scheduled', 'timed']),
+            gte(match.matchDate, from),
+            lte(match.matchDate, to),
+          ),
+        ),
+      )
+    return rows.map((r) => r.competitionId)
   }
 
   async upsertMany(matches: UpsertMatchData[]): Promise<MatchData[]> {
