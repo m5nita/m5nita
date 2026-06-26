@@ -1,5 +1,5 @@
+import type { CallBudget } from '../../domain/shared/CallBudget'
 import type { Clock } from '../../domain/shared/Clock'
-import type { CallBudget } from '../../lib/callBudget'
 import type { CompetitionInfo } from './SyncLiveScoresUseCase'
 
 export type LiveSyncProviderDeps = {

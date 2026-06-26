@@ -10,11 +10,11 @@ import { createLiveSyncCompetitionProvider } from './application/match/liveSyncC
 import { SyncFixturesUseCase } from './application/match/SyncFixturesUseCase'
 import { SyncLiveScoresUseCase } from './application/match/SyncLiveScoresUseCase'
 import { getContainer } from './container'
+import { CallBudget } from './domain/shared/CallBudget'
 import { FootballDataApiAdapter } from './infrastructure/external/FootballDataApiAdapter'
 import { calcPointsForMatch } from './jobs/calcPoints'
 import { checkAndClosePools } from './jobs/closePoolsJob'
 import { sendPredictionReminders } from './jobs/reminderJob'
-import { CallBudget } from './lib/callBudget'
 import { findActiveCompetitionsForSync } from './services/competition'
 
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY ?? ''

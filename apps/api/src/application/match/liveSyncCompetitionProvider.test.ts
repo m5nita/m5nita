@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CallBudget } from '../../lib/callBudget'
+import { CallBudget } from '../../domain/shared/CallBudget'
 import { createLiveSyncCompetitionProvider } from './liveSyncCompetitionProvider'
 import type { CompetitionInfo } from './SyncLiveScoresUseCase'
 

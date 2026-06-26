@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CallBudget } from './callBudget'
+import { CallBudget } from './CallBudget'
 
 describe('CallBudget', () => {
   it('grants up to the per-minute max', () => {
