@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import type { db as dbClient } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { match as matchTable } from '../../db/schema/match'
@@ -41,6 +41,11 @@ export class DrizzleRankingRepository implements RankingRepository {
       .orderBy(
         desc(sql`coalesce(${poolStanding.pointsTotal}, 0)`),
         desc(sql`coalesce(${poolStanding.exactMatches}, 0)`),
+        // Deterministic final tiebreaker so members tied on points + exact count
+        // keep a stable order across reads (otherwise Postgres returns ties in an
+        // arbitrary order that changes between polls → rows visibly shuffle).
+        asc(user.name),
+        asc(poolMember.userId),
       )
   }
 

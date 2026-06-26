@@ -1,8 +1,8 @@
 /**
  * Ranking VO. Encapsulates the tiebreaker policy and shared-position rule used
- * across the application. Callers fetch raw entries (already sorted by points
- * desc, then exactMatches desc) and delegate position assignment here so the
- * rule lives in one place.
+ * across the application. Callers fetch raw entries already sorted by the full
+ * deterministic key (points desc, exactMatches desc, name asc, userId asc) and
+ * delegate position assignment here so the rule lives in one place.
  */
 
 export type RankingInput = {
