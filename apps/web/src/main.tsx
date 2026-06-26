@@ -21,10 +21,15 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60,
       retry: 1,
-      // Live screens already poll on a 30s interval; refetching on every tab
-      // focus just adds a correlated burst (everyone alt-tabs back on a goal)
-      // against the heavy ranking aggregate. Let the interval own freshness.
-      refetchOnWindowFocus: false,
+      // Refresh when the user returns to the app (app/tab focus) and when the
+      // network reconnects — the main "I had to reopen the app to see updates"
+      // fix. Safe against focus bursts: the heavy ranking aggregate is memoized
+      // per pool (25s TTL + single-flight) on the API, so a wave of focus
+      // refetches collapses to one compute per pool. The global 60s staleTime
+      // debounces non-live screens; live screens opt into staleTime: 0 so a
+      // return-to-app always shows the freshest score.
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   },
 })
