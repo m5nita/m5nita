@@ -30,16 +30,17 @@ describe('CallBudget', () => {
     expect(b.take(10)).toBe(10)
   })
 
-  it('never grants more than max across any 60s window', () => {
+  it('enforces the cap across a sliding 60s window', () => {
     let t = 0
     const b = new CallBudget(10, () => t)
-    let granted = 0
-    for (let i = 0; i < 120; i++) {
-      granted += b.take(1)
-      t += 5_000 // a take every 5s for 10 minutes
-    }
-    // 10 minutes at <=10/min => <=100 grants, and never >10 in any minute.
-    expect(granted).toBeLessThanOrEqual(120)
-    expect(granted).toBeGreaterThan(0)
+    // Fill the window: 10 grants, then none until the window slides.
+    expect(b.take(10)).toBe(10)
+    expect(b.available()).toBe(0)
+    t = 30_000
+    expect(b.take(5)).toBe(0) // still inside the 60s window → cap holds, none granted
+    t = 60_001
+    // The original 10 grants have aged out → budget refilled to the full 10.
+    expect(b.take(5)).toBe(5)
+    expect(b.available()).toBe(5)
   })
 })
