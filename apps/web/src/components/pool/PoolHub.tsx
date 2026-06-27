@@ -176,13 +176,11 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
             {pool.name}
           </h1>
           <div className="mt-3 h-1 w-12 bg-red" />
-          <p className="mt-3 text-sm text-gray-dark">Criado por {pool.owner?.name || 'Anônimo'}</p>
-          {pool.competitionName && (
-            <p className="mt-1 font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-              {pool.competitionName}
-              {matchdayLabel(pool)}
-            </p>
-          )}
+          <p className="mt-3 text-sm text-gray-muted">
+            {pool.competitionName}
+            {matchdayLabel(pool)} · {pool.memberCount} participante
+            {pool.memberCount === 1 ? '' : 's'} · {formatCurrency(pool.entryFee)}
+          </p>
         </div>
         <PoolHubActions
           poolId={poolId}
@@ -192,31 +190,13 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-px bg-border">
-        <div className="bg-cream py-4 text-center lg:py-6">
-          <p className="font-display text-2xl font-black text-black lg:text-4xl">
-            {pool.memberCount}
-          </p>
-          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-            Jogadores
-          </p>
-        </div>
-        <div className="bg-cream py-4 text-center lg:py-6">
-          <p className="font-display text-2xl font-black text-black lg:text-4xl">
-            {formatCurrency(pool.entryFee)}
-          </p>
-          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-            Entrada
-          </p>
-        </div>
-        <div className="bg-cream py-4 text-center lg:py-6">
-          <p className="font-display text-2xl font-black text-green lg:text-4xl">
-            {formatCurrency(pool.prizeTotal)}
-          </p>
-          <p className="font-display text-[10px] font-semibold uppercase tracking-widest text-gray-muted">
-            Prêmio
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-4 border-2 border-green bg-green/5 px-4 py-3">
+        <p className="font-display text-xs font-bold uppercase tracking-widest text-green">
+          Prêmio acumulado
+        </p>
+        <p className="font-display text-2xl font-black leading-none text-green lg:text-3xl">
+          {formatCurrency(pool.prizeTotal)}
+        </p>
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:gap-4" role="tablist">
