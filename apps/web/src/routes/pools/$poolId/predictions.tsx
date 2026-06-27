@@ -171,8 +171,15 @@ function MatchList({
 
   const [celebrate, setCelebrate] = useState(false)
   useEffect(() => {
+    // "Cravou o placar exato" = predicted scoreline equals the actual (regular-time)
+    // scoreline. This works for every pool type — `category` is only set on
+    // single-match pools, so it would miss exact scores in range/group pools.
     const exactKeys = matches
-      .filter((m) => m.status === 'finished' && predictionMap.get(m.id)?.category === 10)
+      .filter((m) => {
+        if (m.status !== 'finished' || m.homeScore === null || m.awayScore === null) return false
+        const p = predictionMap.get(m.id)
+        return p != null && p.homeScore === m.homeScore && p.awayScore === m.awayScore
+      })
       .map((m) => `exact:${poolId}:${m.id}`)
     if (claimUncelebrated(exactKeys).length > 0) {
       setCelebrate(true)

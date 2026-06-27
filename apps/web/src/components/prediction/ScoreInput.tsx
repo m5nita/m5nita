@@ -417,11 +417,15 @@ function ScoreResultFooter({
               {points} pts
             </span>
           ))}
-        {matchStatus === 'finished' && category === 10 && (
-          <span className="flex items-center gap-1 rounded-sm bg-green px-1.5 py-0.5 font-display text-[10px] font-black uppercase tracking-wider text-white">
-            🎯 Placar exato
-          </span>
-        )}
+        {matchStatus === 'finished' &&
+          hasPrediction &&
+          initialHome !== null &&
+          initialHome === actualHomeScore &&
+          initialAway === actualAwayScore && (
+            <span className="flex items-center gap-1 rounded-sm bg-green px-1.5 py-0.5 font-display text-[10px] font-black uppercase tracking-wider text-white">
+              🎯 Placar exato
+            </span>
+          )}
         {matchStatus === 'finished' &&
           (scoreReady && points !== null ? (
             <ScoreBreakdownToggle
