@@ -37,7 +37,7 @@ function TabLink({
       replace
       role="tab"
       aria-selected={active}
-      className={`lg:flex-1 px-6 py-3.5 text-center font-display text-sm font-bold uppercase tracking-wider border-2 transition-[transform,colors] active:scale-[0.98] cursor-pointer ${
+      className={`flex-1 whitespace-nowrap px-2 py-2.5 text-center font-display text-xs font-bold uppercase tracking-wide border-2 transition-[transform,colors] active:scale-[0.98] cursor-pointer ${
         active
           ? 'bg-black text-white border-black'
           : 'bg-transparent text-black border-black hover:bg-black hover:text-white'
@@ -166,28 +166,30 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-            Bolão
-          </p>
-          <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black lg:text-5xl">
-            {pool.name}
-          </h1>
-          <div className="mt-3 h-1 w-12 bg-red" />
-          <p className="mt-3 text-sm text-gray-muted">
-            {pool.competitionName}
-            {matchdayLabel(pool)} · {pool.memberCount} participante
-            {pool.memberCount === 1 ? '' : 's'} · {formatCurrency(pool.entryFee)}
-          </p>
+    <div className="flex flex-col gap-4">
+      <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+              Bolão
+            </p>
+            <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black lg:text-5xl">
+              {pool.name}
+            </h1>
+          </div>
+          <PoolHubActions
+            poolId={poolId}
+            canInvite={canInvite}
+            isOwner={isOwner}
+            onInvite={() => setInviteOpen(true)}
+          />
         </div>
-        <PoolHubActions
-          poolId={poolId}
-          canInvite={canInvite}
-          isOwner={isOwner}
-          onInvite={() => setInviteOpen(true)}
-        />
+        <div className="mt-3 h-1 w-12 bg-red" />
+        <p className="mt-2 truncate text-xs text-gray-muted">
+          {pool.competitionName}
+          {matchdayLabel(pool)} · {pool.memberCount} participante
+          {pool.memberCount === 1 ? '' : 's'} · {formatCurrency(pool.entryFee)}
+        </p>
       </div>
 
       <div className="flex items-center justify-between gap-4 border-2 border-green bg-green/5 px-4 py-3">
@@ -199,7 +201,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:gap-4" role="tablist">
+      <div className="flex gap-2" role="tablist">
         <TabLink
           poolId={poolId}
           to="/pools/$poolId/predictions"

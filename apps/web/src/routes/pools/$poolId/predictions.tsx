@@ -290,10 +290,10 @@ function TopTab({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+      className={`border-2 py-2 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
         active
-          ? 'bg-black text-white'
-          : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+          ? 'border-black bg-black text-white'
+          : 'border-border text-gray-dark hover:border-black hover:text-black'
       }`}
     >
       {label}
