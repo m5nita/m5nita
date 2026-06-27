@@ -272,7 +272,7 @@ describe('<ScoreInput /> live minute', () => {
   })
 })
 
-it('shows a PLACAR EXATO badge on a finished exact-score prediction', () => {
+it('drops confetti when you click the +10 on a finished exact score', () => {
   render(
     <ScoreInput
       matchId="m1"
@@ -293,5 +293,7 @@ it('shows a PLACAR EXATO badge on a finished exact-score prediction', () => {
       onSave={() => {}}
     />,
   )
-  expect(screen.getByText(/placar exato/i)).toBeInTheDocument()
+  expect(document.querySelectorAll('.confetti-piece').length).toBe(0)
+  fireEvent.click(screen.getByRole('button', { name: /comemorar o placar exato/i }))
+  expect(document.querySelectorAll('.confetti-piece').length).toBeGreaterThan(0)
 })
