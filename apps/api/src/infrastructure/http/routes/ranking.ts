@@ -57,8 +57,10 @@ rankingRoutes.get('/pools/:poolId/ranking/image.png', async (c) => {
   ])
 
   // Bust on standings change: key by a cheap content signature (points per row).
+  // Include the viewer id — the image highlights the viewer's row ("você"), so two
+  // members with identical standings must NOT share one cached buffer.
   const signature = ranking.map((r) => `${r.userId}:${r.totalPoints + r.livePoints}`).join('|')
-  const png = await rankingImageCache.getOrCompute(`${poolId}:${signature}`, () =>
+  const png = await rankingImageCache.getOrCompute(`${poolId}:${currentUser.id}:${signature}`, () =>
     renderRankingOgPng({
       poolName: details?.name ?? 'Bolão',
       competitionName: details?.competitionName ?? '',
