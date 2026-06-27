@@ -9,6 +9,14 @@ interface PrizeWithdrawalProps {
   poolId: string
 }
 
+const SUPPORT_URL = 'https://t.me/m5nita_bot?start=suporte'
+
+// Don't echo the full PIX key back on screen — keep just enough to recognize it.
+function maskPixKey(key: string): string {
+  if (key.length <= 4) return '•'.repeat(key.length)
+  return `${key.slice(0, 2)}${'•'.repeat(Math.max(3, key.length - 4))}${key.slice(-2)}`
+}
+
 export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
   const queryClient = useQueryClient()
 
@@ -51,7 +59,7 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
                 {w.totalPoints} pts · {w.exactMatches} exatos
               </p>
             </div>
-            <p className="font-display text-lg font-black text-green">
+            <p className="font-display text-2xl font-black leading-none text-green whitespace-nowrap">
               {formatCurrency(prize.winnerShare)}
             </p>
           </div>
@@ -84,7 +92,8 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
               </span>
             </p>
             <p>
-              Chave PIX: <span className="text-black font-medium">{prize.withdrawal.pixKey}</span>
+              Chave PIX:{' '}
+              <span className="text-black font-medium">{maskPixKey(prize.withdrawal.pixKey)}</span>
             </p>
             <p>
               Status:{' '}
@@ -96,6 +105,20 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
               </span>
             </p>
           </div>
+          {prize.withdrawal.status === 'failed' && (
+            <p className="mt-3 text-xs text-red">
+              A retirada não foi concluída.{' '}
+              <a
+                href={SUPPORT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline underline-offset-2"
+              >
+                Fale com o suporte
+              </a>{' '}
+              para reenviar.
+            </p>
+          )}
         </div>
       )}
     </section>

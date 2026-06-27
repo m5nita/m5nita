@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'success'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   children: ReactNode
@@ -14,6 +14,9 @@ const variants = {
     'bg-transparent text-black border-2 border-black hover:bg-black hover:text-white active:bg-black/80 active:text-white focus-visible:ring-black',
   danger:
     'bg-red text-white border-2 border-red hover:bg-red/85 active:bg-red/70 focus-visible:ring-red',
+  // Money/positive actions (claim prize). Mirrors `danger`'s solid-accent pattern.
+  success:
+    'bg-green text-white border-2 border-green hover:bg-green/85 active:bg-green/70 focus-visible:ring-green',
   ghost:
     'text-gray-dark border-2 border-transparent hover:text-black hover:bg-black/5 active:bg-black/10 focus-visible:ring-black',
 }

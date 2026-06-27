@@ -27,7 +27,7 @@ export function MatchCard({ match }: MatchCardProps) {
 
   return (
     <div
-      className={`flex items-center gap-3 border-b border-border py-3 lg:border-2 lg:border-border lg:p-4 ${isLive ? 'bg-red/[0.03] lg:border-red/30' : ''}`}
+      className={`flex items-center gap-3 border-b border-border py-3 lg:border-2 lg:border-border lg:p-4 ${isLive ? 'border-l-2 border-l-red bg-red/[0.06] pl-3 lg:border-red lg:pl-4' : ''}`}
     >
       <div className="flex flex-1 flex-col items-center gap-1 min-w-0">
         {match.homeFlag && (
@@ -44,7 +44,9 @@ export function MatchCard({ match }: MatchCardProps) {
       <div className="flex flex-col items-center gap-0.5 shrink-0">
         <span className="text-[10px] text-gray-muted">{formatDate(match.matchDate)}</span>
         {isFinished || isLive ? (
-          <span className="font-display text-2xl font-black text-black">
+          <span
+            className={`font-display text-2xl font-black ${isLive ? 'text-red' : 'text-black'}`}
+          >
             {match.homeScore} - {match.awayScore}
           </span>
         ) : (
@@ -56,7 +58,7 @@ export function MatchCard({ match }: MatchCardProps) {
         )}
         {isLive && (
           <span className="flex items-center gap-1 font-display text-[9px] font-bold uppercase tracking-widest text-red">
-            <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red" aria-hidden="true" />
             Ao Vivo{liveMinute ? ` ${liveMinute}` : ''}
           </span>
         )}

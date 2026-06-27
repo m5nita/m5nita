@@ -13,7 +13,7 @@ const TELEGRAM_BOT_USERNAME = 'm5nita_bot'
 
 function TelegramConnectInstructions() {
   return (
-    <div className="rounded-lg border-2 border-black/10 bg-gray-lightest p-4">
+    <div className="rounded-lg border-2 border-black/10 bg-surface p-4">
       <p className="text-sm font-medium text-black">Conecte seu Telegram:</p>
       <ol className="mt-3 list-inside list-decimal space-y-1 text-xs text-gray-dark">
         <li>

@@ -147,17 +147,21 @@ function FeeSummary({
 }) {
   return (
     <div className="mt-auto flex flex-col gap-2 text-sm">
-      <div className="flex justify-between">
-        <span className="text-gray-dark">Entrada</span>
-        <span className="font-medium text-black">{formatCurrency(currentFee)}</span>
+      <div className="flex items-baseline justify-between">
+        <span className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
+          Você paga agora
+        </span>
+        <span className="font-display text-xl font-black text-black">
+          {formatCurrency(currentFee)}
+        </span>
       </div>
       {coupon.valid ? (
         <>
-          <div className="flex justify-between">
-            <span className="text-gray-muted line-through">Taxa (5%)</span>
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-muted line-through">Taxa da plataforma (5%)</span>
             <span className="text-gray-muted line-through">{formatCurrency(platformFee)}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between text-xs">
             <span className="text-green font-medium">
               Taxa com desconto ({(5 * (1 - coupon.discountPercent / 100)).toFixed(1)}%)
             </span>
@@ -165,11 +169,14 @@ function FeeSummary({
           </div>
         </>
       ) : (
-        <div className="flex justify-between">
-          <span className="text-gray-muted">Taxa (5%)</span>
+        <div className="flex justify-between text-xs">
+          <span className="text-gray-muted">Taxa da plataforma (5%)</span>
           <span className="text-gray-muted">{formatCurrency(platformFee)}</span>
         </div>
       )}
+      <p className="text-[11px] leading-snug text-gray-muted">
+        A taxa é descontada do prêmio — você paga só a entrada.
+      </p>
     </div>
   )
 }
