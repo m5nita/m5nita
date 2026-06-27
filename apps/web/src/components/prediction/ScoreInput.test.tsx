@@ -271,3 +271,27 @@ describe('<ScoreInput /> live minute', () => {
     expect(screen.queryByText(/\d+'/)).not.toBeInTheDocument()
   })
 })
+
+it('shows a PLACAR EXATO badge on a finished exact-score prediction', () => {
+  render(
+    <ScoreInput
+      matchId="m1"
+      homeTeam="Brasil"
+      awayTeam="França"
+      homeFlag={null}
+      awayFlag={null}
+      matchDate="2026-06-10T18:00:00Z"
+      stage="group"
+      homeScore={2}
+      awayScore={1}
+      matchStatus="finished"
+      points={10}
+      category={10}
+      bonus={0}
+      actualHomeScore={2}
+      actualAwayScore={1}
+      onSave={() => {}}
+    />,
+  )
+  expect(screen.getByText(/placar exato/i)).toBeInTheDocument()
+})

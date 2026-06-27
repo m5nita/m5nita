@@ -12,9 +12,11 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { PoolHub } from '../../../components/pool/PoolHub'
 import { MatchPredictionsList } from '../../../components/prediction/MatchPredictionsList'
 import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
+import { Confetti } from '../../../components/ui/Confetti'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import { MatchCardSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
+import { claimUncelebrated, vibrate } from '../../../lib/celebrate'
 import { matchParamsForPool } from '../../../lib/matchQuery'
 import {
   buildSections,
@@ -167,6 +169,17 @@ function MatchList({
 
   const sections = buildSections(matches, grouping ?? 'none')
 
+  const [celebrate, setCelebrate] = useState(false)
+  useEffect(() => {
+    const exactKeys = matches
+      .filter((m) => m.status === 'finished' && predictionMap.get(m.id)?.category === 10)
+      .map((m) => `exact:${poolId}:${m.id}`)
+    if (claimUncelebrated(exactKeys).length > 0) {
+      setCelebrate(true)
+      vibrate([30, 40, 30])
+    }
+  }, [matches, predictionMap, poolId])
+
   function renderCard({ match, originalIndex, localIndex }: SectionItem<Match>) {
     const pred = predictionMap.get(match.id)
     return (
@@ -217,6 +230,7 @@ function MatchList({
 
   return (
     <div className="flex flex-col">
+      {celebrate && <Confetti onDone={() => setCelebrate(false)} />}
       {sections.map((section) => {
         const isSingle = section.items.length === 1
         const leftItems = section.items.filter((item) => item.localIndex % 2 === 0)
