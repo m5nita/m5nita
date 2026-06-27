@@ -28,8 +28,10 @@ export function Confetti({ count = 80, onDone }: ConfettiProps) {
   )
 
   useEffect(() => {
-    if (reduced || !onDone) return
-    const t = setTimeout(onDone, 2300)
+    if (!onDone) return
+    // Reduced-motion renders nothing; still fire onDone promptly so a parent
+    // gating on it (`{celebrate && <Confetti onDone={...} />}`) doesn't get stuck.
+    const t = setTimeout(onDone, reduced ? 0 : 2300)
     return () => clearTimeout(t)
   }, [reduced, onDone])
 
