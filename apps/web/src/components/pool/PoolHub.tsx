@@ -185,7 +185,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
           />
         </div>
         <div className="mt-3 h-1 w-12 bg-red" />
-        <p className="mt-2 truncate text-xs text-gray-muted">
+        <p className="mt-2 truncate text-sm text-gray-muted">
           {pool.competitionName}
           {matchdayLabel(pool)} · {pool.memberCount} participante
           {pool.memberCount === 1 ? '' : 's'} · {formatCurrency(pool.entryFee)}
