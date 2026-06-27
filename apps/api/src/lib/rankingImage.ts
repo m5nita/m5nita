@@ -32,6 +32,7 @@ export interface RankingImageRow {
   position: number
   name: string
   points: number
+  exactMatches: number
   isViewer: boolean
 }
 
@@ -99,8 +100,33 @@ function rankingRow(row: RankingImageRow): Element {
         {
           type: 'div',
           props: {
-            style: { fontFamily: 'BarlowCondensed', fontSize: 52, color: COLORS.dark },
-            children: `${row.points} pts`,
+            style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' },
+            children: [
+              {
+                type: 'div',
+                props: {
+                  style: {
+                    fontFamily: 'BarlowCondensed',
+                    fontSize: 52,
+                    color: COLORS.dark,
+                    lineHeight: 1,
+                  },
+                  children: `${row.points} pts`,
+                },
+              },
+              {
+                type: 'div',
+                props: {
+                  style: {
+                    fontFamily: 'Inter',
+                    fontWeight: 700,
+                    fontSize: 20,
+                    color: COLORS.muted,
+                  },
+                  children: `${row.exactMatches} exato${row.exactMatches === 1 ? '' : 's'}`,
+                },
+              },
+            ],
           },
         },
       ],

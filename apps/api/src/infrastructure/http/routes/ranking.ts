@@ -69,6 +69,7 @@ rankingRoutes.get('/pools/:poolId/ranking/image.png', async (c) => {
         position: r.position,
         name: r.name ?? 'Anônimo',
         points: r.totalPoints + r.livePoints,
+        exactMatches: r.exactMatches,
         isViewer: r.isCurrentUser,
       })),
     }),

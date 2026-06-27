@@ -18,8 +18,8 @@ describe('renderRankingOgPng', () => {
       competitionName: 'Copa do Mundo 2026',
       prizeCentavos: 33250,
       rows: [
-        { position: 1, name: 'Igor', points: 37, isViewer: true },
-        { position: 2, name: 'Ana', points: 20, isViewer: false },
+        { position: 1, name: 'Igor', points: 37, exactMatches: 2, isViewer: true },
+        { position: 2, name: 'Ana', points: 20, exactMatches: 1, isViewer: false },
       ],
     })
     expect(png).toBeInstanceOf(Buffer)
