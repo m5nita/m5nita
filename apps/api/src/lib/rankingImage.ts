@@ -16,7 +16,6 @@ const COLORS = {
   red: '#ef4444',
   green: '#22a06b',
   border: '#e5dfd2',
-  muted: '#8a8079',
   rowTint: '#efe7d8',
 }
 
