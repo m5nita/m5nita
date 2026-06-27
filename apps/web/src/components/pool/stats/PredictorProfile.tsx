@@ -59,7 +59,7 @@ function Card({
       </div>
       {children && <div className="pl-[22px]">{children}</div>}
       <p className="ml-[22px] border-t border-dashed border-border pt-2 text-[11px] leading-snug text-gray-muted">
-        💡 {tip}
+        {tip}
       </p>
     </div>
   )
@@ -75,9 +75,9 @@ function Figure({ tone, value, suffix }: { tone: Tone; value: string; suffix: Re
 }
 
 const CAL_TITLE = {
-  inflate: '⚽ Mão pesada nos gols',
-  economize: '⚽ Mão leve nos gols',
-  calibrated: '⚽ Placar calibrado',
+  inflate: 'Mão pesada nos gols',
+  economize: 'Mão leve nos gols',
+  calibrated: 'Placar calibrado',
 } as const
 
 const CAL_VERDICT = {
@@ -135,7 +135,7 @@ export function PredictorProfile({ block }: { block: PredictorProfileBlock }) {
       {drawBlindness && (
         <Card
           tone="red"
-          title="🤝 Empate cego"
+          title="Empate cego"
           verdict="Você quase nunca aposta no empate — e ele acontece bastante."
           tip="Cravar 1×1 num jogo parelho rende pontos que o bolão inteiro deixa passar."
         >
@@ -156,7 +156,7 @@ export function PredictorProfile({ block }: { block: PredictorProfileBlock }) {
       {nearMiss && (
         <Card
           tone="amber"
-          title="🎯 Quase lá"
+          title="Quase lá"
           verdict="Você passou raspando do placar exato."
           tip="Ajuste fino no placar vira muito ponto."
         >
@@ -195,8 +195,8 @@ export function PredictorProfile({ block }: { block: PredictorProfileBlock }) {
             />
             {goalCalibration.signature && (
               <span className="self-start border border-border px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-wider text-text-secondary">
-                🔁 placar-assinatura: {goalCalibration.signature.home}×
-                {goalCalibration.signature.away} ({pct(goalCalibration.signature.sharePct)})
+                Placar-assinatura: {goalCalibration.signature.home}×{goalCalibration.signature.away}{' '}
+                ({pct(goalCalibration.signature.sharePct)})
               </span>
             )}
           </div>
@@ -206,7 +206,7 @@ export function PredictorProfile({ block }: { block: PredictorProfileBlock }) {
       {goalType && (
         <Card
           tone={goalType.betterAt ? 'green' : 'neutral'}
-          title="🥅 Truncado vs aberto"
+          title="Truncado vs aberto"
           verdict={
             goalType.betterAt === 'low'
               ? 'Você vai melhor em jogos truncados (poucos gols).'

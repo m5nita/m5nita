@@ -271,3 +271,29 @@ describe('<ScoreInput /> live minute', () => {
     expect(screen.queryByText(/\d+'/)).not.toBeInTheDocument()
   })
 })
+
+it('drops confetti when you click the +10 on a finished exact score', () => {
+  render(
+    <ScoreInput
+      matchId="m1"
+      homeTeam="Brasil"
+      awayTeam="França"
+      homeFlag={null}
+      awayFlag={null}
+      matchDate="2026-06-10T18:00:00Z"
+      stage="group"
+      homeScore={2}
+      awayScore={1}
+      matchStatus="finished"
+      points={10}
+      category={10}
+      bonus={0}
+      actualHomeScore={2}
+      actualAwayScore={1}
+      onSave={() => {}}
+    />,
+  )
+  expect(document.querySelectorAll('.confetti-piece').length).toBe(0)
+  fireEvent.click(screen.getByRole('button', { name: /comemorar o placar exato/i }))
+  expect(document.querySelectorAll('.confetti-piece').length).toBeGreaterThan(0)
+})

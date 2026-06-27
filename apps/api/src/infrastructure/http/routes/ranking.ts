@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
 import { getContainer } from '../../../container'
+import { renderRankingOgPng } from '../../../lib/rankingImage'
+import { createTtlCache } from '../../../lib/ttlCache'
 import { getPoolRanking } from '../../../services/ranking'
 import type { AppEnv } from '../../../types/hono'
 import { requireAuth } from '../middleware/auth'
@@ -7,6 +9,9 @@ import { requireAuth } from '../middleware/auth'
 const rankingRoutes = new Hono<AppEnv>()
 
 rankingRoutes.use('/*', requireAuth)
+
+const RANKING_IMG_TTL_MS = 5 * 60_000
+const rankingImageCache = createTtlCache<string, Buffer>(RANKING_IMG_TTL_MS)
 
 // GET /api/pools/:poolId/ranking
 rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
@@ -32,6 +37,50 @@ rankingRoutes.get('/pools/:poolId/ranking', async (c) => {
     ranking,
     prizeTotal: details?.prizeTotal ?? 0,
     hasLiveMatch: details?.hasLiveMatch ?? false,
+  })
+})
+
+// GET /api/pools/:poolId/ranking/image.png — member-gated shareable PNG
+rankingRoutes.get('/pools/:poolId/ranking/image.png', async (c) => {
+  const currentUser = c.get('user')
+  const { poolId } = c.req.param()
+
+  const { poolRepo } = getContainer()
+  const isMember = await poolRepo.isMember(poolId, currentUser.id)
+  if (!isMember) {
+    return c.json({ error: 'NOT_MEMBER', message: 'Você não é membro deste bolão' }, 403)
+  }
+
+  const [ranking, details] = await Promise.all([
+    getPoolRanking(poolId, currentUser.id),
+    poolRepo.findByIdWithDetails(poolId),
+  ])
+
+  // Bust on standings change: key by a cheap content signature (points per row).
+  // Include the viewer id — the image highlights the viewer's row ("você"), so two
+  // members with identical standings must NOT share one cached buffer.
+  const signature = ranking.map((r) => `${r.userId}:${r.totalPoints + r.livePoints}`).join('|')
+  const png = await rankingImageCache.getOrCompute(`${poolId}:${currentUser.id}:${signature}`, () =>
+    renderRankingOgPng({
+      poolName: details?.name ?? 'Bolão',
+      competitionName: details?.competitionName ?? '',
+      prizeCentavos: details?.prizeTotal ?? 0,
+      rows: ranking.map((r) => ({
+        position: r.position,
+        name: r.name ?? 'Anônimo',
+        points: r.totalPoints + r.livePoints,
+        exactMatches: r.exactMatches,
+        isViewer: r.isCurrentUser,
+      })),
+    }),
+  )
+
+  return new Response(new Uint8Array(png), {
+    status: 200,
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'private, max-age=300',
+    },
   })
 })
 

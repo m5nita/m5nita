@@ -10,7 +10,9 @@ import {
   useRef,
   useState,
 } from 'react'
+import { vibrate } from '../../lib/celebrate'
 import { formatDate, formatMatchMinute } from '../../lib/utils'
+import { Confetti } from '../ui/Confetti'
 
 export interface ScoreInputHandle {
   focusHome: () => void
@@ -374,6 +376,7 @@ function ScoreResultFooter({
   awayTeam,
   breakdownOpen,
   onToggleBreakdown,
+  onBurst,
 }: {
   status: 'idle' | 'saving' | 'saved' | 'error'
   matchStatus: string
@@ -390,6 +393,7 @@ function ScoreResultFooter({
   awayTeam: string
   breakdownOpen: boolean
   onToggleBreakdown: () => void
+  onBurst: () => void
 }) {
   const scoreReady =
     typeof category === 'number' &&
@@ -418,7 +422,29 @@ function ScoreResultFooter({
             </span>
           ))}
         {matchStatus === 'finished' &&
-          (scoreReady && points !== null ? (
+          (points === 10 ? (
+            // A 10-point finish is an exact score — clicking it drops confetti
+            // (every click), and still opens the breakdown on single-match pools.
+            <button
+              type="button"
+              onClick={() => {
+                onBurst()
+                if (scoreReady) onToggleBreakdown()
+              }}
+              aria-label="Comemorar o placar exato"
+              className="flex items-center gap-1.5 font-display text-xs font-black text-green transition-opacity hover:opacity-80 cursor-pointer"
+            >
+              +10 pts
+              {scoreReady && (
+                <span
+                  aria-hidden="true"
+                  className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] font-black"
+                >
+                  ?
+                </span>
+              )}
+            </button>
+          ) : scoreReady && points !== null ? (
             <ScoreBreakdownToggle
               total={points}
               variant="finished"
@@ -611,6 +637,8 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
   const [advance, setAdvance] = useState<AdvanceSide | null>(advancePick ?? null)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [breakdownOpen, setBreakdownOpen] = useState(false)
+  // Bumped on each "+10 pts" click to re-mount <Confetti> for a fresh burst.
+  const [burstKey, setBurstKey] = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const aliveRef = useRef(true)
@@ -707,6 +735,7 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
 
   return (
     <div className="border-b border-border py-3">
+      {burstKey > 0 && <Confetti key={burstKey} />}
       <p className="mb-1.5 text-center font-display text-[10px] text-gray-muted">
         {formatDate(matchDate)}
       </p>
@@ -822,6 +851,10 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         awayTeam={awayTeam}
         breakdownOpen={breakdownOpen}
         onToggleBreakdown={() => setBreakdownOpen((v) => !v)}
+        onBurst={() => {
+          setBurstKey((k) => k + 1)
+          vibrate(30)
+        }}
       />
       {renderExpandedContent && (
         <ExpandPredictionsControl

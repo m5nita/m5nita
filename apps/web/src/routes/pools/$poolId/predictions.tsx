@@ -12,9 +12,11 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { PoolHub } from '../../../components/pool/PoolHub'
 import { MatchPredictionsList } from '../../../components/prediction/MatchPredictionsList'
 import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
+import { Confetti } from '../../../components/ui/Confetti'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import { MatchCardSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
+import { claimUncelebrated } from '../../../lib/celebrate'
 import { matchParamsForPool } from '../../../lib/matchQuery'
 import {
   buildSections,
@@ -167,6 +169,26 @@ function MatchList({
 
   const sections = buildSections(matches, grouping ?? 'none')
 
+  // Auto-celebrate: when a freshly-graded exact score first appears, fire one
+  // confetti burst (once per match, localStorage-deduped). Clicking the "+10 pts"
+  // re-fires it on demand (handled in ScoreInput). Exact = predicted scoreline
+  // equals the actual regular-time scoreline (works for every pool type).
+  const [autoBurst, setAutoBurst] = useState(0)
+  useEffect(() => {
+    const exactKeys = matches
+      .filter((m) => {
+        if (m.status !== 'finished' || m.homeScore === null || m.awayScore === null) return false
+        const p = predictionMap.get(m.id)
+        return p != null && p.homeScore === m.homeScore && p.awayScore === m.awayScore
+      })
+      .map((m) => `exact:${poolId}:${m.id}`)
+    // No vibrate() here: this fires on load with no user gesture, which the
+    // browser blocks anyway (haptics need a tap). The click path still vibrates.
+    if (claimUncelebrated(exactKeys).length > 0) {
+      setAutoBurst((k) => k + 1)
+    }
+  }, [matches, predictionMap, poolId])
+
   function renderCard({ match, originalIndex, localIndex }: SectionItem<Match>) {
     const pred = predictionMap.get(match.id)
     return (
@@ -217,6 +239,7 @@ function MatchList({
 
   return (
     <div className="flex flex-col">
+      {autoBurst > 0 && <Confetti key={`auto-${autoBurst}`} />}
       {sections.map((section) => {
         const isSingle = section.items.length === 1
         const leftItems = section.items.filter((item) => item.localIndex % 2 === 0)
@@ -290,10 +313,10 @@ function TopTab({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`py-2.5 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+      className={`border-2 py-2 font-display text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
         active
-          ? 'bg-black text-white'
-          : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+          ? 'border-black bg-black text-white'
+          : 'border-border text-gray-dark hover:border-black hover:text-black'
       }`}
     >
       {label}

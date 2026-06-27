@@ -2,6 +2,11 @@ import { Hono } from 'hono'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { rankingRoutes } from './ranking'
 
+vi.mock('../../../lib/rankingImage', () => ({
+  renderRankingOgPng: vi.fn(async () => Buffer.from([0x89, 0x50, 0x4e, 0x47])),
+  rankingImageDimensions: () => ({ width: 1080, height: 1350 }),
+}))
+
 vi.mock('../middleware/auth', () => ({
   requireAuth: vi.fn((c, next) => {
     const testUser = c.req.header('x-test-user')
@@ -214,5 +219,41 @@ describe('GET /api/pools/:poolId/ranking', () => {
     expect(body.ranking).toBeUndefined()
     // A non-member must not trigger the standings read at all.
     expect(mockGetPoolRanking).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /api/pools/:poolId/ranking/image.png', () => {
+  let app: Hono
+
+  beforeEach(() => {
+    app = createTestApp()
+    vi.clearAllMocks()
+  })
+
+  it('returns 403 for non-members', async () => {
+    mockIsMember.mockResolvedValueOnce(false)
+    const res = await app.request('/api/pools/pool-1/ranking/image.png', {
+      headers: { 'x-test-user': JSON.stringify({ id: 'outsider' }) },
+    })
+    expect(res.status).toBe(403)
+  })
+
+  it('returns a PNG for members', async () => {
+    mockGetPoolRanking.mockResolvedValue([
+      {
+        position: 1,
+        userId: 'user-1',
+        name: 'Test',
+        totalPoints: 40,
+        livePoints: 0,
+        exactMatches: 2,
+        isCurrentUser: true,
+      },
+    ])
+    const res = await app.request('/api/pools/pool-1/ranking/image.png', {
+      headers: { 'x-test-user': JSON.stringify({ id: 'user-1' }) },
+    })
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('image/png')
   })
 })
