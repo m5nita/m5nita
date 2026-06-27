@@ -1,3 +1,4 @@
+import { NotifyMatchPointsUseCase } from './application/match/NotifyMatchPointsUseCase'
 import { CompleteCheckoutUseCase } from './application/payment/CompleteCheckoutUseCase'
 import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
 import { GetPoolDetailsUseCase } from './application/pool/GetPoolDetailsUseCase'
@@ -12,6 +13,8 @@ import { GetPendingPrizesUseCase } from './application/prize/GetPendingPrizesUse
 import { GetPrizeInfoUseCase } from './application/prize/GetPrizeInfoUseCase'
 import { MarkWithdrawalPaidUseCase } from './application/prize/MarkWithdrawalPaidUseCase'
 import { RequestWithdrawalUseCase } from './application/prize/RequestWithdrawalUseCase'
+import { SubscribeToPushUseCase } from './application/push/SubscribeToPushUseCase'
+import { UnsubscribeFromPushUseCase } from './application/push/UnsubscribeFromPushUseCase'
 import { GetParticipantStatsUseCase } from './application/stats/GetParticipantStatsUseCase'
 import { UnlockStatsUseCase } from './application/stats/UnlockStatsUseCase'
 import { db as defaultDb } from './db/client'
@@ -24,10 +27,13 @@ import { CompositeNotificationService } from './infrastructure/external/Composit
 import { InfinitePayPaymentGateway } from './infrastructure/external/InfinitePayPaymentGateway'
 import { MockPaymentGateway } from './infrastructure/external/MockPaymentGateway'
 import { StripePaymentGateway } from './infrastructure/external/StripePaymentGateway'
+import { WebPushNotificationService } from './infrastructure/external/WebPushNotificationService'
+import { DrizzleMatchPointsNotifiedStore } from './infrastructure/persistence/DrizzleMatchPointsNotifiedStore'
 import { DrizzleMatchRepository } from './infrastructure/persistence/DrizzleMatchRepository'
 import { DrizzlePoolRepository } from './infrastructure/persistence/DrizzlePoolRepository'
 import { DrizzlePredictionRepository } from './infrastructure/persistence/DrizzlePredictionRepository'
 import { DrizzlePrizeWithdrawalRepository } from './infrastructure/persistence/DrizzlePrizeWithdrawalRepository'
+import { DrizzlePushSubscriptionRepository } from './infrastructure/persistence/DrizzlePushSubscriptionRepository'
 import { DrizzleRankingRepository } from './infrastructure/persistence/DrizzleRankingRepository'
 import { DrizzleStatsRepository } from './infrastructure/persistence/DrizzleStatsRepository'
 import { DrizzleStatsUnlockRepository } from './infrastructure/persistence/DrizzleStatsUnlockRepository'
@@ -103,6 +109,8 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const matchRepo = new DrizzleMatchRepository(db)
   const statsUnlockRepo = new DrizzleStatsUnlockRepository(db)
   const statsRepo = new DrizzleStatsRepository(db)
+  const pushSubscriptionRepo = new DrizzlePushSubscriptionRepository(db)
+  const matchPointsNotifiedStore = new DrizzleMatchPointsNotifiedStore(db)
   const unitOfWork = new DrizzleUnitOfWork(db)
 
   // Cached per-pool stats loaders (siblings of the ranking cache): the aggregate
@@ -116,7 +124,10 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const completeCheckoutUseCase = new CompleteCheckoutUseCase(unitOfWork)
   const paymentGateway =
     overrides.paymentGateway ?? buildPaymentGateway(db, completeCheckoutUseCase)
-  const notificationService = overrides.notificationService ?? new CompositeNotificationService(bot)
+  const webPushService = new WebPushNotificationService(pushSubscriptionRepo)
+  const notificationService =
+    overrides.notificationService ??
+    new CompositeNotificationService(bot, webPushService, matchPointsNotifiedStore)
 
   const statsUnlockPriceEnv = process.env.STATS_UNLOCK_PRICE_CENTAVOS
   const statsUnlockPrice = statsUnlockPriceEnv
@@ -135,11 +146,21 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     matchRepo,
     statsUnlockRepo,
     statsRepo,
+    pushSubscriptionRepo,
     notificationService,
     paymentGateway,
     unitOfWork,
 
     completeCheckoutUseCase,
+    subscribeToPushUseCase: new SubscribeToPushUseCase(pushSubscriptionRepo),
+    unsubscribeFromPushUseCase: new UnsubscribeFromPushUseCase(pushSubscriptionRepo),
+    notifyMatchPointsUseCase: new NotifyMatchPointsUseCase(
+      matchRepo,
+      poolRepo,
+      predictionRepo,
+      rankingRepo,
+      notificationService,
+    ),
     createPoolUseCase: new CreatePoolUseCase(
       poolRepo,
       paymentGateway,

@@ -69,12 +69,13 @@ export async function checkAndClosePools(): Promise<void> {
     const winners = winnerEntries.map((w) => {
       const contact = contactByUserId.get(w.userId)
       return {
+        userId: w.userId,
         name: w.name,
         phoneNumber: contact?.phoneNumber ?? null,
         email: contact?.emailVerified && contact.email ? contact.email : null,
       }
     })
 
-    await notificationService.notifyWinners(p.name, winners, prizeShare.centavos)
+    await notificationService.notifyWinners(p.id, p.name, winners, prizeShare.centavos)
   }
 }

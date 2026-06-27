@@ -58,12 +58,27 @@ export type ActivePoolInfo = {
   discountPercent: number
 }
 
+/** Minimal identity of an active pool that includes a given match. */
+export type PoolForMatch = {
+  id: string
+  name: string
+}
+
+/** Identity of a match needed to test pool scope membership. */
+export type MatchScopeInput = {
+  id: string
+  competitionId: string
+  matchday: number | null
+}
+
 export interface PoolRepository {
   findById(id: string): Promise<Pool | null>
   findByIdWithDetails(id: string): Promise<PoolWithDetails | null>
   findByInviteCode(code: string): Promise<PoolWithDetails | null>
   findActiveByCompetition(competitionId: string): Promise<Pool[]>
   findAllActive(): Promise<ActivePoolInfo[]>
+  /** Active pools whose scope includes the given match (single-match or range). */
+  findActivePoolsForMatch(match: MatchScopeInput): Promise<PoolForMatch[]>
   save(pool: Pool): Promise<Pool>
   delete(id: string): Promise<void>
   updateStatus(id: string, status: PoolStatus): Promise<void>

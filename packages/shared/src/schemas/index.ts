@@ -77,6 +77,16 @@ export const upsertPredictionSchema = z.object({
   advancePick: z.enum(['home', 'away']).nullish(),
 })
 
+// Web Push subscription payload (the browser PushSubscription shape we persist).
+export const subscribePushSchema = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+})
+export type SubscribePushPayload = z.infer<typeof subscribePushSchema>
+
 // Phone schema
 export const phoneSchema = z.string().regex(/^\+55\d{10,11}$/, 'Telefone inválido')
 

@@ -70,15 +70,15 @@ function RankingContent({ poolId, poolName }: { poolId: string; poolName: string
   const ranking = data?.ranking ?? []
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-2">
       {data?.hasLiveMatch && (
-        <div className="flex flex-col gap-1 -mt-4">
+        <div className="flex gap-1">
           <span className="flex items-center gap-1.5 font-display text-[10px] font-bold uppercase tracking-widest text-red">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red" aria-hidden="true" />
             Jogos ao vivo
           </span>
           <span className="font-display text-[10px] text-gray-muted">
-            Pontos em vermelho são provisórios
+            (Pontos em vermelho são provisórios)
           </span>
         </div>
       )}
@@ -95,7 +95,7 @@ function RankingContent({ poolId, poolName }: { poolId: string; poolName: string
           {ranking.map((entry) => (
             <div
               key={entry.userId}
-              className={`flex items-center gap-4 border-b border-border py-4 px-3 ${entry.isCurrentUser ? 'bg-black/[0.03]' : ''}`}
+              className={`flex items-center gap-4 border-b border-border py-2 ${entry.isCurrentUser ? 'bg-black/[0.03]' : ''}`}
             >
               <span
                 className={`font-display text-3xl font-black min-w-[40px] ${positionColor(entry.position)}`}
@@ -110,7 +110,8 @@ function RankingContent({ poolId, poolName }: { poolId: string; poolName: string
                   {entry.isCurrentUser && ' (você)'}
                 </p>
                 <p className="text-[10px] text-gray-muted">
-                  {entry.exactMatches} placar{entry.exactMatches !== 1 ? 'es' : ''} exato
+                  {entry.exactMatches} placar
+                  {entry.exactMatches !== 1 ? 'es' : ''} exato
                   {entry.exactMatches !== 1 ? 's' : ''}
                 </p>
               </div>

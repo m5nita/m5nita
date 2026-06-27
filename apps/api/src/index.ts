@@ -31,11 +31,18 @@ function buildMatchSyncRunners() {
   const footballApi = new FootballDataApiAdapter(FOOTBALL_DATA_API_KEY)
   const { matchRepo, clock } = getContainer()
 
+  // A match finishing must score it AND push each participant their points. One
+  // shared callback wired into BOTH sync use cases so neither path can miss it.
+  const onMatchFinished = async (matchId: string) => {
+    await calcPointsForMatch(matchId)
+    await getContainer().notifyMatchPointsUseCase.execute(matchId)
+  }
+
   const syncFixturesUseCase = new SyncFixturesUseCase({
     footballApi,
     matchRepo,
     findActiveCompetitions: findActiveCompetitionsForSync,
-    onMatchFinished: calcPointsForMatch,
+    onMatchFinished,
   })
   const liveSyncBudget = new CallBudget(FOOTBALL_DATA_MAX_CALLS_PER_MIN)
   const liveSyncCompetitions = createLiveSyncCompetitionProvider({
@@ -51,7 +58,7 @@ function buildMatchSyncRunners() {
     matchRepo,
     clock,
     findActiveCompetitions: liveSyncCompetitions,
-    onMatchFinished: calcPointsForMatch,
+    onMatchFinished,
     onAllMatchesChecked: checkAndClosePools,
   })
 

@@ -1,5 +1,5 @@
 import type { SQL } from 'drizzle-orm'
-import { and, eq, gt, gte, isNotNull, isNull, lte, or } from 'drizzle-orm'
+import { and, eq, exists, gt, gte, isNotNull, isNull, lte, or } from 'drizzle-orm'
 import type { ReminderData, ReminderMatch } from '../application/ports/NotificationService.port'
 import { getContainer } from '../container'
 import { db } from '../db/client'
@@ -7,6 +7,7 @@ import { user } from '../db/schema/auth'
 import { match } from '../db/schema/match'
 import { poolMember } from '../db/schema/poolMember'
 import { prediction } from '../db/schema/prediction'
+import { pushSubscription } from '../db/schema/pushSubscription'
 import type { ActivePoolInfo } from '../domain/pool/PoolRepository.port'
 
 // In-memory dedup: "userId:poolId:matchId" — at most one reminder per user per
@@ -97,7 +98,17 @@ async function collectRemindersForPool(
         and(
           eq(poolMember.poolId, activePool.id),
           isNull(prediction.id),
-          or(isNotNull(user.phoneNumber), and(eq(user.emailVerified, true), isNotNull(user.email))),
+          // Reachable by Web Push (any device), Telegram (phone), or verified email.
+          or(
+            exists(
+              db
+                .select({ one: pushSubscription.id })
+                .from(pushSubscription)
+                .where(eq(pushSubscription.userId, poolMember.userId)),
+            ),
+            isNotNull(user.phoneNumber),
+            and(eq(user.emailVerified, true), isNotNull(user.email)),
+          ),
         ),
       )
 
@@ -143,6 +154,7 @@ function buildRemindersToSend(pendingReminders: Map<string, PendingReminder>): R
     if (freshMatches.length === 0) continue
 
     remindersToSend.push({
+      userId: reminder.userId,
       userName: reminder.userName,
       phoneNumber: reminder.phoneNumber,
       email: reminder.email,

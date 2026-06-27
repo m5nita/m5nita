@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { PushOptInPrompt } from './components/push/PushOptInPrompt'
 import { clearChunkReloadGuard, installChunkReloadHandler } from './lib/chunkReload'
 import { ThemeProvider } from './lib/theme'
 import { routeTree } from './routeTree.gen'
@@ -83,6 +84,7 @@ if (rootElement) {
         >
           <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />
+            <PushOptInPrompt />
           </QueryClientProvider>
         </SentryErrorBoundary>
       </ThemeProvider>
