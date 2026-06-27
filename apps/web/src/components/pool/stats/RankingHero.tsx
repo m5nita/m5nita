@@ -42,7 +42,7 @@ export function RankingHero({ block }: { block: RankingHeroBlock }) {
         {insufficient
           ? 'Sua posição aparece quando o 1º jogo terminar'
           : block.gapToLeader === 0
-            ? 'Você lidera o bolão 🏆'
+            ? 'Você lidera o bolão'
             : `${block.gapToLeader} pts atrás do líder`}
       </p>
     </section>

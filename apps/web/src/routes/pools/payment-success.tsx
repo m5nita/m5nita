@@ -206,7 +206,7 @@ function PaymentSuccessPage() {
       <Panel
         eyebrow="Sucesso"
         eyebrowColor="text-green"
-        title={isStats ? 'Pagamento Confirmado' : 'Você Está Dentro! 🎉'}
+        title={isStats ? 'Pagamento Confirmado' : 'Você Está Dentro!'}
         barColor="bg-green"
         action={ctxButton(
           poolId ? (isStats ? 'Ver estatísticas' : 'Fazer meus palpites') : 'Ir para Home',

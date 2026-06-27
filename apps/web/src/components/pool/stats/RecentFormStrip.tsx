@@ -39,7 +39,7 @@ export function RecentFormStrip({ block }: { block: RecentFormBlock }) {
         </div>
         {block.currentStreak > 0 && (
           <span className="shrink-0 font-display text-xs font-bold uppercase tracking-wider text-green">
-            🔥 {block.currentStreak} seguid{block.currentStreak > 1 ? 'os' : 'o'}
+            {block.currentStreak} seguid{block.currentStreak > 1 ? 'os' : 'o'}
           </span>
         )}
       </div>
