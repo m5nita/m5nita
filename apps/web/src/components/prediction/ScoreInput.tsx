@@ -178,7 +178,7 @@ function ScoreBreakdownPanel({
     bonus,
   })
   return (
-    <div className="mt-2 w-full border-2 border-border bg-white/70 p-3 text-left">
+    <div className="mt-2 w-full border-2 border-border bg-surface p-3 text-left">
       <p className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
         Como esses {total} pts foram calculados:
       </p>

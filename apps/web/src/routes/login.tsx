@@ -486,7 +486,7 @@ function LoginPage() {
           >
             <PhoneInput value={phone} onChange={setPhone} />
             {showTelegramHelp && (
-              <div className="rounded-lg border border-gray-light bg-gray-lightest p-4">
+              <div className="rounded-lg border border-gray-light bg-surface p-4">
                 <p className="text-sm font-medium text-black">Conecte seu Telegram primeiro:</p>
                 <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-gray-dark">
                   <li>
