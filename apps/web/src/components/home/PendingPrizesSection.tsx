@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import { formatCurrency } from '../../lib/utils'
 import { PrizeWithdrawalForm } from '../pool/PrizeWithdrawalForm'
+import { Button } from '../ui/Button'
 
 export function PendingPrizesSection() {
   const queryClient = useQueryClient()
@@ -64,15 +65,18 @@ function PendingPrizeCard({
           </p>
           <p className="text-[11px] text-gray-muted">Prêmio disponível</p>
         </div>
-        <p className="font-display text-lg font-black text-green">{formatCurrency(winnerShare)}</p>
+        <p className="font-display text-3xl font-black leading-none text-green whitespace-nowrap">
+          {formatCurrency(winnerShare)}
+        </p>
       </div>
-      <button
-        type="button"
+      <Button
+        variant={open ? 'secondary' : 'success'}
+        size="md"
         onClick={() => setOpen((v) => !v)}
-        className="mt-3 font-display text-[11px] font-bold uppercase tracking-widest text-black underline underline-offset-4 hover:text-red transition-colors cursor-pointer"
+        className="mt-3 w-full"
       >
         {open ? 'Fechar' : 'Solicitar retirada'}
-      </button>
+      </Button>
       {open && (
         <div className="mt-4">
           <PrizeWithdrawalForm poolId={poolId} onSuccess={onSuccess} />
