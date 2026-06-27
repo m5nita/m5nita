@@ -123,7 +123,7 @@ function rankingRow(row: RankingImageRow): Element {
                     fontSize: 20,
                     color: COLORS.muted,
                   },
-                  children: `${row.exactMatches} exato${row.exactMatches === 1 ? '' : 's'}`,
+                  children: `${row.exactMatches} ${row.exactMatches === 1 ? 'placar exato' : 'placares exatos'}`,
                 },
               },
             ],
