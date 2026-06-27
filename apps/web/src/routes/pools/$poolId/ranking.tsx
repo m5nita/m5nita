@@ -1,11 +1,14 @@
 import type { RankingEntry } from '@m5nita/shared'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 import { PoolHub } from '../../../components/pool/PoolHub'
+import { Button } from '../../../components/ui/Button'
 import { ErrorMessage } from '../../../components/ui/ErrorMessage'
 import { RankingRowSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
 import { livePollMs } from '../../../lib/poll'
+import { shareRankingImage } from '../../../lib/shareRanking'
 
 function positionColor(position: number): string {
   if (position === 1) return 'text-red'
@@ -13,7 +16,31 @@ function positionColor(position: number): string {
   return 'text-gray-light'
 }
 
-function RankingContent({ poolId }: { poolId: string }) {
+function ShareRankingButton({ poolId, poolName }: { poolId: string; poolName: string }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <Button
+      variant="secondary"
+      size="md"
+      loading={busy}
+      onClick={async () => {
+        setBusy(true)
+        try {
+          await shareRankingImage(poolId, poolName)
+        } catch {
+          // surface nothing intrusive; the button simply re-enables
+        } finally {
+          setBusy(false)
+        }
+      }}
+      className="self-center"
+    >
+      Compartilhar
+    </Button>
+  )
+}
+
+function RankingContent({ poolId, poolName }: { poolId: string; poolName: string }) {
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['ranking', poolId],
     queryFn: async () => {
@@ -103,13 +130,7 @@ function RankingContent({ poolId }: { poolId: string }) {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => refetch()}
-        className="font-display text-xs font-bold uppercase tracking-wider text-gray-muted underline underline-offset-4 hover:text-black transition-colors cursor-pointer text-center"
-      >
-        Atualizar ranking
-      </button>
+      <ShareRankingButton poolId={poolId} poolName={poolName} />
     </div>
   )
 }
@@ -118,7 +139,7 @@ function RankingPage() {
   const { poolId } = Route.useParams()
   return (
     <PoolHub poolId={poolId} activeTab="ranking">
-      {() => <RankingContent poolId={poolId} />}
+      {(pool) => <RankingContent poolId={poolId} poolName={pool.name} />}
     </PoolHub>
   )
 }
