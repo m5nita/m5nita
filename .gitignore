@@ -10,6 +10,7 @@ Thumbs.db
 *.tmp
 *.swp
 .vscode/
+.zed/
 .idea/
 coverage/
 *.tsbuildinfo
