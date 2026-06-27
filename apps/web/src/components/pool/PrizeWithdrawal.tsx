@@ -54,7 +54,9 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
               {formatCurrency(prize.winnerShare)}
             </p>
             <p className="mt-2 text-sm text-gray-dark">
-              Parabéns! Informe sua chave PIX abaixo para receber o prêmio.
+              {prize.withdrawal
+                ? 'Parabéns! O prêmio é seu — acompanhe a retirada abaixo.'
+                : 'Parabéns! Informe sua chave PIX abaixo para receber o prêmio.'}
             </p>
           </div>
         </>
