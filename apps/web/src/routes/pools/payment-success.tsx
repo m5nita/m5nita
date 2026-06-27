@@ -2,7 +2,9 @@ import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../components/ui/Button'
+import { Confetti } from '../../components/ui/Confetti'
 import { apiFetch } from '../../lib/api'
+import { useCelebrateOnce } from '../../lib/celebrate'
 
 type ConfirmState =
   | { kind: 'checking' }
@@ -152,6 +154,10 @@ function PaymentSuccessPage() {
   )
   const backLabel = poolId ? 'Voltar ao bolão' : 'Ir para Home'
 
+  const celebrateWelcome = useCelebrateOnce(
+    state.kind === 'completed' && !isStats ? `welcome:${poolId ?? 'home'}` : null,
+  )
+
   if (state.kind === 'checking') {
     return (
       <Panel
@@ -195,19 +201,22 @@ function PaymentSuccessPage() {
   }
 
   return (
-    <Panel
-      eyebrow="Sucesso"
-      eyebrowColor="text-green"
-      title="Pagamento Confirmado"
-      barColor="bg-green"
-      action={ctxButton(
-        poolId ? (isStats ? 'Ver estatísticas' : 'Ir para o bolão') : 'Ir para Home',
-      )}
-    >
-      {isStats
-        ? 'Pagamento processado. Suas estatísticas deste bolão estão desbloqueadas!'
-        : 'Seu pagamento foi processado. Você já faz parte do bolão!'}
-    </Panel>
+    <>
+      {celebrateWelcome && <Confetti count={100} />}
+      <Panel
+        eyebrow="Sucesso"
+        eyebrowColor="text-green"
+        title={isStats ? 'Pagamento Confirmado' : 'Você Está Dentro! 🎉'}
+        barColor="bg-green"
+        action={ctxButton(
+          poolId ? (isStats ? 'Ver estatísticas' : 'Fazer meus palpites') : 'Ir para Home',
+        )}
+      >
+        {isStats
+          ? 'Pagamento processado. Suas estatísticas deste bolão estão desbloqueadas!'
+          : 'Seu pagamento foi confirmado e você já faz parte do bolão. Boa sorte!'}
+      </Panel>
+    </>
   )
 }
 
