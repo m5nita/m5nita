@@ -17,6 +17,7 @@ const COLORS = {
   green: '#22a06b',
   border: '#e5dfd2',
   rowTint: '#efe7d8',
+  muted: '#8a8079',
 }
 
 const WIDTH = 1080
@@ -46,7 +47,14 @@ export function rankingImageDimensions(memberCount: number): { width: number; he
   return { width: WIDTH, height: Math.max(BASE_H, needed) }
 }
 
-const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
+// Position accent: the leader pops red, the rest of the podium dark, others
+// muted. (No emoji medals — satori has no emoji font loaded, so 🥇🥈🥉 render as
+// missing-glyph boxes.)
+function positionColor(position: number): string {
+  if (position === 1) return COLORS.red
+  if (position <= 3) return COLORS.dark
+  return COLORS.muted
+}
 
 function rankingRow(row: RankingImageRow): Element {
   return {
@@ -68,10 +76,10 @@ function rankingRow(row: RankingImageRow): Element {
             style: {
               fontFamily: 'BarlowCondensed',
               fontSize: 52,
-              width: 96,
-              color: row.position === 1 ? COLORS.red : COLORS.dark,
+              width: 72,
+              color: positionColor(row.position),
             },
-            children: `${MEDALS[row.position] ?? ''} ${row.position}`,
+            children: String(row.position),
           },
         },
         {
