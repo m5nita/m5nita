@@ -33,6 +33,8 @@ export interface MatchPointsData {
   matchId: string
   homeTeam: string
   awayTeam: string
+  homeScore: number | null
+  awayScore: number | null
   points: number
   position: number
 }

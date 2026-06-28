@@ -54,6 +54,8 @@ export class NotifyMatchPointsUseCase {
       matchId: match.id,
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
       points: prediction.points ?? 0,
       position: positionByUser.get(prediction.userId) ?? 0,
     }))
