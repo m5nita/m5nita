@@ -32,6 +32,7 @@ export class GetUserPredictionsUseCase {
     const predictions = await this.predictionRepo.findByUserPool(input.userId, input.poolId)
 
     const scoringPolicy = pool?.scoringPolicy() ?? RangeScoringPolicy
+    const isSingleMatch = pool?.scope.kind === 'single-match'
 
     const withLivePoints = predictions.map((p) => {
       const predScores = {
@@ -58,8 +59,10 @@ export class GetUserPredictionsUseCase {
 
       if (typeof live === 'object' && live !== null) {
         points = live.total
-        category = live.category
-        bonus = live.bonus
+        if (isSingleMatch) {
+          category = live.category
+          bonus = live.bonus
+        }
         advanceBonus = live.advanceBonus
       } else {
         points = live
@@ -72,8 +75,10 @@ export class GetUserPredictionsUseCase {
             p.match.awayScore,
             knockout,
           )
-          category = s.breakdown?.category
-          bonus = s.breakdown?.bonus
+          if (isSingleMatch) {
+            category = s.breakdown?.category
+            bonus = s.breakdown?.bonus
+          }
           advanceBonus = s.breakdown?.advanceBonus
         }
       }

@@ -59,6 +59,7 @@ function AdvancePickChip({
   const flag = pick === 'home' ? homeFlag : awayFlag
   return (
     <span
+      aria-hidden="true"
       className="flex shrink-0 items-center gap-1 border border-border/60 px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-gray-dark"
       title={`Classifica: ${team}`}
     >
@@ -71,24 +72,19 @@ function AdvancePickChip({
 function PointsLabel({
   total,
   advanceBonus,
-  className,
   pulse,
 }: {
   total: number
-  advanceBonus: number | undefined
-  className: string
+  advanceBonus: number
   pulse: boolean
 }) {
-  if ((advanceBonus ?? 0) > 0) {
-    return (
-      <span className={`flex items-center gap-1 ${className}`}>
-        {pulse && <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />}
-        <span>+{total - (advanceBonus as number)}</span>
-        <span>+{advanceBonus}</span>
-      </span>
-    )
-  }
-  return null
+  return (
+    <span className="flex items-center gap-1">
+      {pulse && <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />}
+      <span>+{total - advanceBonus}</span>
+      <span>+{advanceBonus}</span>
+    </span>
+  )
 }
 
 function PredictorRow({
@@ -155,8 +151,7 @@ function PredictorRow({
           >
             <PointsLabel
               total={predictor.points as number}
-              advanceBonus={predictor.advanceBonus ?? undefined}
-              className=""
+              advanceBonus={predictor.advanceBonus as number}
               pulse={points.pulse}
             />
           </span>

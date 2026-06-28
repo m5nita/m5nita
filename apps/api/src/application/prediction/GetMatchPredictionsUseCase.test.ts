@@ -281,6 +281,6 @@ describe('GetMatchPredictionsUseCase — knockout advance bonus', () => {
     const opponent = res.predictors[0]
     expect(opponent?.advancePick).toBe('home')
     expect(opponent?.advanceBonus).toBe(2)
-    expect(opponent?.category).toBe(10)
+    expect(opponent?.category).toBeUndefined()
   })
 })

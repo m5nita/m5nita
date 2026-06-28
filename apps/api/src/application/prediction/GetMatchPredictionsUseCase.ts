@@ -60,6 +60,7 @@ export class GetMatchPredictionsUseCase {
     )
 
     const scoringPolicy = pool.scoringPolicy()
+    const isSingleMatch = pool.scope.kind === 'single-match'
 
     if (!isMember) {
       throw new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão')
@@ -104,8 +105,10 @@ export class GetMatchPredictionsUseCase {
 
         if (typeof live === 'object' && live !== null) {
           points = live.total
-          category = live.category
-          bonus = live.bonus
+          if (isSingleMatch) {
+            category = live.category
+            bonus = live.bonus
+          }
           advanceBonus = live.advanceBonus
         } else {
           points = live
@@ -118,8 +121,10 @@ export class GetMatchPredictionsUseCase {
               match.awayScore,
               knockout,
             )
-            category = s.breakdown?.category
-            bonus = s.breakdown?.bonus
+            if (isSingleMatch) {
+              category = s.breakdown?.category
+              bonus = s.breakdown?.bonus
+            }
             advanceBonus = s.breakdown?.advanceBonus
           }
         }

@@ -233,7 +233,7 @@ describe('GetUserPredictionsUseCase — knockout advance bonus (range pool)', ()
 
     expect(res[0]?.points).toBe(12)
     expect(res[0]?.advanceBonus).toBe(2)
-    expect(res[0]?.category).toBe(10)
+    expect(res[0]?.category).toBeUndefined()
   })
 
   it('adds a live +2 during extra time when the picked side leads (range)', async () => {
