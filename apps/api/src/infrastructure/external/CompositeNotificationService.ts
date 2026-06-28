@@ -39,9 +39,13 @@ function winnerPushPayload(poolId: string, poolName: string): PushPayload {
 
 function matchPointsPushPayload(item: MatchPointsData): PushPayload {
   const unit = item.points === 1 ? 'ponto' : 'pontos'
+  const scoreline =
+    item.homeScore != null && item.awayScore != null
+      ? `${item.homeTeam} ${item.homeScore} x ${item.awayScore} ${item.awayTeam}`
+      : `${item.homeTeam} x ${item.awayTeam}`
   return {
     title: item.poolName,
-    body: `Você fez ${item.points} ${unit} em ${item.homeTeam} x ${item.awayTeam} — agora em ${item.position}º`,
+    body: `Você fez ${item.points} ${unit} em ${scoreline} — agora na ${item.position}ª posição`,
     url: `/pools/${item.poolId}`,
     tag: `points-${item.poolId}-${item.matchId}`,
   }

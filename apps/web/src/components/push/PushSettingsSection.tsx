@@ -56,19 +56,27 @@ export function PushSettingsSection() {
   } else {
     const enabled = status === 'enabled'
     body = (
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-gray-dark leading-relaxed">
-          Receba avisos de início de jogo e pontuação neste dispositivo.
-        </p>
-        <Button
-          variant={enabled ? 'secondary' : 'primary'}
-          size="sm"
-          loading={busy}
-          onClick={enabled ? disable : enable}
-          aria-pressed={enabled}
-        >
-          {enabled ? 'Desativar' : 'Ativar'}
-        </Button>
+      <div className="flex flex-col gap-2">
+        {status === 'error' && (
+          <p className="text-xs leading-relaxed text-red" role="alert">
+            Não foi possível ativar. Seu navegador pode estar bloqueando o serviço de push (no
+            Brave, ative o uso de serviços do Google para mensagens push). Ajuste e tente de novo.
+          </p>
+        )}
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-gray-dark leading-relaxed">
+            Receba avisos de início de jogo e pontuação neste dispositivo.
+          </p>
+          <Button
+            variant={enabled ? 'secondary' : 'primary'}
+            size="sm"
+            loading={busy}
+            onClick={enabled ? disable : enable}
+            aria-pressed={enabled}
+          >
+            {enabled ? 'Desativar' : 'Ativar'}
+          </Button>
+        </div>
       </div>
     )
   }

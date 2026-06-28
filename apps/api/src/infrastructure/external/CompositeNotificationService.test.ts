@@ -204,6 +204,8 @@ function matchPoints(over?: Partial<MatchPointsData>): MatchPointsData {
     matchId: 'match-1',
     homeTeam: 'Brasil',
     awayTeam: 'Argentina',
+    homeScore: 2,
+    awayScore: 1,
     points: 5,
     position: 2,
     ...over,
