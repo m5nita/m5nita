@@ -78,7 +78,7 @@ describe('computeLivePoints — single-match pool', () => {
       null,
       SingleMatchScoringPolicy,
     )
-    expect(result).toEqual({ total: 9, category: 7, bonus: 2 })
+    expect(result).toEqual({ total: 9, category: 7, bonus: 2, advanceBonus: 0 })
   })
 
   it('returns plain number for multi-match (range) pool', () => {
@@ -89,5 +89,67 @@ describe('computeLivePoints — single-match pool', () => {
       RangeScoringPolicy,
     )
     expect(result).toBe(7)
+  })
+})
+
+describe('computeLivePoints — live extra-time advance bonus', () => {
+  const liveET = {
+    status: 'live',
+    homeScore: 1, // regular-time (90') score
+    awayScore: 1,
+    stage: 'final',
+    duration: 'extra_time' as string | null,
+    extraTimeHomeScore: 1, // home leads the aggregate 2-1
+    extraTimeAwayScore: 0,
+  }
+
+  it('adds +2 to an exact 90 draw when the picked side leads in ET (range → breakdown)', () => {
+    const result = computeLivePoints(
+      { homeScore: 1, awayScore: 1, advancePick: 'home' },
+      liveET,
+      null,
+      RangeScoringPolicy,
+    )
+    expect(result).toEqual({ total: 12, category: 10, bonus: 0, advanceBonus: 2 })
+  })
+
+  it('decomposes a correct non-exact draw as 5 + 2', () => {
+    const result = computeLivePoints(
+      { homeScore: 0, awayScore: 0, advancePick: 'home' },
+      liveET,
+      null,
+      RangeScoringPolicy,
+    )
+    expect(result).toEqual({ total: 7, category: 5, bonus: 0, advanceBonus: 2 })
+  })
+
+  it('decomposes a missed scoreline that still called the leader as 0 + 2', () => {
+    const result = computeLivePoints(
+      { homeScore: 2, awayScore: 1, advancePick: 'home' },
+      liveET,
+      null,
+      RangeScoringPolicy,
+    )
+    expect(result).toEqual({ total: 2, category: 0, bonus: 0, advanceBonus: 2 })
+  })
+
+  it('adds no bonus when the pick named the other side (plain number)', () => {
+    const result = computeLivePoints(
+      { homeScore: 0, awayScore: 0, advancePick: 'away' },
+      liveET,
+      null,
+      RangeScoringPolicy,
+    )
+    expect(result).toBe(5)
+  })
+
+  it('adds no bonus during a live penalty shootout', () => {
+    const result = computeLivePoints(
+      { homeScore: 0, awayScore: 0, advancePick: 'home' },
+      { ...liveET, duration: 'penalty_shootout', extraTimeHomeScore: 0 },
+      null,
+      RangeScoringPolicy,
+    )
+    expect(result).toBe(5)
   })
 })
