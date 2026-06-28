@@ -213,3 +213,47 @@ describe('GetUserPredictionsUseCase — single-match pool decomposition', () => 
     expect(res[0]?.bonus).toBeUndefined()
   })
 })
+
+describe('GetUserPredictionsUseCase — knockout advance bonus (range pool)', () => {
+  it('exposes advanceBonus on a finished penalty-decided knockout (range)', async () => {
+    const pred = basePwm()
+    pred.homeScore = 1
+    pred.awayScore = 1
+    pred.advancePick = 'home'
+    pred.points = 12
+    pred.match.stage = 'final'
+    pred.match.status = 'finished'
+    pred.match.homeScore = 1
+    pred.match.awayScore = 1
+    pred.match.winner = 'home'
+    pred.match.duration = 'penalty_shootout'
+
+    const uc = makeUseCase([pred])
+    const res = await uc.execute({ userId: 'u-1', poolId: 'pool-1' })
+
+    expect(res[0]?.points).toBe(12)
+    expect(res[0]?.advanceBonus).toBe(2)
+    expect(res[0]?.category).toBe(10)
+  })
+
+  it('adds a live +2 during extra time when the picked side leads (range)', async () => {
+    const pred = basePwm()
+    pred.homeScore = 0
+    pred.awayScore = 0
+    pred.advancePick = 'home'
+    pred.points = null
+    pred.match.stage = 'semi'
+    pred.match.status = 'live'
+    pred.match.homeScore = 1
+    pred.match.awayScore = 1
+    pred.match.duration = 'extra_time'
+    pred.match.extraTimeHomeScore = 1
+    pred.match.extraTimeAwayScore = 0
+
+    const uc = makeUseCase([pred])
+    const res = await uc.execute({ userId: 'u-1', poolId: 'pool-1' })
+
+    expect(res[0]?.points).toBe(7) // 5 (correct draw) + 2
+    expect(res[0]?.advanceBonus).toBe(2)
+  })
+})
