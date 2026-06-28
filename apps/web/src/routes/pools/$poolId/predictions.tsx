@@ -247,7 +247,6 @@ function MatchList({
           actualAwayScore={match.awayScore}
           minute={match.minute}
           injuryTime={match.injuryTime}
-          winner={match.winner}
           duration={match.duration}
           extraTimeHomeScore={match.extraTimeHomeScore}
           extraTimeAwayScore={match.extraTimeAwayScore}

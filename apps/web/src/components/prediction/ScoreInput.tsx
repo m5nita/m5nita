@@ -36,7 +36,6 @@ interface ScoreInputProps {
   advanceBonus?: number | null
   actualHomeScore: number | null
   actualAwayScore: number | null
-  winner?: 'home' | 'away' | 'draw' | null
   duration?: MatchDuration | null
   extraTimeHomeScore?: number | null
   extraTimeAwayScore?: number | null
@@ -59,15 +58,33 @@ function isKnockoutStage(stage: string): boolean {
   return !NON_KNOCKOUT_STAGES.has(stage)
 }
 
-/** Live phase label for the result header while a knockout is past 90'. */
-function liveOvertimePhaseLabel(
-  matchStatus: string,
+/**
+ * The score shown in the result header for a knockout past 90' (extra time /
+ * penalties): the aggregate (90' + extra-time goals), so the header reflects the
+ * real match score — live or finished. (The 90' score is still what predictions
+ * grade against.)
+ */
+function headerScore(
   duration: MatchDuration | null | undefined,
-): string | undefined {
-  if (matchStatus !== 'live') return undefined
-  if (duration === 'extra_time') return 'Prorrogação'
-  if (duration === 'penalty_shootout') return 'Pênaltis'
-  return undefined
+  regScore: number | null,
+  extraTimeScore: number | null | undefined,
+): number | null {
+  if ((duration === 'extra_time' || duration === 'penalty_shootout') && regScore !== null) {
+    return regScore + (extraTimeScore ?? 0)
+  }
+  return regScore
+}
+
+/** The shootout tally shown in the result header for a penalty-decided match. */
+function shootoutTally(
+  duration: MatchDuration | null | undefined,
+  penaltyHomeScore: number | null | undefined,
+  penaltyAwayScore: number | null | undefined,
+): { home: number; away: number } | null {
+  if (duration === 'penalty_shootout' && penaltyHomeScore != null && penaltyAwayScore != null) {
+    return { home: penaltyHomeScore, away: penaltyAwayScore }
+  }
+  return null
 }
 
 function teamNameStyle(name: string): string {
@@ -272,9 +289,7 @@ function LiveResultHeader({
   hasActualScore,
   actualHomeScore,
   actualAwayScore,
-  wentToOvertime,
-  livePhaseLabel,
-  overtimeLead,
+  penaltyTally,
   minute,
   injuryTime,
 }: {
@@ -283,16 +298,12 @@ function LiveResultHeader({
   hasActualScore: boolean
   actualHomeScore: number | null
   actualAwayScore: number | null
-  wentToOvertime: boolean
-  livePhaseLabel?: string
-  overtimeLead?: string | null
+  penaltyTally?: { home: number; away: number } | null
   minute?: number | null
   injuryTime?: number | null
 }) {
   if (!((isLocked && hasActualScore) || matchStatus === 'live')) return null
-  // For matches that went past 90', the displayed score is the regular-time
-  // score (what predictions grade against), so label it as such.
-  const finishedLabel = wentToOvertime ? 'Tempo normal' : 'Resultado oficial'
+  const finishedLabel = 'Resultado oficial'
   // Live clock sits between the "Ao Vivo" indicator and the score, same line.
   const clock = matchStatus === 'live' ? formatMatchMinute(minute, injuryTime) : null
   return (
@@ -304,7 +315,7 @@ function LiveResultHeader({
       {matchStatus === 'live' ? (
         <span className="flex items-center gap-1">
           <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-          Ao Vivo{livePhaseLabel ? ` · ${livePhaseLabel}` : ''}
+          Ao Vivo
         </span>
       ) : (
         <span>{finishedLabel}</span>
@@ -317,7 +328,15 @@ function LiveResultHeader({
           <span>{actualAwayScore}</span>
         </span>
       )}
-      {overtimeLead && <span className="whitespace-nowrap">· {overtimeLead}</span>}
+      {penaltyTally && (
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
+          <span aria-hidden="true">·</span>
+          <span>{penaltyTally.home}</span>
+          <span>x</span>
+          <span>{penaltyTally.away}</span>
+          <span>(Pên.)</span>
+        </span>
+      )}
     </div>
   )
 }
@@ -568,129 +587,6 @@ function AdvancePicker({
   )
 }
 
-function resolvingScoreLabel({
-  duration,
-  regHomeScore,
-  regAwayScore,
-  extraTimeHomeScore,
-  extraTimeAwayScore,
-  penaltyHomeScore,
-  penaltyAwayScore,
-}: {
-  duration: MatchDuration
-  regHomeScore: number | null | undefined
-  regAwayScore: number | null | undefined
-  extraTimeHomeScore: number | null | undefined
-  extraTimeAwayScore: number | null | undefined
-  penaltyHomeScore: number | null | undefined
-  penaltyAwayScore: number | null | undefined
-}): string {
-  const hasReg = regHomeScore != null && regAwayScore != null
-  const extraTimeHadGoals = (extraTimeHomeScore ?? 0) > 0 || (extraTimeAwayScore ?? 0) > 0
-  const afterExtraTime = hasReg
-    ? `${regHomeScore + (extraTimeHomeScore ?? 0)}×${regAwayScore + (extraTimeAwayScore ?? 0)} ao final da prorrogação`
-    : null
-
-  if (duration === 'penalty_shootout') {
-    const pens =
-      penaltyHomeScore != null && penaltyAwayScore != null
-        ? `${penaltyHomeScore}×${penaltyAwayScore} nos pênaltis`
-        : 'nos pênaltis'
-    // Only mention the extra-time score when it adds information (ET goals);
-    // otherwise it just repeats the 90' score already in the header.
-    return extraTimeHadGoals && afterExtraTime ? `${afterExtraTime} · ${pens}` : pens
-  }
-  // extra time decided it: there was a goal, so the score differs from 90'
-  return afterExtraTime ?? 'ao final da prorrogação'
-}
-
-function AdvanceResultNote({
-  homeTeam,
-  awayTeam,
-  winner,
-  duration,
-  regHomeScore,
-  regAwayScore,
-  extraTimeHomeScore,
-  extraTimeAwayScore,
-  penaltyHomeScore,
-  penaltyAwayScore,
-}: {
-  homeTeam: string
-  awayTeam: string
-  winner: 'home' | 'away' | 'draw' | null | undefined
-  duration: MatchDuration | null | undefined
-  regHomeScore: number | null | undefined
-  regAwayScore: number | null | undefined
-  extraTimeHomeScore: number | null | undefined
-  extraTimeAwayScore: number | null | undefined
-  penaltyHomeScore: number | null | undefined
-  penaltyAwayScore: number | null | undefined
-}) {
-  if (!winner || winner === 'draw' || !duration || duration === 'regular') return null
-  const advTeam = winner === 'home' ? homeTeam : awayTeam
-  const detail = resolvingScoreLabel({
-    duration,
-    regHomeScore,
-    regAwayScore,
-    extraTimeHomeScore,
-    extraTimeAwayScore,
-    penaltyHomeScore,
-    penaltyAwayScore,
-  })
-  return (
-    <p className="mt-0.5 text-center font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
-      {displayTeamName(advTeam)} se classificou ({detail})
-    </p>
-  )
-}
-
-/**
- * Compact running-overtime status for the live header: the regular-time +
- * extra-time aggregate and who currently leads (the side earning the
- * provisional advance bonus), so a "0×0 at 90'" header doesn't look
- * contradictory next to a +2. Penalties show the shootout tally (no live bonus).
- */
-function liveOvertimeLead({
-  matchStatus,
-  homeTeam,
-  awayTeam,
-  duration,
-  regHomeScore,
-  regAwayScore,
-  extraTimeHomeScore,
-  extraTimeAwayScore,
-  penaltyHomeScore,
-  penaltyAwayScore,
-}: {
-  matchStatus: string
-  homeTeam: string
-  awayTeam: string
-  duration: MatchDuration | null | undefined
-  regHomeScore: number | null
-  regAwayScore: number | null
-  extraTimeHomeScore?: number | null
-  extraTimeAwayScore?: number | null
-  penaltyHomeScore?: number | null
-  penaltyAwayScore?: number | null
-}): string | null {
-  if (matchStatus !== 'live') return null
-  if (duration === 'penalty_shootout') {
-    return penaltyHomeScore != null && penaltyAwayScore != null
-      ? `Pênaltis ${penaltyHomeScore}×${penaltyAwayScore}`
-      : 'Pênaltis'
-  }
-  if (duration === 'extra_time' && regHomeScore != null && regAwayScore != null) {
-    const aggHome = regHomeScore + (extraTimeHomeScore ?? 0)
-    const aggAway = regAwayScore + (extraTimeAwayScore ?? 0)
-    const score = `${aggHome}×${aggAway}`
-    if (aggHome > aggAway) return `${displayTeamName(homeTeam)} ${score}`
-    if (aggAway > aggHome) return `${displayTeamName(awayTeam)} ${score}`
-    return score
-  }
-  return null
-}
-
 export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function ScoreInput(
   {
     matchId,
@@ -710,7 +606,6 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
     advanceBonus,
     actualHomeScore,
     actualAwayScore,
-    winner,
     duration,
     extraTimeHomeScore,
     extraTimeAwayScore,
@@ -835,39 +730,12 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         matchStatus={matchStatus}
         isLocked={isLocked}
         hasActualScore={hasActualScore}
-        actualHomeScore={actualHomeScore}
-        actualAwayScore={actualAwayScore}
-        wentToOvertime={duration === 'extra_time' || duration === 'penalty_shootout'}
-        livePhaseLabel={liveOvertimePhaseLabel(matchStatus, duration)}
-        overtimeLead={liveOvertimeLead({
-          matchStatus,
-          homeTeam,
-          awayTeam,
-          duration,
-          regHomeScore: actualHomeScore,
-          regAwayScore: actualAwayScore,
-          extraTimeHomeScore,
-          extraTimeAwayScore,
-          penaltyHomeScore,
-          penaltyAwayScore,
-        })}
+        actualHomeScore={headerScore(duration, actualHomeScore, extraTimeHomeScore)}
+        actualAwayScore={headerScore(duration, actualAwayScore, extraTimeAwayScore)}
+        penaltyTally={shootoutTally(duration, penaltyHomeScore, penaltyAwayScore)}
         minute={minute}
         injuryTime={injuryTime}
       />
-      {isLocked && matchStatus !== 'live' && (
-        <AdvanceResultNote
-          homeTeam={displayTeamName(homeTeam)}
-          awayTeam={displayTeamName(awayTeam)}
-          winner={winner}
-          duration={duration}
-          regHomeScore={actualHomeScore}
-          regAwayScore={actualAwayScore}
-          extraTimeHomeScore={extraTimeHomeScore}
-          extraTimeAwayScore={extraTimeAwayScore}
-          penaltyHomeScore={penaltyHomeScore}
-          penaltyAwayScore={penaltyAwayScore}
-        />
-      )}
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
           <span

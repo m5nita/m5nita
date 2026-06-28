@@ -48,7 +48,6 @@ const matchColumns = {
   extraTimeAwayScore: match.extraTimeAwayScore,
   penaltyHomeScore: match.penaltyHomeScore,
   penaltyAwayScore: match.penaltyAwayScore,
-  winner: match.winner,
   duration: match.duration,
   stage: match.stage,
   group: match.group,
