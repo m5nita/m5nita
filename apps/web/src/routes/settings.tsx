@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { PushSettingsSection } from '../components/push/PushSettingsSection'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Loading } from '../components/ui/Loading'
@@ -210,6 +211,8 @@ function SettingsPage() {
             )}
           </section>
         )}
+
+        <PushSettingsSection />
 
         <Button variant="danger" onClick={handleLogout} className="w-full">
           Sair

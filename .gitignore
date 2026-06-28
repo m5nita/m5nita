@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dev-dist/
 build/
 .env
 .env.*
@@ -10,6 +11,7 @@ Thumbs.db
 *.tmp
 *.swp
 .vscode/
+.zed/
 .idea/
 coverage/
 *.tsbuildinfo

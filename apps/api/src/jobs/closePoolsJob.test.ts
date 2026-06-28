@@ -132,9 +132,10 @@ describe('checkAndClosePools — winner notification contacts', () => {
     await checkAndClosePools()
 
     expect(mockNotifyWinners).toHaveBeenCalledTimes(1)
-    const winners = mockNotifyWinners.mock.calls[0]?.[1]
+    const winners = mockNotifyWinners.mock.calls[0]?.[2]
     expect(winners).toEqual([
       expect.objectContaining({
+        userId: 'winner-1',
         name: 'Maria',
         phoneNumber: null,
         email: 'maria@example.com',
@@ -157,9 +158,10 @@ describe('checkAndClosePools — winner notification contacts', () => {
 
     await checkAndClosePools()
 
-    const winners = mockNotifyWinners.mock.calls[0]?.[1]
+    const winners = mockNotifyWinners.mock.calls[0]?.[2]
     expect(winners).toEqual([
       expect.objectContaining({
+        userId: 'winner-2',
         name: 'João',
         phoneNumber: '+5511999999999',
         email: null,

@@ -14,6 +14,7 @@ import { ogRoutes } from './infrastructure/http/routes/og'
 import { paymentsRoutes } from './infrastructure/http/routes/payments'
 import { poolsRoutes } from './infrastructure/http/routes/pools'
 import { predictionsRoutes } from './infrastructure/http/routes/predictions'
+import { pushRoutes } from './infrastructure/http/routes/push'
 import { rankingRoutes } from './infrastructure/http/routes/ranking'
 import { statsRoutes } from './infrastructure/http/routes/stats'
 import { telegramRoutes } from './infrastructure/http/routes/telegram'
@@ -107,6 +108,7 @@ export function buildApp(): Hono<AppEnv> {
   app.route('/api', poolsRoutes)
   app.route('/api', matchesRoutes)
   app.route('/api', predictionsRoutes)
+  app.route('/api', pushRoutes)
   app.route('/api', rankingRoutes)
   app.route('/api', statsRoutes)
   app.route('/api', paymentsRoutes)

@@ -20,6 +20,10 @@ COPY package.json pnpm-workspace.yaml tsconfig.json ./
 COPY apps/web/ ./apps/web/
 COPY packages/shared/ ./packages/shared/
 ARG VITE_API_URL
+# Web Push public VAPID key (build-time; baked into the bundle). Must equal the
+# API's VAPID_PUBLIC_KEY. Set as a Coolify build-time variable. If omitted, the
+# push opt-in UI stays hidden and the app degrades gracefully.
+ARG VITE_VAPID_PUBLIC_KEY
 # Announcement banner (optional, global). Set these as Coolify build-time variables.
 # Omitting VITE_BANNER_ENABLED (or setting it to anything but "true") hides the banner.
 ARG VITE_BANNER_ENABLED

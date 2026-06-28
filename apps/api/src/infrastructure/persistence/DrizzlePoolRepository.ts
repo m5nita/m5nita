@@ -1,4 +1,4 @@
-import { and, desc, eq, ne, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, ne, or, sql } from 'drizzle-orm'
 import type { DbExecutor } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { competition } from '../../db/schema/competition'
@@ -8,6 +8,8 @@ import { poolMember } from '../../db/schema/poolMember'
 import type { Pool } from '../../domain/pool/Pool'
 import type {
   ActivePoolInfo,
+  MatchScopeInput,
+  PoolForMatch,
   PoolListItem,
   PoolListStatusFilter,
   PoolMemberInfo,
@@ -128,6 +130,32 @@ export class DrizzlePoolRepository implements PoolRepository {
       matchId: r.matchId,
       discountPercent: r.coupon?.discountPercent ?? 0,
     }))
+  }
+
+  async findActivePoolsForMatch(m: MatchScopeInput): Promise<PoolForMatch[]> {
+    // A match belongs to a single-match pool (match_id = m.id) OR a range/whole-
+    // competition pool in the same competition whose matchday window contains it.
+    // A match with a null matchday only fits a whole-competition pool (both bounds null).
+    const inRange =
+      m.matchday != null
+        ? and(
+            sql`(${pool.matchdayFrom} IS NULL OR ${pool.matchdayFrom} <= ${m.matchday})`,
+            sql`(${pool.matchdayTo} IS NULL OR ${pool.matchdayTo} >= ${m.matchday})`,
+          )
+        : and(isNull(pool.matchdayFrom), isNull(pool.matchdayTo))
+
+    return this.db
+      .select({ id: pool.id, name: pool.name })
+      .from(pool)
+      .where(
+        and(
+          eq(pool.status, 'active'),
+          or(
+            eq(pool.matchId, m.id),
+            and(isNull(pool.matchId), eq(pool.competitionId, m.competitionId), inRange),
+          ),
+        ),
+      )
   }
 
   async findActiveByCompetition(competitionId: string): Promise<Pool[]> {

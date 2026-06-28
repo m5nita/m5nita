@@ -9,7 +9,11 @@ import type { Hono } from 'hono'
 import { buildApp } from '../../../src/app'
 import type { ContainerOverrides } from '../../../src/container'
 import { resetContainer } from '../../../src/container'
+import { db } from '../../../src/db/client'
 import { CompositeNotificationService } from '../../../src/infrastructure/external/CompositeNotificationService'
+import { WebPushNotificationService } from '../../../src/infrastructure/external/WebPushNotificationService'
+import { DrizzleMatchPointsNotifiedStore } from '../../../src/infrastructure/persistence/DrizzleMatchPointsNotifiedStore'
+import { DrizzlePushSubscriptionRepository } from '../../../src/infrastructure/persistence/DrizzlePushSubscriptionRepository'
 import { testOtpInbox } from '../../../src/lib/testHooks'
 import type { AppEnv } from '../../../src/types/hono'
 import { telegramStub } from './stubs'
@@ -34,7 +38,12 @@ export function buildTestApp(options: BuildTestAppOptions = {}): TestApp {
   testOtpInbox.clear()
 
   const telegramBot = telegramStub.bot as unknown as Bot
-  const notificationService = new CompositeNotificationService(telegramBot)
+  const pushRepo = new DrizzlePushSubscriptionRepository(db)
+  const notificationService = new CompositeNotificationService(
+    telegramBot,
+    new WebPushNotificationService(pushRepo),
+    new DrizzleMatchPointsNotifiedStore(db),
+  )
 
   const container = resetContainer({
     clock,

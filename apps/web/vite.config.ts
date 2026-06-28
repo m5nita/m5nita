@@ -64,6 +64,9 @@ export default defineConfig({
         globPatterns: [],
         cleanupOutdatedCaches: true,
         navigateFallback: null,
+        // Hand-written push + notificationclick handlers, merged into the
+        // Workbox-generated SW (we keep generateSW, not injectManifest).
+        importScripts: ['/push-sw.js'],
         runtimeCaching: [
           {
             urlPattern: /\/api\//,

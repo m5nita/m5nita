@@ -25,6 +25,7 @@ function makePoolRepo(items: PoolListItem[]): PoolRepository {
     findByInviteCode: vi.fn(),
     findActiveByCompetition: vi.fn(),
     findAllActive: vi.fn(),
+    findActivePoolsForMatch: vi.fn(),
     save: vi.fn(),
     delete: vi.fn(),
     updateStatus: vi.fn(),
