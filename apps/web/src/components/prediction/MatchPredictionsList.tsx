@@ -125,26 +125,30 @@ function PredictorRow({
       >
         {displayName(predictor.name)}
       </span>
-      <div aria-hidden="true" className="flex shrink-0 items-center gap-1">
-        <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
-          {predictor.homeScore}
+      <div aria-hidden="true" className="flex shrink-0 items-center gap-1.5">
+        <div className="flex items-center gap-1">
+          <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
+            {predictor.homeScore}
+          </div>
+          <span className="font-display text-[11px] font-black text-gray-muted">x</span>
+          <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
+            {predictor.awayScore}
+          </div>
         </div>
-        <span className="font-display text-[11px] font-black text-gray-muted">x</span>
-        <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
-          {predictor.awayScore}
-        </div>
+        {isKnockout && (
+          // Fixed-width slot keeps every row's score boxes aligned in a column;
+          // justify-start glues the chip to the score, not centered in the slot.
+          <div className="flex w-[80px] shrink-0 justify-start">
+            <AdvancePickChip
+              pick={predictor.advancePick}
+              homeTeam={homeTeam}
+              awayTeam={awayTeam}
+              homeFlag={homeFlag}
+              awayFlag={awayFlag}
+            />
+          </div>
+        )}
       </div>
-      {isKnockout && (
-        <div aria-hidden="true" className="flex w-[92px] shrink-0 justify-center">
-          <AdvancePickChip
-            pick={predictor.advancePick}
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-            homeFlag={homeFlag}
-            awayFlag={awayFlag}
-          />
-        </div>
-      )}
       {points &&
         ((predictor.advanceBonus ?? 0) > 0 ? (
           <span
