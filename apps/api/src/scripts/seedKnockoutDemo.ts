@@ -184,10 +184,13 @@ async function cleanup() {
   })
   const poolIds = demoPools.map((p) => p.id)
   if (poolIds.length > 0) {
+    // FK-dependency order: poolMember → payment → pool (poolMember references
+    // payment, payment references pool). Deleting pool before payment violated
+    // payment_pool_id_pool_id_fk and broke every re-run on an already-seeded DB.
     await db.delete(prediction).where(inArray(prediction.poolId, poolIds))
     await db.delete(poolMember).where(inArray(poolMember.poolId, poolIds))
-    await db.delete(pool).where(inArray(pool.id, poolIds))
     await db.delete(payment).where(inArray(payment.poolId, poolIds))
+    await db.delete(pool).where(inArray(pool.id, poolIds))
   }
 
   const koMatches = await db.query.match.findMany({
