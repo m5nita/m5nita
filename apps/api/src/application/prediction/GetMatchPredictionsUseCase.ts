@@ -60,7 +60,6 @@ export class GetMatchPredictionsUseCase {
     )
 
     const scoringPolicy = pool.scoringPolicy()
-    const includesBonus = pool.scope.kind === 'single-match'
 
     if (!isMember) {
       throw new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão')
@@ -81,11 +80,19 @@ export class GetMatchPredictionsUseCase {
     const predictors = predictions
       .filter((p) => p.userId !== input.viewerUserId)
       .map((p) => {
-        const predScores = { homeScore: p.homeScore, awayScore: p.awayScore }
+        const predScores = {
+          homeScore: p.homeScore,
+          awayScore: p.awayScore,
+          advancePick: toAdvanceSide(p.advancePick),
+        }
         const matchState = {
           status: match.status.value,
           homeScore: match.homeScore,
           awayScore: match.awayScore,
+          stage: matchData.stage,
+          duration: matchData.duration,
+          extraTimeHomeScore: matchData.extraTimeHomeScore,
+          extraTimeAwayScore: matchData.extraTimeAwayScore,
         }
 
         let points: number | null
@@ -99,14 +106,10 @@ export class GetMatchPredictionsUseCase {
           points = live.total
           category = live.category
           bonus = live.bonus
+          advanceBonus = live.advanceBonus
         } else {
           points = live
-          if (
-            includesBonus &&
-            points !== null &&
-            match.homeScore !== null &&
-            match.awayScore !== null
-          ) {
+          if (points !== null && match.homeScore !== null && match.awayScore !== null) {
             const knockout = knockoutContextFor(matchData, toAdvanceSide(p.advancePick))
             const s = scoringPolicy.score(
               p.homeScore,
@@ -126,6 +129,7 @@ export class GetMatchPredictionsUseCase {
           name: p.name,
           homeScore: p.homeScore,
           awayScore: p.awayScore,
+          advancePick: toAdvanceSide(p.advancePick),
           points,
           category,
           bonus,

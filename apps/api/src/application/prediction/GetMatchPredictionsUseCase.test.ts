@@ -14,6 +14,11 @@ function makeUseCase(overrides: {
     awayScore: number | null
     competitionId: string
     matchDate: Date
+    stage?: string
+    winner?: string | null
+    duration?: string | null
+    extraTimeHomeScore?: number | null
+    extraTimeAwayScore?: number | null
   }
   predictions: {
     userId: string
@@ -21,6 +26,7 @@ function makeUseCase(overrides: {
     homeScore: number
     awayScore: number
     points: number | null
+    advancePick?: 'home' | 'away' | null
   }[]
   members: { userId: string; name: string }[]
   viewerIsMember?: boolean
@@ -237,5 +243,44 @@ describe('GetMatchPredictionsUseCase — single-match pool decomposition', () =>
     expect(ped?.points).toBe(7)
     expect(ped?.category).toBeUndefined()
     expect(ped?.bonus).toBeUndefined()
+  })
+})
+
+describe('GetMatchPredictionsUseCase — knockout advance bonus', () => {
+  it('exposes each predictor advancePick and advanceBonus on a finished knockout', async () => {
+    const uc = makeUseCase({
+      // range pool (poolMatchId omitted)
+      match: {
+        id: 'm-1',
+        status: 'finished',
+        homeScore: 1,
+        awayScore: 1,
+        competitionId: 'comp-1',
+        matchDate: new Date('2026-04-23T18:00:00Z'),
+        stage: 'final',
+        winner: 'home',
+        duration: 'penalty_shootout',
+      },
+      predictions: [
+        {
+          userId: 'u-opp',
+          name: 'Opp',
+          homeScore: 1,
+          awayScore: 1,
+          points: 12,
+          advancePick: 'home',
+        },
+      ],
+      members: [
+        { userId: 'u-viewer', name: 'V' },
+        { userId: 'u-opp', name: 'Opp' },
+      ],
+    })
+
+    const res = await uc.execute({ viewerUserId: 'u-viewer', poolId: 'pool-1', matchId: 'm-1' })
+    const opponent = res.predictors[0]
+    expect(opponent?.advancePick).toBe('home')
+    expect(opponent?.advanceBonus).toBe(2)
+    expect(opponent?.category).toBe(10)
   })
 })
