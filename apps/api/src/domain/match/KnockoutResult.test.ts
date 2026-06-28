@@ -37,7 +37,7 @@ describe('knockoutContextFor', () => {
       'home',
     )
     expect(ctx).toEqual({
-      decidedInOvertime: true,
+      pastRegularTime: true,
       advancingSide: 'home',
       predictedAdvance: 'home',
     })
@@ -49,7 +49,7 @@ describe('knockoutContextFor', () => {
       'home',
     )
     expect(ctx).toEqual({
-      decidedInOvertime: true,
+      pastRegularTime: true,
       advancingSide: 'away',
       predictedAdvance: 'home',
     })
@@ -61,7 +61,7 @@ describe('knockoutContextFor', () => {
       'home',
     )
     expect(ctx).toEqual({
-      decidedInOvertime: false,
+      pastRegularTime: false,
       advancingSide: 'home',
       predictedAdvance: 'home',
     })

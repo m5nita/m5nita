@@ -35,8 +35,8 @@ type FinishedKnockout = {
 /**
  * Builds the knockout scoring context for a finished match, or `undefined` when
  * the match isn't a knockout or has no decisive winner (e.g. data not settled).
- * `decidedInOvertime` is true when the match was settled past regular time —
- * in extra time OR a penalty shootout.
+ * `pastRegularTime` is true when the match is in or past regular time —
+ * settled in overtime, OR live in extra time.
  */
 export function knockoutContextFor(
   match: FinishedKnockout,
@@ -45,7 +45,7 @@ export function knockoutContextFor(
   if (!isKnockout(match.stage)) return undefined
   if (match.winner !== 'home' && match.winner !== 'away') return undefined
   return {
-    decidedInOvertime: match.duration === 'extra_time' || match.duration === 'penalty_shootout',
+    pastRegularTime: match.duration === 'extra_time' || match.duration === 'penalty_shootout',
     advancingSide: match.winner === 'home' ? 'home' : 'away',
     predictedAdvance,
   }
