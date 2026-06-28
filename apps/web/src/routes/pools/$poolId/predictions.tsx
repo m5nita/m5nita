@@ -32,10 +32,20 @@ function MatchPredictionsAccordion({
   poolId,
   matchId,
   isLive,
+  stage,
+  homeTeam,
+  awayTeam,
+  homeFlag,
+  awayFlag,
 }: {
   poolId: string
   matchId: string
   isLive: boolean
+  stage: string
+  homeTeam: string
+  awayTeam: string
+  homeFlag: string | null
+  awayFlag: string | null
 }) {
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['match-predictions', poolId, matchId],
@@ -79,7 +89,16 @@ function MatchPredictionsAccordion({
     )
   }
 
-  return <MatchPredictionsList data={data} />
+  return (
+    <MatchPredictionsList
+      data={data}
+      stage={stage}
+      homeTeam={homeTeam}
+      awayTeam={awayTeam}
+      homeFlag={homeFlag}
+      awayFlag={awayFlag}
+    />
+  )
 }
 
 const knockoutStageLabels: Record<string, string> = {
@@ -161,6 +180,11 @@ function MatchList({
           poolId={poolId}
           matchId={matchId}
           isLive={match?.status === 'live'}
+          stage={match?.stage ?? 'group'}
+          homeTeam={match?.homeTeam ?? ''}
+          awayTeam={match?.awayTeam ?? ''}
+          homeFlag={match?.homeFlag ?? null}
+          awayFlag={match?.awayFlag ?? null}
         />
       )
     },
@@ -223,7 +247,6 @@ function MatchList({
           actualAwayScore={match.awayScore}
           minute={match.minute}
           injuryTime={match.injuryTime}
-          winner={match.winner}
           duration={match.duration}
           extraTimeHomeScore={match.extraTimeHomeScore}
           extraTimeAwayScore={match.extraTimeAwayScore}

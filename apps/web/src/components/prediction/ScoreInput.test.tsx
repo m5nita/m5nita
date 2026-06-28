@@ -180,14 +180,13 @@ describe('<ScoreInput /> knockout', () => {
     expect(onSave).toHaveBeenCalledWith('m1', 2, 2, 'home')
   })
 
-  it('shows who advanced when a knockout is decided on penalties', () => {
+  it('shows the shootout tally tagged (Pên.) in the result header on penalties', () => {
     renderKnockout(
       vi.fn(async () => {}),
       {
         matchStatus: 'finished',
         actualHomeScore: 1,
         actualAwayScore: 1,
-        winner: 'home',
         duration: 'penalty_shootout',
         penaltyHomeScore: 4,
         penaltyAwayScore: 2,
@@ -195,19 +194,19 @@ describe('<ScoreInput /> knockout', () => {
       },
     )
 
-    const note = screen.getByText(/BRA se classificou/)
-    expect(note).toBeInTheDocument()
-    expect(note.textContent).toContain('nos pênaltis')
+    // Header reads "Resultado oficial 1 x 1 · 4 x 2 (Pên.)".
+    expect(screen.getByText('(Pên.)')).toBeInTheDocument()
+    const header = screen.getByText('Resultado oficial').closest('div')
+    expect(header?.textContent).toContain('4')
   })
 
-  it('shows who advanced when a knockout is decided in extra time', () => {
+  it('adds the extra-time goals to the result header (aggregate) on extra time', () => {
     renderKnockout(
       vi.fn(async () => {}),
       {
         matchStatus: 'finished',
         actualHomeScore: 1,
         actualAwayScore: 1,
-        winner: 'away',
         duration: 'extra_time',
         extraTimeHomeScore: 0,
         extraTimeAwayScore: 1,
@@ -215,8 +214,9 @@ describe('<ScoreInput /> knockout', () => {
       },
     )
 
-    const note = screen.getByText(/ARG se classificou/)
-    expect(note.textContent).toContain('prorrogação')
+    // 90' was 1-1; extra time adds the away goal → aggregate 1 x 2 in the header.
+    const header = screen.getByText('Resultado oficial').closest('div')
+    expect(header?.textContent).toContain('2')
   })
 
   it('does not offer the advance picker for a group-stage match', () => {
@@ -269,6 +269,48 @@ describe('<ScoreInput /> live minute', () => {
     renderLive({ minute: null })
     expect(screen.getByText('Ao Vivo')).toBeInTheDocument()
     expect(screen.queryByText(/\d+'/)).not.toBeInTheDocument()
+  })
+})
+
+function renderFinishedKnockout({
+  points,
+  advanceBonus,
+}: {
+  points: number
+  advanceBonus: number
+}) {
+  return render(
+    <ScoreInput
+      matchId="m1"
+      homeTeam="BRA"
+      awayTeam="ARG"
+      homeFlag={null}
+      awayFlag={null}
+      matchDate={new Date(Date.now() - 86_400_000).toISOString()}
+      stage="final"
+      homeScore={0}
+      awayScore={0}
+      advancePick="home"
+      matchStatus="finished"
+      points={points}
+      category={points - advanceBonus}
+      bonus={0}
+      advanceBonus={advanceBonus}
+      actualHomeScore={1}
+      actualAwayScore={1}
+      duration="penalty_shootout"
+      onSave={vi.fn(async () => {})}
+    />,
+  )
+}
+
+describe('<ScoreInput /> advance bonus decomposition', () => {
+  afterEach(cleanup)
+
+  it('decomposes points as "+5 +2" when there is an advance bonus', () => {
+    renderFinishedKnockout({ points: 7, advanceBonus: 2 })
+    expect(screen.getByText('+5')).toBeInTheDocument()
+    expect(screen.getByText('+2')).toBeInTheDocument()
   })
 })
 

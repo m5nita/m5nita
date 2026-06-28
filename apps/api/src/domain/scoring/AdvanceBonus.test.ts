@@ -3,7 +3,7 @@ import { AdvanceBonus, type KnockoutContext } from './AdvanceBonus'
 import { Score } from './Score'
 
 function ctx(over: Partial<KnockoutContext>): KnockoutContext {
-  return { decidedInOvertime: true, advancingSide: 'home', predictedAdvance: 'home', ...over }
+  return { pastRegularTime: true, advancingSide: 'home', predictedAdvance: 'home', ...over }
 }
 
 describe('AdvanceBonus.apply', () => {
@@ -19,7 +19,7 @@ describe('AdvanceBonus.apply', () => {
   })
 
   it('applies equally whether the overtime was extra time or penalties', () => {
-    // both reach this function as decidedInOvertime: true; behavior is identical
+    // both reach this function as pastRegularTime: true; behavior is identical
     const s = AdvanceBonus.apply(exactDraw, ctx({}))
     expect(s.points).toBe(12)
   })
@@ -37,7 +37,7 @@ describe('AdvanceBonus.apply', () => {
   })
 
   it('adds nothing when the match stayed in regular time', () => {
-    expect(AdvanceBonus.apply(exactDraw, ctx({ decidedInOvertime: false })).points).toBe(10)
+    expect(AdvanceBonus.apply(exactDraw, ctx({ pastRegularTime: false })).points).toBe(10)
   })
 
   it('adds nothing when there is no knockout context', () => {

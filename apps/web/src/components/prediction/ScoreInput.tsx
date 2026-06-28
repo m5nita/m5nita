@@ -36,7 +36,6 @@ interface ScoreInputProps {
   advanceBonus?: number | null
   actualHomeScore: number | null
   actualAwayScore: number | null
-  winner?: 'home' | 'away' | 'draw' | null
   duration?: MatchDuration | null
   extraTimeHomeScore?: number | null
   extraTimeAwayScore?: number | null
@@ -57,6 +56,35 @@ interface ScoreInputProps {
 const NON_KNOCKOUT_STAGES = new Set(['group', 'league'])
 function isKnockoutStage(stage: string): boolean {
   return !NON_KNOCKOUT_STAGES.has(stage)
+}
+
+/**
+ * The score shown in the result header for a knockout past 90' (extra time /
+ * penalties): the aggregate (90' + extra-time goals), so the header reflects the
+ * real match score — live or finished. (The 90' score is still what predictions
+ * grade against.)
+ */
+function headerScore(
+  duration: MatchDuration | null | undefined,
+  regScore: number | null,
+  extraTimeScore: number | null | undefined,
+): number | null {
+  if ((duration === 'extra_time' || duration === 'penalty_shootout') && regScore !== null) {
+    return regScore + (extraTimeScore ?? 0)
+  }
+  return regScore
+}
+
+/** The shootout tally shown in the result header for a penalty-decided match. */
+function shootoutTally(
+  duration: MatchDuration | null | undefined,
+  penaltyHomeScore: number | null | undefined,
+  penaltyAwayScore: number | null | undefined,
+): { home: number; away: number } | null {
+  if (duration === 'penalty_shootout' && penaltyHomeScore != null && penaltyAwayScore != null) {
+    return { home: penaltyHomeScore, away: penaltyAwayScore }
+  }
+  return null
 }
 
 function teamNameStyle(name: string): string {
@@ -112,13 +140,37 @@ function buildExplanation({
   return { categoryLine, bonusLine }
 }
 
+function PointsLabel({
+  total,
+  advanceBonus,
+  className,
+}: {
+  total: number
+  advanceBonus: number
+  className: string
+}) {
+  if (advanceBonus > 0) {
+    const scoreline = total - advanceBonus
+    return (
+      <span className={`flex items-center gap-1 ${className}`}>
+        <span>+{scoreline}</span>
+        <span>+{advanceBonus}</span>
+      </span>
+    )
+  }
+  const label = total === 1 ? '+1 pt' : `+${total} pts`
+  return <span className={className}>{label}</span>
+}
+
 function ScoreBreakdownToggle({
   total,
+  advanceBonus = 0,
   variant,
   isOpen,
   onToggle,
 }: {
   total: number
+  advanceBonus?: number
   variant: 'live' | 'finished'
   isOpen: boolean
   onToggle: () => void
@@ -137,7 +189,7 @@ function ScoreBreakdownToggle({
       {variant === 'live' && (
         <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
       )}
-      <span>{totalLabel}</span>
+      <PointsLabel total={total} advanceBonus={advanceBonus} className="" />
       <span
         aria-hidden="true"
         className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] font-black"
@@ -237,7 +289,7 @@ function LiveResultHeader({
   hasActualScore,
   actualHomeScore,
   actualAwayScore,
-  wentToOvertime,
+  penaltyTally,
   minute,
   injuryTime,
 }: {
@@ -246,14 +298,12 @@ function LiveResultHeader({
   hasActualScore: boolean
   actualHomeScore: number | null
   actualAwayScore: number | null
-  wentToOvertime: boolean
+  penaltyTally?: { home: number; away: number } | null
   minute?: number | null
   injuryTime?: number | null
 }) {
   if (!((isLocked && hasActualScore) || matchStatus === 'live')) return null
-  // For matches that went past 90', the displayed score is the regular-time
-  // score (what predictions grade against), so label it as such.
-  const finishedLabel = wentToOvertime ? 'Tempo normal' : 'Resultado oficial'
+  const finishedLabel = 'Resultado oficial'
   // Live clock sits between the "Ao Vivo" indicator and the score, same line.
   const clock = matchStatus === 'live' ? formatMatchMinute(minute, injuryTime) : null
   return (
@@ -276,6 +326,15 @@ function LiveResultHeader({
           <span>{actualHomeScore}</span>
           <span>x</span>
           <span>{actualAwayScore}</span>
+        </span>
+      )}
+      {penaltyTally && (
+        <span className="flex items-center gap-1.5 whitespace-nowrap">
+          <span aria-hidden="true">·</span>
+          <span>{penaltyTally.home}</span>
+          <span>x</span>
+          <span>{penaltyTally.away}</span>
+          <span>(Pên.)</span>
         </span>
       )}
     </div>
@@ -411,14 +470,15 @@ function ScoreResultFooter({
           (scoreReady ? (
             <ScoreBreakdownToggle
               total={points}
+              advanceBonus={advanceBonus ?? 0}
               variant="live"
               isOpen={breakdownOpen}
               onToggle={onToggleBreakdown}
             />
           ) : (
             <span className="flex items-center gap-1 font-display text-xs font-black text-red">
-              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
-              {points} pts
+              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+              <PointsLabel total={points ?? 0} advanceBonus={advanceBonus ?? 0} className="" />
             </span>
           ))}
         {matchStatus === 'finished' &&
@@ -447,12 +507,17 @@ function ScoreResultFooter({
           ) : scoreReady && points !== null ? (
             <ScoreBreakdownToggle
               total={points}
+              advanceBonus={advanceBonus ?? 0}
               variant="finished"
               isOpen={breakdownOpen}
               onToggle={onToggleBreakdown}
             />
           ) : (
-            <span className="font-display text-xs font-black text-green">+{points ?? 0} pts</span>
+            <PointsLabel
+              total={points ?? 0}
+              advanceBonus={advanceBonus ?? 0}
+              className="font-display text-xs font-black text-green"
+            />
           ))}
       </div>
       <MaybeScoreBreakdownPanel
@@ -522,83 +587,6 @@ function AdvancePicker({
   )
 }
 
-function resolvingScoreLabel({
-  duration,
-  regHomeScore,
-  regAwayScore,
-  extraTimeHomeScore,
-  extraTimeAwayScore,
-  penaltyHomeScore,
-  penaltyAwayScore,
-}: {
-  duration: MatchDuration
-  regHomeScore: number | null | undefined
-  regAwayScore: number | null | undefined
-  extraTimeHomeScore: number | null | undefined
-  extraTimeAwayScore: number | null | undefined
-  penaltyHomeScore: number | null | undefined
-  penaltyAwayScore: number | null | undefined
-}): string {
-  const hasReg = regHomeScore != null && regAwayScore != null
-  const extraTimeHadGoals = (extraTimeHomeScore ?? 0) > 0 || (extraTimeAwayScore ?? 0) > 0
-  const afterExtraTime = hasReg
-    ? `${regHomeScore + (extraTimeHomeScore ?? 0)}×${regAwayScore + (extraTimeAwayScore ?? 0)} ao final da prorrogação`
-    : null
-
-  if (duration === 'penalty_shootout') {
-    const pens =
-      penaltyHomeScore != null && penaltyAwayScore != null
-        ? `${penaltyHomeScore}×${penaltyAwayScore} nos pênaltis`
-        : 'nos pênaltis'
-    // Only mention the extra-time score when it adds information (ET goals);
-    // otherwise it just repeats the 90' score already in the header.
-    return extraTimeHadGoals && afterExtraTime ? `${afterExtraTime} · ${pens}` : pens
-  }
-  // extra time decided it: there was a goal, so the score differs from 90'
-  return afterExtraTime ?? 'ao final da prorrogação'
-}
-
-function AdvanceResultNote({
-  homeTeam,
-  awayTeam,
-  winner,
-  duration,
-  regHomeScore,
-  regAwayScore,
-  extraTimeHomeScore,
-  extraTimeAwayScore,
-  penaltyHomeScore,
-  penaltyAwayScore,
-}: {
-  homeTeam: string
-  awayTeam: string
-  winner: 'home' | 'away' | 'draw' | null | undefined
-  duration: MatchDuration | null | undefined
-  regHomeScore: number | null | undefined
-  regAwayScore: number | null | undefined
-  extraTimeHomeScore: number | null | undefined
-  extraTimeAwayScore: number | null | undefined
-  penaltyHomeScore: number | null | undefined
-  penaltyAwayScore: number | null | undefined
-}) {
-  if (!winner || winner === 'draw' || !duration || duration === 'regular') return null
-  const advTeam = winner === 'home' ? homeTeam : awayTeam
-  const detail = resolvingScoreLabel({
-    duration,
-    regHomeScore,
-    regAwayScore,
-    extraTimeHomeScore,
-    extraTimeAwayScore,
-    penaltyHomeScore,
-    penaltyAwayScore,
-  })
-  return (
-    <p className="mt-0.5 text-center font-display text-[9px] font-bold uppercase tracking-widest text-gray-muted">
-      {displayTeamName(advTeam)} se classificou ({detail})
-    </p>
-  )
-}
-
 export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function ScoreInput(
   {
     matchId,
@@ -618,7 +606,6 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
     advanceBonus,
     actualHomeScore,
     actualAwayScore,
-    winner,
     duration,
     extraTimeHomeScore,
     extraTimeAwayScore,
@@ -743,26 +730,12 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         matchStatus={matchStatus}
         isLocked={isLocked}
         hasActualScore={hasActualScore}
-        actualHomeScore={actualHomeScore}
-        actualAwayScore={actualAwayScore}
-        wentToOvertime={duration === 'extra_time' || duration === 'penalty_shootout'}
+        actualHomeScore={headerScore(duration, actualHomeScore, extraTimeHomeScore)}
+        actualAwayScore={headerScore(duration, actualAwayScore, extraTimeAwayScore)}
+        penaltyTally={shootoutTally(duration, penaltyHomeScore, penaltyAwayScore)}
         minute={minute}
         injuryTime={injuryTime}
       />
-      {isLocked && (
-        <AdvanceResultNote
-          homeTeam={displayTeamName(homeTeam)}
-          awayTeam={displayTeamName(awayTeam)}
-          winner={winner}
-          duration={duration}
-          regHomeScore={actualHomeScore}
-          regAwayScore={actualAwayScore}
-          extraTimeHomeScore={extraTimeHomeScore}
-          extraTimeAwayScore={extraTimeAwayScore}
-          penaltyHomeScore={penaltyHomeScore}
-          penaltyAwayScore={penaltyAwayScore}
-        />
-      )}
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center justify-end gap-1.5 min-w-0">
           <span

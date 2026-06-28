@@ -32,14 +32,22 @@ export class GetUserPredictionsUseCase {
     const predictions = await this.predictionRepo.findByUserPool(input.userId, input.poolId)
 
     const scoringPolicy = pool?.scoringPolicy() ?? RangeScoringPolicy
-    const includesBonus = pool?.scope.kind === 'single-match'
+    const isSingleMatch = pool?.scope.kind === 'single-match'
 
     const withLivePoints = predictions.map((p) => {
-      const predScores = { homeScore: p.homeScore, awayScore: p.awayScore }
+      const predScores = {
+        homeScore: p.homeScore,
+        awayScore: p.awayScore,
+        advancePick: toAdvanceSide(p.advancePick),
+      }
       const matchState = {
         status: p.match.status,
         homeScore: p.match.homeScore,
         awayScore: p.match.awayScore,
+        stage: p.match.stage,
+        duration: p.match.duration,
+        extraTimeHomeScore: p.match.extraTimeHomeScore,
+        extraTimeAwayScore: p.match.extraTimeAwayScore,
       }
 
       const live = computeLivePoints(predScores, matchState, p.points, scoringPolicy)
@@ -51,16 +59,14 @@ export class GetUserPredictionsUseCase {
 
       if (typeof live === 'object' && live !== null) {
         points = live.total
-        category = live.category
-        bonus = live.bonus
+        if (isSingleMatch) {
+          category = live.category
+          bonus = live.bonus
+        }
+        advanceBonus = live.advanceBonus
       } else {
         points = live
-        if (
-          includesBonus &&
-          points !== null &&
-          p.match.homeScore !== null &&
-          p.match.awayScore !== null
-        ) {
+        if (points !== null && p.match.homeScore !== null && p.match.awayScore !== null) {
           const knockout = knockoutContextFor(p.match, toAdvanceSide(p.advancePick))
           const s = scoringPolicy.score(
             p.homeScore,
@@ -69,8 +75,10 @@ export class GetUserPredictionsUseCase {
             p.match.awayScore,
             knockout,
           )
-          category = s.breakdown?.category
-          bonus = s.breakdown?.bonus
+          if (isSingleMatch) {
+            category = s.breakdown?.category
+            bonus = s.breakdown?.bonus
+          }
           advanceBonus = s.breakdown?.advanceBonus
         }
       }

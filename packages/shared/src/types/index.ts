@@ -25,7 +25,6 @@ export interface Competition {
 }
 export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled'
 export type MatchGroup = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L'
-export type MatchWinner = 'home' | 'away' | 'draw'
 export type MatchDuration = 'regular' | 'extra_time' | 'penalty_shootout'
 export type AdvanceSide = 'home' | 'away'
 
@@ -128,7 +127,6 @@ export interface Match {
   /** Live elapsed clock (only meaningful while status = 'live'); null otherwise. */
   minute?: number | null
   injuryTime?: number | null
-  winner?: MatchWinner | null
   duration?: MatchDuration | null
   stage: MatchStage
   group: MatchGroup | null
@@ -159,6 +157,8 @@ export interface MatchPredictor {
   name: string | null
   homeScore: number
   awayScore: number
+  /** Knockout only: which side this predictor picked to advance (home/away/null). */
+  advancePick?: AdvanceSide | null
   points: number | null
   /** Single-match pools only: the category portion (0/5/7/8/10). */
   category?: number | null

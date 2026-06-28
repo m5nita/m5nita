@@ -1,4 +1,5 @@
 import { and, eq, gt, inArray, or, sql } from 'drizzle-orm'
+import { provisionalKnockoutContext } from '../application/prediction/provisionalKnockout'
 import { getContainer } from '../container'
 import { db } from '../db/client'
 import { match as matchTable } from '../db/schema/match'
@@ -50,6 +51,12 @@ async function computeLivePointsByUser(
       id: matchTable.id,
       home: matchTable.homeScore,
       away: matchTable.awayScore,
+      status: matchTable.status,
+      stage: matchTable.stage,
+      duration: matchTable.duration,
+      winner: matchTable.winner,
+      extraHome: matchTable.extraTimeHomeScore,
+      extraAway: matchTable.extraTimeAwayScore,
     })
     .from(matchTable)
     .where(
@@ -74,6 +81,7 @@ async function computeLivePointsByUser(
       predHome: prediction.homeScore,
       predAway: prediction.awayScore,
       matchId: prediction.matchId,
+      advancePick: prediction.advancePick,
     })
     .from(prediction)
     .where(
@@ -91,7 +99,22 @@ async function computeLivePointsByUser(
   for (const row of livePreds) {
     const m = scoreByMatch.get(row.matchId)
     if (!m || m.home === null || m.away === null) continue
-    const pts = scoringPolicy.score(row.predHome, row.predAway, m.home, m.away).points
+    const advancePick =
+      row.advancePick === 'home' || row.advancePick === 'away' ? row.advancePick : null
+    const knockout = provisionalKnockoutContext(
+      {
+        status: m.status,
+        stage: m.stage,
+        duration: m.duration,
+        winner: m.winner,
+        home: m.home,
+        away: m.away,
+        extraHome: m.extraHome,
+        extraAway: m.extraAway,
+      },
+      advancePick,
+    )
+    const pts = scoringPolicy.score(row.predHome, row.predAway, m.home, m.away, knockout).points
     byUser.set(row.userId, (byUser.get(row.userId) ?? 0) + pts)
   }
   return byUser

@@ -3,7 +3,7 @@ import type { KnockoutContext } from './AdvanceBonus'
 import { RangeScoringPolicy, SingleMatchScoringPolicy } from './ScoringPolicy'
 
 const overtimeHomeAdvances: KnockoutContext = {
-  decidedInOvertime: true,
+  pastRegularTime: true,
   advancingSide: 'home',
   predictedAdvance: 'home',
 }
@@ -59,7 +59,7 @@ describe('SingleMatchScoringPolicy — advance bonus stacks', () => {
   it('omits the bonus when the match stayed in regular time', () => {
     const s = SingleMatchScoringPolicy.score(1, 1, 1, 1, {
       ...overtimeHomeAdvances,
-      decidedInOvertime: false,
+      pastRegularTime: false,
     })
     expect(s.breakdown?.advanceBonus).toBe(0)
     expect(s.points).toBe(14)

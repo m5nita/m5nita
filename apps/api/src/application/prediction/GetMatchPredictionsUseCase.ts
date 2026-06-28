@@ -60,7 +60,7 @@ export class GetMatchPredictionsUseCase {
     )
 
     const scoringPolicy = pool.scoringPolicy()
-    const includesBonus = pool.scope.kind === 'single-match'
+    const isSingleMatch = pool.scope.kind === 'single-match'
 
     if (!isMember) {
       throw new PredictionError('NOT_MEMBER', 'Você não é membro deste bolão')
@@ -81,11 +81,19 @@ export class GetMatchPredictionsUseCase {
     const predictors = predictions
       .filter((p) => p.userId !== input.viewerUserId)
       .map((p) => {
-        const predScores = { homeScore: p.homeScore, awayScore: p.awayScore }
+        const predScores = {
+          homeScore: p.homeScore,
+          awayScore: p.awayScore,
+          advancePick: toAdvanceSide(p.advancePick),
+        }
         const matchState = {
           status: match.status.value,
           homeScore: match.homeScore,
           awayScore: match.awayScore,
+          stage: matchData.stage,
+          duration: matchData.duration,
+          extraTimeHomeScore: matchData.extraTimeHomeScore,
+          extraTimeAwayScore: matchData.extraTimeAwayScore,
         }
 
         let points: number | null
@@ -97,16 +105,14 @@ export class GetMatchPredictionsUseCase {
 
         if (typeof live === 'object' && live !== null) {
           points = live.total
-          category = live.category
-          bonus = live.bonus
+          if (isSingleMatch) {
+            category = live.category
+            bonus = live.bonus
+          }
+          advanceBonus = live.advanceBonus
         } else {
           points = live
-          if (
-            includesBonus &&
-            points !== null &&
-            match.homeScore !== null &&
-            match.awayScore !== null
-          ) {
+          if (points !== null && match.homeScore !== null && match.awayScore !== null) {
             const knockout = knockoutContextFor(matchData, toAdvanceSide(p.advancePick))
             const s = scoringPolicy.score(
               p.homeScore,
@@ -115,8 +121,10 @@ export class GetMatchPredictionsUseCase {
               match.awayScore,
               knockout,
             )
-            category = s.breakdown?.category
-            bonus = s.breakdown?.bonus
+            if (isSingleMatch) {
+              category = s.breakdown?.category
+              bonus = s.breakdown?.bonus
+            }
             advanceBonus = s.breakdown?.advanceBonus
           }
         }
@@ -126,6 +134,7 @@ export class GetMatchPredictionsUseCase {
           name: p.name,
           homeScore: p.homeScore,
           awayScore: p.awayScore,
+          advancePick: toAdvanceSide(p.advancePick),
           points,
           category,
           bonus,

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { gradedScoreline, knockoutContextFor } from './KnockoutResult'
+import {
+  gradedScoreline,
+  knockoutContextFor,
+  liveAdvancingSide,
+  liveKnockoutContextFor,
+} from './KnockoutResult'
 
 describe('gradedScoreline', () => {
   it('is the regular-time (90-minute) score, ignoring extra time and penalties', () => {
@@ -37,7 +42,7 @@ describe('knockoutContextFor', () => {
       'home',
     )
     expect(ctx).toEqual({
-      decidedInOvertime: true,
+      pastRegularTime: true,
       advancingSide: 'home',
       predictedAdvance: 'home',
     })
@@ -49,7 +54,7 @@ describe('knockoutContextFor', () => {
       'home',
     )
     expect(ctx).toEqual({
-      decidedInOvertime: true,
+      pastRegularTime: true,
       advancingSide: 'away',
       predictedAdvance: 'home',
     })
@@ -61,7 +66,7 @@ describe('knockoutContextFor', () => {
       'home',
     )
     expect(ctx).toEqual({
-      decidedInOvertime: false,
+      pastRegularTime: false,
       advancingSide: 'home',
       predictedAdvance: 'home',
     })
@@ -77,5 +82,69 @@ describe('knockoutContextFor', () => {
     expect(
       knockoutContextFor({ stage: 'final', winner: 'draw', duration: 'regular' }, null),
     ).toBeUndefined()
+  })
+})
+
+describe('liveAdvancingSide (extra time, live)', () => {
+  const base = {
+    status: 'live',
+    stage: 'final',
+    duration: 'extra_time' as string | null,
+    regHome: 1 as number | null,
+    regAway: 1 as number | null,
+    extraHome: 0 as number | null,
+    extraAway: 0 as number | null,
+  }
+
+  it('returns the side leading the aggregate (home scored in ET)', () => {
+    expect(liveAdvancingSide({ ...base, extraHome: 1 })).toBe('home')
+  })
+
+  it('returns the side leading the aggregate (away scored in ET)', () => {
+    expect(liveAdvancingSide({ ...base, extraAway: 1 })).toBe('away')
+  })
+
+  it('returns null when the aggregate is level', () => {
+    expect(liveAdvancingSide(base)).toBeNull()
+  })
+
+  it('returns null during a live penalty shootout (resolved only at the end)', () => {
+    expect(liveAdvancingSide({ ...base, duration: 'penalty_shootout' })).toBeNull()
+  })
+
+  it('returns null during regulation time', () => {
+    expect(liveAdvancingSide({ ...base, duration: 'regular' })).toBeNull()
+  })
+
+  it('returns null when the match is not live (finished)', () => {
+    expect(liveAdvancingSide({ ...base, status: 'finished', extraHome: 1 })).toBeNull()
+  })
+
+  it('returns null for a non-knockout match', () => {
+    expect(liveAdvancingSide({ ...base, stage: 'group', extraHome: 1 })).toBeNull()
+  })
+})
+
+describe('liveKnockoutContextFor', () => {
+  const state = {
+    status: 'live',
+    stage: 'final',
+    duration: 'extra_time' as string | null,
+    regHome: 1 as number | null,
+    regAway: 1 as number | null,
+    extraHome: 1 as number | null,
+    extraAway: 0 as number | null,
+  }
+
+  it('builds a context naming the provisional leader', () => {
+    expect(liveKnockoutContextFor(state, 'home')).toEqual({
+      pastRegularTime: true,
+      advancingSide: 'home',
+      predictedAdvance: 'home',
+    })
+  })
+
+  it('returns undefined when there is no provisional leader', () => {
+    expect(liveKnockoutContextFor({ ...state, extraHome: 0 }, 'home')).toBeUndefined()
   })
 })
