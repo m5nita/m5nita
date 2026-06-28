@@ -34,8 +34,6 @@ it('renders the advance-pick chip with the picked team name on a knockout match'
       stage="final"
       homeTeam="Brasil"
       awayTeam="Argentina"
-      homeFlag={null}
-      awayFlag={null}
     />,
   )
   expect(screen.getByText('Brasil')).toBeInTheDocument()
@@ -62,8 +60,6 @@ it('renders no chip on a group-stage match', () => {
       stage="group"
       homeTeam="Brasil"
       awayTeam="Argentina"
-      homeFlag={null}
-      awayFlag={null}
     />,
   )
   expect(screen.queryByText('Brasil')).not.toBeInTheDocument()

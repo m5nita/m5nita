@@ -8,8 +8,6 @@ interface MatchPredictionsListProps {
   stage: string
   homeTeam: string
   awayTeam: string
-  homeFlag: string | null
-  awayFlag: string | null
 }
 
 function formatPoints(predictor: MatchPredictor, matchStatus: MatchStatus) {
@@ -45,25 +43,19 @@ function AdvancePickChip({
   pick,
   homeTeam,
   awayTeam,
-  homeFlag,
-  awayFlag,
 }: {
   pick: 'home' | 'away' | null | undefined
   homeTeam: string
   awayTeam: string
-  homeFlag: string | null
-  awayFlag: string | null
 }) {
   if (pick !== 'home' && pick !== 'away') return null
   const team = pick === 'home' ? homeTeam : awayTeam
-  const flag = pick === 'home' ? homeFlag : awayFlag
   return (
     <span
       aria-hidden="true"
-      className="flex max-w-full items-center gap-1 border border-border/60 px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-gray-dark"
+      className="flex max-w-full items-center border border-border/60 px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-gray-dark"
       title={`Classifica: ${team}`}
     >
-      {flag && <img src={flag} alt="" className="h-3 w-3 shrink-0 rounded-full object-cover" />}
       <span className="truncate">{team}</span>
     </span>
   )
@@ -93,16 +85,12 @@ function PredictorRow({
   isKnockout,
   homeTeam,
   awayTeam,
-  homeFlag,
-  awayFlag,
 }: {
   predictor: MatchPredictor
   matchStatus: MatchStatus
   isKnockout: boolean
   homeTeam: string
   awayTeam: string
-  homeFlag: string | null
-  awayFlag: string | null
 }) {
   const points = formatPoints(predictor, matchStatus)
   const pickedTeam =
@@ -139,13 +127,7 @@ function PredictorRow({
           // Fixed-width slot keeps every row's score boxes aligned in a column;
           // justify-start glues the chip to the score, not centered in the slot.
           <div className="flex w-[80px] shrink-0 justify-start">
-            <AdvancePickChip
-              pick={predictor.advancePick}
-              homeTeam={homeTeam}
-              awayTeam={awayTeam}
-              homeFlag={homeFlag}
-              awayFlag={awayFlag}
-            />
+            <AdvancePickChip pick={predictor.advancePick} homeTeam={homeTeam} awayTeam={awayTeam} />
           </div>
         )}
       </div>
@@ -181,8 +163,6 @@ export function MatchPredictionsList({
   stage,
   homeTeam,
   awayTeam,
-  homeFlag,
-  awayFlag,
 }: MatchPredictionsListProps) {
   const [showNonPredictors, setShowNonPredictors] = useState(false)
 
@@ -202,8 +182,6 @@ export function MatchPredictionsList({
               isKnockout={isKnockout}
               homeTeam={homeTeam}
               awayTeam={awayTeam}
-              homeFlag={homeFlag}
-              awayFlag={awayFlag}
             />
           ))}
         </ul>

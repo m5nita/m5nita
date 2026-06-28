@@ -35,8 +35,6 @@ function MatchPredictionsAccordion({
   stage,
   homeTeam,
   awayTeam,
-  homeFlag,
-  awayFlag,
 }: {
   poolId: string
   matchId: string
@@ -44,8 +42,6 @@ function MatchPredictionsAccordion({
   stage: string
   homeTeam: string
   awayTeam: string
-  homeFlag: string | null
-  awayFlag: string | null
 }) {
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['match-predictions', poolId, matchId],
@@ -89,16 +85,7 @@ function MatchPredictionsAccordion({
     )
   }
 
-  return (
-    <MatchPredictionsList
-      data={data}
-      stage={stage}
-      homeTeam={homeTeam}
-      awayTeam={awayTeam}
-      homeFlag={homeFlag}
-      awayFlag={awayFlag}
-    />
-  )
+  return <MatchPredictionsList data={data} stage={stage} homeTeam={homeTeam} awayTeam={awayTeam} />
 }
 
 const knockoutStageLabels: Record<string, string> = {
@@ -183,8 +170,6 @@ function MatchList({
           stage={match?.stage ?? 'group'}
           homeTeam={match?.homeTeam ?? ''}
           awayTeam={match?.awayTeam ?? ''}
-          homeFlag={match?.homeFlag ?? null}
-          awayFlag={match?.awayFlag ?? null}
         />
       )
     },
