@@ -60,11 +60,11 @@ function AdvancePickChip({
   return (
     <span
       aria-hidden="true"
-      className="flex shrink-0 items-center gap-1 border border-border/60 px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-gray-dark"
+      className="flex max-w-full items-center gap-1 border border-border/60 px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide text-gray-dark"
       title={`Classifica: ${team}`}
     >
-      {flag && <img src={flag} alt="" className="h-3 w-3 rounded-full object-cover" />}
-      <span className="max-w-[72px] truncate">{team}</span>
+      {flag && <img src={flag} alt="" className="h-3 w-3 shrink-0 rounded-full object-cover" />}
+      <span className="truncate">{team}</span>
     </span>
   )
 }
@@ -135,19 +135,21 @@ function PredictorRow({
         </div>
       </div>
       {isKnockout && (
-        <AdvancePickChip
-          pick={predictor.advancePick}
-          homeTeam={homeTeam}
-          awayTeam={awayTeam}
-          homeFlag={homeFlag}
-          awayFlag={awayFlag}
-        />
+        <div aria-hidden="true" className="flex w-[92px] shrink-0 justify-center">
+          <AdvancePickChip
+            pick={predictor.advancePick}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+            homeFlag={homeFlag}
+            awayFlag={awayFlag}
+          />
+        </div>
       )}
       {points &&
         ((predictor.advanceBonus ?? 0) > 0 ? (
           <span
             aria-hidden="true"
-            className={`shrink-0 flex min-w-[48px] items-center justify-end font-display text-xs font-black ${points.className}`}
+            className={`flex w-[56px] shrink-0 items-center justify-end font-display text-xs font-black ${points.className}`}
           >
             <PointsLabel
               total={predictor.points as number}
@@ -158,7 +160,7 @@ function PredictorRow({
         ) : (
           <span
             aria-hidden="true"
-            className={`shrink-0 flex min-w-[48px] items-center justify-end gap-1 font-display text-xs font-black ${points.className}`}
+            className={`flex w-[56px] shrink-0 items-center justify-end gap-1 font-display text-xs font-black ${points.className}`}
           >
             {points.pulse && (
               <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />

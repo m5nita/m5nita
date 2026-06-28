@@ -59,6 +59,17 @@ function isKnockoutStage(stage: string): boolean {
   return !NON_KNOCKOUT_STAGES.has(stage)
 }
 
+/** Live phase label for the result header while a knockout is past 90'. */
+function liveOvertimePhaseLabel(
+  matchStatus: string,
+  duration: MatchDuration | null | undefined,
+): string | undefined {
+  if (matchStatus !== 'live') return undefined
+  if (duration === 'extra_time') return 'Prorrogação'
+  if (duration === 'penalty_shootout') return 'Pênaltis'
+  return undefined
+}
+
 function teamNameStyle(name: string): string {
   return name === 'TBD' ? 'font-medium italic text-gray-muted' : 'font-bold text-black'
 }
@@ -262,6 +273,8 @@ function LiveResultHeader({
   actualHomeScore,
   actualAwayScore,
   wentToOvertime,
+  livePhaseLabel,
+  overtimeLead,
   minute,
   injuryTime,
 }: {
@@ -271,6 +284,8 @@ function LiveResultHeader({
   actualHomeScore: number | null
   actualAwayScore: number | null
   wentToOvertime: boolean
+  livePhaseLabel?: string
+  overtimeLead?: string | null
   minute?: number | null
   injuryTime?: number | null
 }) {
@@ -289,7 +304,7 @@ function LiveResultHeader({
       {matchStatus === 'live' ? (
         <span className="flex items-center gap-1">
           <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-          Ao Vivo
+          Ao Vivo{livePhaseLabel ? ` · ${livePhaseLabel}` : ''}
         </span>
       ) : (
         <span>{finishedLabel}</span>
@@ -302,6 +317,7 @@ function LiveResultHeader({
           <span>{actualAwayScore}</span>
         </span>
       )}
+      {overtimeLead && <span className="whitespace-nowrap">· {overtimeLead}</span>}
     </div>
   )
 }
@@ -629,6 +645,52 @@ function AdvanceResultNote({
   )
 }
 
+/**
+ * Compact running-overtime status for the live header: the regular-time +
+ * extra-time aggregate and who currently leads (the side earning the
+ * provisional advance bonus), so a "0×0 at 90'" header doesn't look
+ * contradictory next to a +2. Penalties show the shootout tally (no live bonus).
+ */
+function liveOvertimeLead({
+  matchStatus,
+  homeTeam,
+  awayTeam,
+  duration,
+  regHomeScore,
+  regAwayScore,
+  extraTimeHomeScore,
+  extraTimeAwayScore,
+  penaltyHomeScore,
+  penaltyAwayScore,
+}: {
+  matchStatus: string
+  homeTeam: string
+  awayTeam: string
+  duration: MatchDuration | null | undefined
+  regHomeScore: number | null
+  regAwayScore: number | null
+  extraTimeHomeScore?: number | null
+  extraTimeAwayScore?: number | null
+  penaltyHomeScore?: number | null
+  penaltyAwayScore?: number | null
+}): string | null {
+  if (matchStatus !== 'live') return null
+  if (duration === 'penalty_shootout') {
+    return penaltyHomeScore != null && penaltyAwayScore != null
+      ? `Pênaltis ${penaltyHomeScore}×${penaltyAwayScore}`
+      : 'Pênaltis'
+  }
+  if (duration === 'extra_time' && regHomeScore != null && regAwayScore != null) {
+    const aggHome = regHomeScore + (extraTimeHomeScore ?? 0)
+    const aggAway = regAwayScore + (extraTimeAwayScore ?? 0)
+    const score = `${aggHome}×${aggAway}`
+    if (aggHome > aggAway) return `${displayTeamName(homeTeam)} ${score}`
+    if (aggAway > aggHome) return `${displayTeamName(awayTeam)} ${score}`
+    return score
+  }
+  return null
+}
+
 export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function ScoreInput(
   {
     matchId,
@@ -776,10 +838,23 @@ export const ScoreInput = forwardRef<ScoreInputHandle, ScoreInputProps>(function
         actualHomeScore={actualHomeScore}
         actualAwayScore={actualAwayScore}
         wentToOvertime={duration === 'extra_time' || duration === 'penalty_shootout'}
+        livePhaseLabel={liveOvertimePhaseLabel(matchStatus, duration)}
+        overtimeLead={liveOvertimeLead({
+          matchStatus,
+          homeTeam,
+          awayTeam,
+          duration,
+          regHomeScore: actualHomeScore,
+          regAwayScore: actualAwayScore,
+          extraTimeHomeScore,
+          extraTimeAwayScore,
+          penaltyHomeScore,
+          penaltyAwayScore,
+        })}
         minute={minute}
         injuryTime={injuryTime}
       />
-      {isLocked && (
+      {isLocked && matchStatus !== 'live' && (
         <AdvanceResultNote
           homeTeam={displayTeamName(homeTeam)}
           awayTeam={displayTeamName(awayTeam)}
