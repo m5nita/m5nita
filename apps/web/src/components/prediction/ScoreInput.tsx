@@ -112,13 +112,37 @@ function buildExplanation({
   return { categoryLine, bonusLine }
 }
 
+function PointsLabel({
+  total,
+  advanceBonus,
+  className,
+}: {
+  total: number
+  advanceBonus: number
+  className: string
+}) {
+  if (advanceBonus > 0) {
+    const scoreline = total - advanceBonus
+    return (
+      <span className={`flex items-center gap-1 ${className}`}>
+        <span>+{scoreline}</span>
+        <span>+{advanceBonus}</span>
+      </span>
+    )
+  }
+  const label = total === 1 ? '+1 pt' : `+${total} pts`
+  return <span className={className}>{label}</span>
+}
+
 function ScoreBreakdownToggle({
   total,
+  advanceBonus = 0,
   variant,
   isOpen,
   onToggle,
 }: {
   total: number
+  advanceBonus?: number
   variant: 'live' | 'finished'
   isOpen: boolean
   onToggle: () => void
@@ -137,7 +161,7 @@ function ScoreBreakdownToggle({
       {variant === 'live' && (
         <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
       )}
-      <span>{totalLabel}</span>
+      <PointsLabel total={total} advanceBonus={advanceBonus} className="" />
       <span
         aria-hidden="true"
         className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] font-black"
@@ -411,14 +435,15 @@ function ScoreResultFooter({
           (scoreReady ? (
             <ScoreBreakdownToggle
               total={points}
+              advanceBonus={advanceBonus ?? 0}
               variant="live"
               isOpen={breakdownOpen}
               onToggle={onToggleBreakdown}
             />
           ) : (
             <span className="flex items-center gap-1 font-display text-xs font-black text-red">
-              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />+
-              {points} pts
+              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+              <PointsLabel total={points ?? 0} advanceBonus={advanceBonus ?? 0} className="" />
             </span>
           ))}
         {matchStatus === 'finished' &&
@@ -447,12 +472,17 @@ function ScoreResultFooter({
           ) : scoreReady && points !== null ? (
             <ScoreBreakdownToggle
               total={points}
+              advanceBonus={advanceBonus ?? 0}
               variant="finished"
               isOpen={breakdownOpen}
               onToggle={onToggleBreakdown}
             />
           ) : (
-            <span className="font-display text-xs font-black text-green">+{points ?? 0} pts</span>
+            <PointsLabel
+              total={points ?? 0}
+              advanceBonus={advanceBonus ?? 0}
+              className="font-display text-xs font-black text-green"
+            />
           ))}
       </div>
       <MaybeScoreBreakdownPanel

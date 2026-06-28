@@ -272,6 +272,49 @@ describe('<ScoreInput /> live minute', () => {
   })
 })
 
+function renderFinishedKnockout({
+  points,
+  advanceBonus,
+}: {
+  points: number
+  advanceBonus: number
+}) {
+  return render(
+    <ScoreInput
+      matchId="m1"
+      homeTeam="BRA"
+      awayTeam="ARG"
+      homeFlag={null}
+      awayFlag={null}
+      matchDate={new Date(Date.now() - 86_400_000).toISOString()}
+      stage="final"
+      homeScore={0}
+      awayScore={0}
+      advancePick="home"
+      matchStatus="finished"
+      points={points}
+      category={points - advanceBonus}
+      bonus={0}
+      advanceBonus={advanceBonus}
+      actualHomeScore={1}
+      actualAwayScore={1}
+      winner="home"
+      duration="penalty_shootout"
+      onSave={vi.fn(async () => {})}
+    />,
+  )
+}
+
+describe('<ScoreInput /> advance bonus decomposition', () => {
+  afterEach(cleanup)
+
+  it('decomposes points as "+5 +2" when there is an advance bonus', () => {
+    renderFinishedKnockout({ points: 7, advanceBonus: 2 })
+    expect(screen.getByText('+5')).toBeInTheDocument()
+    expect(screen.getByText('+2')).toBeInTheDocument()
+  })
+})
+
 it('drops confetti when you click the +10 on a finished exact score', () => {
   render(
     <ScoreInput
