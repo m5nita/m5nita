@@ -2,7 +2,7 @@ import { apiFetch } from './api'
 
 const VAPID_PUBLIC_KEY: string | undefined = import.meta.env.VITE_VAPID_PUBLIC_KEY
 
-export type PushStatus = 'unsupported' | 'disabled' | 'enabled' | 'denied'
+export type PushStatus = 'unsupported' | 'disabled' | 'enabled' | 'denied' | 'error'
 
 export function isPushSupported(): boolean {
   return (
@@ -66,17 +66,26 @@ export async function subscribe(): Promise<PushStatus> {
 
   const reg = await getRegistration()
   if (!reg) return 'unsupported'
-  const sub = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-  })
-  const json = sub.toJSON()
-  await apiFetch('/api/push/subscribe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
-  })
-  return 'enabled'
+  try {
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    })
+    const json = sub.toJSON()
+    await apiFetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
+    })
+    return 'enabled'
+  } catch (err) {
+    // Some browsers block the push service (e.g. Brave disables Google FCM by
+    // default → AbortError "push service error"), or the push service / network
+    // can fail. Never let it bubble up as an unhandled rejection — return a
+    // status the UI can surface.
+    console.warn('[push] subscription failed:', err)
+    return 'error'
+  }
 }
 
 export async function unsubscribe(): Promise<PushStatus> {
