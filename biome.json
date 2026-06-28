@@ -46,6 +46,7 @@
       "**",
       "!**/node_modules",
       "!**/dist",
+      "!**/dev-dist",
       "!**/build",
       "!**/coverage",
       "!**/.next",
