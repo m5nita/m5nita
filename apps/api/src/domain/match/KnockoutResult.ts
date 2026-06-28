@@ -50,3 +50,44 @@ export function knockoutContextFor(
     predictedAdvance,
   }
 }
+
+export type LiveKnockoutState = {
+  status: string
+  stage: string
+  duration: string | null
+  regHome: number | null
+  regAway: number | null
+  extraHome: number | null
+  extraAway: number | null
+}
+
+/**
+ * The provisional advancing side while a knockout is LIVE in extra time:
+ * whoever leads the aggregate (regular-time + extra-time) score. Returns null
+ * during regulation, during a live penalty shootout (resolved only at the end),
+ * when the aggregate is level, or for any non-live / non-knockout match.
+ */
+export function liveAdvancingSide(s: LiveKnockoutState): 'home' | 'away' | null {
+  if (s.status !== 'live') return null
+  if (!isKnockout(s.stage)) return null
+  if (s.duration !== 'extra_time') return null
+  if (s.regHome === null || s.regAway === null) return null
+  const aggHome = s.regHome + (s.extraHome ?? 0)
+  const aggAway = s.regAway + (s.extraAway ?? 0)
+  if (aggHome === aggAway) return null
+  return aggHome > aggAway ? 'home' : 'away'
+}
+
+/**
+ * Knockout context for a match LIVE in extra time, built from the provisional
+ * advancing side. Returns undefined when there is no provisional leader, so the
+ * shared AdvanceBonus rule simply adds nothing.
+ */
+export function liveKnockoutContextFor(
+  s: LiveKnockoutState,
+  predictedAdvance: 'home' | 'away' | null,
+): KnockoutContext | undefined {
+  const advancingSide = liveAdvancingSide(s)
+  if (!advancingSide) return undefined
+  return { pastRegularTime: true, advancingSide, predictedAdvance }
+}
