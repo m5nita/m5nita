@@ -103,57 +103,53 @@ function PredictorRow({
   return (
     // Visual content is aria-hidden; the row's aria-label carries the full,
     // color-independent summary (incl. "parciais" for live) for screen readers.
+    // Subgrid: each row shares the list's column tracks, so score/chip/points
+    // line up across rows while every column shrinks to its content — no fixed
+    // chip slot leaving a big empty gap before the points on narrow screens.
     <li
-      className="flex items-center gap-2 py-2"
+      className="col-span-full grid grid-cols-subgrid items-center gap-x-2 border-t border-border/60 py-2 first:border-t-0"
       aria-label={predictorAriaLabel(predictor, matchStatus, pickedTeam)}
     >
       <span
         aria-hidden="true"
-        className="flex-1 truncate font-display text-xs font-bold uppercase tracking-wide text-black"
+        className="min-w-0 truncate font-display text-xs font-bold uppercase tracking-wide text-black"
       >
         {displayName(predictor.name)}
       </span>
-      <div aria-hidden="true" className="flex shrink-0 items-center gap-1.5">
-        <div className="flex items-center gap-1">
-          <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
-            {predictor.homeScore}
-          </div>
-          <span className="font-display text-[11px] font-black text-gray-muted">x</span>
-          <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
-            {predictor.awayScore}
-          </div>
+      <div aria-hidden="true" className="flex items-center gap-1">
+        <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
+          {predictor.homeScore}
         </div>
-        {isKnockout && (
-          // Fixed-width slot keeps every row's score boxes aligned in a column;
-          // justify-start glues the chip to the score, not centered in the slot.
-          <div className="flex w-[80px] shrink-0 justify-start">
-            <AdvancePickChip pick={predictor.advancePick} homeTeam={homeTeam} awayTeam={awayTeam} />
-          </div>
-        )}
+        <span className="font-display text-[11px] font-black text-gray-muted">x</span>
+        <div className="flex h-8 w-8 items-center justify-center border-2 border-border/50 bg-transparent font-display text-base font-black text-gray-muted">
+          {predictor.awayScore}
+        </div>
       </div>
-      {points &&
-        ((predictor.advanceBonus ?? 0) > 0 ? (
-          <span
-            aria-hidden="true"
-            className={`flex w-[56px] shrink-0 items-center justify-end font-display text-xs font-black ${points.className}`}
-          >
+      {isKnockout && (
+        <div aria-hidden="true" className="flex min-w-0 justify-start">
+          <AdvancePickChip pick={predictor.advancePick} homeTeam={homeTeam} awayTeam={awayTeam} />
+        </div>
+      )}
+      <span
+        aria-hidden="true"
+        className={`flex items-center justify-end gap-1 whitespace-nowrap font-display text-xs font-black ${points?.className ?? ''}`}
+      >
+        {points &&
+          ((predictor.advanceBonus ?? 0) > 0 ? (
             <PointsLabel
               total={predictor.points as number}
               advanceBonus={predictor.advanceBonus as number}
               pulse={points.pulse}
             />
-          </span>
-        ) : (
-          <span
-            aria-hidden="true"
-            className={`flex w-[56px] shrink-0 items-center justify-end gap-1 font-display text-xs font-black ${points.className}`}
-          >
-            {points.pulse && (
-              <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
-            )}
-            {points.total}
-          </span>
-        ))}
+          ) : (
+            <>
+              {points.pulse && (
+                <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />
+              )}
+              {points.total}
+            </>
+          ))}
+      </span>
     </li>
   )
 }
@@ -173,7 +169,13 @@ export function MatchPredictionsList({
   return (
     <div className="-mx-5 mt-3 border-t border-border bg-black/2 px-5 pt-2 pb-1 lg:mx-0 lg:px-4">
       {hasPredictors ? (
-        <ul className="divide-y divide-border/60">
+        <ul
+          className={`grid gap-x-2 ${
+            isKnockout
+              ? 'grid-cols-[minmax(0,1fr)_auto_auto_auto]'
+              : 'grid-cols-[minmax(0,1fr)_auto_auto]'
+          }`}
+        >
           {data.predictors.map((predictor) => (
             <PredictorRow
               key={predictor.userId}
