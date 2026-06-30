@@ -75,6 +75,7 @@ function PointsLabel({
       {pulse && <span className="h-1 w-1 animate-pulse rounded-full bg-red" aria-hidden="true" />}
       <span>+{total - advanceBonus}</span>
       <span>+{advanceBonus}</span>
+      <span>pts</span>
     </span>
   )
 }

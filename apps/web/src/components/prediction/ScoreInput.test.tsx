@@ -180,7 +180,7 @@ describe('<ScoreInput /> knockout', () => {
     expect(onSave).toHaveBeenCalledWith('m1', 2, 2, 'home')
   })
 
-  it('shows the shootout tally tagged (Pên.) in the result header on penalties', () => {
+  it('shows the shootout tally inline in parens in the result header on penalties', () => {
     renderKnockout(
       vi.fn(async () => {}),
       {
@@ -194,10 +194,13 @@ describe('<ScoreInput /> knockout', () => {
       },
     )
 
-    // Header reads "Resultado oficial 1 x 1 · 4 x 2 (Pên.)".
-    expect(screen.getByText('(Pên.)')).toBeInTheDocument()
+    // Header reads "Resultado oficial 1 (4) x (2) 1": each team's shootout tally
+    // sits in parens beside its score; the separate "(Pên.)" tag is gone.
+    expect(screen.queryByText('(Pên.)')).not.toBeInTheDocument()
+    expect(screen.getByText('(4)')).toBeInTheDocument()
+    expect(screen.getByText('(2)')).toBeInTheDocument()
     const header = screen.getByText('Resultado oficial').closest('div')
-    expect(header?.textContent).toContain('4')
+    expect(header?.textContent?.replace(/\s/g, '')).toContain('1(4)x(2)1')
   })
 
   it('adds the extra-time goals to the result header (aggregate) on extra time', () => {
@@ -307,10 +310,11 @@ function renderFinishedKnockout({
 describe('<ScoreInput /> advance bonus decomposition', () => {
   afterEach(cleanup)
 
-  it('decomposes points as "+5 +2" when there is an advance bonus', () => {
+  it('decomposes points as "+5 +2 pts" when there is an advance bonus', () => {
     renderFinishedKnockout({ points: 7, advanceBonus: 2 })
     expect(screen.getByText('+5')).toBeInTheDocument()
     expect(screen.getByText('+2')).toBeInTheDocument()
+    expect(screen.getByText('pts')).toBeInTheDocument()
   })
 })
 

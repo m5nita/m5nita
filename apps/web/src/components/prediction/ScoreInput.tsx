@@ -155,6 +155,7 @@ function PointsLabel({
       <span className={`flex items-center gap-1 ${className}`}>
         <span>+{scoreline}</span>
         <span>+{advanceBonus}</span>
+        <span>pts</span>
       </span>
     )
   }
@@ -321,22 +322,29 @@ function LiveResultHeader({
         <span>{finishedLabel}</span>
       )}
       {clock && <span>{clock}</span>}
-      {hasActualScore && (
-        <span className="flex items-center gap-1.5">
-          <span>{actualHomeScore}</span>
-          <span>x</span>
-          <span>{actualAwayScore}</span>
-        </span>
-      )}
-      {penaltyTally && (
-        <span className="flex items-center gap-1.5 whitespace-nowrap">
-          <span aria-hidden="true">·</span>
-          <span>{penaltyTally.home}</span>
-          <span>x</span>
-          <span>{penaltyTally.away}</span>
-          <span>(Pên.)</span>
-        </span>
-      )}
+      {hasActualScore &&
+        (penaltyTally ? (
+          // On penalties the shootout tally sits in parens beside each team's
+          // score — "1 (4) x (2) 1". The visual parens are aria-hidden; the
+          // aria-label keeps the "pênaltis" context for screen readers.
+          <span
+            className="flex items-center gap-1.5 whitespace-nowrap"
+            role="img"
+            aria-label={`${actualHomeScore} a ${actualAwayScore}, pênaltis ${penaltyTally.home} a ${penaltyTally.away}`}
+          >
+            <span aria-hidden="true">{actualHomeScore}</span>
+            <span aria-hidden="true">({penaltyTally.home})</span>
+            <span aria-hidden="true">x</span>
+            <span aria-hidden="true">({penaltyTally.away})</span>
+            <span aria-hidden="true">{actualAwayScore}</span>
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5">
+            <span>{actualHomeScore}</span>
+            <span>x</span>
+            <span>{actualAwayScore}</span>
+          </span>
+        ))}
     </div>
   )
 }
