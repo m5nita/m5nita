@@ -49,6 +49,7 @@ function makeUseCase(opts: { live?: ExternalMatch[]; existing?: MatchData[]; now
   const fetchLiveMatches = vi.fn(async () => opts.live ?? [])
   const updateScores = vi.fn(async () => {})
   const onMatchFinished = vi.fn(async () => {})
+  const onMatchHeldAwaitingWinner = vi.fn(async () => {})
   const deps: SyncLiveScoresDeps = {
     footballApi: {
       fetchLiveMatches,
@@ -61,8 +62,15 @@ function makeUseCase(opts: { live?: ExternalMatch[]; existing?: MatchData[]; now
     clock: { now: () => opts.now ?? new Date('2026-06-15T03:00:00Z') } as Clock,
     findActiveCompetitions: async () => [{ id: 'c1', externalId: 'WC', name: 'World Cup' }],
     onMatchFinished,
+    onMatchHeldAwaitingWinner,
   }
-  return { uc: new SyncLiveScoresUseCase(deps), fetchLiveMatches, updateScores, onMatchFinished }
+  return {
+    uc: new SyncLiveScoresUseCase(deps),
+    fetchLiveMatches,
+    updateScores,
+    onMatchFinished,
+    onMatchHeldAwaitingWinner,
+  }
 }
 
 describe('SyncLiveScoresUseCase', () => {
@@ -118,6 +126,45 @@ describe('SyncLiveScoresUseCase', () => {
     await uc.execute()
 
     expect(onMatchFinished).not.toHaveBeenCalled()
+  })
+
+  it('holds a match as live and signals when the feed finishes it without a winner', async () => {
+    const { uc, updateScores, onMatchFinished, onMatchHeldAwaitingWinner } = makeUseCase({
+      existing: [existingMatch({ status: 'live' })],
+      live: [
+        externalMatch({
+          status: 'FINISHED',
+          score: { duration: 'penalty_shootout', fullTime: { home: 1, away: 1 } },
+        }),
+      ],
+    })
+
+    await uc.execute()
+
+    expect(updateScores).toHaveBeenCalledWith('m1', expect.objectContaining({ status: 'live' }))
+    expect(onMatchHeldAwaitingWinner).toHaveBeenCalledWith('m1')
+    expect(onMatchFinished).not.toHaveBeenCalled()
+  })
+
+  it('finishes and scores once the winner arrives', async () => {
+    const { uc, onMatchFinished, onMatchHeldAwaitingWinner } = makeUseCase({
+      existing: [existingMatch({ status: 'live' })],
+      live: [
+        externalMatch({
+          status: 'FINISHED',
+          score: {
+            winner: 'AWAY_TEAM',
+            duration: 'penalty_shootout',
+            fullTime: { home: 1, away: 1 },
+          },
+        }),
+      ],
+    })
+
+    await uc.execute()
+
+    expect(onMatchFinished).toHaveBeenCalledWith('m1')
+    expect(onMatchHeldAwaitingWinner).not.toHaveBeenCalled()
   })
 
   it('persists the live minute and injury time reported by the provider', async () => {

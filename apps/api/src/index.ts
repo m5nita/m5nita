@@ -9,7 +9,8 @@ import { buildApp } from './app'
 import { createLiveSyncCompetitionProvider } from './application/match/liveSyncCompetitionProvider'
 import { SyncFixturesUseCase } from './application/match/SyncFixturesUseCase'
 import { SyncLiveScoresUseCase } from './application/match/SyncLiveScoresUseCase'
-import { getContainer } from './container'
+import { getContainer, registerMatchRescore } from './container'
+import { StaleMatchPolicy } from './domain/match/StaleMatchPolicy'
 import { CallBudget } from './domain/shared/CallBudget'
 import { FootballDataApiAdapter } from './infrastructure/external/FootballDataApiAdapter'
 import { calcPointsForMatch } from './jobs/calcPoints'
@@ -37,6 +38,31 @@ function buildMatchSyncRunners() {
     await calcPointsForMatch(matchId)
     await getContainer().notifyMatchPointsUseCase.execute(matchId)
   }
+  // The Telegram "finalize match" admin action re-scores via this same path.
+  registerMatchRescore(onMatchFinished)
+
+  // A match the feed reports finished but with no winner is held as live; alert
+  // the admins once (after a grace window past kickoff) so they can finalize it
+  // by hand. The dedup Set is process-scoped; a resolved match is no longer held,
+  // so it naturally stops signalling.
+  const heldAlertSent = new Set<string>()
+  const onMatchHeldAwaitingWinner = async (matchId: string) => {
+    if (heldAlertSent.has(matchId)) return
+    const m = await getContainer().matchRepo.findById(matchId)
+    if (!m) return
+    if (!StaleMatchPolicy.isPastHeldWinnerAlertGrace(m.matchDate, clock.now())) return
+    heldAlertSent.add(matchId)
+    await getContainer().notificationService.notifyAdminMatchNeedsWinner({
+      matchId: m.id,
+      homeTeam: m.homeTeam,
+      awayTeam: m.awayTeam,
+      stage: m.stage,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
+      penaltyHomeScore: m.penaltyHomeScore,
+      penaltyAwayScore: m.penaltyAwayScore,
+    })
+  }
 
   const syncFixturesUseCase = new SyncFixturesUseCase({
     footballApi,
@@ -59,6 +85,7 @@ function buildMatchSyncRunners() {
     clock,
     findActiveCompetitions: liveSyncCompetitions,
     onMatchFinished,
+    onMatchHeldAwaitingWinner,
     onAllMatchesChecked: checkAndClosePools,
   })
 

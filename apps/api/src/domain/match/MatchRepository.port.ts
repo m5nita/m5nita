@@ -57,6 +57,8 @@ export interface MatchRepository {
   findLive(): Promise<MatchData[]>
   upsertMany(matches: UpsertMatchData[]): Promise<MatchData[]>
   updateScores(id: string, result: MatchResultUpdate): Promise<void>
+  /** Admin override: set the winner and mark the match finished (resolves a held match). */
+  finalizeWithWinner(matchId: string, winner: 'home' | 'away' | 'draw'): Promise<void>
   hasUnfinishedMatches(
     competitionId: string,
     matchdayFrom?: number | null,

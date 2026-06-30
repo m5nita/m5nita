@@ -205,6 +205,13 @@ export class DrizzleMatchRepository implements MatchRepository {
       .where(eq(match.id, id))
   }
 
+  async finalizeWithWinner(matchId: string, winner: 'home' | 'away' | 'draw'): Promise<void> {
+    await this.db
+      .update(match)
+      .set({ winner, status: 'finished', updatedAt: new Date() })
+      .where(eq(match.id, matchId))
+  }
+
   async hasUnfinishedMatches(
     competitionId: string,
     matchdayFrom?: number | null,

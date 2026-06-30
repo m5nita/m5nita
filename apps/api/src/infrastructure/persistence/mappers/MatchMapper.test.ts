@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { extractGroup, mapDuration, mapStage, mapStatus, mapWinner } from './MatchMapper'
+import {
+  extractGroup,
+  mapDuration,
+  mapStage,
+  mapStatus,
+  mapSyncStatus,
+  mapWinner,
+} from './MatchMapper'
 
 describe('mapStatus', () => {
   it('maps standard API statuses correctly', () => {
@@ -28,16 +35,22 @@ describe('mapStatus', () => {
     expect(mapStatus('PAUSED', { fullTime: { home: 0, away: 0 } }, thirtyMinAgo)).toBe('live')
   })
 
-  it('marks IN_PLAY as finished when match started over 12 hours ago with scores', () => {
+  it('marks IN_PLAY as finished when stale (12h+) and a winner is known', () => {
     const thirteenHoursAgo = new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString()
-    expect(mapStatus('IN_PLAY', { fullTime: { home: 1, away: 0 } }, thirteenHoursAgo)).toBe(
-      'finished',
-    )
+    expect(
+      mapStatus(
+        'IN_PLAY',
+        { fullTime: { home: 1, away: 0 }, winner: 'HOME_TEAM' },
+        thirteenHoursAgo,
+      ),
+    ).toBe('finished')
   })
 
-  it('marks PAUSED as finished when match started over 12 hours ago with scores', () => {
+  it('marks PAUSED as finished when stale (12h+) and a winner is known', () => {
     const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString()
-    expect(mapStatus('PAUSED', { fullTime: { home: 2, away: 2 } }, twentyHoursAgo)).toBe('finished')
+    expect(
+      mapStatus('PAUSED', { fullTime: { home: 2, away: 2 }, winner: 'DRAW' }, twentyHoursAgo),
+    ).toBe('finished')
   })
 
   it('does not mark IN_PLAY as finished when scores are null', () => {
@@ -58,16 +71,18 @@ describe('mapStatus', () => {
     expect(mapStatus('IN_PLAY', { fullTime: { home: 1, away: 0 } })).toBe('live')
   })
 
-  it('does not apply stale heuristic to FINISHED status', () => {
+  it('keeps a FINISHED match finished when a winner is known', () => {
     const recentDate = new Date(Date.now() - 60 * 1000).toISOString()
-    expect(mapStatus('FINISHED', { fullTime: { home: 1, away: 0 } }, recentDate)).toBe('finished')
+    expect(
+      mapStatus('FINISHED', { fullTime: { home: 1, away: 0 }, winner: 'HOME_TEAM' }, recentDate),
+    ).toBe('finished')
   })
 
-  it('handles 0-0 draw correctly when stale', () => {
+  it('handles a 0-0 draw when stale and the winner (draw) is known', () => {
     const thirteenHoursAgo = new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString()
-    expect(mapStatus('IN_PLAY', { fullTime: { home: 0, away: 0 } }, thirteenHoursAgo)).toBe(
-      'finished',
-    )
+    expect(
+      mapStatus('IN_PLAY', { fullTime: { home: 0, away: 0 }, winner: 'DRAW' }, thirteenHoursAgo),
+    ).toBe('finished')
   })
 
   it('does not apply stale heuristic to SCHEDULED', () => {
@@ -75,6 +90,46 @@ describe('mapStatus', () => {
     expect(mapStatus('SCHEDULED', { fullTime: { home: null, away: null } }, yesterday)).toBe(
       'scheduled',
     )
+  })
+})
+
+describe('mapStatus winner gate', () => {
+  it('holds a FINISHED match as live when the winner is missing', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(mapStatus('FINISHED', { fullTime: { home: 1, away: 1 } }, recent)).toBe('live')
+  })
+
+  it('holds a stale IN_PLAY match as live when the winner is missing', () => {
+    const thirteenHoursAgo = new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString()
+    expect(mapStatus('IN_PLAY', { fullTime: { home: 1, away: 0 } }, thirteenHoursAgo)).toBe('live')
+  })
+
+  it('finishes a FINISHED match once the winner is known', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(mapStatus('FINISHED', { fullTime: { home: 1, away: 1 }, winner: 'DRAW' }, recent)).toBe(
+      'finished',
+    )
+  })
+
+  it('still maps a plain FINISHED (no score) to finished', () => {
+    expect(mapStatus('FINISHED')).toBe('finished')
+  })
+})
+
+describe('mapSyncStatus', () => {
+  it('flags heldForWinner when finished without a winner', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(mapSyncStatus('FINISHED', { fullTime: { home: 1, away: 1 } }, recent)).toEqual({
+      status: 'live',
+      heldForWinner: true,
+    })
+  })
+
+  it('does not flag held once the winner is present', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(
+      mapSyncStatus('FINISHED', { fullTime: { home: 1, away: 1 }, winner: 'AWAY_TEAM' }, recent),
+    ).toEqual({ status: 'finished', heldForWinner: false })
   })
 })
 

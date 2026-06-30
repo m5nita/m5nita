@@ -1,10 +1,11 @@
 import { formatBrl } from '@m5nita/shared'
 import type { Bot } from 'grammy'
 import type {
+  AdminMatchNeedsWinnerNotification,
   AdminWithdrawalRequestNotification,
   ReminderMatch,
 } from '../../application/ports/NotificationService.port'
-import { WITHDRAWAL_PAY_CALLBACK_PREFIX } from './telegramCallbacks'
+import { MATCH_FINALIZE_CALLBACK_PREFIX, WITHDRAWAL_PAY_CALLBACK_PREFIX } from './telegramCallbacks'
 
 const APP_URL = process.env.APP_URL || ''
 
@@ -95,6 +96,46 @@ export class TelegramNotificationService {
             callback_data: `${WITHDRAWAL_PAY_CALLBACK_PREFIX}${params.withdrawalId}`,
           },
         ],
+      ],
+    }
+
+    for (const adminId of adminIds) {
+      try {
+        await this.bot.api.sendMessage(Number(adminId), message, {
+          parse_mode: 'Markdown',
+          reply_markup: replyMarkup,
+        })
+      } catch (error) {
+        console.error(`[Telegram] Failed to notify admin ${adminId}:`, error)
+      }
+    }
+  }
+
+  async notifyAdminMatchNeedsWinner(params: AdminMatchNeedsWinnerNotification): Promise<void> {
+    const adminIds = (process.env.ADMIN_USER_IDS ?? '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+    if (adminIds.length === 0) return
+
+    const pens =
+      params.penaltyHomeScore != null && params.penaltyAwayScore != null
+        ? ` (pênaltis ${params.penaltyHomeScore}-${params.penaltyAwayScore})`
+        : ''
+    const message =
+      `⚠️ *Partida sem vencedor*\n\n` +
+      `*${escapeMarkdown(params.homeTeam)}* ${params.homeScore ?? 0} x ${params.awayScore ?? 0} *${escapeMarkdown(params.awayTeam)}*${pens}\n` +
+      `Etapa: ${escapeMarkdown(params.stage)}\n\n` +
+      `Defina o vencedor para finalizar e pontuar:`
+
+    const prefix = MATCH_FINALIZE_CALLBACK_PREFIX
+    const replyMarkup = {
+      inline_keyboard: [
+        [
+          { text: `🏠 ${params.homeTeam}`, callback_data: `${prefix}${params.matchId}:home` },
+          { text: `✈️ ${params.awayTeam}`, callback_data: `${prefix}${params.matchId}:away` },
+        ],
+        [{ text: '🤝 Empate', callback_data: `${prefix}${params.matchId}:draw` }],
       ],
     }
 

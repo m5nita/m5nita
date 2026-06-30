@@ -57,30 +57,36 @@ export class Match {
 
   /**
    * Maps a raw status from the upstream feed (`SCHEDULED`/`IN_PLAY`/`FINISHED`/…)
-   * to a domain `MatchStatus`, applying the "stale live" rule: if the feed
-   * still reports IN_PLAY/PAUSED but we have scores and kickoff was more than
-   * `StaleMatchPolicy.maxLiveDurationMs` ago, we treat the match as finished.
+   * to a domain `MatchStatus`, applying two rules:
    *
-   * The pure string-to-string translation stays in `services/matchUtils.ts`;
-   * this method adds the temporal decision on top.
+   * 1. **Stale live**: if the feed still reports IN_PLAY/PAUSED but we have scores
+   *    and kickoff was more than `StaleMatchPolicy.maxLiveDurationMs` ago, the
+   *    match would be treated as finished.
+   * 2. **Winner gate**: a match is NEVER finished without a known winner. When the
+   *    feed (or the stale rule) would finish a match that has scores but no
+   *    `winner` yet, it is HELD as `live` (`heldForWinner: true`) until the winner
+   *    arrives or an admin sets it. A plain translation with no scores still maps
+   *    FINISHED→finished.
    */
   static deriveStatusFromApi(input: {
     apiStatus: string
     homeScore: number | null
     awayScore: number | null
+    winner: string | null
     kickoffAt: Date
     now: Date
     rawTranslator: (apiStatus: string) => MatchStatus
-  }): MatchStatus {
+  }): { status: MatchStatus; heldForWinner: boolean } {
+    const raw = input.rawTranslator(input.apiStatus)
     const isLiveByFeed = input.apiStatus === 'IN_PLAY' || input.apiStatus === 'PAUSED'
     const hasScores = input.homeScore !== null && input.awayScore !== null
-    if (
-      isLiveByFeed &&
-      hasScores &&
-      StaleMatchPolicy.isStaleSinceKickoff(input.kickoffAt, input.now)
-    ) {
-      return MatchStatus.Finished
+    const staleFinish =
+      isLiveByFeed && hasScores && StaleMatchPolicy.isStaleSinceKickoff(input.kickoffAt, input.now)
+    const wantsFinish = raw.isFinished() || staleFinish
+    if (wantsFinish && hasScores && input.winner === null) {
+      return { status: MatchStatus.Live, heldForWinner: true }
     }
-    return input.rawTranslator(input.apiStatus)
+    if (staleFinish) return { status: MatchStatus.Finished, heldForWinner: false }
+    return { status: raw, heldForWinner: false }
   }
 }
