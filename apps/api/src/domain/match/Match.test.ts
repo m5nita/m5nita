@@ -40,7 +40,7 @@ describe('Match', () => {
     ).toBe(false)
   })
 
-  describe('deriveStatusFromApi (12h stale rule)', () => {
+  describe('deriveStatusFromApi (stale rule + winner gate)', () => {
     const translator = (api: string): MatchStatus => {
       const map: Record<string, MatchStatus> = {
         IN_PLAY: MatchStatus.Live,
@@ -50,59 +50,106 @@ describe('Match', () => {
       }
       return map[api] ?? MatchStatus.Scheduled
     }
+    const kickoff = new Date('2026-05-26T00:00:00Z')
 
-    it('forces Finished when IN_PLAY for >12h with scores', () => {
-      const kickoff = new Date('2026-05-26T00:00:00Z')
-      const now = new Date('2026-05-26T13:00:00Z') // 13h after kickoff
-      const status = Match.deriveStatusFromApi({
-        apiStatus: 'IN_PLAY',
-        homeScore: 1,
-        awayScore: 0,
-        kickoffAt: kickoff,
-        now,
-        rawTranslator: translator,
-      })
-      expect(status).toBe(MatchStatus.Finished)
-    })
-
-    it('keeps Live when IN_PLAY within 12h', () => {
-      const kickoff = new Date('2026-05-26T00:00:00Z')
-      const now = new Date('2026-05-26T02:00:00Z')
-      const status = Match.deriveStatusFromApi({
-        apiStatus: 'IN_PLAY',
-        homeScore: 1,
-        awayScore: 0,
-        kickoffAt: kickoff,
-        now,
-        rawTranslator: translator,
-      })
-      expect(status).toBe(MatchStatus.Live)
-    })
-
-    it('does NOT force Finished if scores are missing (defensive)', () => {
-      const kickoff = new Date('2026-05-26T00:00:00Z')
-      const now = new Date('2026-05-26T15:00:00Z')
-      const status = Match.deriveStatusFromApi({
-        apiStatus: 'IN_PLAY',
-        homeScore: null,
-        awayScore: null,
-        kickoffAt: kickoff,
-        now,
-        rawTranslator: translator,
-      })
-      expect(status).toBe(MatchStatus.Live)
-    })
-
-    it('delegates non-IN_PLAY statuses to the raw translator', () => {
-      const status = Match.deriveStatusFromApi({
+    it('finishes a FINISHED match that has a winner', () => {
+      const r = Match.deriveStatusFromApi({
         apiStatus: 'FINISHED',
         homeScore: 2,
         awayScore: 1,
-        kickoffAt: new Date('2026-05-26T00:00:00Z'),
+        winner: 'home',
+        kickoffAt: kickoff,
         now: new Date('2026-05-26T02:00:00Z'),
         rawTranslator: translator,
       })
-      expect(status).toBe(MatchStatus.Finished)
+      expect(r.status).toBe(MatchStatus.Finished)
+      expect(r.heldForWinner).toBe(false)
+    })
+
+    it('holds a FINISHED match as live when the winner is missing', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 1,
+        awayScore: 1,
+        winner: null,
+        kickoffAt: kickoff,
+        now: new Date('2026-05-26T02:00:00Z'),
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Live)
+      expect(r.heldForWinner).toBe(true)
+    })
+
+    it('holds a stale IN_PLAY match without a winner (never auto-finishes a non-result)', () => {
+      const now = new Date('2026-05-26T13:00:00Z') // 13h after kickoff
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'IN_PLAY',
+        homeScore: 1,
+        awayScore: 0,
+        winner: null,
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Live)
+      expect(r.heldForWinner).toBe(true)
+    })
+
+    it('finishes a stale IN_PLAY match once it has a winner', () => {
+      const now = new Date('2026-05-26T13:00:00Z')
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'IN_PLAY',
+        homeScore: 1,
+        awayScore: 0,
+        winner: 'home',
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Finished)
+      expect(r.heldForWinner).toBe(false)
+    })
+
+    it('keeps Live when IN_PLAY within 12h', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'IN_PLAY',
+        homeScore: 1,
+        awayScore: 0,
+        winner: null,
+        kickoffAt: kickoff,
+        now: new Date('2026-05-26T02:00:00Z'),
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Live)
+      expect(r.heldForWinner).toBe(false)
+    })
+
+    it('does NOT hold a FINISHED match with no scores (plain translation)', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: null,
+        awayScore: null,
+        winner: null,
+        kickoffAt: kickoff,
+        now: new Date('2026-05-26T15:00:00Z'),
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Finished)
+      expect(r.heldForWinner).toBe(false)
+    })
+
+    it('delegates SCHEDULED to the raw translator', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'SCHEDULED',
+        homeScore: null,
+        awayScore: null,
+        winner: null,
+        kickoffAt: kickoff,
+        now: new Date('2026-05-26T02:00:00Z'),
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Scheduled)
+      expect(r.heldForWinner).toBe(false)
     })
   })
 

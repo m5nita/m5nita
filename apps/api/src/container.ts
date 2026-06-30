@@ -1,3 +1,4 @@
+import { FinalizeMatchUseCase } from './application/match/FinalizeMatchUseCase'
 import { NotifyMatchPointsUseCase } from './application/match/NotifyMatchPointsUseCase'
 import { CompleteCheckoutUseCase } from './application/payment/CompleteCheckoutUseCase'
 import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
@@ -98,6 +99,18 @@ function buildPaymentGateway(
   return new MockPaymentGateway(db, completeCheckoutUseCase)
 }
 
+// Injected by the composition root (index.ts) so the container never imports
+// jobs/calcPoints — that import would form a container ↔ calcPoints cycle, since
+// calcPoints resolves getContainer(). Defaults to throwing so a misconfigured
+// boot surfaces loudly instead of silently skipping a re-score.
+let rescoreHook: (matchId: string) => Promise<void> = async () => {
+  throw new Error('match rescore hook not registered')
+}
+
+export function registerMatchRescore(fn: (matchId: string) => Promise<void>): void {
+  rescoreHook = fn
+}
+
 export function buildContainer(overrides: ContainerOverrides = {}) {
   const db = overrides.db ?? defaultDb
   const clock = overrides.clock ?? new SystemClock()
@@ -137,6 +150,19 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const getPrizeInfoUseCase = new GetPrizeInfoUseCase(poolRepo, prizeWithdrawalRepo, rankingRepo)
   const getPendingPrizesUseCase = new GetPendingPrizesUseCase(poolRepo, getPrizeInfoUseCase)
 
+  const notifyMatchPointsUseCase = new NotifyMatchPointsUseCase(
+    matchRepo,
+    poolRepo,
+    predictionRepo,
+    rankingRepo,
+    notificationService,
+  )
+
+  const finalizeMatchUseCase = new FinalizeMatchUseCase({
+    matchRepo,
+    rescore: (matchId: string) => rescoreHook(matchId),
+  })
+
   return {
     db,
     clock,
@@ -154,13 +180,8 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     completeCheckoutUseCase,
     subscribeToPushUseCase: new SubscribeToPushUseCase(pushSubscriptionRepo),
     unsubscribeFromPushUseCase: new UnsubscribeFromPushUseCase(pushSubscriptionRepo),
-    notifyMatchPointsUseCase: new NotifyMatchPointsUseCase(
-      matchRepo,
-      poolRepo,
-      predictionRepo,
-      rankingRepo,
-      notificationService,
-    ),
+    notifyMatchPointsUseCase,
+    finalizeMatchUseCase,
     createPoolUseCase: new CreatePoolUseCase(
       poolRepo,
       paymentGateway,

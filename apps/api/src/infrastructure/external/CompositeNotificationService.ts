@@ -1,5 +1,6 @@
 import type { Bot } from 'grammy'
 import type {
+  AdminMatchNeedsWinnerNotification,
   AdminWithdrawalRequestNotification,
   MatchPointsData,
   NotificationService,
@@ -112,6 +113,10 @@ export class CompositeNotificationService implements NotificationService {
 
   notifyAdminWithdrawalRequest(params: AdminWithdrawalRequestNotification): Promise<void> {
     return this.telegram.notifyAdminWithdrawalRequest(params)
+  }
+
+  notifyAdminMatchNeedsWinner(params: AdminMatchNeedsWinnerNotification): Promise<void> {
+    return this.telegram.notifyAdminMatchNeedsWinner(params)
   }
 
   async sendPredictionReminders(reminders: ReminderData[]): Promise<void> {

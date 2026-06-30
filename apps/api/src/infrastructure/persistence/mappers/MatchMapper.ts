@@ -85,24 +85,37 @@ export function matchToData(row: MatchRow): MatchData {
   }
 }
 
+type ScoreInput = {
+  fullTime: { home: number | null; away: number | null }
+  winner?: string | null
+}
+
 /**
- * Translate a provider status to ours, applying the "stale live → finished
- * after 12h" rule (`Match.deriveStatusFromApi`) when `score`/`utcDate` are
- * provided. Without them it's a plain string-to-string translation.
+ * Translate a provider status to ours, applying the "stale live → finished after
+ * 12h" rule AND the winner gate — a match is never `finished` without a known
+ * winner (see `Match.deriveStatusFromApi`). Returns the status string plus
+ * whether the match is being HELD as live awaiting its winner. Without a
+ * `score`/`utcDate` it's a plain string-to-string translation (no gate).
  */
-export function mapStatus(
+export function mapSyncStatus(
   apiStatus: string,
-  score?: { fullTime: { home: number | null; away: number | null } },
+  score?: ScoreInput,
   utcDate?: string,
-): string {
-  return Match.deriveStatusFromApi({
+): { status: string; heldForWinner: boolean } {
+  const r = Match.deriveStatusFromApi({
     apiStatus,
     homeScore: score?.fullTime.home ?? null,
     awayScore: score?.fullTime.away ?? null,
+    winner: mapWinner(score?.winner),
     kickoffAt: utcDate ? new Date(utcDate) : new Date(),
     now: new Date(),
     rawTranslator: rawTranslate,
-  }).value
+  })
+  return { status: r.status.value, heldForWinner: r.heldForWinner }
+}
+
+export function mapStatus(apiStatus: string, score?: ScoreInput, utcDate?: string): string {
+  return mapSyncStatus(apiStatus, score, utcDate).status
 }
 
 export function mapStage(apiStage: string, competitionType: string): string {

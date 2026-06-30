@@ -49,6 +49,19 @@ export interface AdminWithdrawalRequestNotification {
   pixKey: string
 }
 
+// Admin alert: a match the feed reports finished but with no winner, held as
+// live until resolved. Carries what the alert renders + the buttons need.
+export interface AdminMatchNeedsWinnerNotification {
+  matchId: string
+  homeTeam: string
+  awayTeam: string
+  stage: string
+  homeScore: number | null
+  awayScore: number | null
+  penaltyHomeScore: number | null
+  penaltyAwayScore: number | null
+}
+
 export interface NotificationService {
   notifyWinners(
     poolId: string,
@@ -57,6 +70,7 @@ export interface NotificationService {
     prizeShare: number,
   ): Promise<void>
   notifyAdminWithdrawalRequest(params: AdminWithdrawalRequestNotification): Promise<void>
+  notifyAdminMatchNeedsWinner(params: AdminMatchNeedsWinnerNotification): Promise<void>
   sendPredictionReminders(reminders: ReminderData[]): Promise<void>
   notifyMatchPoints(items: MatchPointsData[]): Promise<void>
 }

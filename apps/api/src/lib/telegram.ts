@@ -6,7 +6,10 @@ import { getContainer } from '../container'
 import { db } from '../db/client'
 import { telegramChat } from '../db/schema/telegram'
 import { PrizeWithdrawalError } from '../domain/prize/PrizeWithdrawalError'
-import { WITHDRAWAL_PAY_CALLBACK_PREFIX } from '../infrastructure/external/telegramCallbacks'
+import {
+  MATCH_FINALIZE_CALLBACK_PREFIX,
+  WITHDRAWAL_PAY_CALLBACK_PREFIX,
+} from '../infrastructure/external/telegramCallbacks'
 import {
   CompetitionError,
   createCompetition,
@@ -437,6 +440,42 @@ bot.callbackQuery(new RegExp(`^${WITHDRAWAL_PAY_CALLBACK_PREFIX}(.+)$`), async (
       text: 'Erro ao processar. Tente novamente.',
       show_alert: true,
     })
+  }
+})
+
+bot.callbackQuery(new RegExp(`^${MATCH_FINALIZE_CALLBACK_PREFIX}(.+)$`), async (ctx) => {
+  if (!ctx.from || !isAdmin(ctx.from.id)) {
+    await ctx.answerCallbackQuery({ text: 'Sem permissão', show_alert: true })
+    return
+  }
+
+  // payload = `{matchId}:{winner}`; matchId is a uuid (no colon), winner trails.
+  const payload = ctx.match?.[1] ?? ''
+  const sep = payload.lastIndexOf(':')
+  const matchId = sep >= 0 ? payload.slice(0, sep) : ''
+  const winner = sep >= 0 ? payload.slice(sep + 1) : ''
+  if (!matchId || !winner) {
+    await ctx.answerCallbackQuery({ text: 'Callback inválido', show_alert: true })
+    return
+  }
+
+  const label = winner === 'home' ? 'Casa' : winner === 'away' ? 'Fora' : 'Empate'
+  try {
+    const { finalizeMatchUseCase } = getContainer()
+    await finalizeMatchUseCase.execute(matchId, winner)
+
+    const originalText = ctx.callbackQuery.message?.text ?? 'Partida'
+    await ctx.editMessageText(`${originalText}\n\n✅ Finalizada (${label}). Pontos recalculados.`, {
+      reply_markup: { inline_keyboard: [] },
+    })
+    await ctx.answerCallbackQuery({ text: 'Finalizada ✅' })
+  } catch (error) {
+    console.error('[Telegram] callbackQuery mf:finalize failed:', error)
+    const text =
+      error instanceof Error && error.message === 'KNOCKOUT_CANNOT_DRAW'
+        ? 'Mata-mata não pode terminar empatado.'
+        : 'Erro ao finalizar. Tente novamente.'
+    await ctx.answerCallbackQuery({ text, show_alert: true })
   }
 })
 

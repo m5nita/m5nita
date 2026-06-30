@@ -7,7 +7,7 @@ import type {
 import type { Clock } from '../../domain/shared/Clock'
 import {
   mapDuration,
-  mapStatus,
+  mapSyncStatus,
   mapWinner,
 } from '../../infrastructure/persistence/mappers/MatchMapper'
 import type { ExternalMatch, FootballDataApi } from '../ports/FootballDataApi.port'
@@ -24,6 +24,8 @@ export type SyncLiveScoresDeps = {
   clock: Clock
   findActiveCompetitions: () => Promise<CompetitionInfo[]>
   onMatchFinished?: (matchId: string) => Promise<void>
+  /** Fired when a match the feed reports finished is held as live for lack of a winner. */
+  onMatchHeldAwaitingWinner?: (matchId: string) => Promise<void>
   onAllMatchesChecked?: () => Promise<void>
 }
 
@@ -114,10 +116,16 @@ export class SyncLiveScoresUseCase {
 
   /** Persists the live score; returns the match id if it just transitioned to finished. */
   private async applyLiveMatch(m: ExternalMatch, existing: MatchData): Promise<string | null> {
-    const newStatus = mapStatus(m.status, m.score, m.utcDate)
+    const { status: newStatus, heldForWinner } = mapSyncStatus(m.status, m.score, m.utcDate)
     const wasNotFinished = existing.status !== 'finished'
 
     await this.deps.matchRepo.updateScores(existing.id, toResultUpdate(m, newStatus))
+
+    // Held = the feed reports finished but there's no winner yet. newStatus stays
+    // 'live', so onMatchFinished is suppressed; signal so an admin can be alerted.
+    if (heldForWinner && this.deps.onMatchHeldAwaitingWinner) {
+      await this.deps.onMatchHeldAwaitingWinner(existing.id)
+    }
 
     return wasNotFinished && newStatus === 'finished' ? existing.id : null
   }
