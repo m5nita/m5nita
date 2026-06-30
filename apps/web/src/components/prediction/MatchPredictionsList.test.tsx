@@ -39,6 +39,7 @@ it('renders the advance-pick chip with the picked team name on a knockout match'
   expect(screen.getByText('Brasil')).toBeInTheDocument()
   expect(screen.getByText('+5')).toBeInTheDocument()
   expect(screen.getByText('+2')).toBeInTheDocument()
+  expect(screen.getByText('pts')).toBeInTheDocument()
 })
 
 it('renders no chip on a group-stage match', () => {
