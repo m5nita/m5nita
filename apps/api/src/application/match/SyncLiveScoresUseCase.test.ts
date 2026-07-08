@@ -134,7 +134,7 @@ describe('SyncLiveScoresUseCase', () => {
       live: [
         externalMatch({
           status: 'FINISHED',
-          score: { duration: 'penalty_shootout', fullTime: { home: 1, away: 1 } },
+          score: { duration: 'PENALTY_SHOOTOUT', fullTime: { home: 1, away: 1 } },
         }),
       ],
     })
@@ -154,8 +154,60 @@ describe('SyncLiveScoresUseCase', () => {
           status: 'FINISHED',
           score: {
             winner: 'AWAY_TEAM',
-            duration: 'penalty_shootout',
+            duration: 'PENALTY_SHOOTOUT',
             fullTime: { home: 1, away: 1 },
+          },
+        }),
+      ],
+    })
+
+    await uc.execute()
+
+    expect(onMatchFinished).toHaveBeenCalledWith('m1')
+    expect(onMatchHeldAwaitingWinner).not.toHaveBeenCalled()
+  })
+
+  // 537382 regression (Switzerland–Colombia, round-of-16): the feed reported
+  // FINISHED with a winner but `duration` still REGULAR — the penalty shootout
+  // hadn't consolidated. Finalizing then grades the 0-0 base and drops the +2
+  // advance bonus forever. Hold as live until the decisive duration arrives.
+  it('holds a knockout won past regulation while its duration is still REGULAR', async () => {
+    const { uc, updateScores, onMatchFinished, onMatchHeldAwaitingWinner } = makeUseCase({
+      existing: [existingMatch({ status: 'live', stage: 'round-of-16' })],
+      live: [
+        externalMatch({
+          status: 'FINISHED',
+          stage: 'LAST_16',
+          score: {
+            winner: 'HOME_TEAM',
+            duration: 'REGULAR',
+            fullTime: { home: 0, away: 0 },
+            regularTime: { home: 0, away: 0 },
+          },
+        }),
+      ],
+    })
+
+    await uc.execute()
+
+    expect(updateScores).toHaveBeenCalledWith('m1', expect.objectContaining({ status: 'live' }))
+    expect(onMatchHeldAwaitingWinner).toHaveBeenCalledWith('m1')
+    expect(onMatchFinished).not.toHaveBeenCalled()
+  })
+
+  it('finishes the same knockout once the penalty-shootout duration arrives', async () => {
+    const { uc, onMatchFinished, onMatchHeldAwaitingWinner } = makeUseCase({
+      existing: [existingMatch({ status: 'live', stage: 'round-of-16' })],
+      live: [
+        externalMatch({
+          status: 'FINISHED',
+          stage: 'LAST_16',
+          score: {
+            winner: 'HOME_TEAM',
+            duration: 'PENALTY_SHOOTOUT',
+            fullTime: { home: 0, away: 0 },
+            regularTime: { home: 0, away: 0 },
+            penalties: { home: 4, away: 3 },
           },
         }),
       ],

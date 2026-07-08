@@ -153,6 +153,115 @@ describe('Match', () => {
     })
   })
 
+  describe('deriveStatusFromApi (decisive-duration gate: shootouts / extra time)', () => {
+    const translator = (api: string): MatchStatus => {
+      const map: Record<string, MatchStatus> = {
+        IN_PLAY: MatchStatus.Live,
+        PAUSED: MatchStatus.Live,
+        FINISHED: MatchStatus.Finished,
+        SCHEDULED: MatchStatus.Scheduled,
+      }
+      return map[api] ?? MatchStatus.Scheduled
+    }
+    const kickoff = new Date('2026-05-26T00:00:00Z')
+    const now = new Date('2026-05-26T02:00:00Z')
+
+    // A knockout level after 90' but reporting a decisive winner (home/away) was
+    // settled in extra time / penalties. The feed sets `winner` BEFORE it
+    // consolidates `duration`/`penalties`; finalizing here would score the base
+    // result WITHOUT the +2 advance bonus and never re-score. Hold as live until
+    // the decisive duration settles, then finish and score once, correctly.
+    it('holds a level-regulation knockout with a winner but no decisive duration', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 0,
+        awayScore: 0,
+        winner: 'home',
+        duration: 'regular',
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Live)
+      expect(r.heldForWinner).toBe(true)
+    })
+
+    it('also holds when the duration is still missing', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 0,
+        awayScore: 0,
+        winner: 'home',
+        duration: null,
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Live)
+      expect(r.heldForWinner).toBe(true)
+    })
+
+    it('finishes once the penalty-shootout duration arrives', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 0,
+        awayScore: 0,
+        winner: 'home',
+        duration: 'penalty_shootout',
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Finished)
+      expect(r.heldForWinner).toBe(false)
+    })
+
+    it('finishes an extra-time result (level in regulation, decisive duration)', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 1,
+        awayScore: 1,
+        winner: 'away',
+        duration: 'extra_time',
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Finished)
+      expect(r.heldForWinner).toBe(false)
+    })
+
+    it("does NOT hold a regulation-time knockout result (decisive at 90')", () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 2,
+        awayScore: 1,
+        winner: 'home',
+        duration: 'regular',
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Finished)
+      expect(r.heldForWinner).toBe(false)
+    })
+
+    it('does NOT hold a level draw with no decisive winner (group stage)', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 1,
+        awayScore: 1,
+        winner: 'draw',
+        duration: 'regular',
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Finished)
+      expect(r.heldForWinner).toBe(false)
+    })
+  })
+
   it('StaleMatchPolicy exposes 12h boundary', () => {
     expect(StaleMatchPolicy.maxLiveDurationMs).toBe(12 * 60 * 60 * 1000)
   })

@@ -57,7 +57,7 @@ export class Match {
 
   /**
    * Maps a raw status from the upstream feed (`SCHEDULED`/`IN_PLAY`/`FINISHED`/…)
-   * to a domain `MatchStatus`, applying two rules:
+   * to a domain `MatchStatus`, applying three rules:
    *
    * 1. **Stale live**: if the feed still reports IN_PLAY/PAUSED but we have scores
    *    and kickoff was more than `StaleMatchPolicy.maxLiveDurationMs` ago, the
@@ -67,12 +67,22 @@ export class Match {
    *    `winner` yet, it is HELD as `live` (`heldForWinner: true`) until the winner
    *    arrives or an admin sets it. A plain translation with no scores still maps
    *    FINISHED→finished.
+   * 3. **Decisive-duration gate**: a knockout that is level after regulation
+   *    (`homeScore === awayScore`, the 90' score) yet reports a decisive winner
+   *    (`home`/`away`) was settled in extra time / penalties. The feed populates
+   *    `winner` BEFORE it consolidates `duration`/`penalties`, so finalizing at
+   *    that instant would grade the base result WITHOUT the +2 advance bonus (the
+   *    bonus needs `duration` = extra_time/penalty_shootout) and never re-score.
+   *    Hold as `live` until the decisive `duration` arrives, so the match is
+   *    scored exactly once — with the bonus. `homeScore`/`awayScore` MUST be the
+   *    regulation-time (90') score for this check to be correct.
    */
   static deriveStatusFromApi(input: {
     apiStatus: string
     homeScore: number | null
     awayScore: number | null
     winner: string | null
+    duration?: string | null
     kickoffAt: Date
     now: Date
     rawTranslator: (apiStatus: string) => MatchStatus
@@ -84,6 +94,15 @@ export class Match {
       isLiveByFeed && hasScores && StaleMatchPolicy.isStaleSinceKickoff(input.kickoffAt, input.now)
     const wantsFinish = raw.isFinished() || staleFinish
     if (wantsFinish && hasScores && input.winner === null) {
+      return { status: MatchStatus.Live, heldForWinner: true }
+    }
+    const decidedPastRegulation =
+      hasScores &&
+      input.homeScore === input.awayScore &&
+      (input.winner === 'home' || input.winner === 'away')
+    const durationDecisive =
+      input.duration === 'extra_time' || input.duration === 'penalty_shootout'
+    if (wantsFinish && decidedPastRegulation && !durationDecisive) {
       return { status: MatchStatus.Live, heldForWinner: true }
     }
     if (staleFinish) return { status: MatchStatus.Finished, heldForWinner: false }

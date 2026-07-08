@@ -1,3 +1,4 @@
+import { gradedScoreline } from '../../../domain/match/KnockoutResult'
 import { Match } from '../../../domain/match/Match'
 import { MatchStatus } from '../../../domain/match/MatchStatus'
 
@@ -85,28 +86,38 @@ export function matchToData(row: MatchRow): MatchData {
   }
 }
 
+type GoalPair = { home: number | null; away: number | null }
+
 type ScoreInput = {
-  fullTime: { home: number | null; away: number | null }
+  fullTime: GoalPair
+  regularTime?: GoalPair | null
+  duration?: string | null
   winner?: string | null
 }
 
 /**
  * Translate a provider status to ours, applying the "stale live → finished after
- * 12h" rule AND the winner gate — a match is never `finished` without a known
- * winner (see `Match.deriveStatusFromApi`). Returns the status string plus
- * whether the match is being HELD as live awaiting its winner. Without a
- * `score`/`utcDate` it's a plain string-to-string translation (no gate).
+ * 12h" rule AND the finish gates — a match is never `finished` without a known
+ * winner, nor while a knockout decided past regulation is still awaiting its
+ * decisive `duration` (see `Match.deriveStatusFromApi`). Returns the status
+ * string plus whether the match is being HELD as live. The gate grades on the
+ * regulation-time (90') score, never full-time (which may merge extra-time /
+ * penalty goals). Without a `score`/`utcDate` it's a plain translation (no gate).
  */
 export function mapSyncStatus(
   apiStatus: string,
   score?: ScoreInput,
   utcDate?: string,
 ): { status: string; heldForWinner: boolean } {
+  const graded = score
+    ? gradedScoreline({ fullTime: score.fullTime, regularTime: score.regularTime })
+    : { home: null, away: null }
   const r = Match.deriveStatusFromApi({
     apiStatus,
-    homeScore: score?.fullTime.home ?? null,
-    awayScore: score?.fullTime.away ?? null,
+    homeScore: graded.home,
+    awayScore: graded.away,
     winner: mapWinner(score?.winner),
+    duration: mapDuration(score?.duration),
     kickoffAt: utcDate ? new Date(utcDate) : new Date(),
     now: new Date(),
     rawTranslator: rawTranslate,

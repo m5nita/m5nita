@@ -125,11 +125,65 @@ describe('mapSyncStatus', () => {
     })
   })
 
-  it('does not flag held once the winner is present', () => {
+  it('does not flag held once the winner is present (decisive in regulation)', () => {
     const recent = new Date(Date.now() - 60 * 1000).toISOString()
     expect(
-      mapSyncStatus('FINISHED', { fullTime: { home: 1, away: 1 }, winner: 'AWAY_TEAM' }, recent),
+      mapSyncStatus('FINISHED', { fullTime: { home: 1, away: 2 }, winner: 'AWAY_TEAM' }, recent),
     ).toEqual({ status: 'finished', heldForWinner: false })
+  })
+
+  // Decisive-duration gate: a knockout level after 90' with a decisive winner was
+  // settled past regulation. The feed sets `winner` before `duration`; hold until
+  // the duration lands so the +2 advance bonus is scored in the single grading pass.
+  it('holds a level-regulation winner until the decisive duration arrives', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(
+      mapSyncStatus(
+        'FINISHED',
+        {
+          fullTime: { home: 1, away: 1 },
+          regularTime: { home: 1, away: 1 },
+          winner: 'AWAY_TEAM',
+          duration: 'REGULAR',
+        },
+        recent,
+      ),
+    ).toEqual({ status: 'live', heldForWinner: true })
+  })
+
+  it('finishes a level-regulation winner once the shootout duration is known', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(
+      mapSyncStatus(
+        'FINISHED',
+        {
+          fullTime: { home: 1, away: 1 },
+          regularTime: { home: 1, away: 1 },
+          winner: 'AWAY_TEAM',
+          duration: 'PENALTY_SHOOTOUT',
+        },
+        recent,
+      ),
+    ).toEqual({ status: 'finished', heldForWinner: false })
+  })
+
+  // full-time may merge extra-time/penalty goals; the gate must grade on the 90'
+  // score. A 0-0 at 90' won on penalties (fullTime shows the 4-3 shootout tally)
+  // is still "level in regulation" → held until the duration lands.
+  it('grades the level check on regulation time, not full-time', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(
+      mapSyncStatus(
+        'FINISHED',
+        {
+          fullTime: { home: 4, away: 3 },
+          regularTime: { home: 0, away: 0 },
+          winner: 'HOME_TEAM',
+          duration: 'REGULAR',
+        },
+        recent,
+      ),
+    ).toEqual({ status: 'live', heldForWinner: true })
   })
 })
 
