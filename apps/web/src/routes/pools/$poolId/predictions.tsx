@@ -877,9 +877,9 @@ function PredictionsContent({
   targetMatchId?: string
 }) {
   const queryClient = useQueryClient()
-  // Land on "Jogos do dia" by default; a ?match deep-link jumps straight to the
+  // Land on "Todos os jogos" by default; a ?match deep-link jumps straight to the
   // competition view that holds that match instead.
-  const [viewMode, setViewMode] = useState<ViewMode>(targetMatchId ? 'format' : 'today')
+  const [viewMode, setViewMode] = useState<ViewMode>(targetMatchId ? 'format' : 'all')
   const [tab, setTab] = useState<Tab>('groups')
   const [activeGroup, setActiveGroup] = useState('A')
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
