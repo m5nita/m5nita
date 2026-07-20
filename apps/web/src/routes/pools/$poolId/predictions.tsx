@@ -8,7 +8,7 @@ import {
 } from '@m5nita/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PoolHub } from '../../../components/pool/PoolHub'
 import { MatchPredictionsList } from '../../../components/prediction/MatchPredictionsList'
 import { ScoreInput, type ScoreInputHandle } from '../../../components/prediction/ScoreInput'
@@ -18,13 +18,7 @@ import { MatchCardSkeleton } from '../../../components/ui/Skeleton'
 import { apiFetch } from '../../../lib/api'
 import { claimUncelebrated } from '../../../lib/celebrate'
 import { matchParamsForPool } from '../../../lib/matchQuery'
-import {
-  buildSections,
-  type Grouping,
-  matchesToday,
-  type SectionItem,
-  sortByDate,
-} from '../../../lib/matchSchedule'
+import { buildSections, type Grouping, type SectionItem } from '../../../lib/matchSchedule'
 import { upsertPrediction } from '../../../lib/optimisticPredictions'
 import { livePollMs, matchesPollMs } from '../../../lib/poll'
 
@@ -100,13 +94,6 @@ const knockoutStageLabels: Record<string, string> = {
 const knockoutStageOrder = ['round-of-32', 'round-of-16', 'quarter', 'semi', 'third-place', 'final']
 
 type Tab = 'groups' | 'knockout'
-
-// 'today' / 'all' are the universal schedule views (every multi-match format);
-// 'format' falls back to the competition-shaped navigation (groups + knockout,
-// or league rounds).
-type ViewMode = 'today' | 'all' | 'format'
-
-const ALL_BATCH_SIZE = 20
 
 type SubTabSelection = {
   tab?: Tab
@@ -332,208 +319,13 @@ function TopTab({
   )
 }
 
-// Cup pools: the universal Jogos do dia / Todos os jogos row sits with the
-// format toggle in one grid — 2×2 on mobile, a single row of 4 on desktop.
-function ScheduleTabBarCup({
-  viewMode,
-  tab,
-  onSelectToday,
-  onSelectAll,
-  onSelectFormat,
-}: {
-  viewMode: ViewMode
-  tab: Tab
-  onSelectToday: () => void
-  onSelectAll: () => void
-  onSelectFormat: (t: Tab) => void
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="tablist">
-      <TopTab label="Jogos do dia" active={viewMode === 'today'} onClick={onSelectToday} />
-      <TopTab label="Todos os jogos" active={viewMode === 'all'} onClick={onSelectAll} />
-      <TopTab
-        label="Fase de Grupos"
-        active={viewMode === 'format' && tab === 'groups'}
-        onClick={() => onSelectFormat('groups')}
-      />
-      <TopTab
-        label="Mata-Mata"
-        active={viewMode === 'format' && tab === 'knockout'}
-        onClick={() => onSelectFormat('knockout')}
-      />
-    </div>
-  )
-}
-
-// League pools: the universal row pairs with the round selector below it.
-function ScheduleTabBarLeague({
-  viewMode,
-  onSelectToday,
-  onSelectAll,
-}: {
-  viewMode: ViewMode
-  onSelectToday: () => void
-  onSelectAll: () => void
-}) {
+// Cup pools: the two top-level competition views.
+function GroupKnockoutTabBar({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
   return (
     <div className="grid grid-cols-2 gap-2" role="tablist">
-      <TopTab label="Jogos do dia" active={viewMode === 'today'} onClick={onSelectToday} />
-      <TopTab label="Todos os jogos" active={viewMode === 'all'} onClick={onSelectAll} />
+      <TopTab label="Fase de Grupos" active={tab === 'groups'} onClick={() => setTab('groups')} />
+      <TopTab label="Mata-Mata" active={tab === 'knockout'} onClick={() => setTab('knockout')} />
     </div>
-  )
-}
-
-function TodayView({
-  matches,
-  poolId,
-  predictionMap,
-  onSave,
-  highlightMatchId,
-  onSeeAll,
-}: MatchListShared & { matches: Match[]; onSeeAll: () => void }) {
-  if (matches.length === 0) {
-    return (
-      <div className="border-2 border-dashed border-border py-10 text-center">
-        <p className="font-display text-sm font-bold uppercase tracking-wider text-gray-muted">
-          Nenhum jogo hoje
-        </p>
-        <button
-          type="button"
-          onClick={onSeeAll}
-          className="mt-2 font-display text-[11px] font-bold uppercase tracking-widest text-black underline underline-offset-4 transition-colors hover:text-red cursor-pointer"
-        >
-          Ver todos os jogos
-        </button>
-      </div>
-    )
-  }
-  return (
-    // Single flex child so the parent's gap-6 sits above the label (matching the
-    // day header in "Todos os jogos"), not between the label and the list.
-    <div>
-      <p className="-mb-1 font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
-        Hoje · {matches.length} {matches.length === 1 ? 'jogo' : 'jogos'}
-      </p>
-      <MatchList
-        poolId={poolId}
-        matches={matches}
-        predictionMap={predictionMap}
-        onSave={onSave}
-        highlightMatchId={highlightMatchId}
-      />
-    </div>
-  )
-}
-
-function AllMatchesView({
-  matches,
-  poolId,
-  predictionMap,
-  onSave,
-  highlightMatchId,
-}: MatchListShared & { matches: Match[] }) {
-  // On open, land on the next game to play. Matches are date-sorted, so the
-  // first not-yet-finished one is the earliest live/upcoming fixture.
-  const firstUnfinishedIndex = matches.findIndex((m) => m.status !== 'finished')
-
-  // Reveal enough batches up front so that target card is in the DOM and we can
-  // scroll to it (otherwise it sits past the initial infinite-scroll window).
-  const [visible, setVisible] = useState(() =>
-    firstUnfinishedIndex < 0
-      ? ALL_BATCH_SIZE
-      : Math.ceil((firstUnfinishedIndex + 1) / ALL_BATCH_SIZE) * ALL_BATCH_SIZE,
-  )
-  const shown = matches.slice(0, visible)
-  const hasMore = visible < matches.length
-
-  // On open, bring the first unfinished match to the top (its card carries
-  // scroll-mt to clear the sticky header). The content ABOVE the target keeps
-  // growing after first paint — web fonts swap in (Barlow Condensed/Inter,
-  // display=swap), flag images decode, and the infinite-scroll window expands —
-  // and each push moves the target down, so a single well-timed scroll lands
-  // stale and strands the target mid-screen. Re-assert the scroll on every
-  // layout change until the user takes over or a short window elapses.
-  // Mount-only: live-poll refetches must not yank the user back here.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: align once on open
-  useEffect(() => {
-    if (firstUnfinishedIndex < 0) return
-    const target = matches[firstUnfinishedIndex]
-    if (!target) return
-    let done = false
-    const align = () => {
-      if (done) return
-      const card = document.getElementById(`match-${target.id}`)
-      if (!card) return
-      // First match of its day → anchor on the day header (section top) so the
-      // header sits at the top. Otherwise (a mid-day target, with earlier
-      // finished matches the same day) anchor on the card itself so none of
-      // those finished matches show above it.
-      const section = card.closest('[data-day-section]')
-      const firstCard = section
-        ? [...section.querySelectorAll('[id^="match-"]')].sort(
-            (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
-          )[0]
-        : null
-      const anchor = section && firstCard === card ? section : card
-      // Scroll the anchor flush to the top. The sticky header doesn't actually
-      // pin on this page, so scrollIntoView's scroll-margin would only reveal
-      // the preceding match — scroll to the anchor's exact offset instead.
-      window.scrollTo({ top: Math.max(0, anchor.getBoundingClientRect().top + window.scrollY) })
-    }
-    align()
-    const observer =
-      typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => requestAnimationFrame(align))
-        : null
-    observer?.observe(document.body)
-    const stop = () => {
-      done = true
-      observer?.disconnect()
-    }
-    // Stop as soon as the user scrolls (don't fight them) and after a bounded
-    // backstop so a late refetch never re-snaps the view.
-    window.addEventListener('wheel', stop, { passive: true, once: true })
-    window.addEventListener('touchmove', stop, { passive: true, once: true })
-    window.addEventListener('keydown', stop, { once: true })
-    const timer = window.setTimeout(stop, 1500)
-    return () => {
-      done = true
-      observer?.disconnect()
-      window.clearTimeout(timer)
-      window.removeEventListener('wheel', stop)
-      window.removeEventListener('touchmove', stop)
-      window.removeEventListener('keydown', stop)
-    }
-  }, [])
-
-  // Infinite scroll: a sentinel below the list grows the window as it nears the
-  // viewport. A callback ref re-attaches the observer whenever the sentinel
-  // mounts/unmounts (so it stops cleanly once the whole list is revealed).
-  const observerRef = useRef<IntersectionObserver | null>(null)
-  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
-    observerRef.current?.disconnect()
-    if (!node) return
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) setVisible((v) => v + ALL_BATCH_SIZE)
-      },
-      { rootMargin: '400px' },
-    )
-    observerRef.current.observe(node)
-  }, [])
-
-  return (
-    <>
-      <MatchList
-        poolId={poolId}
-        matches={shown}
-        predictionMap={predictionMap}
-        onSave={onSave}
-        grouping="day"
-        highlightMatchId={highlightMatchId}
-      />
-      {hasMore && <div ref={sentinelRef} aria-hidden className="h-1" />}
-    </>
   )
 }
 
@@ -555,17 +347,14 @@ function leagueMatchdayModel(leagueMatches: Match[], activeMatchday: number | nu
   return { sortedMatchdays, currentMatchday, currentMatches }
 }
 
-// Always visible for league pools, so the user can return to a round from the
-// today/all views; highlighted only while the round view is active.
+// The round selector for league pools; the selected round's matches show below.
 function LeagueRoundTabs({
   sortedMatchdays,
   currentMatchday,
-  active,
   onSelect,
 }: {
   sortedMatchdays: number[]
   currentMatchday: number
-  active: boolean
   onSelect: (md: number) => void
 }) {
   return (
@@ -575,7 +364,7 @@ function LeagueRoundTabs({
       aria-label="Rodadas"
     >
       {sortedMatchdays.map((md) => {
-        const selected = active && currentMatchday === md
+        const selected = currentMatchday === md
         return (
           <button
             key={md}
@@ -611,6 +400,40 @@ function LeagueRoundMatches({
       <MatchList
         poolId={poolId}
         matches={currentMatches}
+        predictionMap={predictionMap}
+        onSave={onSave}
+        highlightMatchId={highlightMatchId}
+      />
+    </>
+  )
+}
+
+// League pools: the round selector + the selected round's matches.
+function LeagueRounds({
+  leagueMatches,
+  activeMatchday,
+  setActiveMatchday,
+  poolId,
+  predictionMap,
+  onSave,
+  highlightMatchId,
+}: MatchListShared & {
+  leagueMatches: Match[]
+  activeMatchday: number | null
+  setActiveMatchday: (md: number) => void
+}) {
+  const league = leagueMatchdayModel(leagueMatches, activeMatchday)
+  return (
+    <>
+      <LeagueRoundTabs
+        sortedMatchdays={league.sortedMatchdays}
+        currentMatchday={league.currentMatchday}
+        onSelect={(md) => setActiveMatchday(md)}
+      />
+      <LeagueRoundMatches
+        currentMatchday={league.currentMatchday}
+        currentMatches={league.currentMatches}
+        poolId={poolId}
         predictionMap={predictionMap}
         onSave={onSave}
         highlightMatchId={highlightMatchId}
@@ -740,133 +563,6 @@ function KnockoutStagesView({
   )
 }
 
-// Cup pools: universal schedule row + Fase de Grupos / Mata-Mata, with the
-// group/knockout sub-views shown only while the competition view is active.
-function CupSchedule({
-  viewMode,
-  setViewMode,
-  tab,
-  setTab,
-  onSelectAll,
-  scheduleViews,
-  groupMatches,
-  knockoutMatches,
-  activeGroup,
-  setActiveGroup,
-  activeKnockoutStage,
-  setActiveKnockoutStage,
-  poolId,
-  predictionMap,
-  onSave,
-  highlightMatchId,
-}: MatchListShared & {
-  viewMode: ViewMode
-  setViewMode: (m: ViewMode) => void
-  tab: Tab
-  setTab: (t: Tab) => void
-  onSelectAll: () => void
-  scheduleViews: ReactNode
-  groupMatches: Match[]
-  knockoutMatches: Match[]
-  activeGroup: string
-  setActiveGroup: (g: string) => void
-  activeKnockoutStage: string | null
-  setActiveKnockoutStage: (s: string) => void
-}) {
-  return (
-    <>
-      <ScheduleTabBarCup
-        viewMode={viewMode}
-        tab={tab}
-        onSelectToday={() => setViewMode('today')}
-        onSelectAll={onSelectAll}
-        onSelectFormat={(t) => {
-          setViewMode('format')
-          setTab(t)
-        }}
-      />
-      {scheduleViews}
-      {viewMode === 'format' && tab === 'groups' && (
-        <GroupStageView
-          groupMatches={groupMatches}
-          activeGroup={activeGroup}
-          setActiveGroup={setActiveGroup}
-          poolId={poolId}
-          predictionMap={predictionMap}
-          onSave={onSave}
-          highlightMatchId={highlightMatchId}
-        />
-      )}
-      {viewMode === 'format' && tab === 'knockout' && (
-        <KnockoutStagesView
-          knockoutMatches={knockoutMatches}
-          activeKnockoutStage={activeKnockoutStage}
-          setActiveKnockoutStage={setActiveKnockoutStage}
-          poolId={poolId}
-          predictionMap={predictionMap}
-          onSave={onSave}
-          highlightMatchId={highlightMatchId}
-        />
-      )}
-    </>
-  )
-}
-
-// League pools: universal schedule row + always-visible round selector, with
-// the selected round's matches shown only while the round view is active.
-function LeagueSchedule({
-  viewMode,
-  setViewMode,
-  activeMatchday,
-  setActiveMatchday,
-  leagueMatches,
-  onSelectAll,
-  scheduleViews,
-  poolId,
-  predictionMap,
-  onSave,
-  highlightMatchId,
-}: MatchListShared & {
-  viewMode: ViewMode
-  setViewMode: (m: ViewMode) => void
-  activeMatchday: number | null
-  setActiveMatchday: (md: number) => void
-  leagueMatches: Match[]
-  onSelectAll: () => void
-  scheduleViews: ReactNode
-}) {
-  const league = leagueMatchdayModel(leagueMatches, activeMatchday)
-  return (
-    <>
-      <ScheduleTabBarLeague
-        viewMode={viewMode}
-        onSelectToday={() => setViewMode('today')}
-        onSelectAll={onSelectAll}
-      />
-      <LeagueRoundTabs
-        sortedMatchdays={league.sortedMatchdays}
-        currentMatchday={league.currentMatchday}
-        active={viewMode === 'format'}
-        onSelect={(md) => {
-          setViewMode('format')
-          setActiveMatchday(md)
-        }}
-      />
-      {scheduleViews}
-      {viewMode === 'format' && (
-        <LeagueRoundMatches
-          currentMatchday={league.currentMatchday}
-          currentMatches={league.currentMatches}
-          poolId={poolId}
-          predictionMap={predictionMap}
-          onSave={onSave}
-          highlightMatchId={highlightMatchId}
-        />
-      )}
-    </>
-  )
-}
-
 function PredictionsContent({
   pool,
   poolId,
@@ -877,9 +573,6 @@ function PredictionsContent({
   targetMatchId?: string
 }) {
   const queryClient = useQueryClient()
-  // Land on "Todos os jogos" by default; a ?match deep-link jumps straight to the
-  // competition view that holds that match instead.
-  const [viewMode, setViewMode] = useState<ViewMode>(targetMatchId ? 'format' : 'all')
   const [tab, setTab] = useState<Tab>('groups')
   const [activeGroup, setActiveGroup] = useState('A')
   const [activeMatchday, setActiveMatchday] = useState<number | null>(null)
@@ -981,7 +674,6 @@ function PredictionsContent({
     handledTargetRef.current = targetMatchId
 
     const sel = subTabForMatch(target)
-    setViewMode('format')
     if (sel.tab) setTab(sel.tab)
     if (sel.group) setActiveGroup(sel.group)
     if (sel.matchday != null) setActiveMatchday(sel.matchday)
@@ -1045,25 +737,35 @@ function PredictionsContent({
     )
   }
 
-  const todayMatches = matchesToday(allMatches, new Date())
-  const allSorted = sortByDate(allMatches)
-  const goToAll = () => setViewMode('all')
-
-  const scheduleViews = (
+  return hasLeagueMatches ? (
+    <LeagueRounds
+      leagueMatches={leagueMatches}
+      activeMatchday={activeMatchday}
+      setActiveMatchday={setActiveMatchday}
+      poolId={poolId}
+      predictionMap={predictionMap}
+      onSave={handleSave}
+      highlightMatchId={highlightMatchId}
+    />
+  ) : (
     <>
-      {viewMode === 'today' && (
-        <TodayView
-          matches={todayMatches}
+      <GroupKnockoutTabBar tab={tab} setTab={setTab} />
+      {tab === 'groups' && (
+        <GroupStageView
+          groupMatches={groupMatches}
+          activeGroup={activeGroup}
+          setActiveGroup={setActiveGroup}
           poolId={poolId}
           predictionMap={predictionMap}
           onSave={handleSave}
           highlightMatchId={highlightMatchId}
-          onSeeAll={goToAll}
         />
       )}
-      {viewMode === 'all' && (
-        <AllMatchesView
-          matches={allSorted}
+      {tab === 'knockout' && (
+        <KnockoutStagesView
+          knockoutMatches={knockoutMatches}
+          activeKnockoutStage={activeKnockoutStage}
+          setActiveKnockoutStage={setActiveKnockoutStage}
           poolId={poolId}
           predictionMap={predictionMap}
           onSave={handleSave}
@@ -1071,45 +773,6 @@ function PredictionsContent({
         />
       )}
     </>
-  )
-
-  if (hasLeagueMatches) {
-    return (
-      <LeagueSchedule
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        activeMatchday={activeMatchday}
-        setActiveMatchday={setActiveMatchday}
-        leagueMatches={leagueMatches}
-        onSelectAll={goToAll}
-        scheduleViews={scheduleViews}
-        poolId={poolId}
-        predictionMap={predictionMap}
-        onSave={handleSave}
-        highlightMatchId={highlightMatchId}
-      />
-    )
-  }
-
-  return (
-    <CupSchedule
-      viewMode={viewMode}
-      setViewMode={setViewMode}
-      tab={tab}
-      setTab={setTab}
-      onSelectAll={goToAll}
-      scheduleViews={scheduleViews}
-      groupMatches={groupMatches}
-      knockoutMatches={knockoutMatches}
-      activeGroup={activeGroup}
-      setActiveGroup={setActiveGroup}
-      activeKnockoutStage={activeKnockoutStage}
-      setActiveKnockoutStage={setActiveKnockoutStage}
-      poolId={poolId}
-      predictionMap={predictionMap}
-      onSave={handleSave}
-      highlightMatchId={highlightMatchId}
-    />
   )
 }
 
