@@ -57,7 +57,7 @@ export class Match {
 
   /**
    * Maps a raw status from the upstream feed (`SCHEDULED`/`IN_PLAY`/`FINISHED`/…)
-   * to a domain `MatchStatus`, applying three rules:
+   * to a domain `MatchStatus`, applying these rules:
    *
    * 1. **Stale live**: if the feed still reports IN_PLAY/PAUSED but we have scores
    *    and kickoff was more than `StaleMatchPolicy.maxLiveDurationMs` ago, the
@@ -81,45 +81,68 @@ export class Match {
    *    extra time / penalties resolve; hold as `live` until a decisive winner
    *    lands, so a 0-0 "draw" is never graded in a final and its pools never
    *    close early. A group/league match legitimately finishes drawn.
+   * 5. **ET-inflation gate**: a knockout the feed shows went past regulation
+   *    (`wentPastRegulation` — its extra-time clock or ET/penalty sub-scores) but
+   *    whose 90' score is not yet authoritative (`regulationScoreKnown` false →
+   *    `homeScore`/`awayScore` are full-time, which merges the extra-time goal)
+   *    and whose `duration` is not yet decisive. Hold until it settles, so the
+   *    base result grades on the true 90' line with the advance bonus — even when
+   *    the inflated full-time score is not level (which rule 3 would miss).
    */
-  static deriveStatusFromApi(input: {
-    apiStatus: string
-    homeScore: number | null
-    awayScore: number | null
-    winner: string | null
-    duration?: string | null
-    isKnockout?: boolean
-    kickoffAt: Date
-    now: Date
-    rawTranslator: (apiStatus: string) => MatchStatus
-  }): { status: MatchStatus; heldForWinner: boolean } {
+  static deriveStatusFromApi(input: DeriveStatusInput): {
+    status: MatchStatus
+    heldForWinner: boolean
+  } {
     const raw = input.rawTranslator(input.apiStatus)
     const isLiveByFeed = input.apiStatus === 'IN_PLAY' || input.apiStatus === 'PAUSED'
     const hasScores = input.homeScore !== null && input.awayScore !== null
     const staleFinish =
       isLiveByFeed && hasScores && StaleMatchPolicy.isStaleSinceKickoff(input.kickoffAt, input.now)
     const wantsFinish = raw.isFinished() || staleFinish
-    if (wantsFinish && hasScores && input.winner === null) {
-      return { status: MatchStatus.Live, heldForWinner: true }
-    }
-    // Knockout draw gate: a knockout is never drawn. When the feed would finish a
-    // knockout that is still level with no decisive winner (`winner: 'draw'` — a
-    // premature end-of-regulation snapshot before extra time / penalties resolve),
-    // hold as live until a decisive winner lands. Otherwise we grade a 0-0 "draw"
-    // in a final and close its pools before the match has actually ended.
-    if (wantsFinish && input.isKnockout && input.winner === 'draw') {
-      return { status: MatchStatus.Live, heldForWinner: true }
-    }
-    const decidedPastRegulation =
-      hasScores &&
-      input.homeScore === input.awayScore &&
-      (input.winner === 'home' || input.winner === 'away')
-    const durationDecisive =
-      input.duration === 'extra_time' || input.duration === 'penalty_shootout'
-    if (wantsFinish && decidedPastRegulation && !durationDecisive) {
+    if (wantsFinish && heldWhenFinishing(input, hasScores)) {
       return { status: MatchStatus.Live, heldForWinner: true }
     }
     if (staleFinish) return { status: MatchStatus.Finished, heldForWinner: false }
     return { status: raw, heldForWinner: false }
   }
+}
+
+type DeriveStatusInput = {
+  apiStatus: string
+  homeScore: number | null
+  awayScore: number | null
+  winner: string | null
+  duration?: string | null
+  isKnockout?: boolean
+  wentPastRegulation?: boolean
+  regulationScoreKnown?: boolean
+  kickoffAt: Date
+  now: Date
+  rawTranslator: (apiStatus: string) => MatchStatus
+}
+
+/**
+ * Whether a match the feed would finish must instead be HELD as live — a match is
+ * never finished without a settled result. The gates (see `deriveStatusFromApi`):
+ * no winner yet; a knockout reported as a draw; a knockout past regulation whose
+ * 90' score / decisive duration hasn't consolidated (full-time still merges the
+ * extra-time goal); and a level-regulation knockout awaiting its decisive duration.
+ */
+function heldWhenFinishing(input: DeriveStatusInput, hasScores: boolean): boolean {
+  if (hasScores && input.winner === null) return true
+  if (input.isKnockout && input.winner === 'draw') return true
+  const durationDecisive = input.duration === 'extra_time' || input.duration === 'penalty_shootout'
+  if (
+    input.isKnockout &&
+    input.wentPastRegulation &&
+    !input.regulationScoreKnown &&
+    !durationDecisive
+  ) {
+    return true
+  }
+  const decidedPastRegulation =
+    hasScores &&
+    input.homeScore === input.awayScore &&
+    (input.winner === 'home' || input.winner === 'away')
+  return decidedPastRegulation && !durationDecisive
 }

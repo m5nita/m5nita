@@ -281,6 +281,47 @@ describe('Match', () => {
       expect(r.status).toBe(MatchStatus.Live)
       expect(r.heldForWinner).toBe(true)
     })
+
+    // ET-inflation gate: the feed says the knockout went past 90' (minute > 90 /
+    // ET sub-scores) but hasn't consolidated the regulation score (`regularTime`
+    // absent) nor a decisive `duration`. `homeScore`/`awayScore` are therefore
+    // full-time, which merges the extra-time goal — grading now would score the
+    // wrong 90' line. Hold until it settles, even though the score is not level.
+    it('holds a knockout past regulation whose 90-minute score is not settled yet', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 1,
+        awayScore: 0,
+        winner: 'home',
+        duration: 'regular',
+        isKnockout: true,
+        wentPastRegulation: true,
+        regulationScoreKnown: false,
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Live)
+      expect(r.heldForWinner).toBe(true)
+    })
+
+    it('finishes a regulation knockout win that did not go past 90 (full-time IS the 90 score)', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 2,
+        awayScore: 1,
+        winner: 'home',
+        duration: 'regular',
+        isKnockout: true,
+        wentPastRegulation: false,
+        regulationScoreKnown: false,
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Finished)
+      expect(r.heldForWinner).toBe(false)
+    })
   })
 
   it('StaleMatchPolicy exposes 12h boundary', () => {

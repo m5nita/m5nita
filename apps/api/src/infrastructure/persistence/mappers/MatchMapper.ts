@@ -91,6 +91,8 @@ type GoalPair = { home: number | null; away: number | null }
 type ScoreInput = {
   fullTime: GoalPair
   regularTime?: GoalPair | null
+  extraTime?: GoalPair | null
+  penalties?: GoalPair | null
   duration?: string | null
   winner?: string | null
 }
@@ -109,10 +111,18 @@ export function mapSyncStatus(
   score?: ScoreInput,
   utcDate?: string,
   isKnockout = false,
+  minute?: number | null,
 ): { status: string; heldForWinner: boolean } {
   const graded = score
     ? gradedScoreline({ fullTime: score.fullTime, regularTime: score.regularTime })
     : { home: null, away: null }
+  // The feed caps the regulation clock at 90' (stoppage lives in injuryTime), so a
+  // minute past 90 — or the presence of extra-time / penalty sub-scores — means the
+  // match went to overtime. `regularTime` present is the authoritative 90' score;
+  // when it is absent the graded scoreline above fell back to full-time.
+  const wentPastRegulation =
+    (minute != null && minute > 90) || score?.extraTime != null || score?.penalties != null
+  const regulationScoreKnown = score?.regularTime != null
   const r = Match.deriveStatusFromApi({
     apiStatus,
     homeScore: graded.home,
@@ -120,6 +130,8 @@ export function mapSyncStatus(
     winner: mapWinner(score?.winner),
     duration: mapDuration(score?.duration),
     isKnockout,
+    wentPastRegulation,
+    regulationScoreKnown,
     kickoffAt: utcDate ? new Date(utcDate) : new Date(),
     now: new Date(),
     rawTranslator: rawTranslate,
@@ -132,8 +144,9 @@ export function mapStatus(
   score?: ScoreInput,
   utcDate?: string,
   isKnockout = false,
+  minute?: number | null,
 ): string {
-  return mapSyncStatus(apiStatus, score, utcDate, isKnockout).status
+  return mapSyncStatus(apiStatus, score, utcDate, isKnockout, minute).status
 }
 
 export function mapStage(apiStage: string, competitionType: string): string {

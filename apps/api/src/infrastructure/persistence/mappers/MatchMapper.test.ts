@@ -212,6 +212,35 @@ describe('mapSyncStatus', () => {
       mapSyncStatus('FINISHED', { fullTime: { home: 1, away: 1 }, winner: 'DRAW' }, recent, false),
     ).toEqual({ status: 'finished', heldForWinner: false })
   })
+
+  // ET-inflation gate: minute > 90 means the knockout is in extra time, but the
+  // feed hasn't split out the 90' score yet (no regularTime), so full-time still
+  // carries the extra-time goal. Hold until it consolidates rather than grade 1-0.
+  it('holds a knockout in extra time (minute > 90) before the regulation score consolidates', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(
+      mapSyncStatus(
+        'FINISHED',
+        { fullTime: { home: 1, away: 0 }, winner: 'HOME_TEAM', duration: 'REGULAR' },
+        recent,
+        true,
+        107,
+      ),
+    ).toEqual({ status: 'live', heldForWinner: true })
+  })
+
+  it('finishes a regulation knockout win (minute at 90, full-time is the 90 score)', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(
+      mapSyncStatus(
+        'FINISHED',
+        { fullTime: { home: 2, away: 1 }, winner: 'HOME_TEAM', duration: 'REGULAR' },
+        recent,
+        true,
+        90,
+      ),
+    ).toEqual({ status: 'finished', heldForWinner: false })
+  })
 })
 
 describe('mapStage', () => {
