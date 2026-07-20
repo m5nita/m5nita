@@ -185,6 +185,33 @@ describe('mapSyncStatus', () => {
       ),
     ).toEqual({ status: 'live', heldForWinner: true })
   })
+
+  // Knockout draw gate: a knockout is never drawn. A FINISHED knockout the feed
+  // reports as 'draw' is a premature end-of-regulation snapshot before extra time
+  // / penalties; hold as live. A group/league draw (isKnockout=false) finishes.
+  it('holds a knockout that the feed reports FINISHED as a draw', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(
+      mapSyncStatus(
+        'FINISHED',
+        {
+          fullTime: { home: 0, away: 0 },
+          regularTime: { home: 0, away: 0 },
+          winner: 'DRAW',
+          duration: 'REGULAR',
+        },
+        recent,
+        true,
+      ),
+    ).toEqual({ status: 'live', heldForWinner: true })
+  })
+
+  it('finishes a group-stage draw (not a knockout)', () => {
+    const recent = new Date(Date.now() - 60 * 1000).toISOString()
+    expect(
+      mapSyncStatus('FINISHED', { fullTime: { home: 1, away: 1 }, winner: 'DRAW' }, recent, false),
+    ).toEqual({ status: 'finished', heldForWinner: false })
+  })
 })
 
 describe('mapStage', () => {

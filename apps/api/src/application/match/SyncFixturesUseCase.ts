@@ -1,5 +1,6 @@
 import { gradedScoreline } from '../../domain/match/KnockoutResult'
 import type { MatchRepository, UpsertMatchData } from '../../domain/match/MatchRepository.port'
+import { isKnockout } from '../../domain/match/MatchStage'
 import {
   extractGroup,
   mapDuration,
@@ -98,7 +99,7 @@ export class SyncFixturesUseCase {
       group: extractGroup(m.group),
       matchday: m.matchday,
       matchDate: new Date(m.utcDate),
-      status: mapStatus(m.status, m.score, m.utcDate),
+      status: mapStatus(m.status, m.score, m.utcDate, isKnockout(stage)),
     }
   }
 }

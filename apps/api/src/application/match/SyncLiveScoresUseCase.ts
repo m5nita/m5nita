@@ -4,6 +4,7 @@ import type {
   MatchRepository,
   MatchResultUpdate,
 } from '../../domain/match/MatchRepository.port'
+import { isKnockout } from '../../domain/match/MatchStage'
 import type { Clock } from '../../domain/shared/Clock'
 import {
   mapDuration,
@@ -116,7 +117,12 @@ export class SyncLiveScoresUseCase {
 
   /** Persists the live score; returns the match id if it just transitioned to finished. */
   private async applyLiveMatch(m: ExternalMatch, existing: MatchData): Promise<string | null> {
-    const { status: newStatus, heldForWinner } = mapSyncStatus(m.status, m.score, m.utcDate)
+    const { status: newStatus, heldForWinner } = mapSyncStatus(
+      m.status,
+      m.score,
+      m.utcDate,
+      isKnockout(existing.stage),
+    )
     const wasNotFinished = existing.status !== 'finished'
 
     await this.deps.matchRepo.updateScores(existing.id, toResultUpdate(m, newStatus))

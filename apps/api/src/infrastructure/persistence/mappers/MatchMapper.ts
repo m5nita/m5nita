@@ -108,6 +108,7 @@ export function mapSyncStatus(
   apiStatus: string,
   score?: ScoreInput,
   utcDate?: string,
+  isKnockout = false,
 ): { status: string; heldForWinner: boolean } {
   const graded = score
     ? gradedScoreline({ fullTime: score.fullTime, regularTime: score.regularTime })
@@ -118,6 +119,7 @@ export function mapSyncStatus(
     awayScore: graded.away,
     winner: mapWinner(score?.winner),
     duration: mapDuration(score?.duration),
+    isKnockout,
     kickoffAt: utcDate ? new Date(utcDate) : new Date(),
     now: new Date(),
     rawTranslator: rawTranslate,
@@ -125,8 +127,13 @@ export function mapSyncStatus(
   return { status: r.status.value, heldForWinner: r.heldForWinner }
 }
 
-export function mapStatus(apiStatus: string, score?: ScoreInput, utcDate?: string): string {
-  return mapSyncStatus(apiStatus, score, utcDate).status
+export function mapStatus(
+  apiStatus: string,
+  score?: ScoreInput,
+  utcDate?: string,
+  isKnockout = false,
+): string {
+  return mapSyncStatus(apiStatus, score, utcDate, isKnockout).status
 }
 
 export function mapStage(apiStage: string, competitionType: string): string {

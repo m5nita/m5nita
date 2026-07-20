@@ -76,6 +76,11 @@ export class Match {
    *    Hold as `live` until the decisive `duration` arrives, so the match is
    *    scored exactly once — with the bonus. `homeScore`/`awayScore` MUST be the
    *    regulation-time (90') score for this check to be correct.
+   * 4. **Knockout draw gate**: a knockout is never drawn. A `winner: 'draw'` on a
+   *    knockout (`isKnockout`) is a premature end-of-regulation snapshot before
+   *    extra time / penalties resolve; hold as `live` until a decisive winner
+   *    lands, so a 0-0 "draw" is never graded in a final and its pools never
+   *    close early. A group/league match legitimately finishes drawn.
    */
   static deriveStatusFromApi(input: {
     apiStatus: string
@@ -83,6 +88,7 @@ export class Match {
     awayScore: number | null
     winner: string | null
     duration?: string | null
+    isKnockout?: boolean
     kickoffAt: Date
     now: Date
     rawTranslator: (apiStatus: string) => MatchStatus
@@ -94,6 +100,14 @@ export class Match {
       isLiveByFeed && hasScores && StaleMatchPolicy.isStaleSinceKickoff(input.kickoffAt, input.now)
     const wantsFinish = raw.isFinished() || staleFinish
     if (wantsFinish && hasScores && input.winner === null) {
+      return { status: MatchStatus.Live, heldForWinner: true }
+    }
+    // Knockout draw gate: a knockout is never drawn. When the feed would finish a
+    // knockout that is still level with no decisive winner (`winner: 'draw'` — a
+    // premature end-of-regulation snapshot before extra time / penalties resolve),
+    // hold as live until a decisive winner lands. Otherwise we grade a 0-0 "draw"
+    // in a final and close its pools before the match has actually ended.
+    if (wantsFinish && input.isKnockout && input.winner === 'draw') {
       return { status: MatchStatus.Live, heldForWinner: true }
     }
     const decidedPastRegulation =
