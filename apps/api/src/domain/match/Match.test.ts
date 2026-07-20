@@ -253,12 +253,33 @@ describe('Match', () => {
         awayScore: 1,
         winner: 'draw',
         duration: 'regular',
+        isKnockout: false,
         kickoffAt: kickoff,
         now,
         rawTranslator: translator,
       })
       expect(r.status).toBe(MatchStatus.Finished)
       expect(r.heldForWinner).toBe(false)
+    })
+
+    // A knockout is NEVER drawn. When the feed reports a level knockout as
+    // FINISHED with winner 'draw' (a premature end-of-regulation snapshot before
+    // extra time / penalties resolve), finalizing would grade a 0-0 "draw" in a
+    // final and close pools early. Hold as live until a decisive winner lands.
+    it('holds a knockout reported as a draw (never finalize a drawn knockout)', () => {
+      const r = Match.deriveStatusFromApi({
+        apiStatus: 'FINISHED',
+        homeScore: 0,
+        awayScore: 0,
+        winner: 'draw',
+        duration: 'regular',
+        isKnockout: true,
+        kickoffAt: kickoff,
+        now,
+        rawTranslator: translator,
+      })
+      expect(r.status).toBe(MatchStatus.Live)
+      expect(r.heldForWinner).toBe(true)
     })
   })
 
