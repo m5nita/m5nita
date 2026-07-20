@@ -122,6 +122,7 @@ export class SyncLiveScoresUseCase {
       m.score,
       m.utcDate,
       isKnockout(existing.stage),
+      m.minute,
     )
     const wasNotFinished = existing.status !== 'finished'
 
