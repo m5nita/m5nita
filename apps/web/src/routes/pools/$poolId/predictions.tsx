@@ -384,30 +384,6 @@ function LeagueRoundTabs({
   )
 }
 
-function LeagueRoundMatches({
-  currentMatchday,
-  currentMatches,
-  poolId,
-  predictionMap,
-  onSave,
-  highlightMatchId,
-}: MatchListShared & { currentMatchday: number; currentMatches: Match[] }) {
-  return (
-    <>
-      <p className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-muted">
-        {currentMatchday}ª Rodada
-      </p>
-      <MatchList
-        poolId={poolId}
-        matches={currentMatches}
-        predictionMap={predictionMap}
-        onSave={onSave}
-        highlightMatchId={highlightMatchId}
-      />
-    </>
-  )
-}
-
 // League pools: the round selector + the selected round's matches.
 function LeagueRounds({
   leagueMatches,
@@ -430,10 +406,9 @@ function LeagueRounds({
         currentMatchday={league.currentMatchday}
         onSelect={(md) => setActiveMatchday(md)}
       />
-      <LeagueRoundMatches
-        currentMatchday={league.currentMatchday}
-        currentMatches={league.currentMatches}
+      <MatchList
         poolId={poolId}
+        matches={league.currentMatches}
         predictionMap={predictionMap}
         onSave={onSave}
         highlightMatchId={highlightMatchId}
