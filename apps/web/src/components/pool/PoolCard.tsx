@@ -16,7 +16,7 @@ export function PoolCard({ pool, index }: PoolCardProps) {
     >
       {/* Mobile: horizontal list item */}
       <div className="flex items-center gap-4 border-b border-border py-4 transition-colors group-hover:border-black lg:hidden">
-        <span className="font-display text-3xl font-black text-gray-light group-hover:text-red transition-colors">
+        <span className="font-display text-3xl font-black text-gray-light group-hover:text-red transition-colors tabular-nums">
           {String(index).padStart(2, '0')}
         </span>
         <div className="flex-1 min-w-0">
@@ -53,7 +53,7 @@ export function PoolCard({ pool, index }: PoolCardProps) {
       {/* Desktop: editorial card */}
       <div className="hidden lg:flex flex-col border border-border p-5 transition-colors group-hover:border-black">
         <div className="flex items-start justify-between">
-          <span className="font-display text-4xl font-black text-gray-light group-hover:text-red transition-colors">
+          <span className="font-display text-4xl font-black text-gray-light group-hover:text-red transition-colors tabular-nums">
             {String(index).padStart(2, '0')}
           </span>
           {pool.status === 'closed' && (
