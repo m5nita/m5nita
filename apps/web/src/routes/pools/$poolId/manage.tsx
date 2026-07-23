@@ -152,7 +152,7 @@ function ManagePage() {
                   className="flex items-center justify-between border-b border-border py-3"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-display text-lg font-black text-gray-light">
+                    <span className="font-display text-lg font-black text-gray-light tabular-nums">
                       {String(i + 1).padStart(2, '0')}
                     </span>
                     <div>
