@@ -32,7 +32,7 @@ function EmptyState() {
       </p>
       <Link
         to="/"
-        className="mt-5 inline-block border-2 border-black bg-black px-5 py-2.5 font-display text-xs font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90"
+        className="mt-5 inline-block border-2 border-black bg-black px-5 py-2.5 font-display text-xs font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red"
       >
         Ver bolões
       </Link>

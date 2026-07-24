@@ -42,7 +42,7 @@ export function MoneyTiles({
       {aSacarCentavos > 0 && (
         <Link
           to="/"
-          className="flex items-center justify-between gap-3 border border-amber bg-amber/10 px-4 py-3 transition-colors hover:bg-amber/20"
+          className="flex items-center justify-between gap-3 border border-amber bg-amber/10 px-4 py-3 transition-colors hover:bg-amber/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber"
         >
           <span>
             <span className="block font-display text-[10px] font-bold uppercase tracking-widest text-amber">

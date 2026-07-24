@@ -16,7 +16,7 @@ export function MyPerformanceCard() {
   return (
     <Link
       to="/performance"
-      className="block border border-border bg-surface p-4 transition-colors hover:border-gray-muted"
+      className="block border border-border bg-surface p-4 transition-colors hover:border-gray-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
     >
       <div className="flex items-center justify-between gap-3">
         <span className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-muted">
@@ -51,7 +51,7 @@ export function MyPerformanceCard() {
         </div>
       </div>
 
-      <div className="mt-3 flex h-2 gap-0.5 overflow-hidden rounded-sm">
+      <div className="mt-3 flex h-2 gap-0.5 overflow-hidden rounded-sm" aria-hidden="true">
         {data.vitorias > 0 && <span className="bg-green" style={{ flex: data.vitorias }} />}
         {data.derrotas > 0 && <span className="bg-red" style={{ flex: data.derrotas }} />}
         {data.emAndamento > 0 && <span className="bg-border" style={{ flex: data.emAndamento }} />}

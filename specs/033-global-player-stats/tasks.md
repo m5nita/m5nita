@@ -9,10 +9,10 @@ description: "Task list for 033-global-player-stats"
 
 **Tests**: REQUIRED — the constitution (Principle II) and the spec (SC-003 / SC-005
 "verified by automated tests") mandate them. **Backend** tests are automated (Vitest
-+ real-Postgres integration). **Frontend** verification is **manual per
-`quickstart.md`** because no web component/e2e runner is wired in this repo; this is
-a **documented deviation** recorded in `plan.md` → Complexity Tracking, with
-follow-up **T037** to add a component-test harness.
++ real-Postgres integration). **Frontend** components are covered by React Testing
+Library render tests on the repo's existing jsdom Vitest harness
+(`apps/web/vitest.config.ts` + `src/test-setup.ts`); live behavior additionally
+spot-checked per `quickstart.md`.
 
 **Organization**: The single endpoint `GET /api/users/me/performance` serves all
 three user stories, so the whole backend lives in **Foundational (Phase 2)**. Each
@@ -127,12 +127,12 @@ saldo/record/aproveitamento/prêmios is produced.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T034 [P] Run guardrails and fix any findings: `pnpm check:leaks`, `pnpm check:arch`, `pnpm biome check --write .`.
-- [ ] T035 [P] Verify coverage/suites: new domain at 100%, new backend-code ≥ 80%; `pnpm test` and `pnpm --filter @m5nita/api test:integration` (DATABASE_URL on 5433) green.
-- [ ] T036 **Accessibility pass (WCAG 2.1 AA, Principle III)**: `aria-label`/`role="img"` on the donut + sparkline SVGs, visible keyboard focus on the nav item / "Ver tudo" / "a sacar" / "Compartilhar" controls, honor `prefers-reduced-motion`, and confirm green/red/amber contrast on both themes.
-- [ ] T037 [P] **(Follow-up — addresses the documented Principle II deviation)** Add a web component-test harness (Vitest + React Testing Library + jsdom) and render tests for the performance components (saldo / record / empty-state / negative-saldo). May be deferred to a dedicated infra change; tracked here so it is not lost.
-- [ ] T038 Confirm light/dark parity of the screen + home card against the approved "Carteira" mockup.
-- [ ] T039 Run the full `quickstart.md` acceptance mapping (US1 #1–#5, US2, US3, SC-003/004/005/006).
+- [X] T034 [P] Run guardrails and fix any findings: `pnpm check:leaks`, `pnpm check:arch`, `pnpm biome check --write .`.
+- [X] T035 [P] Verify coverage/suites: new domain at 100%, new backend-code ≥ 80%; `pnpm test` and `pnpm --filter @m5nita/api test:integration` (DATABASE_URL on 5433) green.
+- [X] T036 **Accessibility pass (WCAG 2.1 AA, Principle III)**: `aria-label`/`role="img"` on the donut + sparkline SVGs, visible keyboard focus on the nav item / "Ver tudo" / "a sacar" / "Compartilhar" controls, honor `prefers-reduced-motion`, and confirm green/red/amber contrast on both themes.
+- [X] T037 [P] Add React Testing Library render tests for the performance components on the repo's existing jsdom Vitest harness — `SaldoHero`, `AproveitamentoDonut` (incl. no-data), `SaldoSparkline` (sign + <2 points), `MoneyTiles` (a-sacar/maior-prêmio conditionals), `MyPerformanceCard` (self-gating), `PerformanceScreen` (error/empty/data states).
+- [X] T038 Confirm light/dark parity of the screen + home card against the approved "Carteira" mockup.
+- [X] T039 Run the full `quickstart.md` acceptance mapping (US1 #1–#5, US2, US3, SC-003/004/005/006).
 
 ---
 

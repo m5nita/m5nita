@@ -39,7 +39,7 @@ entry in the app shell. **No database schema changes; no new runtime dependencie
 | Principle | Assessment | How this plan complies |
 |-----------|------------|------------------------|
 | **I. Code Quality** | PASS | New monetary primitive `Balance` is a value object (not a raw signed number); functions single-purpose; no dead code; reuses `formatCurrency`/`formatBrl`. No inline fee math (guardrail G2). |
-| **II. Testing Standards** | PASS *(with documented deviation)* | New domain (`Balance`, `PerformanceCalculation`, `PerformanceSummary`) gets 100% unit coverage incl. the reconciliation property (SC-003/005), no-data aproveitamento, ties, free pools. Adapter/integration tests on real Postgres; route contract test; benchmark/query-count guard for Principle IV. **Frontend components ship without automated coverage** (no web component-test runner is wired) — deviation recorded in Complexity Tracking; the at-risk logic lives in the API domain at 100%. |
+| **II. Testing Standards** | PASS | New domain (`Balance`, `PerformanceCalculation`, `PerformanceSummary`) at 100% unit coverage incl. the reconciliation property (SC-003/005), no-data aproveitamento, ties, free pools; application use-case tests; adapter/integration on real Postgres; route contract test; benchmark/query-count guard for Principle IV. **Frontend** components covered by React Testing Library render tests on the repo's existing jsdom Vitest harness (saldo hero, donut, sparkline, money tiles, home card, screen states). |
 | **III. UX Consistency** | PASS | Reuses the design system tokens and the existing stats inline-SVG primitives (`EfficiencyDonut`, `EvolutionLineChart`, `RankingHero`), the `Loading`/`ErrorMessage`/empty-state patterns, and predictable nav. Distinct name "Meu desempenho" avoids collision with the paid "Estatísticas". BRL formatting via the shared util. |
 | **IV. Performance** | PASS | Replaces the `GetPendingPrizesUseCase` N+1 loop with ~3 batched queries; no per-pool round-trips; relies on existing indexes; p95<200ms target enforced by a benchmark test; loading state < 200ms via `Loading`. |
 | **V. Hexagonal & SOLID** | PASS | domain (`Balance`, `PerformanceSummary`, `PerformanceCalculation`, `PerformanceReadRepository` port; reuse `Ranking`, `PrizeCalculation`) → application (`GetMyPerformanceUseCase`) → infrastructure (`DrizzlePerformanceReadRepository`, `DrizzleRankingRepository.getStandingsForPools`, Hono route, `container.ts` wiring). Dependencies point inward; ports are focused (ISP); no new DI framework. |
@@ -119,6 +119,9 @@ no schema change and no new dependency.
 
 ## Complexity Tracking
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| New frontend code (`apps/web/src/components/performance/*`, `apps/web/src/routes/performance.tsx`, the home card) ships **without automated unit-test coverage** — below Principle II's ≥80% new-code gate. | The repo has **no web component/e2e test runner** wired (Vitest has no RTL/jsdom setup; the `apps/web/tests/*.spec.ts` Playwright specs are not runnable). All at-risk logic — money, tiebreak, aggregation, reconciliation — lives in the API domain/application at **100% coverage + integration**. The new frontend is presentational reuse of the already-shipped pool-stats SVG primitives (`EfficiencyDonut`, `EvolutionLineChart`, `RankingHero`). | Wiring Vitest + React Testing Library + jsdom for the whole web app (new devDeps + config) is a **separate infrastructure change** beyond this feature's scope. Manual verification per `quickstart.md` covers the presentational surfaces; follow-up task **T037** tracks adding a web component-test harness so these components can be covered later. |
+> **No constitution violations.** An earlier draft flagged a frontend-test-coverage
+> deviation on the premise that no web component-test runner existed. That premise
+> was wrong — the repo already ships a jsdom + React Testing Library Vitest harness
+> (`apps/web/vitest.config.ts` + `src/test-setup.ts`, with ~15 existing `.test.tsx`).
+> The performance components now have render tests on that harness, so Principle II
+> is met directly and no deviation remains.
