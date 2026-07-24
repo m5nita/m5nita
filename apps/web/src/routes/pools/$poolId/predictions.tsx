@@ -384,7 +384,9 @@ function LeagueRoundTabs({
   )
 }
 
-// League pools: the round selector + the selected round's matches.
+// League pools: the round selector + the selected round's matches. The
+// selector is hidden for single-round pools — there's nothing to switch to,
+// and the round already shows in the pool subtitle above.
 function LeagueRounds({
   leagueMatches,
   activeMatchday,
@@ -401,11 +403,13 @@ function LeagueRounds({
   const league = leagueMatchdayModel(leagueMatches, activeMatchday)
   return (
     <>
-      <LeagueRoundTabs
-        sortedMatchdays={league.sortedMatchdays}
-        currentMatchday={league.currentMatchday}
-        onSelect={(md) => setActiveMatchday(md)}
-      />
+      {league.sortedMatchdays.length > 1 && (
+        <LeagueRoundTabs
+          sortedMatchdays={league.sortedMatchdays}
+          currentMatchday={league.currentMatchday}
+          onSelect={(md) => setActiveMatchday(md)}
+        />
+      )}
       <MatchList
         poolId={poolId}
         matches={league.currentMatches}
