@@ -102,9 +102,9 @@ dashboard that links to `/performance`.
 **Independent Test**: On the logged-in home, the card shows saldo + record and links
 to the full view; logged-out home shows no card.
 
-- [ ] T028 [P] [US2] `MyPerformanceCard.tsx` compact summary (reuses `useMyPerformance`; saldo + `V–D` record + segmented bar + "Ver tudo →"; **returns `null` when `participei === 0`**, matching `PendingPrizesSection`) in `apps/web/src/components/performance/MyPerformanceCard.tsx`.
-- [ ] T029 [US2] Insert `<MyPerformanceCard />` near the top of `apps/web/src/components/home/DashboardHome.tsx` (after the hero header ~L191, before `<PendingPrizesSection />` ~L225).
-- [ ] T030 [US2] Manual verification per `quickstart.md`: card visible + links when logged in; absent when logged out; hidden for a user with no pools.
+- [X] T028 [P] [US2] `MyPerformanceCard.tsx` compact summary (reuses `useMyPerformance`; saldo + `V–D` record + segmented bar + "Ver tudo →"; **returns `null` when `participei === 0`**, matching `PendingPrizesSection`) in `apps/web/src/components/performance/MyPerformanceCard.tsx`.
+- [X] T029 [US2] Insert `<MyPerformanceCard />` near the top of `apps/web/src/components/home/DashboardHome.tsx` (after the hero header ~L191, before `<PendingPrizesSection />` ~L225).
+- [X] T030 [US2] Manual verification per `quickstart.md`: card visible + links when logged in; absent when logged out; hidden for a user with no pools.
 
 **Checkpoint**: US1 and US2 both work independently.
 

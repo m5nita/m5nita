@@ -6,6 +6,7 @@ import { apiFetch } from '../../lib/api'
 import { useSession } from '../../lib/auth'
 import { matchesPollMs, poolsPollMs } from '../../lib/poll'
 import { MatchCard } from '../match/MatchCard'
+import { MyPerformanceCard } from '../performance/MyPerformanceCard'
 import { PoolCard } from '../pool/PoolCard'
 import { Button } from '../ui/Button'
 import { ErrorMessage } from '../ui/ErrorMessage'
@@ -221,6 +222,8 @@ export function DashboardHome() {
           </Button>
         </form>
       </div>
+
+      <MyPerformanceCard />
 
       <PendingPrizesSection />
 
