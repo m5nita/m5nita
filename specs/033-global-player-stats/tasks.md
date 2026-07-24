@@ -79,16 +79,16 @@ saldo-evolution curve — in the approved "Carteira" layout, light and dark.
 screen; verify every number matches the seeded data; verify the empty state (new
 user), negative-saldo styling, and the "a sacar" link.
 
-- [ ] T018 [P] [US1] Add `useMyPerformance()` (inline `useQuery`, `queryKey: ['my-performance']`, via `apiFetch('/api/users/me/performance')`) in `apps/web/src/lib/performance.ts`.
-- [ ] T019 [P] [US1] `AproveitamentoDonut.tsx` (reuse the `EfficiencyDonut` ring pattern; render "sem dados ainda" when `aproveitamento == null`) in `apps/web/src/components/performance/AproveitamentoDonut.tsx`.
-- [ ] T020 [P] [US1] `SaldoSparkline.tsx` (reuse `EvolutionLineChart`; single series from `evolucao`, colored by sign, endpoint dot) in `apps/web/src/components/performance/SaldoSparkline.tsx`.
-- [ ] T021 [P] [US1] `SaldoHero.tsx` (reuse `RankingHero` panel; `+`/green for lucro, `−`/red for prejuízo; `formatCurrency`) in `apps/web/src/components/performance/SaldoHero.tsx`.
-- [ ] T022 [P] [US1] `MoneyTiles.tsx` (gastei / prêmios / a sacar tiles + record `V–D` + em andamento + **maior prêmio** highlight [FR-013]; hide maior prêmio when null) in `apps/web/src/components/performance/MoneyTiles.tsx`.
-- [ ] T023 [US1] `PerformanceScreen.tsx` composition — wires the hook + components; `Loading` while pending, `ErrorMessage` on error, empty state (dashed `Insufficient` pattern) when `participei === 0` — in `apps/web/src/components/performance/PerformanceScreen.tsx`.
-- [ ] T024 [US1] Wire the **"a sacar" CTA** to the **existing** pending-prizes / per-pool withdrawal surface (link to the pending-prizes list / `PrizeWithdrawal` flow; shown only when `aSacarCentavos > 0`) — in `MoneyTiles.tsx`/`PerformanceScreen.tsx` [FR-012/SC-006].
-- [ ] T025 [US1] Route `apps/web/src/routes/performance.tsx` (`createFileRoute('/performance')` + `beforeLoad: () => requireAuthGuard()`, renders `PerformanceScreen`).
-- [ ] T026 [US1] Add `{ to: '/performance' as const, label: 'Meu desempenho' }` to **both** nav arrays (desktop ~L68–72 and mobile ~L158–163) in `apps/web/src/routes/__root.tsx`.
-- [ ] T027 [US1] Manual verification per `quickstart.md`: screen states (data / empty / negative saldo / error), the "a sacar" link routing to withdrawal, and light–dark parity vs the approved mockup.
+- [X] T018 [P] [US1] Add `useMyPerformance()` (inline `useQuery`, `queryKey: ['my-performance']`, via `apiFetch('/api/users/me/performance')`) in `apps/web/src/lib/performance.ts`.
+- [X] T019 [P] [US1] `AproveitamentoDonut.tsx` (reuse the `EfficiencyDonut` ring pattern; render "sem dados ainda" when `aproveitamento == null`) in `apps/web/src/components/performance/AproveitamentoDonut.tsx`.
+- [X] T020 [P] [US1] `SaldoSparkline.tsx` (reuse `EvolutionLineChart`; single series from `evolucao`, colored by sign, endpoint dot) in `apps/web/src/components/performance/SaldoSparkline.tsx`.
+- [X] T021 [P] [US1] `SaldoHero.tsx` (reuse `RankingHero` panel; `+`/green for lucro, `−`/red for prejuízo; `formatCurrency`) in `apps/web/src/components/performance/SaldoHero.tsx`.
+- [X] T022 [P] [US1] `MoneyTiles.tsx` (gastei / prêmios / a sacar tiles + record `V–D` + em andamento + **maior prêmio** highlight [FR-013]; hide maior prêmio when null) in `apps/web/src/components/performance/MoneyTiles.tsx`.
+- [X] T023 [US1] `PerformanceScreen.tsx` composition — wires the hook + components; `Loading` while pending, `ErrorMessage` on error, empty state (dashed `Insufficient` pattern) when `participei === 0` — in `apps/web/src/components/performance/PerformanceScreen.tsx`.
+- [X] T024 [US1] Wire the **"a sacar" CTA** to the **existing** pending-prizes / per-pool withdrawal surface (link to the pending-prizes list / `PrizeWithdrawal` flow; shown only when `aSacarCentavos > 0`) — in `MoneyTiles.tsx`/`PerformanceScreen.tsx` [FR-012/SC-006].
+- [X] T025 [US1] Route `apps/web/src/routes/performance.tsx` (`createFileRoute('/performance')` + `beforeLoad: () => requireAuthGuard()`, renders `PerformanceScreen`).
+- [X] T026 [US1] Add `{ to: '/performance' as const, label: 'Meu desempenho' }` to **both** nav arrays (desktop ~L68–72 and mobile ~L158–163) in `apps/web/src/routes/__root.tsx`.
+- [X] T027 [US1] Manual verification per `quickstart.md`: screen states (data / empty / negative saldo / error), the "a sacar" link routing to withdrawal, and light–dark parity vs the approved mockup.
 
 **Checkpoint**: MVP — the dedicated screen is fully functional and independently testable.
 
