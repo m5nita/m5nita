@@ -151,6 +151,13 @@ function UpcomingMatchesSection() {
   )
 }
 
+function timeGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Bom dia'
+  if (hour < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
 export function DashboardHome() {
   const { data: session } = useSession()
   const navigate = useNavigate()
@@ -182,11 +189,8 @@ export function DashboardHome() {
   return (
     <div className="flex flex-col gap-8 lg:gap-12">
       <div className="lg:text-center">
-        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-          Olá, {session?.user?.name || 'Jogador'}
-        </p>
-        <h1 className="mt-2 font-display text-5xl font-black leading-[0.85] text-black lg:mt-3 lg:text-6xl">
-          Bolões
+        <h1 className="font-display text-sm font-semibold uppercase tracking-widest text-gray-muted">
+          {timeGreeting()}, {session?.user?.name || 'Jogador'}!
         </h1>
         <div className="mt-3 h-1 w-12 bg-red lg:mx-auto" />
       </div>

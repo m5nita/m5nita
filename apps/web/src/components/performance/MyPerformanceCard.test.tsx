@@ -1,5 +1,5 @@
 import type { MyPerformanceResponse } from '@m5nita/shared'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useMyPerformance } from '../../lib/performance'
@@ -52,9 +52,17 @@ describe('<MyPerformanceCard />', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('renders saldo, the win/loss record and a link to /performance', () => {
+  it('shows the section header collapsed by default (content hidden)', () => {
+    setData(perf())
+    render(<MyPerformanceCard />)
+    expect(screen.getByRole('heading', { name: /meu desempenho/i })).toBeInTheDocument()
+    expect(screen.queryByText(/ver tudo/i)).not.toBeInTheDocument()
+  })
+
+  it('expands to show saldo, record and the link when toggled', () => {
     setData(perf())
     const { container } = render(<MyPerformanceCard />)
+    fireEvent.click(screen.getByRole('button'))
     expect(container).toHaveTextContent('357,00')
     expect(container).toHaveTextContent('6')
     expect(container).toHaveTextContent('9')

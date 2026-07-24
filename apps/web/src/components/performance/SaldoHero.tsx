@@ -27,7 +27,7 @@ export function SaldoHero({
       <p className="mt-1.5 text-[11px] text-gray-muted">
         {participei === 0
           ? 'nenhum bolão ainda'
-          : `prêmios conquistados − entradas · ${participei} ${participei === 1 ? 'bolão' : 'bolões'}`}
+          : `prêmios conquistados − valor entradas · ${participei} ${participei === 1 ? 'bolão' : 'bolões'}`}
       </p>
     </div>
   )
