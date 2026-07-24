@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PerformanceRouteImport } from './routes/performance'
 import { Route as MatchesRouteImport } from './routes/matches'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
@@ -28,6 +29,11 @@ import { Route as PoolsPoolIdManageRouteImport } from './routes/pools/$poolId/ma
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerformanceRoute = PerformanceRouteImport.update({
+  id: '/performance',
+  path: '/performance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MatchesRoute = MatchesRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/matches': typeof MatchesRoute
+  '/performance': typeof PerformanceRoute
   '/settings': typeof SettingsRoute
   '/invite/$inviteCode': typeof InviteInviteCodeRoute
   '/pools/create': typeof PoolsCreateRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/matches': typeof MatchesRoute
+  '/performance': typeof PerformanceRoute
   '/settings': typeof SettingsRoute
   '/invite/$inviteCode': typeof InviteInviteCodeRoute
   '/pools/create': typeof PoolsCreateRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/matches': typeof MatchesRoute
+  '/performance': typeof PerformanceRoute
   '/settings': typeof SettingsRoute
   '/invite/$inviteCode': typeof InviteInviteCodeRoute
   '/pools/create': typeof PoolsCreateRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/login'
     | '/matches'
+    | '/performance'
     | '/settings'
     | '/invite/$inviteCode'
     | '/pools/create'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/login'
     | '/matches'
+    | '/performance'
     | '/settings'
     | '/invite/$inviteCode'
     | '/pools/create'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/login'
     | '/matches'
+    | '/performance'
     | '/settings'
     | '/invite/$inviteCode'
     | '/pools/create'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   HowItWorksRoute: typeof HowItWorksRoute
   LoginRoute: typeof LoginRoute
   MatchesRoute: typeof MatchesRoute
+  PerformanceRoute: typeof PerformanceRoute
   SettingsRoute: typeof SettingsRoute
   InviteInviteCodeRoute: typeof InviteInviteCodeRoute
 }
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/performance': {
+      id: '/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof PerformanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/matches': {
@@ -359,6 +379,7 @@ const rootRouteChildren: RootRouteChildren = {
   HowItWorksRoute: HowItWorksRoute,
   LoginRoute: LoginRoute,
   MatchesRoute: MatchesRoute,
+  PerformanceRoute: PerformanceRoute,
   SettingsRoute: SettingsRoute,
   InviteInviteCodeRoute: InviteInviteCodeRoute,
 }

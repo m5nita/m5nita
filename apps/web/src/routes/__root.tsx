@@ -68,6 +68,7 @@ function RootLayout() {
                 {[
                   { to: '/' as const, label: 'Home' },
                   { to: '/matches' as const, label: 'Jogos' },
+                  { to: '/performance' as const, label: 'Meu desempenho' },
                   { to: '/how-it-works' as const, label: 'Como funciona?' },
                   { to: '/settings' as const, label: 'Configurações' },
                 ].map(({ to, label }) => (
@@ -158,6 +159,7 @@ function RootLayout() {
                 {[
                   { to: '/' as const, label: 'Home' },
                   { to: '/matches' as const, label: 'Jogos' },
+                  { to: '/performance' as const, label: 'Meu desempenho' },
                   { to: '/how-it-works' as const, label: 'Como funciona?' },
                   { to: '/settings' as const, label: 'Configurações' },
                 ].map(({ to, label }) => (

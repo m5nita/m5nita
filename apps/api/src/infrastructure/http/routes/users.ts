@@ -1,4 +1,4 @@
-import { phoneSchema } from '@m5nita/shared'
+import { type MyPerformanceResponse, phoneSchema } from '@m5nita/shared'
 import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { getContainer } from '../../../container'
@@ -27,6 +27,29 @@ usersRoutes.get('/users/me/pending-prizes', async (c) => {
     userId: currentUser.id,
   })
   return c.json(result)
+})
+
+usersRoutes.get('/users/me/performance', async (c) => {
+  const currentUser = c.get('user')
+  const s = await getContainer().getMyPerformanceUseCase.execute({ userId: currentUser.id })
+  const body: MyPerformanceResponse = {
+    participei: s.participei,
+    vitorias: s.vitorias,
+    derrotas: s.derrotas,
+    emAndamento: s.emAndamento,
+    aproveitamento: s.aproveitamento,
+    gasteiCentavos: s.gastei.centavos,
+    premiosConquistadosCentavos: s.premiosConquistados.centavos,
+    aSacarCentavos: s.aSacar.centavos,
+    saldoCentavos: s.saldo.centavos,
+    maiorPremioCentavos: s.maiorPremio ? s.maiorPremio.centavos : null,
+    evolucao: s.evolucao.map((p) => ({
+      poolId: p.poolId,
+      settledAt: p.settledAt ? p.settledAt.toISOString() : null,
+      saldoCentavos: p.cumulativeSaldoCentavos,
+    })),
+  }
+  return c.json(body)
 })
 
 // Renames go through Better Auth's update-user endpoint (which refreshes the

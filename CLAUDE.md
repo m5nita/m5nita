@@ -1,6 +1,6 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-06-27
+Auto-generated from all feature plans. Last updated: 2026-07-24
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 22) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
@@ -37,6 +37,8 @@ Auto-generated from all feature plans. Last updated: 2026-06-27
 - Browser `sessionStorage` for per-session dismissal (key `m5nita.banner.dismissed`). Banner content lives in build-time Vite env (`import.meta.env.VITE_BANNER_*`). No database. (027-announcement-banner)
 - TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + Hono (API), Drizzle ORM, Better Auth, grammY, Resend, React 19, TanStack Router/Query, Tailwind v4, vite-plugin-pwa (`generateSW` + `importScripts`); **NEW**: `web-push` (api, infrastructure-only) (030-web-push)
 - PostgreSQL 16 via Drizzle. Two new additive tables (`push_subscription`, `match_points_notified`); migration `0015`. (030-web-push)
+- TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM, Better Auth (auth middleware); React 19, TanStack Router + Query, Tailwind v4 (`@theme` tokens). No new deps. (033-global-player-stats)
+- PostgreSQL 16 — **reuses** `pool`, `pool_member`, `pool_standing`, `payment`, `prize_withdrawal`. **No new tables, no migration.** (033-global-player-stats)
 
 - TypeScript 5.x (Node.js >= 22) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM; payments via InfinitePay / Stripe / Mock adapters
@@ -132,9 +134,9 @@ DATABASE_URL=postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test \
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 033-global-player-stats: Added TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM, Better Auth (auth middleware); React 19, TanStack Router + Query, Tailwind v4 (`@theme` tokens). No new deps.
 - 030-web-push: Added TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + API — Hono, Drizzle ORM, Better Auth, grammY, Resend; **NEW**
 - 027-announcement-banner: Added TypeScript 5.x (strict), Node.js ≥ 22 (build only); runtime target is the browser + React 19, TanStack Router, Tailwind CSS v4 (`@theme` tokens in `apps/web/src/styles/app.css`). **No new runtime dependencies.**
-- 023-knockout-scoring: Added TypeScript 5.x, Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM (Postgres), Better Auth, grammY (Telegram); React 19 + TanStack Router/Query + Tailwind v4 (web); football-data.org v4 (match data, via `fetch`)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
