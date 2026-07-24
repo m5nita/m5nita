@@ -28,7 +28,7 @@ frontend surface is then an independently-testable story: US1 = dedicated screen
 
 ## Phase 1: Setup (Shared contract)
 
-- [ ] T001 [P] Add `MyPerformanceResponse` DTO (fields per `contracts/get-my-performance.md`) to `packages/shared/src/types/index.ts`, next to `PendingPrizesResponse`.
+- [X] T001 [P] Add `MyPerformanceResponse` DTO (fields per `contracts/get-my-performance.md`) to `packages/shared/src/types/index.ts`, next to `PendingPrizesResponse`.
 
 ---
 
@@ -39,31 +39,31 @@ frontend story. TDD order: write the failing test, then implement to green.
 
 ### Domain (pure, 100% coverage)
 
-- [ ] T002 [P] Define read port `PerformanceReadRepository` (methods `getUserPoolFacts(userId)`, `getUserWithdrawnPoolIds(userId)` + `UserPoolFact` projection type per data-model.md) in `apps/api/src/domain/performance/PerformanceReadRepository.port.ts`.
-- [ ] T003 [P] Extend `RankingRepository` port with `getStandingsForPools(poolIds: string[]): Promise<Array<StandingRow & { poolId: string }>>` in `apps/api/src/domain/ranking/RankingRepository.port.ts`.
-- [ ] T004 [P] Write failing unit tests for the `Balance` VO (`of` integer guard, signed values, `isPositive`/`isNegative`/`isZero`, `abs()→Money`) in `apps/api/src/domain/shared/Balance.test.ts`.
-- [ ] T005 Implement `Balance` signed-money VO in `apps/api/src/domain/shared/Balance.ts` to pass T004.
-- [ ] T006 Define `PerformanceSummary` aggregate VO + `PoolContribution`/`EvolutionPoint` shapes (per data-model.md §C) in `apps/api/src/domain/performance/PerformanceSummary.ts`.
-- [ ] T007 Write failing unit tests for `PerformanceCalculation.summarize` in `apps/api/src/domain/performance/PerformanceCalculation.test.ts`: saldo, aproveitamento **null** when no decided pools, vitórias/derrotas counts, **ties** (co-winners), **free pools** (R$0 money but counted), maior prêmio, a sacar (excludes withdrawn), cumulative evolução, and the reconciliation invariants (SC-003: `saldo == Σ(winnerShare − entryPaid)`; SC-005: `vitórias+derrotas == closed count`).
-- [ ] T008 Implement `PerformanceCalculation` domain service (uses `PrizeCalculation`, `FeePolicy.from`, `EntryFee.hydrate`, `Money`, `Balance`) in `apps/api/src/domain/performance/PerformanceCalculation.ts` to pass T007.
+- [X] T002 [P] Define read port `PerformanceReadRepository` (methods `getUserPoolFacts(userId)`, `getUserWithdrawnPoolIds(userId)` + `UserPoolFact` projection type per data-model.md) in `apps/api/src/domain/performance/PerformanceReadRepository.port.ts`.
+- [X] T003 [P] Extend `RankingRepository` port with `getStandingsForPools(poolIds: string[]): Promise<Array<StandingRow & { poolId: string }>>` in `apps/api/src/domain/ranking/RankingRepository.port.ts`.
+- [X] T004 [P] Write failing unit tests for the `Balance` VO (`of` integer guard, signed values, `isPositive`/`isNegative`/`isZero`, `abs()→Money`) in `apps/api/src/domain/shared/Balance.test.ts`.
+- [X] T005 Implement `Balance` signed-money VO in `apps/api/src/domain/shared/Balance.ts` to pass T004.
+- [X] T006 Define `PerformanceSummary` aggregate VO + `PoolContribution`/`EvolutionPoint` shapes (per data-model.md §C) in `apps/api/src/domain/performance/PerformanceSummary.ts`.
+- [X] T007 Write failing unit tests for `PerformanceCalculation.summarize` in `apps/api/src/domain/performance/PerformanceCalculation.test.ts`: saldo, aproveitamento **null** when no decided pools, vitórias/derrotas counts, **ties** (co-winners), **free pools** (R$0 money but counted), maior prêmio, a sacar (excludes withdrawn), cumulative evolução, and the reconciliation invariants (SC-003: `saldo == Σ(winnerShare − entryPaid)`; SC-005: `vitórias+derrotas == closed count`).
+- [X] T008 Implement `PerformanceCalculation` domain service (uses `PrizeCalculation`, `FeePolicy.from`, `EntryFee.hydrate`, `Money`, `Balance`) in `apps/api/src/domain/performance/PerformanceCalculation.ts` to pass T007.
 
 ### Application
 
-- [ ] T009 Write failing unit test for `GetMyPerformanceUseCase` with fake repos (groups standings per pool, reuses `Ranking.build` for position-1, composes summary; empty-user case) in `apps/api/src/application/performance/GetMyPerformanceUseCase.test.ts`.
-- [ ] T010 Implement `GetMyPerformanceUseCase.execute({ userId })` in `apps/api/src/application/performance/GetMyPerformanceUseCase.ts` (fetch facts + batched standings + withdrawn ids; per closed pool `Ranking.build`→winners; assemble `PoolContribution[]`; call `PerformanceCalculation.summarize`) to pass T009.
+- [X] T009 Write failing unit test for `GetMyPerformanceUseCase` with fake repos (groups standings per pool, reuses `Ranking.build` for position-1, composes summary; empty-user case) in `apps/api/src/application/performance/GetMyPerformanceUseCase.test.ts`.
+- [X] T010 Implement `GetMyPerformanceUseCase.execute({ userId })` in `apps/api/src/application/performance/GetMyPerformanceUseCase.ts` (fetch facts + batched standings + withdrawn ids; per closed pool `Ranking.build`→winners; assemble `PoolContribution[]`; call `PerformanceCalculation.summarize`) to pass T009.
 
 ### Infrastructure
 
-- [ ] T011 [P] Implement `DrizzlePerformanceReadRepository` (`getUserPoolFacts`: one query joining `pool_member→pool`, coupon join for `discountPercent`, correlated `COUNT` for `memberCount`, `payment` join via `pool_member.payment_id` for `entryPaidCentavos`, `ne(pool.status,'cancelled')`; `getUserWithdrawnPoolIds`) in `apps/api/src/infrastructure/persistence/DrizzlePerformanceReadRepository.ts`.
-- [ ] T012 [P] Implement `getStandingsForPools(poolIds)` (`inArray(poolMember.poolId, poolIds)`, LEFT JOIN standing coalesced to 0, `ORDER BY poolId, points_total DESC, exact_matches DESC, name ASC, userId ASC`) in `apps/api/src/infrastructure/persistence/DrizzleRankingRepository.ts`.
-- [ ] T013 Wire `getMyPerformanceUseCase` (construct `DrizzlePerformanceReadRepository`, inject with `rankingRepo`) and expose it on the container in `apps/api/src/container.ts`.
-- [ ] T014 Add `usersRoutes.get('/users/me/performance', …)` — read `c.get('user').id`, call the use case, map `PerformanceSummary`→`MyPerformanceResponse` (signed `saldoCentavos`) — in `apps/api/src/infrastructure/http/routes/users.ts`.
+- [X] T011 [P] Implement `DrizzlePerformanceReadRepository` (`getUserPoolFacts`: one query joining `pool_member→pool`, coupon join for `discountPercent`, correlated `COUNT` for `memberCount`, `payment` join via `pool_member.payment_id` for `entryPaidCentavos`, `ne(pool.status,'cancelled')`; `getUserWithdrawnPoolIds`) in `apps/api/src/infrastructure/persistence/DrizzlePerformanceReadRepository.ts`.
+- [X] T012 [P] Implement `getStandingsForPools(poolIds)` (`inArray(poolMember.poolId, poolIds)`, LEFT JOIN standing coalesced to 0, `ORDER BY poolId, points_total DESC, exact_matches DESC, name ASC, userId ASC`) in `apps/api/src/infrastructure/persistence/DrizzleRankingRepository.ts`.
+- [X] T013 Wire `getMyPerformanceUseCase` (construct `DrizzlePerformanceReadRepository`, inject with `rankingRepo`) and expose it on the container in `apps/api/src/container.ts`.
+- [X] T014 Add `usersRoutes.get('/users/me/performance', …)` — read `c.get('user').id`, call the use case, map `PerformanceSummary`→`MyPerformanceResponse` (signed `saldoCentavos`) — in `apps/api/src/infrastructure/http/routes/users.ts`.
 
 ### Backend tests (verify Foundational)
 
-- [ ] T015 [P] Contract test asserting the response schema + invariants from `contracts/get-my-performance.md` (incl. empty-user payload, `aproveitamento` null iff no decided pools, and that the endpoint is reachable with only `requireAuth` — **no** `stats_unlock`, i.e. it is free [FR-002/SC-008]) in `apps/api/tests/integration/performance.contract.test.ts`.
-- [ ] T016 [P] Integration test on real Postgres (port 5433): seed the fixture (17 non-cancelled pools: 6 won incl. one tie, 9 lost, 2 active; entries + one withdrawal) and assert the full payload matches spec US1 #1/#2, and reconciles with `GetPrizeInfoUseCase` per pool (SC-003), in `apps/api/tests/integration/performance.integration.test.ts`.
-- [ ] T017 Query-count / performance guard: assert the endpoint issues **≤ 3 DB round-trips** (no per-pool loop) and meets the budget, **and capture `EXPLAIN` plans for `getUserPoolFacts` + `getStandingsForPools` to confirm index scans (no full table scan)** per Principle IV, in `apps/api/tests/integration/performance.perf.test.ts`.
+- [X] T015 [P] Contract test asserting the response schema + invariants from `contracts/get-my-performance.md` (incl. empty-user payload, `aproveitamento` null iff no decided pools, and that the endpoint is reachable with only `requireAuth` — **no** `stats_unlock`, i.e. it is free [FR-002/SC-008]) in `apps/api/tests/integration/performance.contract.test.ts`.
+- [X] T016 [P] Integration test on real Postgres (port 5433): seed the fixture (17 non-cancelled pools: 6 won incl. one tie, 9 lost, 2 active; entries + one withdrawal) and assert the full payload matches spec US1 #1/#2, and reconciles with `GetPrizeInfoUseCase` per pool (SC-003), in `apps/api/tests/integration/performance.integration.test.ts`.
+- [X] T017 Query-count / performance guard: assert the endpoint issues **≤ 3 DB round-trips** (no per-pool loop) and meets the budget, **and capture `EXPLAIN` plans for `getUserPoolFacts` + `getStandingsForPools` to confirm index scans (no full table scan)** per Principle IV, in `apps/api/tests/integration/performance.perf.test.ts`.
 
 **Checkpoint**: `GET /api/users/me/performance` returns correct, reconciled, fast data. Frontend stories can now proceed in parallel.
 

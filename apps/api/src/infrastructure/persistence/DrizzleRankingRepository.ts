@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { DbExecutor } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { match as matchTable } from '../../db/schema/match'
@@ -7,6 +7,7 @@ import { poolStanding } from '../../db/schema/poolStanding'
 import { prediction } from '../../db/schema/prediction'
 import { Ranking } from '../../domain/ranking/Ranking'
 import type {
+  PoolStandingRow,
   RankingEntry,
   RankingRepository,
   StandingRow,
@@ -44,6 +45,38 @@ export class DrizzleRankingRepository implements RankingRepository {
         // Deterministic final tiebreaker so members tied on points + exact count
         // keep a stable order across reads (otherwise Postgres returns ties in an
         // arbitrary order that changes between polls → rows visibly shuffle).
+        asc(user.name),
+        asc(poolMember.userId),
+      )
+  }
+
+  // Batched sibling of getStandings: standings for MANY pools in one query, each
+  // pool's rows pre-sorted by the same tiebreaker (poolId first so groups are
+  // contiguous). Lets the global-performance read resolve winners for every
+  // closed pool without a per-pool round-trip.
+  async getStandingsForPools(poolIds: string[]): Promise<PoolStandingRow[]> {
+    if (poolIds.length === 0) return []
+    return this.db
+      .select({
+        poolId: poolMember.poolId,
+        userId: poolMember.userId,
+        name: user.name,
+        totalPoints: sql<number>`coalesce(${poolStanding.pointsTotal}, 0)::int`.as('total_points'),
+        exactMatches: sql<number>`coalesce(${poolStanding.exactMatches}, 0)::int`.as(
+          'exact_matches',
+        ),
+      })
+      .from(poolMember)
+      .innerJoin(user, eq(user.id, poolMember.userId))
+      .leftJoin(
+        poolStanding,
+        and(eq(poolStanding.poolId, poolMember.poolId), eq(poolStanding.userId, poolMember.userId)),
+      )
+      .where(inArray(poolMember.poolId, poolIds))
+      .orderBy(
+        asc(poolMember.poolId),
+        desc(sql`coalesce(${poolStanding.pointsTotal}, 0)`),
+        desc(sql`coalesce(${poolStanding.exactMatches}, 0)`),
         asc(user.name),
         asc(poolMember.userId),
       )

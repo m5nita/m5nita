@@ -244,3 +244,26 @@ export interface PendingPrize {
 export interface PendingPrizesResponse {
   items: PendingPrize[]
 }
+
+export interface PerformanceEvolutionPoint {
+  poolId: string
+  settledAt: string | null
+  saldoCentavos: number
+}
+
+/** Global per-user performance overview ("Meu desempenho"). All money in centavos. */
+export interface MyPerformanceResponse {
+  participei: number
+  vitorias: number
+  derrotas: number
+  emAndamento: number
+  /** Win rate over decided pools (0..1); null when no pool is decided yet. */
+  aproveitamento: number | null
+  gasteiCentavos: number
+  premiosConquistadosCentavos: number
+  aSacarCentavos: number
+  /** Signed: negative means the user is at a loss (prejuízo). */
+  saldoCentavos: number
+  maiorPremioCentavos: number | null
+  evolucao: PerformanceEvolutionPoint[]
+}

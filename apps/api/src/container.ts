@@ -1,6 +1,7 @@
 import { FinalizeMatchUseCase } from './application/match/FinalizeMatchUseCase'
 import { NotifyMatchPointsUseCase } from './application/match/NotifyMatchPointsUseCase'
 import { CompleteCheckoutUseCase } from './application/payment/CompleteCheckoutUseCase'
+import { GetMyPerformanceUseCase } from './application/performance/GetMyPerformanceUseCase'
 import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
 import { GetPoolDetailsUseCase } from './application/pool/GetPoolDetailsUseCase'
 import { GetUserPoolsUseCase } from './application/pool/GetUserPoolsUseCase'
@@ -31,6 +32,7 @@ import { StripePaymentGateway } from './infrastructure/external/StripePaymentGat
 import { WebPushNotificationService } from './infrastructure/external/WebPushNotificationService'
 import { DrizzleMatchPointsNotifiedStore } from './infrastructure/persistence/DrizzleMatchPointsNotifiedStore'
 import { DrizzleMatchRepository } from './infrastructure/persistence/DrizzleMatchRepository'
+import { DrizzlePerformanceReadRepository } from './infrastructure/persistence/DrizzlePerformanceReadRepository'
 import { DrizzlePoolRepository } from './infrastructure/persistence/DrizzlePoolRepository'
 import { DrizzlePredictionRepository } from './infrastructure/persistence/DrizzlePredictionRepository'
 import { DrizzlePrizeWithdrawalRepository } from './infrastructure/persistence/DrizzlePrizeWithdrawalRepository'
@@ -119,6 +121,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const predictionRepo = new DrizzlePredictionRepository(db)
   const prizeWithdrawalRepo = new DrizzlePrizeWithdrawalRepository(db)
   const rankingRepo = new DrizzleRankingRepository(db)
+  const performanceReadRepo = new DrizzlePerformanceReadRepository(db)
   const matchRepo = new DrizzleMatchRepository(db)
   const statsUnlockRepo = new DrizzleStatsUnlockRepository(db)
   const statsRepo = new DrizzleStatsRepository(db)
@@ -149,6 +152,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
 
   const getPrizeInfoUseCase = new GetPrizeInfoUseCase(poolRepo, prizeWithdrawalRepo, rankingRepo)
   const getPendingPrizesUseCase = new GetPendingPrizesUseCase(poolRepo, getPrizeInfoUseCase)
+  const getMyPerformanceUseCase = new GetMyPerformanceUseCase(performanceReadRepo, rankingRepo)
 
   const notifyMatchPointsUseCase = new NotifyMatchPointsUseCase(
     matchRepo,
@@ -221,6 +225,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     ),
     getPrizeInfoUseCase,
     getPendingPrizesUseCase,
+    getMyPerformanceUseCase,
     requestWithdrawalUseCase: new RequestWithdrawalUseCase(
       poolRepo,
       prizeWithdrawalRepo,
