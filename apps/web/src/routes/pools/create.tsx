@@ -285,7 +285,8 @@ function CreatePoolPage() {
 
   function validateForm(): string | null {
     if (name.trim().length < 3) return 'Nome deve ter pelo menos 3 caracteres'
-    if (!isValidFee) return 'Valor deve ser entre R$ 5 e R$ 1.000'
+    if (!isValidFee)
+      return `Valor deve ser entre ${formatCurrency(POOL.MIN_ENTRY_FEE)} e ${formatCurrency(POOL.MAX_ENTRY_FEE)}`
     if (!competitionId) return 'Selecione uma competição'
     return null
   }
@@ -479,13 +480,13 @@ function CreatePoolPage() {
             ))}
           </div>
           <Input
-            label="Ou valor personalizado (R$ 5 a R$ 1.000)"
+            label={`Ou valor personalizado (${formatCurrency(POOL.MIN_ENTRY_FEE)} a ${formatCurrency(POOL.MAX_ENTRY_FEE)})`}
             type="number"
             placeholder="0"
             value={customFee}
             onChange={(e) => setCustomFee(e.target.value)}
-            min={5}
-            max={1000}
+            min={POOL.MIN_ENTRY_FEE / 100}
+            max={POOL.MAX_ENTRY_FEE / 100}
           />
         </div>
 

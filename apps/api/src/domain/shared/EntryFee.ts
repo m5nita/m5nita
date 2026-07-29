@@ -1,3 +1,4 @@
+import { POOL } from '@m5nita/shared'
 import { Money } from './Money'
 
 export class EntryFee {
@@ -7,14 +8,17 @@ export class EntryFee {
     this.value = value
   }
 
-  // Creation-time factory: enforces the current R$5–R$1000 business floor.
-  // Use only when accepting a NEW entry fee from user input. For values that
-  // originate from the database (mapper or read-model projection), use
-  // `hydrate` instead — pools created before the bound was tightened in #55
-  // legally hold values below the current floor.
+  // Creation-time factory: enforces the current entry-fee bounds
+  // (POOL.MIN_ENTRY_FEE..MAX_ENTRY_FEE, the single source shared with the
+  // schema and the front). Use only when accepting a NEW entry fee from user
+  // input. For values that originate from the database (mapper or read-model
+  // projection), use `hydrate` instead — pools created under an earlier bound
+  // legally hold values outside the current floor.
   static of(centavos: number): EntryFee {
-    if (centavos < 500 || centavos > 100000) {
-      throw new Error('Entry fee must be between 500 and 100000 centavos')
+    if (centavos < POOL.MIN_ENTRY_FEE || centavos > POOL.MAX_ENTRY_FEE) {
+      throw new Error(
+        `Entry fee must be between ${POOL.MIN_ENTRY_FEE} and ${POOL.MAX_ENTRY_FEE} centavos`,
+      )
     }
     return new EntryFee(Money.of(centavos))
   }
