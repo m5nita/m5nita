@@ -7,14 +7,14 @@ export class EntryFee {
     this.value = value
   }
 
-  // Creation-time factory: enforces the current R$5–R$1000 business floor.
+  // Creation-time factory: enforces the current R$1–R$1000 business floor.
   // Use only when accepting a NEW entry fee from user input. For values that
   // originate from the database (mapper or read-model projection), use
-  // `hydrate` instead — pools created before the bound was tightened in #55
-  // legally hold values below the current floor.
+  // `hydrate` instead — pools created under an earlier bound legally hold
+  // values outside the current floor.
   static of(centavos: number): EntryFee {
-    if (centavos < 500 || centavos > 100000) {
-      throw new Error('Entry fee must be between 500 and 100000 centavos')
+    if (centavos < 100 || centavos > 100000) {
+      throw new Error('Entry fee must be between 100 and 100000 centavos')
     }
     return new EntryFee(Money.of(centavos))
   }

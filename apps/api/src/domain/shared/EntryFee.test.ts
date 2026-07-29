@@ -3,9 +3,9 @@ import { EntryFee } from './EntryFee'
 
 describe('EntryFee', () => {
   describe('EntryFee.of()', () => {
-    it('creates EntryFee with 500 centavos (minimum)', () => {
-      const fee = EntryFee.of(500)
-      expect(fee.value.centavos).toBe(500)
+    it('creates EntryFee with 100 centavos (minimum)', () => {
+      const fee = EntryFee.of(100)
+      expect(fee.value.centavos).toBe(100)
     })
 
     it('creates EntryFee with 50000 centavos', () => {
@@ -18,8 +18,8 @@ describe('EntryFee', () => {
       expect(fee.value.centavos).toBe(100000)
     })
 
-    it('rejects value below 500', () => {
-      expect(() => EntryFee.of(499)).toThrow()
+    it('rejects value below 100', () => {
+      expect(() => EntryFee.of(99)).toThrow()
     })
 
     it('rejects value above 100000', () => {
@@ -29,8 +29,8 @@ describe('EntryFee', () => {
 
   describe('EntryFee.hydrate()', () => {
     it('accepts legacy values below the current creation floor', () => {
-      const fee = EntryFee.hydrate(100)
-      expect(fee.value.centavos).toBe(100)
+      const fee = EntryFee.hydrate(50)
+      expect(fee.value.centavos).toBe(50)
     })
 
     it('still rejects negative / non-integer values via Money', () => {

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { POOL } from '../constants/index'
 import { isValidCpf } from '../lib/cpf'
 
 // Strips HTML tags/entities and trims. Pool names are rendered in email
@@ -13,7 +14,7 @@ const safePoolName = z
 export const createPoolSchema = z
   .object({
     name: safePoolName,
-    entryFee: z.number().int().min(500).max(100000),
+    entryFee: z.number().int().min(POOL.MIN_ENTRY_FEE).max(POOL.MAX_ENTRY_FEE),
     competitionId: z.string().uuid('ID da competicao invalido'),
     matchdayFrom: z.number().int().min(1).optional(),
     matchdayTo: z.number().int().min(1).optional(),
@@ -61,7 +62,7 @@ export const validateCouponSchema = z.object({
     .max(20)
     .transform((v) => v.trim().toUpperCase())
     .pipe(z.string().regex(/^[A-Z0-9]+$/, 'Código deve conter apenas letras e números')),
-  entryFee: z.number().int().min(500).max(100000),
+  entryFee: z.number().int().min(POOL.MIN_ENTRY_FEE).max(POOL.MAX_ENTRY_FEE),
 })
 
 export const updatePoolSchema = z.object({
