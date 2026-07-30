@@ -1,6 +1,6 @@
 # manita Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-07-24
+Auto-generated from all feature plans. Last updated: 2026-07-29
 
 ## Active Technologies
 - TypeScript 5.x (Node.js >= 22) + Hono, Better Auth (phone-number plugin), Drizzle ORM, grammY (new) (002-telegram-otp)
@@ -39,6 +39,8 @@ Auto-generated from all feature plans. Last updated: 2026-07-24
 - PostgreSQL 16 via Drizzle. Two new additive tables (`push_subscription`, `match_points_notified`); migration `0015`. (030-web-push)
 - TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM, Better Auth (auth middleware); React 19, TanStack Router + Query, Tailwind v4 (`@theme` tokens). No new deps. (033-global-player-stats)
 - PostgreSQL 16 — **reuses** `pool`, `pool_member`, `pool_standing`, `payment`, `prize_withdrawal`. **No new tables, no migration.** (033-global-player-stats)
+- TypeScript 5.x (strict), Node.js ≥ 22 + Hono, Drizzle ORM, Better Auth, grammY, `web-push` (034-new-pool-broadcast)
+- PostgreSQL 16 — migration `0016`: two additive tables (034-new-pool-broadcast)
 
 - TypeScript 5.x (Node.js >= 22) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM; payments via InfinitePay / Stripe / Mock adapters
@@ -134,9 +136,9 @@ DATABASE_URL=postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test \
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 034-new-pool-broadcast: Added TypeScript 5.x (strict), Node.js ≥ 22 + Hono, Drizzle ORM, Better Auth, grammY, `web-push`
 - 033-global-player-stats: Added TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM, Better Auth (auth middleware); React 19, TanStack Router + Query, Tailwind v4 (`@theme` tokens). No new deps.
 - 030-web-push: Added TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + API — Hono, Drizzle ORM, Better Auth, grammY, Resend; **NEW**
-- 027-announcement-banner: Added TypeScript 5.x (strict), Node.js ≥ 22 (build only); runtime target is the browser + React 19, TanStack Router, Tailwind CSS v4 (`@theme` tokens in `apps/web/src/styles/app.css`). **No new runtime dependencies.**
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
