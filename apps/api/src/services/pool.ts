@@ -5,17 +5,20 @@ import { match } from '../db/schema/match'
 import { poolMember } from '../db/schema/poolMember'
 import { FeePolicy } from '../domain/shared/FeePolicy'
 import { Money } from '../domain/shared/Money'
+import { PoolScope } from '../domain/shared/PoolScope'
 
 /**
  * HTTP read helper. Returns a flattened shape consumed by routes. Prize/fee
  * are computed by the `Pool` aggregate inside the repository (read-model).
  */
 export async function getPoolById(poolId: string, userId: string) {
-  const { poolRepo } = getContainer()
-  // Independent reads — fetch the pool detail and membership together.
-  const [details, isMember] = await Promise.all([
+  const { poolRepo, statsUnlockRepo } = getContainer()
+  // Independent reads — pool detail, membership and this viewer's stats
+  // entitlement together, so the availability flag costs no extra round trip.
+  const [details, isMember, hasStatsUnlock] = await Promise.all([
     poolRepo.findByIdWithDetails(poolId),
     isPoolMember(poolId, userId),
+    statsUnlockRepo.isUnlocked(userId, poolId),
   ])
   if (!details) return null
 
@@ -30,6 +33,9 @@ export async function getPoolById(poolId: string, userId: string) {
     // be probing pool ids. Members still receive it for sharing.
     inviteCode: isMember ? details.inviteCode : '',
     isMember,
+    // Per viewer: the scope decides for everyone, except that whoever already
+    // paid for an unlock keeps access on a pool that no longer offers it.
+    statsAvailable: PoolScope.fromRow(details).supportsParticipantStats() || hasStatsUnlock,
     discountPercent: details.coupon?.discountPercent ?? 0,
     originalPlatformFee,
     platformFee,

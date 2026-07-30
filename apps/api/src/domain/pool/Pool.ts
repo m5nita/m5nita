@@ -104,6 +104,11 @@ export class Pool {
     return this.scope.kind === 'single-match' ? SingleMatchScoringPolicy : RangeScoringPolicy
   }
 
+  /** Whether the paid per-participant statistics panel means anything here. */
+  supportsParticipantStats(): boolean {
+    return this.scope.supportsParticipantStats()
+  }
+
   /**
    * Whether a match belongs to this pool: same competition AND inside the
    * pool's scope (whole-competition / matchday range / single match). This is

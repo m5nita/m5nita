@@ -132,4 +132,24 @@ describe('PoolScope', () => {
       expect(scope.label({ homeTeam: 'A', awayTeam: 'B' })).toBe('Rodadas 1 a 2')
     })
   })
+
+  describe('supportsParticipantStats()', () => {
+    it('is true only for a whole-competition scope', () => {
+      expect(PoolScope.wholeCompetition().supportsParticipantStats()).toBe(true)
+    })
+
+    it('is false for a single matchday', () => {
+      const scope = PoolScope.fromRange(MatchdayRange.create(5, 5) as MatchdayRange)
+      expect(scope.supportsParticipantStats()).toBe(false)
+    })
+
+    it('is false for a matchday range', () => {
+      const scope = PoolScope.fromRange(MatchdayRange.create(1, 8) as MatchdayRange)
+      expect(scope.supportsParticipantStats()).toBe(false)
+    })
+
+    it('is false for a single match', () => {
+      expect(PoolScope.singleMatch(MATCH_A).supportsParticipantStats()).toBe(false)
+    })
+  })
 })

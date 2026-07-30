@@ -39,6 +39,15 @@ export class UnlockStatsUseCase {
       throw new StatsError('ALREADY_UNLOCKED', 'Estatísticas já desbloqueadas')
     }
 
+    // No new purchases where the panel says nothing. Checked before the gateway
+    // so an unsupported pool can never produce a charge or a payment row.
+    if (!pool.supportsParticipantStats()) {
+      throw new StatsError(
+        'SCOPE_UNSUPPORTED',
+        'Estatísticas estão disponíveis apenas em bolões de campeonato completo',
+      )
+    }
+
     const payment = await this.paymentGateway.createCheckoutSession({
       userId: input.userId,
       poolId: input.poolId,
