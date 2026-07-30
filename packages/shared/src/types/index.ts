@@ -242,11 +242,21 @@ export interface PrizeInfo {
   }[]
 }
 
+export interface PendingPrizeWithdrawal {
+  amount: number
+  /** Já mascarada pela API — o front nunca re-mascara. */
+  pixKey: string
+  status: WithdrawalStatus
+  requestedAt: string
+}
+
 export interface PendingPrize {
   poolId: string
   poolName: string
   winnerShare: number
   winnerCount: number
+  /** null enquanto o ganhador não enviou a chave PIX. */
+  withdrawal: PendingPrizeWithdrawal | null
 }
 
 export interface PendingPrizesResponse {
