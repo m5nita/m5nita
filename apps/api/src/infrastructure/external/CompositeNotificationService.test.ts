@@ -526,6 +526,10 @@ describe('notifyWithdrawalPaid', () => {
     const bot = makeBot()
     const webPush = makeWebPush()
     webPush.sendToUser.mockResolvedValue(true)
+    // Telegram must be reachable here too, so a passing `telegramCalls` assertion
+    // proves push short-circuited the chain rather than Telegram being untried
+    // for lack of a resolvable chat.
+    mockFindChatId.mockResolvedValue(4242)
     const service = new CompositeNotificationService(bot, webPush, makeStore(), makePreferences())
 
     await service.notifyWithdrawalPaid(DATA)
@@ -542,16 +546,14 @@ describe('notifyWithdrawalPaid', () => {
 
   it('falls back to Telegram when push does not deliver', async () => {
     const bot = makeBot()
+    const webPush = makeWebPush()
     mockFindChatId.mockResolvedValue(4242)
-    const service = new CompositeNotificationService(
-      bot,
-      makeWebPush(),
-      makeStore(),
-      makePreferences(),
-    )
+    const service = new CompositeNotificationService(bot, webPush, makeStore(), makePreferences())
 
     await service.notifyWithdrawalPaid(DATA)
 
+    // Proves push was actually tried (and returned false) rather than skipped.
+    expect(webPush.sendToUser).toHaveBeenCalledWith('user-1', expect.anything())
     const calls = telegramCalls(bot)
     expect(calls).toHaveLength(1)
     expect(calls[0]?.[0]).toBe(4242)
@@ -608,6 +610,11 @@ describe('notifyWithdrawalPaid', () => {
 
     await service.notifyWithdrawalPaid(DATA)
 
-    expect(String(telegramCalls(bot)[0]?.[1])).not.toContain('12345678909')
+    const message = String(telegramCalls(bot)[0]?.[1])
+    // Markdown-escapes each '*' as '\*' before interpolating (see escapeMarkdown
+    // in TelegramNotificationService), so strip the backslashes it inserts
+    // before checking for the masked value verbatim.
+    expect(message.replace(/\\/g, '')).toContain('*******8909')
+    expect(message).not.toContain('12345678909')
   })
 })
