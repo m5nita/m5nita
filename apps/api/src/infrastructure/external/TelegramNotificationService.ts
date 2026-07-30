@@ -41,6 +41,23 @@ export class TelegramNotificationService {
     })
   }
 
+  async sendWithdrawalPaidMessage(
+    chatId: number,
+    params: { poolName: string; amount: number; pixKey: string },
+  ): Promise<void> {
+    const linkLine = APP_URL ? `\n\n${APP_URL}` : ''
+
+    const message =
+      `💸 *Prêmio pago!*\n\n` +
+      `${formatBrl(params.amount)} do bolão *${escapeMarkdown(params.poolName)}* ` +
+      `foi enviado para a sua chave PIX \`${escapeMarkdown(params.pixKey)}\`.` +
+      linkLine
+
+    await this.bot.api.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+    })
+  }
+
   async sendNewPoolMessage(
     chatId: number,
     params: {
