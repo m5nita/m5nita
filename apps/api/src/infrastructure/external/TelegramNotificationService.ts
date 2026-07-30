@@ -50,7 +50,11 @@ export class TelegramNotificationService {
     const message =
       `💸 *Prêmio pago!*\n\n` +
       `${formatBrl(params.amount)} do bolão *${escapeMarkdown(params.poolName)}* ` +
-      `foi enviado para a sua chave PIX \`${escapeMarkdown(params.pixKey)}\`.` +
+      // Inside a Markdown code span (`` ` ``), Telegram's legacy `Markdown`
+      // parse mode does not process escapes — `*`/`_` are already literal
+      // there. Escaping first would print the backslashes verbatim, and a
+      // PIX mask is nothing but asterisks, so interpolate the raw value.
+      `foi enviado para a sua chave PIX \`${params.pixKey}\`.` +
       linkLine
 
     await this.bot.api.sendMessage(chatId, message, {
@@ -126,7 +130,9 @@ export class TelegramNotificationService {
       `Bolão: *${escapeMarkdown(params.poolName)}*\n` +
       `Código: \`${escapeMarkdown(params.poolCode)}\`\n` +
       `Valor: *${formattedAmount}*\n` +
-      `Chave PIX (${escapeMarkdown(params.pixKeyType)}): \`${escapeMarkdown(params.pixKey)}\``
+      // Same code-span-escaping bug as sendWithdrawalPaidMessage above: no
+      // escaping needed (or wanted) inside backticks.
+      `Chave PIX (${escapeMarkdown(params.pixKeyType)}): \`${params.pixKey}\``
 
     const replyMarkup = {
       inline_keyboard: [

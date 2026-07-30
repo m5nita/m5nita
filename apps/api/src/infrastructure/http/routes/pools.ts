@@ -15,6 +15,7 @@ import { PoolError } from '../../../domain/pool/PoolError'
 import { PrizeWithdrawalError } from '../../../domain/prize/PrizeWithdrawalError'
 import { FeePolicy } from '../../../domain/shared/FeePolicy'
 import { Money } from '../../../domain/shared/Money'
+import { PixKey } from '../../../domain/shared/PixKey'
 import { validateCoupon } from '../../../services/coupon'
 import { getPoolById, getPoolByInviteCode, isPoolMember } from '../../../services/pool'
 import type { AppEnv } from '../../../types/hono'
@@ -295,7 +296,9 @@ poolsRoutes.post('/pools/:poolId/prize/withdraw', async (c) => {
       pixKey: parsed.data.pixKey,
     })
 
-    return c.json(withdrawal, 201)
+    // Never echo the raw PIX key back — mask it the same way GetPrizeInfoUseCase
+    // does, so the server never returns the full key in any response.
+    return c.json({ ...withdrawal, pixKey: PixKey.mask(withdrawal.pixKey) }, 201)
   } catch (err) {
     if (err instanceof PrizeWithdrawalError) {
       const statusMap: Record<string, number> = {

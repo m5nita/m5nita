@@ -611,10 +611,9 @@ describe('notifyWithdrawalPaid', () => {
     await service.notifyWithdrawalPaid(DATA)
 
     const message = String(telegramCalls(bot)[0]?.[1])
-    // Markdown-escapes each '*' as '\*' before interpolating (see escapeMarkdown
-    // in TelegramNotificationService), so strip the backslashes it inserts
-    // before checking for the masked value verbatim.
-    expect(message.replace(/\\/g, '')).toContain('*******8909')
+    // The mask sits inside a Markdown code span, so it must render verbatim —
+    // no escaping backslashes should leak into the sent message.
+    expect(message).toContain('*******8909')
     expect(message).not.toContain('12345678909')
   })
 })

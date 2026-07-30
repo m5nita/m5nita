@@ -110,7 +110,9 @@ A branch de `status === 'failed'` (com link de suporte) fica intocada: nenhum c�
 
 ### 4. `paidAt` sem coluna nova
 
-`prize_withdrawal.updated_at` só é escrito em `markAsCompleted` — o insert e a completação são as duas únicas escritas da linha. Então a data de pagamento sai de `updatedAt`, sem migration de schema:
+`prize_withdrawal.updated_at` só é escrito em `markAsCompleted` — o insert e a completação são as duas únicas escritas da linha *no caminho de produto*. Então a data de pagamento sai de `updatedAt`, sem migration de schema:
+
+> ⚠️ **Ressalva:** essa premissa não é absoluta. `apps/api/src/scripts/backfillEncryptPixKeys.ts` também escreve `updatedAt: new Date()` — fora do fluxo de pagamento, ao migrar linhas com chave PIX ainda em texto plano para o formato cifrado. A escrita é protegida por `isEncryptedPixKey` (só toca linha que ainda está em claro) e o backfill já rodou em produção, então na prática nenhuma retirada `pending` teve seu `paidAt` inflado por engano — mas o código do script, se rodado de novo contra uma linha ainda em claro, tocaria `updated_at` sem que o prêmio tenha sido pago.
 
 - `PrizeWithdrawal` em `PrizeWithdrawalRepository.port.ts` ganha `updatedAt: Date`; `DrizzlePrizeWithdrawalRepository` mapeia o campo em `findByPoolAndUser`, `createWithPayment` e `markAsCompleted`.
 - `GetPrizeInfoUseCase` expõe `paidAt: string | null` — `updatedAt.toISOString()` quando `status === 'completed'`, senão `null`.
@@ -204,6 +206,6 @@ A chave PIX vai mascarada para a notificação: a chave em claro só existe no a
 
 ## Riscos
 
-- `updatedAt` como `paidAt` é correto só enquanto a completação for a única atualização da linha. Documentado na seção 4.
+- `updatedAt` como `paidAt` é correto só enquanto a completação for a única atualização da linha *no fluxo de pagamento*. Documentado na seção 4 — inclui a ressalva do script `backfillEncryptPixKeys.ts`, que também escreve `updated_at` (fora do fluxo de pagamento, guardado por `isEncryptedPixKey`, e já rodado em produção — exposição fechada na prática).
 - O `when` da migration `0017` precisa ser bumpado no `_journal.json`. Se a migration for pulada, `NotificationPreferences.allows` falha aberto (código desconhecido → permitido), então a notificação continua saindo — o sintoma é silencioso: o tipo nunca aparece em Configurações.
 - `getMembersWithContact` carrega todos os membros do bolão para notificar um só ganhador. Aceitável no volume atual; se virar problema, o caminho é um `findContactByUserId` na porta de usuário.
