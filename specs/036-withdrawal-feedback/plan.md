@@ -14,6 +14,7 @@
 - **`formatBrl` separa o símbolo com NBSP (U+00A0), não espaço comum.** Nenhum teste pode escrever `'R$ 240,00'` como literal — sempre comparar contra `formatBrl(...)` / `formatCurrency(...)`, senão falha por um caractere invisível.
 - Textos de UI e de notificação em pt-BR. **Nenhum texto promete prazo de pagamento** — a fórmula aprovada é "Em análise — avisamos assim que o PIX for enviado."
 - A chave PIX em claro só pode aparecer no alerta ao admin. Toda outra saída (API, push, Telegram do ganhador, e-mail, front) usa a versão mascarada (`***********1234`).
+- Mascarar chave PIX é responsabilidade única de `PixKey.mask` (`apps/api/src/domain/shared/PixKey.ts`, criado na Task 1). Nenhum use case, serviço ou job redefine essa lógica localmente.
 - O front **nunca** re-mascara a chave que veio da API.
 - Estilo do front: card com borda, sem preenchimento branco, sem cantos arredondados, cabeçalhos em `font-display` uppercase com `tracking-widest`. Nada de `bg-surface` nem `rounded-*`.
 - Lint/format com Biome: rodar `pnpm biome check --write .` antes de cada commit (o editor formata com Prettier e gera ruído se isso for pulado).
@@ -53,18 +54,27 @@
 
 ---
 
-### Task 1: Expor `paidAt` na retirada
+### Task 1: Expor `paidAt` na retirada e centralizar a máscara PIX
 
 **Files:**
 - Modify: `apps/api/src/domain/prize/PrizeWithdrawalRepository.port.ts:1-11`
+- Modify: `apps/api/src/domain/shared/PixKey.ts:44-47`
 - Modify: `apps/api/src/infrastructure/persistence/DrizzlePrizeWithdrawalRepository.ts:25-146`
-- Modify: `apps/api/src/application/prize/GetPrizeInfoUseCase.ts:22-29,72-85`
+- Modify: `apps/api/src/application/prize/GetPrizeInfoUseCase.ts:22-29,72-85,104-107`
 - Modify: `packages/shared/src/types/index.ts:217-226`
 - Modify: `apps/api/src/application/prize/MarkWithdrawalPaidUseCase.test.ts:17-27` (fixture)
 - Test: `apps/api/src/application/prize/GetPrizeInfoUseCase.test.ts` (**criar**)
+- Test: `apps/api/src/domain/shared/PixKey.test.ts` (criar se não existir)
 
 **Interfaces:**
-- Produces: `PrizeWithdrawal` (domínio) com `updatedAt: Date`. `GetPrizeInfoUseCase.execute` retorna `withdrawal: { id, amount, pixKeyType, pixKey, status, createdAt, paidAt } | null`, com `paidAt: string | null`.
+- Produces: `PrizeWithdrawal` (domínio) com `updatedAt: Date`. `GetPrizeInfoUseCase.execute` retorna `withdrawal: { id, amount, pixKeyType, pixKey, status, createdAt, paidAt } | null`, com `paidAt: string | null`. `PixKey.mask(value: string): string` — estático e puro, consumido também pela Task 4.
+
+> **Decisão do pre-flight (governa sobre o texto original do plano):** a lógica
+> de mascarar chave PIX mora **só** em `PixKey`. `PixKey.masked()` já existia e
+> nunca era chamado; `GetPrizeInfoUseCase` tinha uma cópia privada. Esta task
+> extrai o estático `PixKey.mask`, faz `masked()` delegar e elimina a cópia.
+> Nenhum use case pode redefinir essa lógica (regra do CLAUDE.md: regra de
+> negócio no `domain/`, nunca re-derivada em `application/`).
 
 - [ ] **Step 1: Escrever o teste que falha**
 
@@ -213,7 +223,59 @@ Em `markAsCompleted`, substituir o `update` do `prizeWithdrawal` e todo o `retur
       }
 ```
 
-- [ ] **Step 5: Expor `paidAt` no use case**
+- [ ] **Step 5: Centralizar a máscara PIX em `PixKey`**
+
+Em `apps/api/src/domain/shared/PixKey.ts`, substituir o método `masked()`:
+
+```ts
+  /** Puro: não valida e nunca lança — serve para chaves já persistidas. */
+  static mask(value: string): string {
+    if (value.length <= 4) return value
+    return '*'.repeat(value.length - 4) + value.slice(-4)
+  }
+
+  masked(): string {
+    return PixKey.mask(this.value)
+  }
+```
+
+Em `apps/api/src/application/prize/GetPrizeInfoUseCase.ts`, apagar a função
+local `maskPixKey` (linhas 104-107, no fim do arquivo), importar o VO e trocar
+a chamada:
+
+```ts
+import { PixKey } from '../../domain/shared/PixKey'
+```
+
+```ts
+          pixKey: PixKey.mask(existing.pixKey),
+```
+
+Cobrir o estático em `apps/api/src/domain/shared/PixKey.test.ts` (criar o
+arquivo se não existir; se existir, só adicionar o `describe`):
+
+```ts
+describe('PixKey.mask', () => {
+  it('keeps only the last four characters', () => {
+    expect(PixKey.mask('12345678909')).toBe('*******8909')
+  })
+
+  it('returns short values untouched — nothing left to hide', () => {
+    expect(PixKey.mask('1234')).toBe('1234')
+    expect(PixKey.mask('')).toBe('')
+  })
+
+  it('never throws on a value that would fail validation', () => {
+    expect(() => PixKey.mask('not-a-valid-key!!')).not.toThrow()
+  })
+
+  it('backs the instance method', () => {
+    expect(PixKey.create('cpf', '12345678909').masked()).toBe('*******8909')
+  })
+})
+```
+
+- [ ] **Step 6: Expor `paidAt` no use case**
 
 Em `apps/api/src/application/prize/GetPrizeInfoUseCase.ts`, no tipo `WithdrawalOutput`, após `createdAt: string`:
 
@@ -231,7 +293,7 @@ E no objeto montado dentro de `if (existing)`, após `createdAt: existing.create
         }
 ```
 
-- [ ] **Step 6: Atualizar o tipo compartilhado**
+- [ ] **Step 7: Atualizar o tipo compartilhado**
 
 Em `packages/shared/src/types/index.ts`, na interface `PrizeWithdrawal`, após `createdAt: string`:
 
@@ -242,7 +304,7 @@ Em `packages/shared/src/types/index.ts`, na interface `PrizeWithdrawal`, após `
 }
 ```
 
-- [ ] **Step 7: Corrigir a fixture do teste existente**
+- [ ] **Step 8: Corrigir a fixture do teste existente**
 
 Em `apps/api/src/application/prize/MarkWithdrawalPaidUseCase.test.ts`, no objeto `completed`, após `createdAt: new Date('2026-04-20T12:00:00.000Z'),`:
 
@@ -254,21 +316,23 @@ Em `apps/api/src/application/prize/MarkWithdrawalPaidUseCase.test.ts`, no objeto
 
 > `DrizzlePrizeWithdrawalRepository.test.ts` **não** precisa de mudança: ele mocka `db.transaction` inteiro (`mockTransaction.mockResolvedValueOnce(...)`), então o callback de mapeamento nunca roda e o teste só verifica o passthrough do mock. O mapeamento real do Step 4 é coberto pelo teste de integração da Task 4.
 
-- [ ] **Step 8: Rodar os testes e o typecheck**
+- [ ] **Step 9: Rodar os testes e o typecheck**
 
 ```bash
-pnpm --filter @m5nita/api exec vitest run src/application/prize src/infrastructure/persistence/DrizzlePrizeWithdrawalRepository.test.ts
+pnpm --filter @m5nita/api exec vitest run src/application/prize src/domain/shared src/infrastructure/persistence/DrizzlePrizeWithdrawalRepository.test.ts
 pnpm --filter @m5nita/api typecheck
 pnpm --filter @m5nita/shared typecheck
+pnpm check:leaks && pnpm check:arch
 ```
-Expected: todos PASS.
+Expected: todos PASS. `check:arch` confirma que `application/` importando um VO
+de `domain/` é direção permitida (domain → application é que seria proibido).
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 pnpm biome check --write .
 git add apps/api/src packages/shared/src
-git commit --no-verify -m "feat(036): expor paidAt na retirada de prêmio"
+git commit --no-verify -m "feat(036): expor paidAt e centralizar máscara PIX em PixKey"
 ```
 
 ---
@@ -718,7 +782,7 @@ git commit --no-verify -m "feat(036): notificação de prêmio pago (push, Teleg
 - Test: `apps/api/tests/integration/scenarios/prize-withdrawal.test.ts:146-170`
 
 **Interfaces:**
-- Consumes: `notifyWithdrawalPaid(data: WithdrawalPaidData)` (Task 3); `PrizeWithdrawal.updatedAt` (Task 1).
+- Consumes: `notifyWithdrawalPaid(data: WithdrawalPaidData)` (Task 3); `PrizeWithdrawal.updatedAt` e `PixKey.mask` (Task 1).
 - Produces: `new MarkWithdrawalPaidUseCase(prizeWithdrawalRepo, poolRepo, notificationService)`.
 
 - [ ] **Step 1: Escrever os testes que falham**
@@ -893,16 +957,11 @@ import type {
   PrizeWithdrawal,
   PrizeWithdrawalRepository,
 } from '../../domain/prize/PrizeWithdrawalRepository.port'
+import { PixKey } from '../../domain/shared/PixKey'
 import type { NotificationService } from '../ports/NotificationService.port'
 
 type Input = {
   withdrawalId: string
-}
-
-/** Só os 4 últimos dígitos: a chave em claro só existe no alerta ao admin. */
-function maskPixKey(key: string): string {
-  if (key.length <= 4) return key
-  return `${'*'.repeat(key.length - 4)}${key.slice(-4)}`
 }
 
 export class MarkWithdrawalPaidUseCase {
@@ -942,7 +1001,8 @@ export class MarkWithdrawalPaidUseCase {
       poolId: withdrawal.poolId,
       poolName: pool.name,
       amount: withdrawal.amount,
-      pixKey: maskPixKey(withdrawal.pixKey),
+      // Mascaramento mora no domínio (PixKey) — nunca redefinir aqui.
+      pixKey: PixKey.mask(withdrawal.pixKey),
     })
   }
 }
@@ -1711,5 +1771,6 @@ git commit --no-verify -m "feat(036): home acompanha a retirada até o pagamento
 | Confete uma vez no estado pago | 6, 7 |
 | Máscara dupla da chave PIX corrigida | 7 |
 | Sem promessa de prazo | 6 (texto + teste que proíbe "dias úteis") |
-| Chave em claro só no alerta ao admin | 3 (teste), 4 (mascaramento) |
+| Chave em claro só no alerta ao admin | 3 (teste), 4 (mascaramento via `PixKey.mask`) |
+| Máscara PIX com uma única fonte de verdade (`PixKey`) | 1 (ruling do pre-flight) |
 | Tipo travado aparece como "Sempre ativo" | 2 (catálogo), 8 Step 5 (verificação manual) |
