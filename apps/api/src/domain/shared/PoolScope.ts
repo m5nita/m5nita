@@ -74,4 +74,16 @@ export class PoolScope {
     const range = this.range as MatchdayRange
     return range.from === range.to ? `Rodada ${range.from}` : `Rodadas ${range.from} a ${range.to}`
   }
+
+  /**
+   * Whether per-participant statistics say anything for this scope. The paid
+   * panel (accuracy dials, evolution curve, recent form, predictor profile) is
+   * built on a season's worth of history; over one or two rounds it plots noise.
+   *
+   * Kept here rather than at the edges so the answer — and the scope-branching
+   * behind it — has one home; the `check:leaks` guardrail enforces that.
+   */
+  supportsParticipantStats(): boolean {
+    return this.kind === 'whole-competition'
+  }
 }

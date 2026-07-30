@@ -41,6 +41,8 @@ Auto-generated from all feature plans. Last updated: 2026-07-29
 - PostgreSQL 16 — **reuses** `pool`, `pool_member`, `pool_standing`, `payment`, `prize_withdrawal`. **No new tables, no migration.** (033-global-player-stats)
 - TypeScript 5.x (strict), Node.js ≥ 22 + Hono, Drizzle ORM, Better Auth, grammY, `web-push` (034-new-pool-broadcast)
 - PostgreSQL 16 — migration `0016`: two additive tables (034-new-pool-broadcast)
+- TypeScript 5.x (strict), Node.js ≥ 22 + Hono, Drizzle ORM, Better Auth (API); React 19, TanStack (035-stats-scope-gate)
+- PostgreSQL 16 — **no changes**. Reads existing `pool` scope columns (035-stats-scope-gate)
 
 - TypeScript 5.x (Node.js >= 22) (001-world-cup-pool-app)
 - Backend: Hono, Better Auth, Drizzle ORM; payments via InfinitePay / Stripe / Mock adapters
@@ -136,6 +138,7 @@ DATABASE_URL=postgresql://m5nita_test:m5nita_test@localhost:5433/m5nita_test \
 - All values in centavos (BRL) for monetary amounts
 
 ## Recent Changes
+- 035-stats-scope-gate: Added TypeScript 5.x (strict), Node.js ≥ 22 + Hono, Drizzle ORM, Better Auth (API); React 19, TanStack
 - 034-new-pool-broadcast: Added TypeScript 5.x (strict), Node.js ≥ 22 + Hono, Drizzle ORM, Better Auth, grammY, `web-push`
 - 033-global-player-stats: Added TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + Hono (HTTP), Drizzle ORM, Better Auth (auth middleware); React 19, TanStack Router + Query, Tailwind v4 (`@theme` tokens). No new deps.
 - 030-web-push: Added TypeScript 5.x (strict), Node.js ≥ 22 (monorepo, pnpm) + API — Hono, Drizzle ORM, Better Auth, grammY, Resend; **NEW**

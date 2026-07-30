@@ -16,16 +16,21 @@ vi.mock('../db/client', () => ({
 
 const mockFindByIdWithDetails = vi.fn()
 const mockFindByInviteCode = vi.fn()
+const mockIsUnlocked = vi.fn(async (_userId: string, _poolId: string) => false)
 vi.mock('../container', () => ({
   getContainer: () => ({
     poolRepo: {
       findByIdWithDetails: mockFindByIdWithDetails,
       findByInviteCode: mockFindByInviteCode,
     },
+    statsUnlockRepo: { isUnlocked: mockIsUnlocked },
   }),
 }))
 
 const { getPoolById, getPoolByInviteCode } = await import('./pool')
+
+// pool.match_id is a uuid column — fixtures must look like real rows.
+const MATCH_UUID = '11111111-1111-4111-8111-111111111111'
 
 function repoFixture(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -66,12 +71,12 @@ describe('getPoolById HTTP contract', () => {
 
   it('returns null matchdayFrom/To for single-match pools (no range)', async () => {
     mockFindByIdWithDetails.mockResolvedValueOnce(
-      repoFixture({ matchdayFrom: null, matchdayTo: null, matchId: 'match-1' }),
+      repoFixture({ matchdayFrom: null, matchdayTo: null, matchId: MATCH_UUID }),
     )
     const result = await getPoolById('pool-1', 'user-1')
     expect(result?.matchdayFrom).toBeNull()
     expect(result?.matchdayTo).toBeNull()
-    expect(result?.matchId).toBe('match-1')
+    expect(result?.matchId).toBe(MATCH_UUID)
   })
 
   it('hides the inviteCode from non-members (prevents self-joining a private pool)', async () => {
@@ -91,6 +96,45 @@ describe('getPoolById HTTP contract', () => {
   })
 })
 
+describe('getPoolById — statsAvailable', () => {
+  it('is true for a whole-competition pool', async () => {
+    mockFindByIdWithDetails.mockResolvedValueOnce(
+      repoFixture({ matchdayFrom: null, matchdayTo: null, matchId: null }),
+    )
+    const result = await getPoolById('pool-1', 'user-1')
+    expect(result?.statsAvailable).toBe(true)
+  })
+
+  it('is false for a matchday-range pool the viewer has not unlocked', async () => {
+    mockIsUnlocked.mockResolvedValueOnce(false)
+    mockFindByIdWithDetails.mockResolvedValueOnce(repoFixture({ matchdayFrom: 5, matchdayTo: 8 }))
+    const result = await getPoolById('pool-1', 'user-1')
+    expect(result?.statsAvailable).toBe(false)
+  })
+
+  it('stays true for a matchday-range pool the viewer already paid to unlock', async () => {
+    mockIsUnlocked.mockResolvedValueOnce(true)
+    mockFindByIdWithDetails.mockResolvedValueOnce(repoFixture({ matchdayFrom: 5, matchdayTo: 8 }))
+    const result = await getPoolById('pool-1', 'user-1')
+    expect(result?.statsAvailable).toBe(true)
+  })
+
+  it('is false for a single-match pool', async () => {
+    mockIsUnlocked.mockResolvedValueOnce(false)
+    mockFindByIdWithDetails.mockResolvedValueOnce(
+      repoFixture({ matchdayFrom: null, matchdayTo: null, matchId: MATCH_UUID }),
+    )
+    const result = await getPoolById('pool-1', 'user-1')
+    expect(result?.statsAvailable).toBe(false)
+  })
+
+  it('asks the entitlement for (userId, poolId) in that order', async () => {
+    mockFindByIdWithDetails.mockResolvedValueOnce(repoFixture())
+    await getPoolById('pool-1', 'user-1')
+    expect(mockIsUnlocked).toHaveBeenCalledWith('user-1', 'pool-1')
+  })
+})
+
 describe('getPoolByInviteCode HTTP contract', () => {
   it('exposes matchdayFrom/matchdayTo (invite landing reads these to display "Rodadas X a Y")', async () => {
     mockFindByInviteCode.mockResolvedValueOnce(repoFixture())
@@ -107,7 +151,7 @@ describe('getPoolByInviteCode HTTP contract', () => {
       repoFixture({
         status: 'closed',
         isOpen: false,
-        matchId: 'match-1',
+        matchId: MATCH_UUID,
         matchdayFrom: null,
         matchdayTo: null,
       }),

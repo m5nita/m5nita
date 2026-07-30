@@ -69,7 +69,15 @@ export class GetParticipantStatsUseCase {
     const isMember = await this.poolRepo.isMember(input.poolId, input.userId)
     if (!isMember) throw new StatsError('NOT_MEMBER', 'Você não participa deste bolão')
 
+    // Entitlement is checked before scope on purpose: someone who already paid
+    // keeps access even on a pool whose scope no longer offers statistics.
     if (!(await this.statsUnlockRepo.isUnlocked(input.userId, input.poolId))) {
+      if (!pool.supportsParticipantStats()) {
+        throw new StatsError(
+          'SCOPE_UNSUPPORTED',
+          'Estatísticas estão disponíveis apenas em bolões de campeonato completo',
+        )
+      }
       return {
         unlocked: false,
         price: { centavos: this.price.centavos, formatted: this.price.formatted() },

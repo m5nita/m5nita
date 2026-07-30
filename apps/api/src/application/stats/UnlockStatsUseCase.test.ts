@@ -7,9 +7,14 @@ import { UnlockStatsUseCase } from './UnlockStatsUseCase'
 
 const price = StatsUnlockPrice.of(199)
 
+// The use case only asks the aggregate one question, so the stub only answers it.
+function poolStub(supportsStats = true) {
+  return { id: 'p1', supportsParticipantStats: () => supportsStats }
+}
+
 function makeDeps(opts: { pool?: unknown; isMember?: boolean; isUnlocked?: boolean } = {}) {
   const poolRepo = {
-    findById: vi.fn().mockResolvedValue(opts.pool === undefined ? { id: 'p1' } : opts.pool),
+    findById: vi.fn().mockResolvedValue(opts.pool === undefined ? poolStub() : opts.pool),
     isMember: vi.fn().mockResolvedValue(opts.isMember ?? true),
   } as unknown as PoolRepository
   const statsUnlockRepo = {
@@ -68,5 +73,22 @@ describe('UnlockStatsUseCase', () => {
     )
     expect(result.amount).toBe(199)
     expect(result.payment).toEqual({ payment: { id: 'pay1' }, checkoutUrl: 'https://pay' })
+  })
+  it('rejects_scope_without_stats_without_charging', async () => {
+    const d = makeDeps({ pool: poolStub(false) })
+    const uc = new UnlockStatsUseCase(d.poolRepo, d.statsUnlockRepo, d.paymentGateway, price)
+    await expect(uc.execute({ userId: 'u1', poolId: 'p1' })).rejects.toMatchObject({
+      code: 'SCOPE_UNSUPPORTED',
+    })
+    expect(d.paymentGateway.createCheckoutSession).not.toHaveBeenCalled()
+  })
+
+  it('answers_already_unlocked_before_scope_for_a_grandfathered_holder', async () => {
+    const d = makeDeps({ pool: poolStub(false), isUnlocked: true })
+    const uc = new UnlockStatsUseCase(d.poolRepo, d.statsUnlockRepo, d.paymentGateway, price)
+    await expect(uc.execute({ userId: 'u1', poolId: 'p1' })).rejects.toMatchObject({
+      code: 'ALREADY_UNLOCKED',
+    })
+    expect(d.paymentGateway.createCheckoutSession).not.toHaveBeenCalled()
   })
 })

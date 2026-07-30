@@ -11,6 +11,7 @@ statsRoutes.use('/*', requireAuth)
 const STATUS_MAP: Record<StatsError['code'], 404 | 409> = {
   NOT_FOUND: 404,
   NOT_MEMBER: 404,
+  SCOPE_UNSUPPORTED: 404,
   ALREADY_UNLOCKED: 409,
 }
 

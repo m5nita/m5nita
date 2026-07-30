@@ -158,10 +158,10 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
 
   const isOwner = session?.user?.id === pool.ownerId
   const canInvite = pool.status !== 'closed' && !!pool.inviteCode
-  // Single-match pools (one fixture) carry no meaningful per-participant stats
-  // panel — hide the tab, and redirect if someone lands on it by URL.
-  const isSingleMatch = pool.matchId != null
-  if (isSingleMatch && activeTab === 'statistics') {
+  // The participant-stats panel only says something over a full season. The API
+  // resolves availability per viewer (scope, plus anyone who already paid), so
+  // here we only obey it — hide the tab, and redirect off it by URL.
+  if (!pool.statsAvailable && activeTab === 'statistics') {
     return <Navigate to="/pools/$poolId/predictions" params={{ poolId }} replace />
   }
 
@@ -212,7 +212,7 @@ export function PoolHub({ poolId, activeTab, children }: PoolHubProps) {
         <TabLink poolId={poolId} to="/pools/$poolId/ranking" active={activeTab === 'ranking'}>
           Ranking
         </TabLink>
-        {!isSingleMatch && (
+        {pool.statsAvailable && (
           <TabLink poolId={poolId} to="/pools/$poolId/stats" active={activeTab === 'statistics'}>
             Estatísticas
           </TabLink>

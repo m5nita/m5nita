@@ -62,6 +62,12 @@ export interface PoolListItem {
 
 export interface PoolDetail extends Pool {
   competitionName: string
+  /**
+   * Whether this viewer may see the participant-statistics tab. Resolved by the
+   * API (scope offers statistics, or the viewer already holds an unlock) — the
+   * front must never derive it from the scope fields.
+   */
+  statsAvailable: boolean
   owner: { id: string; name: string | null }
   memberCount: number
   prizeTotal: number
