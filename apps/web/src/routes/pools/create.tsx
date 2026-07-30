@@ -2,6 +2,7 @@ import type { CompetitionListItem } from '@m5nita/shared'
 import { computePlatformFee, POOL } from '@m5nita/shared'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
+import { NotifyEveryoneField } from '../../components/pool/create/NotifyEveryoneField'
 import { InviteTicket } from '../../components/pool/InviteTicket'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -194,6 +195,7 @@ function CreatePoolPage() {
   const [scopeMode, setScopeMode] = useState<PoolScopeMode>('range')
   const [matchId, setMatchId] = useState('')
   const [couponCode, setCouponCode] = useState('')
+  const [notifyEveryone, setNotifyEveryone] = useState(false)
   const [coupon, setCoupon] = useState<CouponState>({
     valid: false,
     discountPercent: 0,
@@ -303,6 +305,10 @@ function CreatePoolPage() {
       entryFee: currentFee,
       competitionId,
     }
+    if (notifyEveryone) {
+      body.notifyEveryone = true
+    }
+
     if (scopeMode === 'single') {
       if (!matchId) return null
       body.matchId = matchId
@@ -510,6 +516,8 @@ function CreatePoolPage() {
           )}
           {coupon.loading && <p className="text-xs text-gray-muted">Validando cupom...</p>}
         </div>
+
+        <NotifyEveryoneField checked={notifyEveryone} onChange={setNotifyEveryone} />
 
         <FeeSummary
           coupon={coupon}

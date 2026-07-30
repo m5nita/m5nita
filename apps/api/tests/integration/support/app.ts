@@ -13,6 +13,7 @@ import { db } from '../../../src/db/client'
 import { CompositeNotificationService } from '../../../src/infrastructure/external/CompositeNotificationService'
 import { WebPushNotificationService } from '../../../src/infrastructure/external/WebPushNotificationService'
 import { DrizzleMatchPointsNotifiedStore } from '../../../src/infrastructure/persistence/DrizzleMatchPointsNotifiedStore'
+import { DrizzleNotificationPreferencesRepository } from '../../../src/infrastructure/persistence/DrizzleNotificationPreferencesRepository'
 import { DrizzlePushSubscriptionRepository } from '../../../src/infrastructure/persistence/DrizzlePushSubscriptionRepository'
 import { testOtpInbox } from '../../../src/lib/testHooks'
 import type { AppEnv } from '../../../src/types/hono'
@@ -43,6 +44,7 @@ export function buildTestApp(options: BuildTestAppOptions = {}): TestApp {
     telegramBot,
     new WebPushNotificationService(pushRepo),
     new DrizzleMatchPointsNotifiedStore(db),
+    new DrizzleNotificationPreferencesRepository(db),
   )
 
   const container = resetContainer({

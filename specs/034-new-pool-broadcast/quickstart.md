@@ -73,9 +73,9 @@ values ('pool_closing', 'Bolão encerrando',
         true, true, 5);
 ```
 
-Reload `/settings` — the new switch is there and patchable. (The in-process catalog
-cache means an API restart may be needed in dev; that is expected, since the
-catalog is treated as near-static.)
+Reload `/settings` — the new switch is there and patchable. The catalog is cached
+in process for 5 minutes, so allow up to that long (or restart the API) before it
+appears.
 
 The reverse direction is guarded: `NOTIFICATION_TYPE_CODES` in the domain must stay
 in sync with the seeded catalog, and a Vitest consistency test fails the build if a

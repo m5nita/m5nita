@@ -9,7 +9,10 @@ vi.mock('../../lib/resend', () => ({
   sendWinnerEmail: vi.fn(async () => {}),
 }))
 
-import type { MatchPointsData } from '../../application/ports/NotificationService.port'
+import type { MatchPointsData, NewPoolData } from '../../application/ports/NotificationService.port'
+import type { NotificationOverrides } from '../../domain/notification/NotificationPreferences'
+import type { NotificationPreferencesRepository } from '../../domain/notification/NotificationPreferencesRepository.port'
+import { NotificationType } from '../../domain/notification/NotificationType'
 import { sendPredictionReminderEmail, sendWinnerEmail } from '../../lib/resend'
 import { findChatIdByPhone } from '../../lib/telegram'
 import type { MatchPointsNotifiedStore } from '../persistence/DrizzleMatchPointsNotifiedStore'
@@ -42,14 +45,53 @@ function makeStore() {
   }
 }
 
+// Mirrors the seeded catalog: everything on by default, pool_result locked.
+const CATALOG = [
+  { code: 'new_pool', optOutable: true, sortOrder: 1 },
+  { code: 'prediction_reminder', optOutable: true, sortOrder: 2 },
+  { code: 'match_points', optOutable: true, sortOrder: 3 },
+  { code: 'pool_result', optOutable: false, sortOrder: 4 },
+].map((t) =>
+  NotificationType.of({
+    code: t.code,
+    label: t.code,
+    description: t.code,
+    optOutable: t.optOutable,
+    defaultEnabled: true,
+    sortOrder: t.sortOrder,
+  }),
+)
+
+function makePreferences(byUser: Record<string, NotificationOverrides> = {}) {
+  return {
+    listTypes: vi.fn(async () => CATALOG),
+    findOverrides: vi.fn(async (userId: string) => byUser[userId] ?? {}),
+    findOverridesForUsers: vi.fn(
+      async (userIds: string[]) =>
+        new Map(
+          userIds.filter((id) => byUser[id]).map((id) => [id, byUser[id] as NotificationOverrides]),
+        ),
+    ),
+    upsert: vi.fn(async () => {}),
+  } satisfies NotificationPreferencesRepository
+}
+
 function makeService(over?: {
   webPush?: ReturnType<typeof makeWebPush>
   store?: ReturnType<typeof makeStore>
+  overrides?: Record<string, NotificationOverrides>
 }) {
   const bot = makeBot()
   const webPush = over?.webPush ?? makeWebPush()
   const store = over?.store ?? makeStore()
-  return { bot, webPush, store, svc: new CompositeNotificationService(bot, webPush, store) }
+  const preferences = makePreferences(over?.overrides)
+  return {
+    bot,
+    webPush,
+    store,
+    preferences,
+    svc: new CompositeNotificationService(bot, webPush, store, preferences),
+  }
 }
 
 const matches = [{ homeTeam: 'Brasil', awayTeam: 'Argentina', minutesUntil: 30 }]
@@ -268,5 +310,194 @@ describe('CompositeNotificationService.notifyAdminWithdrawalRequest', () => {
     expect(telegramCalls(bot)).toHaveLength(1)
     expect(telegramCalls(bot)[0]?.[0]).toBe(999)
     expect(mockWinnerEmail).not.toHaveBeenCalled()
+  })
+})
+
+describe('CompositeNotificationService — preference gate', () => {
+  it('sends no reminder on any channel when the user turned reminders off', async () => {
+    mockFindChatId.mockResolvedValue(123)
+    const { svc, webPush, bot } = makeService({
+      overrides: { 'user-1': { prediction_reminder: false } },
+    })
+
+    await svc.sendPredictionReminders([
+      reminder({ phoneNumber: '+5511999999999', email: 'ana@example.com' }),
+    ])
+
+    expect(webPush.sendToUser).not.toHaveBeenCalled()
+    expect(telegramCalls(bot)).toHaveLength(0)
+    expect(mockReminderEmail).not.toHaveBeenCalled()
+  })
+
+  it('still reminds a user who only turned other types off', async () => {
+    const { svc, webPush } = makeService({
+      overrides: { 'user-1': { new_pool: false, match_points: false } },
+    })
+    webPush.sendToUser.mockResolvedValue(true)
+
+    await svc.sendPredictionReminders([reminder({})])
+
+    expect(webPush.sendToUser).toHaveBeenCalledOnce()
+  })
+
+  it('sends no match-points push when the user turned that type off, without consuming the dedupe', async () => {
+    const { svc, webPush, store } = makeService({
+      overrides: { 'user-1': { match_points: false } },
+    })
+
+    await svc.notifyMatchPoints([matchPoints()])
+
+    expect(webPush.sendToUser).not.toHaveBeenCalled()
+    expect(store.recordOnce).not.toHaveBeenCalled()
+  })
+
+  it('delivers the prize notification even with a stored disable for it', async () => {
+    const { svc, webPush } = makeService({ overrides: { u1: { pool_result: false } } })
+    webPush.sendToUser.mockResolvedValue(true)
+
+    await svc.notifyWinners(
+      'pool-1',
+      'Bolão Copa',
+      [{ userId: 'u1', name: 'Winner', phoneNumber: null, email: null }],
+      10000,
+    )
+
+    expect(webPush.sendToUser).toHaveBeenCalledOnce()
+  })
+})
+
+function newPool(over?: Partial<NewPoolData>): NewPoolData {
+  return {
+    poolId: 'pool-9',
+    poolName: 'Bolão da firma',
+    inviteCode: 'ABC123',
+    competitionName: 'Brasileirão Série A',
+    scopeLabel: 'Rodadas 5 a 8',
+    entryFee: 5000,
+    creatorFirstName: 'Igor',
+    recipients: [{ userId: 'r1', phoneNumber: '+5511999999999' }],
+    ...over,
+  }
+}
+
+describe('CompositeNotificationService.notifyNewPool', () => {
+  it('pushes to a subscribed recipient and never falls back to Telegram or email', async () => {
+    const { svc, webPush, bot } = makeService()
+    webPush.sendToUser.mockResolvedValue(true)
+
+    await svc.notifyNewPool(newPool())
+
+    expect(webPush.sendToUser).toHaveBeenCalledOnce()
+    expect(webPush.sendToUser.mock.calls[0]?.[1]).toMatchObject({
+      title: 'Novo bolão no m5nita',
+      url: '/invite/ABC123',
+      tag: 'new-pool-pool-9',
+    })
+    expect(mockFindChatId).not.toHaveBeenCalled()
+    expect(telegramCalls(bot)).toHaveLength(0)
+    expect(mockReminderEmail).not.toHaveBeenCalled()
+    expect(mockWinnerEmail).not.toHaveBeenCalled()
+  })
+
+  it('names the pool, competition, scope and entry fee in the push body', async () => {
+    const { svc, webPush } = makeService()
+    webPush.sendToUser.mockResolvedValue(true)
+
+    await svc.notifyNewPool(newPool())
+
+    const body = (webPush.sendToUser.mock.calls[0]?.[1] as { body: string }).body
+    expect(body).toContain('Igor')
+    expect(body).toContain('Bolão da firma')
+    expect(body).toContain('Brasileirão Série A')
+    expect(body).toContain('Rodadas 5 a 8')
+    expect(body).toContain('R$')
+    expect(body).toContain('50,00')
+  })
+
+  it('falls through to Telegram when push does not handle the recipient', async () => {
+    mockFindChatId.mockResolvedValue(777)
+    const { svc, bot } = makeService()
+
+    await svc.notifyNewPool(newPool())
+
+    expect(telegramCalls(bot)).toHaveLength(1)
+    expect(telegramCalls(bot)[0]?.[0]).toBe(777)
+    expect(mockReminderEmail).not.toHaveBeenCalled()
+    expect(mockWinnerEmail).not.toHaveBeenCalled()
+  })
+
+  it('skips a recipient with neither push nor a linked chat, sending no email', async () => {
+    mockFindChatId.mockResolvedValue(null)
+    const { svc, bot } = makeService()
+
+    await svc.notifyNewPool(newPool({ recipients: [{ userId: 'r1', phoneNumber: null }] }))
+
+    expect(mockFindChatId).not.toHaveBeenCalled()
+    expect(telegramCalls(bot)).toHaveLength(0)
+    expect(mockReminderEmail).not.toHaveBeenCalled()
+    expect(mockWinnerEmail).not.toHaveBeenCalled()
+  })
+
+  it('skips a recipient who turned new-pool notices off and keeps the others', async () => {
+    const { svc, webPush } = makeService({ overrides: { r1: { new_pool: false } } })
+    webPush.sendToUser.mockResolvedValue(true)
+
+    await svc.notifyNewPool(
+      newPool({
+        recipients: [
+          { userId: 'r1', phoneNumber: null },
+          { userId: 'r2', phoneNumber: null },
+        ],
+      }),
+    )
+
+    expect(webPush.sendToUser).toHaveBeenCalledOnce()
+    expect(webPush.sendToUser.mock.calls[0]?.[0]).toBe('r2')
+  })
+
+  it('reads the audience preferences in a single batched call', async () => {
+    const { svc, preferences } = makeService()
+
+    await svc.notifyNewPool(
+      newPool({
+        recipients: [
+          { userId: 'r1', phoneNumber: null },
+          { userId: 'r2', phoneNumber: null },
+          { userId: 'r3', phoneNumber: null },
+        ],
+      }),
+    )
+
+    expect(preferences.findOverridesForUsers).toHaveBeenCalledOnce()
+    expect(preferences.findOverrides).not.toHaveBeenCalled()
+  })
+
+  it('isolates a failing recipient and still notifies the rest', async () => {
+    const { svc, webPush } = makeService()
+    webPush.sendToUser
+      .mockRejectedValueOnce(new Error('push service down'))
+      .mockResolvedValueOnce(true)
+
+    await expect(
+      svc.notifyNewPool(
+        newPool({
+          recipients: [
+            { userId: 'r1', phoneNumber: null },
+            { userId: 'r2', phoneNumber: null },
+          ],
+        }),
+      ),
+    ).resolves.toBeUndefined()
+
+    expect(webPush.sendToUser).toHaveBeenCalledTimes(2)
+  })
+
+  it('does nothing at all for an empty audience', async () => {
+    const { svc, webPush, preferences } = makeService()
+
+    await svc.notifyNewPool(newPool({ recipients: [] }))
+
+    expect(webPush.sendToUser).not.toHaveBeenCalled()
+    expect(preferences.findOverridesForUsers).not.toHaveBeenCalled()
   })
 })

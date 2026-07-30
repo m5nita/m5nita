@@ -99,4 +99,37 @@ describe('PoolScope', () => {
       ).toBeNull()
     })
   })
+  describe('label()', () => {
+    it('names a whole-competition scope', () => {
+      expect(PoolScope.wholeCompetition().label()).toBe('Campeonato completo')
+    })
+
+    it('names a single matchday in the singular', () => {
+      const scope = PoolScope.fromRange(MatchdayRange.create(5, 5) as MatchdayRange)
+      expect(scope.label()).toBe('Rodada 5')
+    })
+
+    it('names a multi-matchday range', () => {
+      const scope = PoolScope.fromRange(MatchdayRange.create(5, 8) as MatchdayRange)
+      expect(scope.label()).toBe('Rodadas 5 a 8')
+    })
+
+    it('names a single-match scope by its fixture when one is given', () => {
+      const scope = PoolScope.singleMatch(MATCH_A)
+      expect(scope.label({ homeTeam: 'Flamengo', awayTeam: 'Palmeiras' })).toBe(
+        'Flamengo x Palmeiras',
+      )
+    })
+
+    it('degrades to a generic label when the fixture cannot be resolved', () => {
+      const scope = PoolScope.singleMatch(MATCH_A)
+      expect(scope.label()).toBe('Jogo único')
+      expect(scope.label(null)).toBe('Jogo único')
+    })
+
+    it('ignores a fixture passed for a non-single-match scope', () => {
+      const scope = PoolScope.fromRange(MatchdayRange.create(1, 2) as MatchdayRange)
+      expect(scope.label({ homeTeam: 'A', awayTeam: 'B' })).toBe('Rodadas 1 a 2')
+    })
+  })
 })

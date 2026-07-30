@@ -26,6 +26,10 @@ export const createPoolSchema = z
       .transform((v) => v.trim().toUpperCase())
       .pipe(z.string().regex(/^[A-Z0-9]+$/, 'Código deve conter apenas letras e números'))
       .optional(),
+    // Opt-in: announce the pool to the whole base once its entry payment is
+    // confirmed. Optional and false by default so no pool is ever announced by
+    // accident and every existing client keeps working.
+    notifyEveryone: z.boolean().optional().default(false),
   })
   .refine(
     (data) => {
@@ -131,4 +135,12 @@ export function validatePixKey(type: string, key: string): { success: boolean; e
 export const withdrawPrizeSchema = z.object({
   pixKeyType: pixKeyTypeSchema,
   pixKey: z.string().min(1, 'Chave PIX é obrigatória'),
+})
+
+// Notification preferences: one type at a time. The code is validated against
+// the catalog inside the use case (not enumerated here), so a newly seeded type
+// is patchable without a deploy.
+export const updateNotificationPreferenceSchema = z.object({
+  code: z.string().min(1).max(64),
+  enabled: z.boolean(),
 })

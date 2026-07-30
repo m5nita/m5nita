@@ -21,6 +21,12 @@ export class Pool {
   readonly competitionId: string
   readonly scope: PoolScope
   readonly couponId: string | null
+  /**
+   * The creator asked for the whole base to be told about this pool. Intent
+   * captured at creation, acted on once the entry payment is confirmed. Trailing
+   * and optional so no existing construction site had to change.
+   */
+  readonly notifyOnCreate: boolean
   private _status: PoolStatus
   private _isOpen: boolean
 
@@ -35,6 +41,7 @@ export class Pool {
     status: PoolStatus,
     isOpen: boolean,
     couponId: string | null,
+    notifyOnCreate = false,
   ) {
     this.id = id
     this.name = name
@@ -46,6 +53,7 @@ export class Pool {
     this._status = status
     this._isOpen = isOpen
     this.couponId = couponId
+    this.notifyOnCreate = notifyOnCreate
   }
 
   get status(): PoolStatus {

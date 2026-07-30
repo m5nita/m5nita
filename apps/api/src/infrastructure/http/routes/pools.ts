@@ -75,6 +75,7 @@ poolsRoutes.post('/pools', async (c) => {
       matchdayTo: parsed.data.matchdayTo,
       matchId: parsed.data.matchId,
       couponCode: parsed.data.couponCode,
+      notifyEveryone: parsed.data.notifyEveryone,
     })
 
     return c.json(

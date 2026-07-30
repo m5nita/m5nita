@@ -10,6 +10,7 @@ import { globalRateLimit, otpRateLimit } from './infrastructure/http/middleware/
 import { turnstileGuard } from './infrastructure/http/middleware/turnstileGuard'
 import { competitionsRoutes } from './infrastructure/http/routes/competitions'
 import { matchesRoutes } from './infrastructure/http/routes/matches'
+import { notificationPreferencesRoutes } from './infrastructure/http/routes/notificationPreferences'
 import { ogRoutes } from './infrastructure/http/routes/og'
 import { paymentsRoutes } from './infrastructure/http/routes/payments'
 import { poolsRoutes } from './infrastructure/http/routes/pools'
@@ -109,6 +110,7 @@ export function buildApp(): Hono<AppEnv> {
   app.route('/api', matchesRoutes)
   app.route('/api', predictionsRoutes)
   app.route('/api', pushRoutes)
+  app.route('/api', notificationPreferencesRoutes)
   app.route('/api', rankingRoutes)
   app.route('/api', statsRoutes)
   app.route('/api', paymentsRoutes)

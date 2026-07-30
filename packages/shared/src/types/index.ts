@@ -267,3 +267,19 @@ export interface MyPerformanceResponse {
   maiorPremioCentavos: number | null
   evolucao: PerformanceEvolutionPoint[]
 }
+
+/** One notification type as the settings screen sees it, resolved for the caller. */
+export interface NotificationTypeView {
+  code: string
+  label: string
+  description: string
+  /** Resolved: the user's override when present, else the catalog default. */
+  enabled: boolean
+  /** false → render as a locked row; the API refuses to disable it. */
+  optOutable: boolean
+}
+
+/** Ordered by the catalog's display order. Never empty, never 404. */
+export interface NotificationPreferencesResponse {
+  types: NotificationTypeView[]
+}
