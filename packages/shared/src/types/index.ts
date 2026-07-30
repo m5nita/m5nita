@@ -223,6 +223,8 @@ export interface PrizeWithdrawal {
   pixKey: string
   status: WithdrawalStatus
   createdAt: string
+  /** ISO da confirmação de pagamento; null enquanto a retirada não foi paga. */
+  paidAt: string | null
 }
 
 export interface PrizeInfo {

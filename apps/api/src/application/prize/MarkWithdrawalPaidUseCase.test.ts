@@ -24,6 +24,7 @@ describe('MarkWithdrawalPaidUseCase', () => {
       pixKey: '12345678909',
       status: 'completed',
       createdAt: new Date('2026-04-20T12:00:00.000Z'),
+      updatedAt: new Date('2026-04-21T08:00:00.000Z'),
     }
     const markAsCompleted = vi.fn().mockResolvedValue(completed)
     const repo = makeRepo({ markAsCompleted })

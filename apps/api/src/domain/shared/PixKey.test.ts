@@ -62,4 +62,23 @@ describe('PixKey', () => {
       expect(key.masked()).toBe('a@b.')
     })
   })
+
+  describe('PixKey.mask', () => {
+    it('keeps only the last four characters', () => {
+      expect(PixKey.mask('12345678909')).toBe('*******8909')
+    })
+
+    it('returns short values untouched — nothing left to hide', () => {
+      expect(PixKey.mask('1234')).toBe('1234')
+      expect(PixKey.mask('')).toBe('')
+    })
+
+    it('never throws on a value that would fail validation', () => {
+      expect(() => PixKey.mask('not-a-valid-key!!')).not.toThrow()
+    })
+
+    it('backs the instance method', () => {
+      expect(PixKey.create('cpf', '12345678909').masked()).toBe('*******8909')
+    })
+  })
 })

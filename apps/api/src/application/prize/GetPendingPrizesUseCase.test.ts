@@ -101,6 +101,7 @@ describe('GetPendingPrizesUseCase', () => {
           pixKey: '***',
           status: 'pending',
           createdAt: new Date().toISOString(),
+          paidAt: null,
         },
         winners: [
           { userId: 'user-1', name: 'Igor', position: 1, totalPoints: 30, exactMatches: 3 },
