@@ -155,7 +155,12 @@ describe('US4 — prize withdrawal', () => {
     const requestBody = (await requestResp.json()) as { id: string }
 
     // Simulate the admin pressing the "mark as paid" button in Telegram.
-    await getContainer().markWithdrawalPaidUseCase.execute({ withdrawalId: requestBody.id })
+    // Capture the return value: it's the ONLY thing that actually carries
+    // markAsCompleted()'s mapping (see note below on why GET /prize alone
+    // cannot catch a stale mapping there).
+    const markResult = await getContainer().markWithdrawalPaidUseCase.execute({
+      withdrawalId: requestBody.id,
+    })
 
     const rows = await sql`
       SELECT status FROM "prize_withdrawal" WHERE id = ${requestBody.id}
@@ -168,14 +173,50 @@ describe('US4 — prize withdrawal', () => {
     `
     expect(paymentRows).toMatchObject([{ status: 'completed', type: 'prize' }])
 
-    // A confirmação de pagamento fica exposta em GET /prize.
+    // markAsCompleted() deve devolver o updated_at REAL pós-UPDATE — não o
+    // snapshot pré-UPDATE lido sob `.for('update')` (a regressão que o
+    // Task 1 corrigiu). Comparamos contra o valor real do banco, não um
+    // `paidAt > createdAt` isolado — os dois podem colidir na mesma
+    // execução de teste em resolução de milissegundo.
+    //
+    // A coluna é `timestamp` (sem timezone). O client `postgres.js` desta
+    // suíte (instanciado direto, fora do drizzle) parseia esse tipo tratando
+    // o valor como HORÁRIO LOCAL do processo Node — em vez de UTC, que é o
+    // timezone da sessão do Postgres (`SHOW timezone` = UTC). Isso desloca o
+    // `Date` lido pelo offset local (ex.: -03:00 no Brasil), o que é um
+    // artefato de parsing do client, não um bug da app. `EXTRACT(EPOCH ...)`
+    // roda no servidor sob o timezone da sessão, então devolve o instante
+    // correto independente do timezone da máquina que roda o teste.
+    const [withdrawalRow] = await sql<{ updated_at_ms: string; created_at_ms: string }[]>`
+      SELECT
+        EXTRACT(EPOCH FROM updated_at) * 1000 AS updated_at_ms,
+        EXTRACT(EPOCH FROM created_at) * 1000 AS created_at_ms
+      FROM "prize_withdrawal" WHERE id = ${requestBody.id}
+    `
+    if (!withdrawalRow) throw new Error('prize_withdrawal row not found')
+    // Drizzle maps this column by string-truncating the driver's microsecond
+    // text to millisecond precision (not rounding) before `new Date(...)`, so
+    // floor here to match rather than round.
+    const actualUpdatedAtMs = Math.floor(Number(withdrawalRow.updated_at_ms))
+    const actualCreatedAtMs = Math.floor(Number(withdrawalRow.created_at_ms))
+    // This is the assertion that actually pins the regression: markResult
+    // comes straight from markAsCompleted()'s return value, which is what
+    // MarkWithdrawalPaidUseCase.execute() hands back — unlike GET /prize,
+    // which is served by GetPrizeInfoUseCase re-querying independently via
+    // findByPoolAndUser and would read the correct row regardless of what
+    // markAsCompleted() itself returned.
+    expect(markResult.updatedAt.getTime()).toBe(actualUpdatedAtMs)
+    expect(actualUpdatedAtMs).toBeGreaterThan(actualCreatedAtMs)
+
+    // A confirmação de pagamento também fica exposta em GET /prize.
     const prizeResp = await exactPredictor.fetch(`/api/pools/${poolId}/prize`)
     expect(prizeResp.status).toBe(200)
     const prize = (await prizeResp.json()) as {
       withdrawal: { status: string; paidAt: string | null; pixKey: string } | null
     }
     expect(prize.withdrawal?.status).toBe('completed')
-    expect(prize.withdrawal?.paidAt).toEqual(expect.any(String))
+    expect(prize.withdrawal?.paidAt).not.toBeNull()
+    expect(new Date(prize.withdrawal?.paidAt as string).getTime()).toBe(actualUpdatedAtMs)
     // A chave em claro nunca sai da API.
     expect(prize.withdrawal?.pixKey).not.toContain('12345')
   })

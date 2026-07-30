@@ -114,6 +114,12 @@ describe('MarkWithdrawalPaidUseCase', () => {
     const result = await useCase.execute({ withdrawalId: 'w-1' })
 
     expect(result).toBe(COMPLETED)
+    // Proves the notification path actually ran (and threw) — not merely that
+    // execute() didn't throw, which would pass even if notifyWinner() were
+    // never called at all.
+    expect(notifications.notifyWithdrawalPaid).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1' }),
+    )
   })
 
   it('propagates WITHDRAWAL_ALREADY_COMPLETED and never notifies', async () => {
