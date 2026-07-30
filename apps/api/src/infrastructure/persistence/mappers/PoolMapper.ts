@@ -17,6 +17,7 @@ export type PoolRow = {
   couponId: string | null
   status: string
   isOpen: boolean
+  notifyOnCreate: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -37,6 +38,7 @@ export function poolToDomain(row: PoolRow): Pool {
     PoolStatus.from(row.status),
     row.isOpen,
     row.couponId,
+    row.notifyOnCreate,
   )
 }
 
@@ -55,6 +57,7 @@ export function poolToPersistence(entity: Pool): PoolRow {
     couponId: entity.couponId,
     status: entity.status.value,
     isOpen: entity.isOpen,
+    notifyOnCreate: entity.notifyOnCreate,
     createdAt: new Date(),
     updatedAt: new Date(),
   }

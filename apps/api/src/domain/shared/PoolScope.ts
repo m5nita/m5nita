@@ -57,4 +57,21 @@ export class PoolScope {
   singleMatchIdOrNull(): string | null {
     return this.matchId
   }
+
+  /**
+   * Human wording for this scope, used wherever a pool has to be described to a
+   * user (notification copy today). Lives here so the phrasing — and the
+   * scope-branching behind it — has exactly one home.
+   *
+   * A single-match scope reads as the fixture when one is supplied, and degrades
+   * to a generic label when the match cannot be resolved.
+   */
+  label(fixture?: { homeTeam: string; awayTeam: string } | null): string {
+    if (this.kind === 'single-match') {
+      return fixture ? `${fixture.homeTeam} x ${fixture.awayTeam}` : 'Jogo único'
+    }
+    if (this.kind === 'whole-competition') return 'Campeonato completo'
+    const range = this.range as MatchdayRange
+    return range.from === range.to ? `Rodada ${range.from}` : `Rodadas ${range.from} a ${range.to}`
+  }
 }

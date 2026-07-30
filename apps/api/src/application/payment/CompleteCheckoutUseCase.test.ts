@@ -14,6 +14,7 @@ import { CompleteCheckoutUseCase } from './CompleteCheckoutUseCase'
 vi.mock('@sentry/node', () => ({
   addBreadcrumb: vi.fn(),
   captureMessage: vi.fn(),
+  captureException: vi.fn(),
 }))
 
 function makeClaimed(overrides: Partial<ClaimedPayment> = {}): ClaimedPayment {
@@ -73,11 +74,14 @@ function makeStatsUnlocksRepo(): StatsUnlockRepository {
   }
 }
 
-function makeUseCase(repos: {
-  payments: PaymentRepository
-  pools: PoolRepository
-  statsUnlocks: StatsUnlockRepository
-}) {
+function makeUseCase(
+  repos: {
+    payments: PaymentRepository
+    pools: PoolRepository
+    statsUnlocks: StatsUnlockRepository
+  },
+  onPoolActivated?: (poolId: string) => Promise<void>,
+) {
   const unitOfWork: UnitOfWork = {
     run: (work) =>
       work({
@@ -86,7 +90,7 @@ function makeUseCase(repos: {
         ranking: {} as never,
       }),
   }
-  return new CompleteCheckoutUseCase(unitOfWork)
+  return new CompleteCheckoutUseCase(unitOfWork, onPoolActivated)
 }
 
 describe('CompleteCheckoutUseCase', () => {
@@ -193,6 +197,97 @@ describe('CompleteCheckoutUseCase', () => {
 
     await expect(
       makeUseCase({ payments, pools, statsUnlocks }).execute({ paymentId: 'pay-1' }),
+    ).resolves.toBeUndefined()
+  })
+})
+
+describe('CompleteCheckoutUseCase — pool-activated hook', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('fires once with the id of the pool it just activated', async () => {
+    const onPoolActivated = vi.fn(async () => {})
+    const payments = makePaymentsRepo({ claimed: makeClaimed() })
+    const pools = makePoolsRepo(makePool(PoolStatus.Pending))
+
+    await makeUseCase(
+      { payments, pools, statsUnlocks: makeStatsUnlocksRepo() },
+      onPoolActivated,
+    ).execute({ paymentId: 'pay-1' })
+
+    expect(onPoolActivated).toHaveBeenCalledExactlyOnceWith('pool-1')
+  })
+
+  it('does not fire for a pool that was already live (a joining member)', async () => {
+    const onPoolActivated = vi.fn(async () => {})
+    const payments = makePaymentsRepo({ claimed: makeClaimed({ userId: 'joiner-1' }) })
+    const pools = makePoolsRepo(makePool(PoolStatus.Active))
+
+    await makeUseCase(
+      { payments, pools, statsUnlocks: makeStatsUnlocksRepo() },
+      onPoolActivated,
+    ).execute({ paymentId: 'pay-1' })
+
+    expect(pools.addMember).toHaveBeenCalledOnce()
+    expect(onPoolActivated).not.toHaveBeenCalled()
+  })
+
+  it('does not fire on a duplicate confirmation of the same payment', async () => {
+    const onPoolActivated = vi.fn(async () => {})
+    const payments = makePaymentsRepo({ claimed: null, exists: true })
+    const pools = makePoolsRepo(makePool(PoolStatus.Active))
+
+    await makeUseCase(
+      { payments, pools, statsUnlocks: makeStatsUnlocksRepo() },
+      onPoolActivated,
+    ).execute({ paymentId: 'pay-1' })
+
+    expect(onPoolActivated).not.toHaveBeenCalled()
+  })
+
+  it('does not fire for a stats-unlock payment', async () => {
+    const onPoolActivated = vi.fn(async () => {})
+    const payments = makePaymentsRepo({ claimed: makeClaimed({ type: 'stats_unlock' }) })
+    const pools = makePoolsRepo(makePool(PoolStatus.Pending))
+
+    await makeUseCase(
+      { payments, pools, statsUnlocks: makeStatsUnlocksRepo() },
+      onPoolActivated,
+    ).execute({ paymentId: 'pay-1' })
+
+    expect(onPoolActivated).not.toHaveBeenCalled()
+  })
+
+  it('keeps the payment completed, the pool live and the member in place when the hook throws', async () => {
+    const onPoolActivated = vi.fn(async () => {
+      throw new Error('push service down')
+    })
+    const pool = makePool(PoolStatus.Pending)
+    const payments = makePaymentsRepo({ claimed: makeClaimed() })
+    const pools = makePoolsRepo(pool)
+
+    await expect(
+      makeUseCase(
+        { payments, pools, statsUnlocks: makeStatsUnlocksRepo() },
+        onPoolActivated,
+      ).execute({ paymentId: 'pay-1' }),
+    ).resolves.toBeUndefined()
+
+    expect(pool.status).toBe(PoolStatus.Active)
+    expect(pools.updateStatus).toHaveBeenCalledWith('pool-1', PoolStatus.Active)
+    expect(pools.addMember).toHaveBeenCalledWith('pool-1', 'user-1', 'pay-1')
+    expect(Sentry.captureException).toHaveBeenCalledOnce()
+  })
+
+  it('works without a hook configured', async () => {
+    const payments = makePaymentsRepo({ claimed: makeClaimed() })
+    const pools = makePoolsRepo(makePool(PoolStatus.Pending))
+
+    await expect(
+      makeUseCase({ payments, pools, statsUnlocks: makeStatsUnlocksRepo() }).execute({
+        paymentId: 'pay-1',
+      }),
     ).resolves.toBeUndefined()
   })
 })

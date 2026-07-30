@@ -26,6 +26,9 @@ export const pool = pgTable(
     matchId: uuid('match_id').references(() => match.id),
     isOpen: boolean('is_open').default(true).notNull(),
     status: text('status').default('active').notNull(),
+    // The creator asked for the whole base to be told about this pool. Intent,
+    // not status: it is never cleared. At-most-once comes from the payment CAS.
+    notifyOnCreate: boolean('notify_on_create').default(false).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

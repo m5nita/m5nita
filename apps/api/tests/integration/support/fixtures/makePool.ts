@@ -18,6 +18,7 @@ type MakePoolOpts = {
   matchdayFrom?: number
   matchdayTo?: number
   matchId?: string
+  notifyEveryone?: boolean
 }
 
 export async function makePool(opts: MakePoolOpts): Promise<TestPool> {
@@ -32,6 +33,9 @@ export async function makePool(opts: MakePoolOpts): Promise<TestPool> {
   }
   if (opts.matchId != null) {
     body.matchId = opts.matchId
+  }
+  if (opts.notifyEveryone) {
+    body.notifyEveryone = true
   }
 
   const resp = await opts.admin.fetch('/api/pools', {

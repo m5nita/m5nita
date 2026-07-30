@@ -13,6 +13,8 @@ export type PoolWithDetails = {
   matchId: string | null
   status: string
   isOpen: boolean
+  /** The creator asked for the base to be told when this pool goes live. */
+  notifyOnCreate: boolean
   couponId: string | null
   owner: { id: string; name: string }
   competitionName: string

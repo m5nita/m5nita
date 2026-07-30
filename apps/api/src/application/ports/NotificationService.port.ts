@@ -39,6 +39,31 @@ export interface MatchPointsData {
   position: number
 }
 
+/** A user the announcement may reach, with what the channel chain needs. */
+export interface NewPoolRecipient {
+  userId: string
+  phoneNumber: string | null
+}
+
+/**
+ * "Novo bolão" announcement — sent once, after the entry payment is confirmed
+ * and the pool goes live. Push first, Telegram when push did not deliver, and
+ * deliberately never email. The recipient list already excludes the creator;
+ * the preference gate is applied per recipient by the adapter.
+ */
+export interface NewPoolData {
+  poolId: string
+  poolName: string
+  inviteCode: string
+  competitionName: string
+  /** Human wording for the pool's scope, built by PoolScope.label(). */
+  scopeLabel: string
+  entryFee: number
+  /** First name only: this message reaches every registered user. */
+  creatorFirstName: string
+  recipients: NewPoolRecipient[]
+}
+
 export interface AdminWithdrawalRequestNotification {
   userName: string
   poolName: string
@@ -73,4 +98,5 @@ export interface NotificationService {
   notifyAdminMatchNeedsWinner(params: AdminMatchNeedsWinnerNotification): Promise<void>
   sendPredictionReminders(reminders: ReminderData[]): Promise<void>
   notifyMatchPoints(items: MatchPointsData[]): Promise<void>
+  notifyNewPool(data: NewPoolData): Promise<void>
 }

@@ -1,12 +1,18 @@
+import { formatBrl } from '@m5nita/shared'
 import type { Bot } from 'grammy'
 import type {
   AdminMatchNeedsWinnerNotification,
   AdminWithdrawalRequestNotification,
   MatchPointsData,
+  NewPoolData,
+  NewPoolRecipient,
   NotificationService,
   ReminderData,
   WinnerInfo,
 } from '../../application/ports/NotificationService.port'
+import { NotificationPreferences } from '../../domain/notification/NotificationPreferences'
+import type { NotificationPreferencesRepository } from '../../domain/notification/NotificationPreferencesRepository.port'
+import type { NotificationTypeCode } from '../../domain/notification/NotificationType'
 import { sendPredictionReminderEmail, sendWinnerEmail } from '../../lib/resend'
 import { findChatIdByPhone } from '../../lib/telegram'
 import type { MatchPointsNotifiedStore } from '../persistence/DrizzleMatchPointsNotifiedStore'
@@ -52,11 +58,27 @@ function matchPointsPushPayload(item: MatchPointsData): PushPayload {
   }
 }
 
+function newPoolPushPayload(data: NewPoolData): PushPayload {
+  const details = `${data.competitionName} · ${data.scopeLabel} · entrada ${formatBrl(data.entryFee)}`
+  return {
+    title: 'Novo bolão no m5nita',
+    body: `${data.creatorFirstName} criou "${data.poolName}" — ${details}`,
+    url: `/invite/${data.inviteCode}`,
+    tag: `new-pool-${data.poolId}`,
+  }
+}
+
 /**
  * Routes each user-facing notification to exactly ONE channel per user per
  * event, in order Web Push (all the user's devices) → Telegram → email — never
- * duplicating across channels. "Pontos conquistados" is push-only. Admin/OTP
- * notifications stay Telegram-only.
+ * duplicating across channels. "Pontos conquistados" is push-only, and the
+ * "novo bolão" announcement is push → Telegram with no email fallback.
+ * Admin/OTP notifications stay Telegram-only.
+ *
+ * This is also the single place a notification preference is checked: because
+ * every user-facing notification passes through here to reach a channel, the
+ * jobs that produce them (reminders, points, pool closing) never need to know
+ * preferences exist.
  */
 export class CompositeNotificationService implements NotificationService {
   private telegram: TelegramNotificationService
@@ -65,6 +87,7 @@ export class CompositeNotificationService implements NotificationService {
     bot: Bot,
     private readonly webPush: WebPushNotificationService,
     private readonly matchPointsStore: MatchPointsNotifiedStore,
+    private readonly preferences: NotificationPreferencesRepository,
   ) {
     this.telegram = new TelegramNotificationService(bot)
   }
@@ -73,6 +96,17 @@ export class CompositeNotificationService implements NotificationService {
   // true when push handled the user, so callers skip Telegram/email.
   private tryPush(userId: string, payload: PushPayload): Promise<boolean> {
     return this.webPush.sendToUser(userId, payload)
+  }
+
+  // The preference gate. Applied uniformly, including to types that cannot be
+  // turned off — the value object guarantees those always resolve to allowed, so
+  // locking or unlocking a type needs no change here.
+  private async allows(userId: string, code: NotificationTypeCode): Promise<boolean> {
+    const [types, overrides] = await Promise.all([
+      this.preferences.listTypes(),
+      this.preferences.findOverrides(userId),
+    ])
+    return NotificationPreferences.of(types, overrides).allows(code)
   }
 
   async notifyWinners(
@@ -93,6 +127,7 @@ export class CompositeNotificationService implements NotificationService {
     prizeShare: number,
   ): Promise<void> {
     try {
+      if (!(await this.allows(winner.userId, 'pool_result'))) return
       if (await this.tryPush(winner.userId, winnerPushPayload(poolId, poolName))) return
       const chatId = winner.phoneNumber ? await findChatIdByPhone(winner.phoneNumber) : null
       if (chatId) {
@@ -127,6 +162,7 @@ export class CompositeNotificationService implements NotificationService {
 
   private async deliverReminder(reminder: ReminderData): Promise<void> {
     try {
+      if (!(await this.allows(reminder.userId, 'prediction_reminder'))) return
       if (await this.tryPush(reminder.userId, reminderPushPayload(reminder))) return
       const chatId = reminder.phoneNumber ? await findChatIdByPhone(reminder.phoneNumber) : null
       if (chatId) {
@@ -161,11 +197,41 @@ export class CompositeNotificationService implements NotificationService {
   // first; only a fresh record sends. No Telegram/email fallback.
   private async deliverMatchPoints(item: MatchPointsData): Promise<void> {
     try {
+      if (!(await this.allows(item.userId, 'match_points'))) return
       const isNew = await this.matchPointsStore.recordOnce(item.userId, item.poolId, item.matchId)
       if (!isNew) return
       await this.tryPush(item.userId, matchPointsPushPayload(item))
     } catch (error) {
       console.error(`[Notify] Failed match-points push for pool ${item.poolId}:`, error)
+    }
+  }
+
+  // Push → Telegram, never email, one channel per person. Preferences for the
+  // whole audience are read in a single query (the catalog is cached), so the
+  // cost of an announcement does not grow with the number of recipients.
+  async notifyNewPool(data: NewPoolData): Promise<void> {
+    if (data.recipients.length === 0) return
+    const [types, overridesByUser] = await Promise.all([
+      this.preferences.listTypes(),
+      this.preferences.findOverridesForUsers(data.recipients.map((r) => r.userId)),
+    ])
+
+    for (const recipient of data.recipients) {
+      const prefs = NotificationPreferences.of(types, overridesByUser.get(recipient.userId) ?? {})
+      if (!prefs.allows('new_pool')) continue
+      await this.deliverNewPool(data, recipient)
+    }
+  }
+
+  private async deliverNewPool(data: NewPoolData, recipient: NewPoolRecipient): Promise<void> {
+    try {
+      if (await this.tryPush(recipient.userId, newPoolPushPayload(data))) return
+      const chatId = recipient.phoneNumber ? await findChatIdByPhone(recipient.phoneNumber) : null
+      if (!chatId) return
+      await this.telegram.sendNewPoolMessage(chatId, data)
+    } catch (error) {
+      // One unreachable recipient must never abort the rest of the announcement.
+      console.error(`[Notify] Failed new-pool notice to ${recipient.userId}:`, error)
     }
   }
 }

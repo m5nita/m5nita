@@ -1,7 +1,10 @@
 import { FinalizeMatchUseCase } from './application/match/FinalizeMatchUseCase'
 import { NotifyMatchPointsUseCase } from './application/match/NotifyMatchPointsUseCase'
+import { GetNotificationPreferencesUseCase } from './application/notification/GetNotificationPreferencesUseCase'
+import { UpdateNotificationPreferencesUseCase } from './application/notification/UpdateNotificationPreferencesUseCase'
 import { CompleteCheckoutUseCase } from './application/payment/CompleteCheckoutUseCase'
 import { GetMyPerformanceUseCase } from './application/performance/GetMyPerformanceUseCase'
+import { AnnounceNewPoolUseCase } from './application/pool/AnnounceNewPoolUseCase'
 import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
 import { GetPoolDetailsUseCase } from './application/pool/GetPoolDetailsUseCase'
 import { GetUserPoolsUseCase } from './application/pool/GetUserPoolsUseCase'
@@ -32,6 +35,7 @@ import { StripePaymentGateway } from './infrastructure/external/StripePaymentGat
 import { WebPushNotificationService } from './infrastructure/external/WebPushNotificationService'
 import { DrizzleMatchPointsNotifiedStore } from './infrastructure/persistence/DrizzleMatchPointsNotifiedStore'
 import { DrizzleMatchRepository } from './infrastructure/persistence/DrizzleMatchRepository'
+import { DrizzleNotificationPreferencesRepository } from './infrastructure/persistence/DrizzleNotificationPreferencesRepository'
 import { DrizzlePerformanceReadRepository } from './infrastructure/persistence/DrizzlePerformanceReadRepository'
 import { DrizzlePoolRepository } from './infrastructure/persistence/DrizzlePoolRepository'
 import { DrizzlePredictionRepository } from './infrastructure/persistence/DrizzlePredictionRepository'
@@ -41,6 +45,7 @@ import { DrizzleRankingRepository } from './infrastructure/persistence/DrizzleRa
 import { DrizzleStatsRepository } from './infrastructure/persistence/DrizzleStatsRepository'
 import { DrizzleStatsUnlockRepository } from './infrastructure/persistence/DrizzleStatsUnlockRepository'
 import { DrizzleUnitOfWork } from './infrastructure/persistence/DrizzleUnitOfWork'
+import { DrizzleUserDirectory } from './infrastructure/persistence/DrizzleUserDirectory'
 import { infinitePayConfig } from './lib/infinitepay'
 import { stripe } from './lib/stripe'
 import { bot } from './lib/telegram'
@@ -127,6 +132,8 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const statsRepo = new DrizzleStatsRepository(db)
   const pushSubscriptionRepo = new DrizzlePushSubscriptionRepository(db)
   const matchPointsNotifiedStore = new DrizzleMatchPointsNotifiedStore(db)
+  const notificationPreferencesRepo = new DrizzleNotificationPreferencesRepository(db)
+  const userDirectory = new DrizzleUserDirectory(db)
   const unitOfWork = new DrizzleUnitOfWork(db)
 
   // Cached per-pool stats loaders (siblings of the ranking cache): the aggregate
@@ -137,13 +144,33 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const loadPoolStatsMatches = (poolId: string) =>
     participantStatsMatchesCache.getOrCompute(poolId, () => statsRepo.poolMatchPoints(poolId))
 
-  const completeCheckoutUseCase = new CompleteCheckoutUseCase(unitOfWork)
-  const paymentGateway =
-    overrides.paymentGateway ?? buildPaymentGateway(db, completeCheckoutUseCase)
+  // Notifications are wired before the checkout use case because confirming a
+  // payment now announces the pool it activated.
   const webPushService = new WebPushNotificationService(pushSubscriptionRepo)
   const notificationService =
     overrides.notificationService ??
-    new CompositeNotificationService(bot, webPushService, matchPointsNotifiedStore)
+    new CompositeNotificationService(
+      bot,
+      webPushService,
+      matchPointsNotifiedStore,
+      notificationPreferencesRepo,
+    )
+
+  const announceNewPoolUseCase = new AnnounceNewPoolUseCase(
+    poolRepo,
+    userDirectory,
+    notificationService,
+    async (matchId) => {
+      const found = await matchRepo.findById(matchId)
+      return found ? { homeTeam: found.homeTeam, awayTeam: found.awayTeam } : null
+    },
+  )
+
+  const completeCheckoutUseCase = new CompleteCheckoutUseCase(unitOfWork, (poolId) =>
+    announceNewPoolUseCase.execute({ poolId }),
+  )
+  const paymentGateway =
+    overrides.paymentGateway ?? buildPaymentGateway(db, completeCheckoutUseCase)
 
   const statsUnlockPriceEnv = process.env.STATS_UNLOCK_PRICE_CENTAVOS
   const statsUnlockPrice = statsUnlockPriceEnv
@@ -177,11 +204,19 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     statsUnlockRepo,
     statsRepo,
     pushSubscriptionRepo,
+    notificationPreferencesRepo,
     notificationService,
     paymentGateway,
     unitOfWork,
 
     completeCheckoutUseCase,
+    announceNewPoolUseCase,
+    getNotificationPreferencesUseCase: new GetNotificationPreferencesUseCase(
+      notificationPreferencesRepo,
+    ),
+    updateNotificationPreferencesUseCase: new UpdateNotificationPreferencesUseCase(
+      notificationPreferencesRepo,
+    ),
     subscribeToPushUseCase: new SubscribeToPushUseCase(pushSubscriptionRepo),
     unsubscribeFromPushUseCase: new UnsubscribeFromPushUseCase(pushSubscriptionRepo),
     notifyMatchPointsUseCase,

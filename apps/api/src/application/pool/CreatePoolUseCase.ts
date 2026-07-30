@@ -34,6 +34,8 @@ type Input = {
   matchdayTo?: number
   matchId?: string
   couponCode?: string
+  /** Announce the pool to the whole base once its entry payment is confirmed. */
+  notifyEveryone?: boolean
 }
 
 type Output = {
@@ -118,6 +120,7 @@ export class CreatePoolUseCase {
       PoolStatus.Pending,
       true,
       couponState.couponId,
+      input.notifyEveryone ?? false,
     )
 
     // Pool must be persisted before the gateway runs: every gateway inserts a

@@ -77,6 +77,7 @@ export class DrizzlePoolRepository implements PoolRepository {
       matchId: row.matchId,
       status: row.status,
       isOpen: row.isOpen,
+      notifyOnCreate: row.notifyOnCreate,
       couponId: row.couponId,
       owner: { id: row.owner.id, name: row.owner.name ?? '' },
       competitionName: row.competition.name,

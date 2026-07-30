@@ -303,3 +303,37 @@ describe('CreatePoolUseCase', () => {
     expect(result.discountPercent).toBe(0)
   })
 })
+
+describe('CreatePoolUseCase — notifyEveryone', () => {
+  it('persists the creator’s request to announce the pool', async () => {
+    const save = vi.fn(async (p) => p)
+    const useCase = new CreatePoolUseCase(
+      makeRepo({ save }),
+      makeGateway(),
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn() },
+      activeCompetition,
+      noMatchFinder,
+      fixedClock,
+    )
+
+    await useCase.execute({ ...baseInput, notifyEveryone: true })
+
+    expect(save.mock.calls[0]?.[0]).toMatchObject({ notifyOnCreate: true })
+  })
+
+  it('defaults to not announcing when the field is omitted', async () => {
+    const save = vi.fn(async (p) => p)
+    const useCase = new CreatePoolUseCase(
+      makeRepo({ save }),
+      makeGateway(),
+      { validateCoupon: vi.fn(), incrementUsage: vi.fn() },
+      activeCompetition,
+      noMatchFinder,
+      fixedClock,
+    )
+
+    await useCase.execute(baseInput)
+
+    expect(save.mock.calls[0]?.[0]).toMatchObject({ notifyOnCreate: false })
+  })
+})

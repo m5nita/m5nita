@@ -41,6 +41,33 @@ export class TelegramNotificationService {
     })
   }
 
+  async sendNewPoolMessage(
+    chatId: number,
+    params: {
+      poolName: string
+      inviteCode: string
+      competitionName: string
+      scopeLabel: string
+      entryFee: number
+      creatorFirstName: string
+    },
+  ): Promise<void> {
+    const linkLine = APP_URL
+      ? `\n👉 [Entrar no bolão](${APP_URL}/invite/${params.inviteCode})`
+      : '\nAcesse o app para entrar no bolão.'
+
+    const message =
+      `🆕 *Novo bolão no m5nita*\n\n` +
+      `${escapeMarkdown(params.creatorFirstName)} criou *${escapeMarkdown(params.poolName)}*\n` +
+      `${escapeMarkdown(params.competitionName)} · ${escapeMarkdown(params.scopeLabel)}\n` +
+      `Entrada: *${formatBrl(params.entryFee)}*\n` +
+      linkLine
+
+    await this.bot.api.sendMessage(chatId, message, {
+      parse_mode: 'Markdown',
+    })
+  }
+
   async sendReminderMessage(
     chatId: number,
     params: { poolName: string; poolId: string; matches: ReminderMatch[] },

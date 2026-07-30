@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { NotificationPreferencesSection } from '../components/notifications/NotificationPreferencesSection'
 import { PushSettingsSection } from '../components/push/PushSettingsSection'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -212,6 +213,8 @@ function SettingsPage() {
       )}
 
       <PushSettingsSection />
+
+      <NotificationPreferencesSection />
 
       <Button variant="danger" onClick={handleLogout} className="w-full">
         Sair

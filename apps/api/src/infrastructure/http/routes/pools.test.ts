@@ -145,7 +145,53 @@ describe('POST /api/pools', () => {
       matchdayTo: undefined,
       matchId: undefined,
       couponCode: undefined,
+      // Omitting the field must never announce the pool to the base.
+      notifyEveryone: false,
     })
+  })
+
+  it('creates_notifyEveryoneOptIn_passesTheRequestThrough', async () => {
+    mockCreatePoolExecute.mockResolvedValue({
+      pool: {
+        id: 'pool-1',
+        name: 'Test Pool',
+        entryFee: { value: { centavos: 5000 } },
+        ownerId: 'user-1',
+        inviteCode: { value: 'ABC123' },
+        competitionId: '00000000-0000-0000-0000-000000000001',
+        scope: { kind: 'whole-competition', range: null, matchId: null },
+        status: { value: 'pending' },
+        isOpen: true,
+        couponId: null,
+      },
+      payment: {
+        payment: { id: 'pay-1' },
+        checkoutUrl: 'https://checkout.example.com/redirect?id=test',
+      },
+      platformFee: 250,
+      originalPlatformFee: 250,
+      discountPercent: 0,
+      couponCode: null,
+    })
+
+    const res = await app.request('/api/pools', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-test-user': JSON.stringify(testUser),
+      },
+      body: JSON.stringify({
+        name: 'Test Pool',
+        entryFee: 5000,
+        competitionId: '00000000-0000-0000-0000-000000000001',
+        notifyEveryone: true,
+      }),
+    })
+
+    expect(res.status).toBe(201)
+    expect(mockCreatePoolExecute).toHaveBeenCalledWith(
+      expect.objectContaining({ notifyEveryone: true }),
+    )
   })
 
   it('creates_singleMatchScope_passesMatchIdThrough', async () => {
