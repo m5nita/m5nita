@@ -147,7 +147,7 @@ function FeeSummary({
   discountedFee: number
 }) {
   return (
-    <div className="mt-auto flex flex-col gap-2 text-sm">
+    <div className="flex flex-col gap-2 text-sm">
       <div className="flex items-baseline justify-between">
         <span className="font-display text-xs font-bold uppercase tracking-widest text-gray-muted">
           Você paga agora
@@ -399,148 +399,159 @@ function CreatePoolPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 min-h-full lg:items-center">
-      <div className="lg:w-full lg:max-w-[520px] lg:border lg:border-border lg:p-10 flex flex-col gap-8">
-        <div>
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
-            Novo
-          </p>
-          <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black">
-            Criar Bolão
-          </h1>
-          <div className="mt-3 h-1 w-12 bg-red" />
-        </div>
+    // Same width as every other page (inherited from <main>): no narrow centered
+    // box. On desktop the form splits in two so the extra width is actually used
+    // — fields on the left, the decision (aviso, custo, CTA) parked on the right.
+    <div className="flex flex-col gap-8">
+      <div>
+        <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-muted">
+          Novo
+        </p>
+        <h1 className="mt-1 font-display text-4xl font-black leading-[0.9] text-black lg:text-5xl">
+          Criar Bolão
+        </h1>
+        <div className="mt-3 h-1 w-12 bg-red" />
+      </div>
 
-        <Input
-          label="Nome do bolão"
-          placeholder="Ex: Bolão da Galera"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={50}
-        />
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)] lg:items-start lg:gap-12">
+        <div className="flex flex-col gap-8">
+          <Input
+            label="Nome do bolão"
+            placeholder="Ex: Bolão da Galera"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={50}
+          />
 
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor="competition-select"
-            className="font-display text-xs font-semibold uppercase tracking-wider text-gray-dark"
-          >
-            Competição
-          </label>
-          <select
-            id="competition-select"
-            value={competitionId}
-            onChange={(e) => {
-              setCompetitionId(e.target.value)
-              setMatchdayFrom('')
-              setMatchdayTo('')
-            }}
-            className="border-b-2 border-border bg-transparent px-0 py-2.5 text-black transition-colors duration-150 focus:border-black focus:outline-none appearance-none"
-          >
-            <option value="" className="text-gray-muted">
-              Selecione uma competição
-            </option>
-            {competitions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.seasonDisplay ?? c.season})
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="competition-select"
+              className="font-display text-xs font-semibold uppercase tracking-wider text-gray-dark"
+            >
+              Competição
+            </label>
+            <select
+              id="competition-select"
+              value={competitionId}
+              onChange={(e) => {
+                setCompetitionId(e.target.value)
+                setMatchdayFrom('')
+                setMatchdayTo('')
+              }}
+              className="border-b-2 border-border bg-transparent px-0 py-2.5 text-black transition-colors duration-150 focus:border-black focus:outline-none appearance-none"
+            >
+              <option value="" className="text-gray-muted">
+                Selecione uma competição
               </option>
-            ))}
-          </select>
-        </div>
-
-        {competitionId && (
-          <PoolScopeSection
-            competitionId={competitionId}
-            scopeMode={scopeMode}
-            setScopeMode={setScopeMode}
-            matchId={matchId}
-            setMatchId={setMatchId}
-            matchdays={matchdays}
-            matchdayFrom={matchdayFrom}
-            setMatchdayFrom={setMatchdayFrom}
-            matchdayTo={matchdayTo}
-            setMatchdayTo={setMatchdayTo}
-          />
-        )}
-
-        <div className="flex flex-col gap-2">
-          <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
-            Valor da Entrada
-          </p>
-          <div className="grid grid-cols-4 gap-2">
-            {POOL.QUICK_SELECT_VALUES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => {
-                  setEntryFee(value)
-                  setCustomFee('')
-                }}
-                className={`font-display text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer ${
-                  !customFee && entryFee === value
-                    ? 'bg-black text-white'
-                    : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
-                }`}
-              >
-                {formatCurrency(value)}
-              </button>
-            ))}
+              {competitions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.seasonDisplay ?? c.season})
+                </option>
+              ))}
+            </select>
           </div>
-          <Input
-            label={`Ou valor personalizado (${formatCurrency(POOL.MIN_ENTRY_FEE)} a ${formatCurrency(POOL.MAX_ENTRY_FEE)})`}
-            type="number"
-            placeholder="0"
-            value={customFee}
-            onChange={(e) => setCustomFee(e.target.value)}
-            min={POOL.MIN_ENTRY_FEE / 100}
-            max={POOL.MAX_ENTRY_FEE / 100}
-          />
+
+          {competitionId && (
+            <PoolScopeSection
+              competitionId={competitionId}
+              scopeMode={scopeMode}
+              setScopeMode={setScopeMode}
+              matchId={matchId}
+              setMatchId={setMatchId}
+              matchdays={matchdays}
+              matchdayFrom={matchdayFrom}
+              setMatchdayFrom={setMatchdayFrom}
+              matchdayTo={matchdayTo}
+              setMatchdayTo={setMatchdayTo}
+            />
+          )}
+
+          <div className="flex flex-col gap-2">
+            <p className="font-display text-xs font-semibold uppercase tracking-widest text-gray-dark">
+              Valor da Entrada
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {POOL.QUICK_SELECT_VALUES.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    setEntryFee(value)
+                    setCustomFee('')
+                  }}
+                  className={`font-display text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer ${
+                    !customFee && entryFee === value
+                      ? 'bg-black text-white'
+                      : 'border-2 border-border text-gray-dark hover:border-black hover:text-black'
+                  }`}
+                >
+                  {formatCurrency(value)}
+                </button>
+              ))}
+            </div>
+            <Input
+              label={`Ou valor personalizado (${formatCurrency(POOL.MIN_ENTRY_FEE)} a ${formatCurrency(POOL.MAX_ENTRY_FEE)})`}
+              type="number"
+              placeholder="0"
+              value={customFee}
+              onChange={(e) => setCustomFee(e.target.value)}
+              min={POOL.MIN_ENTRY_FEE / 100}
+              max={POOL.MAX_ENTRY_FEE / 100}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Input
+              label="Cupom de desconto"
+              placeholder="Ex: COPA2026"
+              value={couponCode}
+              onChange={(e) => {
+                setCouponCode(e.target.value)
+                setCoupon({ valid: false, discountPercent: 0, loading: false, error: '' })
+              }}
+              onBlur={() => validateCoupon(couponCode)}
+              maxLength={20}
+              error={coupon.error}
+            />
+            {coupon.valid && (
+              <p className="text-xs font-medium text-green">
+                Cupom aplicado: {coupon.discountPercent}% de desconto na taxa
+              </p>
+            )}
+            {coupon.loading && <p className="text-xs text-gray-muted">Validando cupom...</p>}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Input
-            label="Cupom de desconto"
-            placeholder="Ex: COPA2026"
-            value={couponCode}
-            onChange={(e) => {
-              setCouponCode(e.target.value)
-              setCoupon({ valid: false, discountPercent: 0, loading: false, error: '' })
-            }}
-            onBlur={() => validateCoupon(couponCode)}
-            maxLength={20}
-            error={coupon.error}
+        {/* Not sticky on purpose: the app shell's `overflow-x-hidden` makes it a
+            scroll container (overflow-y computes to auto), so `position: sticky`
+            here silently does nothing. Same DOM order as before, so mobile keeps
+            reading top to bottom. */}
+        <aside className="flex flex-col gap-6">
+          <NotifyEveryoneField checked={notifyEveryone} onChange={setNotifyEveryone} />
+
+          <FeeSummary
+            coupon={coupon}
+            currentFee={currentFee}
+            platformFee={platformFee}
+            discountedFee={discountedFee}
           />
-          {coupon.valid && (
-            <p className="text-xs font-medium text-green">
-              Cupom aplicado: {coupon.discountPercent}% de desconto na taxa
+
+          {error && (
+            <p className="text-xs font-medium text-red" role="alert">
+              {error}
             </p>
           )}
-          {coupon.loading && <p className="text-xs text-gray-muted">Validando cupom...</p>}
-        </div>
 
-        <NotifyEveryoneField checked={notifyEveryone} onChange={setNotifyEveryone} />
-
-        <FeeSummary
-          coupon={coupon}
-          currentFee={currentFee}
-          platformFee={platformFee}
-          discountedFee={discountedFee}
-        />
-
-        {error && (
-          <p className="text-xs font-medium text-red" role="alert">
-            {error}
-          </p>
-        )}
-
-        <Button
-          onClick={handleCreate}
-          loading={loading}
-          disabled={!isValidFee || (scopeMode === 'single' && !matchId)}
-          className="w-full"
-          size="lg"
-        >
-          Criar e Pagar {formatCurrency(currentFee)}
-        </Button>
+          <Button
+            onClick={handleCreate}
+            loading={loading}
+            disabled={!isValidFee || (scopeMode === 'single' && !matchId)}
+            className="w-full"
+            size="lg"
+          >
+            Criar e Pagar {formatCurrency(currentFee)}
+          </Button>
+        </aside>
       </div>
     </div>
   )
