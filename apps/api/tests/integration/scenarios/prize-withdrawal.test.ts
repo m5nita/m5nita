@@ -167,6 +167,17 @@ describe('US4 — prize withdrawal', () => {
       SELECT status, type FROM "payment" WHERE pool_id = ${poolId} AND type = 'prize'
     `
     expect(paymentRows).toMatchObject([{ status: 'completed', type: 'prize' }])
+
+    // A confirmação de pagamento fica exposta em GET /prize.
+    const prizeResp = await exactPredictor.fetch(`/api/pools/${poolId}/prize`)
+    expect(prizeResp.status).toBe(200)
+    const prize = (await prizeResp.json()) as {
+      withdrawal: { status: string; paidAt: string | null; pixKey: string } | null
+    }
+    expect(prize.withdrawal?.status).toBe('completed')
+    expect(prize.withdrawal?.paidAt).toEqual(expect.any(String))
+    // A chave em claro nunca sai da API.
+    expect(prize.withdrawal?.pixKey).not.toContain('12345')
   })
 
   it('scenario 3 — non-winner attempt is rejected; no prize_withdrawal row created', async () => {

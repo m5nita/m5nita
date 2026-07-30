@@ -267,7 +267,11 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
       rankingRepo,
       notificationService,
     ),
-    markWithdrawalPaidUseCase: new MarkWithdrawalPaidUseCase(prizeWithdrawalRepo),
+    markWithdrawalPaidUseCase: new MarkWithdrawalPaidUseCase(
+      prizeWithdrawalRepo,
+      poolRepo,
+      notificationService,
+    ),
     unlockStatsUseCase: new UnlockStatsUseCase(
       poolRepo,
       statsUnlockRepo,
