@@ -895,12 +895,12 @@ describe('ClosePoolUseCase', () => {
     expect(notifyWinners).not.toHaveBeenCalled()
   })
 
-  it('uppercases the invite code before looking it up', async () => {
+  it('uppercases and trims the invite code before looking it up', async () => {
     const { useCase, poolRepo } = makeUseCase({ unfinished: [] })
 
-    await useCase.execute({ inviteCode: CODE, force: false })
+    await useCase.execute({ inviteCode: '  9vzjq9j9 ', force: false })
 
-    expect(poolRepo.findByInviteCode).toHaveBeenCalledWith(CODE)
+    expect(poolRepo.findByInviteCode).toHaveBeenCalledWith('9VZJQ9J9')
   })
 })
 ```
@@ -1126,13 +1126,17 @@ And expose it in the returned object, next to `finalizeMatchUseCase`:
 
 - [ ] **Step 2: Write the failing test**
 
-Append to `apps/api/src/lib/telegram.test.ts`:
+In `apps/api/src/lib/telegram.test.ts`, add these three imports **at the top of the file**, beside the existing `import { describe, expect, it } from 'vitest'` (Biome's import sorting will place them; do not add a second vitest import):
 
 ```typescript
 import { formatBrl } from '@m5nita/shared'
 import type { ClosePoolResult } from '../application/pool/ClosePoolUseCase'
 import { parsePoolCloseArgs, renderPoolCloseResult } from './telegram'
+```
 
+Then append the new `describe` blocks at the **bottom** of the file:
+
+```typescript
 describe('parsePoolCloseArgs', () => {
   it('reads the code and defaults to not forcing', () => {
     expect(parsePoolCloseArgs('9VZJQ9J9')).toEqual({ code: '9VZJQ9J9', force: false })
@@ -1254,7 +1258,7 @@ describe('renderPoolCloseResult', () => {
 })
 ```
 
-The existing file's first line is `import { describe, expect, it } from 'vitest'` — reuse it rather than adding a second vitest import.
+The existing file already imports `describe`, `expect` and `it` from vitest and tests `isAdmin`; leave that block untouched.
 
 - [ ] **Step 3: Run the test to verify it fails**
 
