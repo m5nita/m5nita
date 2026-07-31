@@ -9,11 +9,16 @@ import type {
   NotificationService,
   ReminderData,
   WinnerInfo,
+  WithdrawalPaidData,
 } from '../../application/ports/NotificationService.port'
 import { NotificationPreferences } from '../../domain/notification/NotificationPreferences'
 import type { NotificationPreferencesRepository } from '../../domain/notification/NotificationPreferencesRepository.port'
 import type { NotificationTypeCode } from '../../domain/notification/NotificationType'
-import { sendPredictionReminderEmail, sendWinnerEmail } from '../../lib/resend'
+import {
+  sendPredictionReminderEmail,
+  sendWinnerEmail,
+  sendWithdrawalPaidEmail,
+} from '../../lib/resend'
 import { findChatIdByPhone } from '../../lib/telegram'
 import type { MatchPointsNotifiedStore } from '../persistence/DrizzleMatchPointsNotifiedStore'
 import { TelegramNotificationService } from './TelegramNotificationService'
@@ -65,6 +70,15 @@ function newPoolPushPayload(data: NewPoolData): PushPayload {
     body: `${data.creatorFirstName} criou "${data.poolName}" — ${details}`,
     url: `/invite/${data.inviteCode}`,
     tag: `new-pool-${data.poolId}`,
+  }
+}
+
+function withdrawalPaidPushPayload(data: WithdrawalPaidData): PushPayload {
+  return {
+    title: 'Prêmio pago',
+    body: `${formatBrl(data.amount)} do bolão ${data.poolName} foi enviado para sua chave PIX`,
+    url: `/pools/${data.poolId}`,
+    tag: `paid-${data.poolId}`,
   }
 }
 
@@ -232,6 +246,35 @@ export class CompositeNotificationService implements NotificationService {
     } catch (error) {
       // One unreachable recipient must never abort the rest of the announcement.
       console.error(`[Notify] Failed new-pool notice to ${recipient.userId}:`, error)
+    }
+  }
+
+  // Push → Telegram → e-mail, um canal por pessoa. O tipo é travado no catálogo
+  // (opt_outable = false): aviso de dinheiro não pode ser silenciado.
+  async notifyWithdrawalPaid(data: WithdrawalPaidData): Promise<void> {
+    try {
+      if (!(await this.allows(data.userId, 'withdrawal_paid'))) return
+      if (await this.tryPush(data.userId, withdrawalPaidPushPayload(data))) return
+      const chatId = data.phoneNumber ? await findChatIdByPhone(data.phoneNumber) : null
+      if (chatId) {
+        await this.telegram.sendWithdrawalPaidMessage(chatId, {
+          poolName: data.poolName,
+          amount: data.amount,
+          pixKey: data.pixKey,
+        })
+        return
+      }
+      if (data.email) {
+        await sendWithdrawalPaidEmail({
+          to: data.email,
+          winnerName: data.userName,
+          poolName: data.poolName,
+          amount: data.amount,
+          pixKey: data.pixKey,
+        })
+      }
+    } catch (error) {
+      console.error(`[Notify] Failed withdrawal-paid notice for pool ${data.poolId}:`, error)
     }
   }
 }

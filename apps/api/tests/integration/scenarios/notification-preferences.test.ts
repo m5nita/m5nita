@@ -34,11 +34,14 @@ describe('Notification preferences — persistence', () => {
       expect(rows.map((r) => r.code).sort()).toEqual([...NOTIFICATION_TYPE_CODES].sort())
     })
 
-    it('marks pool_result as the one type that cannot be silenced', async () => {
+    it('marks the money-related types as the ones that cannot be silenced', async () => {
       const rows = await sql<
         { code: string; opt_outable: boolean }[]
       >`SELECT code, opt_outable FROM notification_type ORDER BY sort_order`
-      expect(rows.filter((r) => !r.opt_outable).map((r) => r.code)).toEqual(['pool_result'])
+      expect(rows.filter((r) => !r.opt_outable).map((r) => r.code)).toEqual([
+        'pool_result',
+        'withdrawal_paid',
+      ])
     })
 
     it('defaults every type to on, so existing users need no backfill', async () => {
@@ -46,6 +49,13 @@ describe('Notification preferences — persistence', () => {
         { default_enabled: boolean }[]
       >`SELECT default_enabled FROM notification_type`
       expect(rows.every((r) => r.default_enabled)).toBe(true)
+    })
+
+    it('describes withdrawal_paid with the label the settings screen renders', async () => {
+      const rows = await sql<
+        { label: string; default_enabled: boolean }[]
+      >`SELECT label, default_enabled FROM notification_type WHERE code = 'withdrawal_paid'`
+      expect(rows).toMatchObject([{ label: 'Prêmio pago', default_enabled: true }])
     })
   })
 
@@ -58,6 +68,7 @@ describe('Notification preferences — persistence', () => {
         'prediction_reminder',
         'match_points',
         'pool_result',
+        'withdrawal_paid',
       ])
     })
 

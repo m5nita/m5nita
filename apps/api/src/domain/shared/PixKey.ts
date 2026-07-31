@@ -41,8 +41,9 @@ export class PixKey {
     return new PixKey(t, value)
   }
 
-  masked(): string {
-    if (this.value.length <= 4) return this.value
-    return '*'.repeat(this.value.length - 4) + this.value.slice(-4)
+  /** Puro: não valida e nunca lança — serve para chaves já persistidas. */
+  static mask(value: string): string {
+    if (value.length <= 4) return value
+    return '*'.repeat(value.length - 4) + value.slice(-4)
   }
 }

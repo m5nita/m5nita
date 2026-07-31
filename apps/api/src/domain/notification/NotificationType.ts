@@ -10,6 +10,7 @@ export const NOTIFICATION_TYPE_CODES = [
   'prediction_reminder',
   'match_points',
   'pool_result',
+  'withdrawal_paid',
 ] as const
 
 export type NotificationTypeCode = (typeof NOTIFICATION_TYPE_CODES)[number]

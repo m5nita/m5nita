@@ -6,17 +6,10 @@ import { formatCurrency } from '../../lib/utils'
 import { Confetti } from '../ui/Confetti'
 import { Loading } from '../ui/Loading'
 import { PrizeWithdrawalForm } from './PrizeWithdrawalForm'
+import { WithdrawalStatusCard } from './WithdrawalStatusCard'
 
 interface PrizeWithdrawalProps {
   poolId: string
-}
-
-const SUPPORT_URL = 'https://t.me/m5nita_bot?start=suporte'
-
-// Don't echo the full PIX key back on screen — keep just enough to recognize it.
-function maskPixKey(key: string): string {
-  if (key.length <= 4) return '•'.repeat(key.length)
-  return `${key.slice(0, 2)}${'•'.repeat(Math.max(3, key.length - 4))}${key.slice(-2)}`
 }
 
 export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
@@ -54,9 +47,11 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
               {formatCurrency(prize.winnerShare)}
             </p>
             <p className="mt-2 text-sm text-gray-dark">
-              {prize.withdrawal
-                ? 'Parabéns! O prêmio é seu — acompanhe a retirada abaixo.'
-                : 'Parabéns! Informe sua chave PIX abaixo para receber o prêmio.'}
+              {prize.withdrawal?.status === 'completed'
+                ? 'Prêmio pago — o valor já saiu para a sua chave PIX.'
+                : prize.withdrawal
+                  ? 'Parabéns! O prêmio é seu — acompanhe a retirada abaixo.'
+                  : 'Parabéns! Informe sua chave PIX abaixo para receber o prêmio.'}
             </p>
           </div>
         </>
@@ -108,44 +103,14 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
       )}
 
       {prize.isWinner && prize.withdrawal && (
-        <div className="border-l-4 border-green bg-green/5 p-4">
-          <p className="text-sm font-medium text-gray-dark mb-2">Retirada solicitada</p>
-          <div className="flex flex-col gap-1 text-xs text-gray-muted">
-            <p>
-              Valor:{' '}
-              <span className="text-black font-medium">
-                {formatCurrency(prize.withdrawal.amount)}
-              </span>
-            </p>
-            <p>
-              Chave PIX:{' '}
-              <span className="text-black font-medium">{maskPixKey(prize.withdrawal.pixKey)}</span>
-            </p>
-            <p>
-              Status:{' '}
-              <span className="text-black font-medium">
-                {prize.withdrawal.status === 'pending' && 'Pendente'}
-                {prize.withdrawal.status === 'processing' && 'Processando'}
-                {prize.withdrawal.status === 'completed' && 'Concluído'}
-                {prize.withdrawal.status === 'failed' && 'Falhou'}
-              </span>
-            </p>
-          </div>
-          {prize.withdrawal.status === 'failed' && (
-            <p className="mt-3 text-xs text-red">
-              A retirada não foi concluída.{' '}
-              <a
-                href={SUPPORT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium underline underline-offset-2"
-              >
-                Fale com o suporte
-              </a>{' '}
-              para reenviar.
-            </p>
-          )}
-        </div>
+        <WithdrawalStatusCard
+          amount={prize.withdrawal.amount}
+          pixKey={prize.withdrawal.pixKey}
+          status={prize.withdrawal.status}
+          requestedAt={prize.withdrawal.createdAt}
+          paidAt={prize.withdrawal.paidAt}
+          celebrateKey={`paid:${poolId}`}
+        />
       )}
     </section>
   )

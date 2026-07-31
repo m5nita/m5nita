@@ -169,3 +169,34 @@ export async function sendWinnerEmail(params: {
     html: brandedEmail({ heading: 'Você venceu! 🏆', bodyHtml }),
   })
 }
+
+// Prêmio pago — fallback de e-mail para quem não tem push nem Telegram.
+export async function sendWithdrawalPaidEmail(params: {
+  to: string
+  winnerName: string | null
+  poolName: string
+  amount: number
+  pixKey: string
+}): Promise<void> {
+  const name = params.winnerName ? escapeHtml(params.winnerName) : 'Campeão'
+  const cta = appUrl() ? ctaButton(appUrl(), 'Ver no app') : ''
+
+  const bodyHtml = `
+    <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#333;">Boa, <strong>${name}</strong>!</p>
+    <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#333;">
+      O prêmio do bolão <strong>${escapeHtml(params.poolName)}</strong> foi enviado para a sua chave PIX
+      <strong>${escapeHtml(params.pixKey)}</strong>.
+    </p>
+    <p style="margin:0 0 24px;font-size:18px;line-height:1.6;color:#000;font-weight:700;">
+      ${formatBrl(params.amount)}
+    </p>
+    ${cta}
+  `
+
+  await resend.emails.send({
+    from: FROM,
+    to: params.to,
+    subject: `💸 Seu prêmio do bolão ${params.poolName} foi pago`,
+    html: brandedEmail({ heading: 'Prêmio pago 💸', bodyHtml }),
+  })
+}

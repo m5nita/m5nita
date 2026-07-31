@@ -87,6 +87,23 @@ export interface AdminMatchNeedsWinnerNotification {
   penaltyAwayScore: number | null
 }
 
+/**
+ * "Prêmio pago" — disparado quando o admin confirma o PIX pelo Telegram.
+ * A chave PIX chega aqui já mascarada: a versão em claro só existe no alerta
+ * ao admin.
+ */
+export interface WithdrawalPaidData {
+  userId: string
+  userName: string | null
+  phoneNumber: string | null
+  /** Já filtrado por emailVerified pelo chamador. */
+  email: string | null
+  poolId: string
+  poolName: string
+  amount: number
+  pixKey: string
+}
+
 export interface NotificationService {
   notifyWinners(
     poolId: string,
@@ -99,4 +116,5 @@ export interface NotificationService {
   sendPredictionReminders(reminders: ReminderData[]): Promise<void>
   notifyMatchPoints(items: MatchPointsData[]): Promise<void>
   notifyNewPool(data: NewPoolData): Promise<void>
+  notifyWithdrawalPaid(data: WithdrawalPaidData): Promise<void>
 }

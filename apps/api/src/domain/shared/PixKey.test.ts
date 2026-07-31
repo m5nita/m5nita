@@ -51,15 +51,18 @@ describe('PixKey', () => {
     })
   })
 
-  describe('masked()', () => {
-    it('hides all but last 4 characters', () => {
-      const key = PixKey.create('cpf', '12345678909')
-      expect(key.masked()).toBe('*******8909')
+  describe('PixKey.mask', () => {
+    it('keeps only the last four characters', () => {
+      expect(PixKey.mask('12345678909')).toBe('*******8909')
     })
 
-    it('returns full value when length is 4 or less', () => {
-      const key = PixKey.create('email', 'a@b.')
-      expect(key.masked()).toBe('a@b.')
+    it('returns short values untouched — nothing left to hide', () => {
+      expect(PixKey.mask('1234')).toBe('1234')
+      expect(PixKey.mask('')).toBe('')
+    })
+
+    it('never throws on a value that would fail validation', () => {
+      expect(() => PixKey.mask('not-a-valid-key!!')).not.toThrow()
     })
   })
 })

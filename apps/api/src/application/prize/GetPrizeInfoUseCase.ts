@@ -5,6 +5,7 @@ import type { PrizeWithdrawalRepository } from '../../domain/prize/PrizeWithdraw
 import type { RankingRepository } from '../../domain/ranking/RankingRepository.port'
 import { EntryFee } from '../../domain/shared/EntryFee'
 import { FeePolicy } from '../../domain/shared/FeePolicy'
+import { PixKey } from '../../domain/shared/PixKey'
 
 type Input = {
   poolId: string
@@ -26,6 +27,7 @@ type WithdrawalOutput = {
   pixKey: string
   status: string
   createdAt: string
+  paidAt: string | null
 }
 
 type Output = {
@@ -77,9 +79,10 @@ export class GetPrizeInfoUseCase {
           id: existing.id,
           amount: existing.amount,
           pixKeyType: existing.pixKeyType,
-          pixKey: maskPixKey(existing.pixKey),
+          pixKey: PixKey.mask(existing.pixKey),
           status: existing.status,
           createdAt: existing.createdAt.toISOString(),
+          paidAt: existing.status === 'completed' ? existing.updatedAt.toISOString() : null,
         }
       }
     }
@@ -99,9 +102,4 @@ export class GetPrizeInfoUseCase {
       })),
     }
   }
-}
-
-function maskPixKey(key: string): string {
-  if (key.length <= 4) return key
-  return `${'*'.repeat(key.length - 4)}${key.slice(-4)}`
 }

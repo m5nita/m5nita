@@ -82,11 +82,11 @@ describe('GetPendingPrizesUseCase', () => {
     const result = await useCase.execute({ userId: 'user-1' })
 
     expect(result.items).toEqual([
-      { poolId: 'p1', poolName: 'Bolão Um', winnerShare: 14000, winnerCount: 1 },
+      { poolId: 'p1', poolName: 'Bolão Um', winnerShare: 14000, winnerCount: 1, withdrawal: null },
     ])
   })
 
-  it('excludes a closed pool where the user already requested withdrawal', async () => {
+  it('includes a closed pool with a pending withdrawal, carrying its state', async () => {
     const repo = makePoolRepo([makePoolListItem({ id: 'p1', name: 'Bolão Um', status: 'closed' })])
     const prizeInfo = makePrizeInfoUseCase({
       p1: {
@@ -98,9 +98,52 @@ describe('GetPendingPrizesUseCase', () => {
           id: 'w-1',
           amount: 14000,
           pixKeyType: 'cpf',
-          pixKey: '***',
+          pixKey: '*******8909',
           status: 'pending',
-          createdAt: new Date().toISOString(),
+          createdAt: '2026-07-30T14:32:00.000Z',
+          paidAt: null,
+        },
+        winners: [
+          { userId: 'user-1', name: 'Igor', position: 1, totalPoints: 30, exactMatches: 3 },
+        ],
+      },
+    })
+    const useCase = new GetPendingPrizesUseCase(repo, prizeInfo)
+
+    const result = await useCase.execute({ userId: 'user-1' })
+
+    expect(result.items).toEqual([
+      {
+        poolId: 'p1',
+        poolName: 'Bolão Um',
+        winnerShare: 14000,
+        winnerCount: 1,
+        withdrawal: {
+          amount: 14000,
+          pixKey: '*******8909',
+          status: 'pending',
+          requestedAt: '2026-07-30T14:32:00.000Z',
+        },
+      },
+    ])
+  })
+
+  it('excludes a closed pool whose withdrawal is already completed', async () => {
+    const repo = makePoolRepo([makePoolListItem({ id: 'p1', name: 'Bolão Um', status: 'closed' })])
+    const prizeInfo = makePrizeInfoUseCase({
+      p1: {
+        prizeTotal: 14000,
+        winnerCount: 1,
+        winnerShare: 14000,
+        isWinner: true,
+        withdrawal: {
+          id: 'w-1',
+          amount: 14000,
+          pixKeyType: 'cpf',
+          pixKey: '*******8909',
+          status: 'completed',
+          createdAt: '2026-07-30T14:32:00.000Z',
+          paidAt: '2026-07-31T09:10:00.000Z',
         },
         winners: [
           { userId: 'user-1', name: 'Igor', position: 1, totalPoints: 30, exactMatches: 3 },
@@ -169,8 +212,8 @@ describe('GetPendingPrizesUseCase', () => {
     const result = await useCase.execute({ userId: 'user-1' })
 
     expect(result.items).toEqual([
-      { poolId: 'p1', poolName: 'Bolão A', winnerShare: 10000, winnerCount: 1 },
-      { poolId: 'p3', poolName: 'Bolão C', winnerShare: 10000, winnerCount: 2 },
+      { poolId: 'p1', poolName: 'Bolão A', winnerShare: 10000, winnerCount: 1, withdrawal: null },
+      { poolId: 'p3', poolName: 'Bolão C', winnerShare: 10000, winnerCount: 2, withdrawal: null },
     ])
   })
 })

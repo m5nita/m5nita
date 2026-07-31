@@ -7,13 +7,19 @@ vi.mock('../../lib/telegram', () => ({
 vi.mock('../../lib/resend', () => ({
   sendPredictionReminderEmail: vi.fn(async () => {}),
   sendWinnerEmail: vi.fn(async () => {}),
+  sendWithdrawalPaidEmail: vi.fn(async () => {}),
 }))
 
+import { formatBrl } from '@m5nita/shared'
 import type { MatchPointsData, NewPoolData } from '../../application/ports/NotificationService.port'
 import type { NotificationOverrides } from '../../domain/notification/NotificationPreferences'
 import type { NotificationPreferencesRepository } from '../../domain/notification/NotificationPreferencesRepository.port'
 import { NotificationType } from '../../domain/notification/NotificationType'
-import { sendPredictionReminderEmail, sendWinnerEmail } from '../../lib/resend'
+import {
+  sendPredictionReminderEmail,
+  sendWinnerEmail,
+  sendWithdrawalPaidEmail,
+} from '../../lib/resend'
 import { findChatIdByPhone } from '../../lib/telegram'
 import type { MatchPointsNotifiedStore } from '../persistence/DrizzleMatchPointsNotifiedStore'
 import { CompositeNotificationService } from './CompositeNotificationService'
@@ -22,6 +28,7 @@ import type { WebPushNotificationService } from './WebPushNotificationService'
 const mockFindChatId = findChatIdByPhone as unknown as ReturnType<typeof vi.fn>
 const mockReminderEmail = sendPredictionReminderEmail as unknown as ReturnType<typeof vi.fn>
 const mockWinnerEmail = sendWinnerEmail as unknown as ReturnType<typeof vi.fn>
+const mockWithdrawalPaidEmail = sendWithdrawalPaidEmail as unknown as ReturnType<typeof vi.fn>
 
 function makeBot() {
   return {
@@ -51,6 +58,7 @@ const CATALOG = [
   { code: 'prediction_reminder', optOutable: true, sortOrder: 2 },
   { code: 'match_points', optOutable: true, sortOrder: 3 },
   { code: 'pool_result', optOutable: false, sortOrder: 4 },
+  { code: 'withdrawal_paid', optOutable: false, sortOrder: 5 },
 ].map((t) =>
   NotificationType.of({
     code: t.code,
@@ -499,5 +507,113 @@ describe('CompositeNotificationService.notifyNewPool', () => {
 
     expect(webPush.sendToUser).not.toHaveBeenCalled()
     expect(preferences.findOverridesForUsers).not.toHaveBeenCalled()
+  })
+})
+
+describe('notifyWithdrawalPaid', () => {
+  const DATA = {
+    userId: 'user-1',
+    userName: 'Igor',
+    phoneNumber: '+5511999999999',
+    email: 'igor@test.local',
+    poolId: 'pool-1',
+    poolName: 'Bolão Um',
+    amount: 14000,
+    pixKey: '*******8909',
+  }
+
+  it('delivers via push and stops there', async () => {
+    const bot = makeBot()
+    const webPush = makeWebPush()
+    webPush.sendToUser.mockResolvedValue(true)
+    // Telegram must be reachable here too, so a passing `telegramCalls` assertion
+    // proves push short-circuited the chain rather than Telegram being untried
+    // for lack of a resolvable chat.
+    mockFindChatId.mockResolvedValue(4242)
+    const service = new CompositeNotificationService(bot, webPush, makeStore(), makePreferences())
+
+    await service.notifyWithdrawalPaid(DATA)
+
+    expect(webPush.sendToUser).toHaveBeenCalledWith('user-1', {
+      title: 'Prêmio pago',
+      body: `${formatBrl(14000)} do bolão Bolão Um foi enviado para sua chave PIX`,
+      url: '/pools/pool-1',
+      tag: 'paid-pool-1',
+    })
+    expect(telegramCalls(bot)).toHaveLength(0)
+    expect(mockWithdrawalPaidEmail).not.toHaveBeenCalled()
+  })
+
+  it('falls back to Telegram when push does not deliver', async () => {
+    const bot = makeBot()
+    const webPush = makeWebPush()
+    mockFindChatId.mockResolvedValue(4242)
+    const service = new CompositeNotificationService(bot, webPush, makeStore(), makePreferences())
+
+    await service.notifyWithdrawalPaid(DATA)
+
+    // Proves push was actually tried (and returned false) rather than skipped.
+    expect(webPush.sendToUser).toHaveBeenCalledWith('user-1', expect.anything())
+    const calls = telegramCalls(bot)
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.[0]).toBe(4242)
+    expect(String(calls[0]?.[1])).toContain(formatBrl(14000))
+    expect(mockWithdrawalPaidEmail).not.toHaveBeenCalled()
+  })
+
+  it('falls back to email when there is no push and no chat', async () => {
+    const bot = makeBot()
+    mockFindChatId.mockResolvedValue(null)
+    const service = new CompositeNotificationService(
+      bot,
+      makeWebPush(),
+      makeStore(),
+      makePreferences(),
+    )
+
+    await service.notifyWithdrawalPaid(DATA)
+
+    expect(telegramCalls(bot)).toHaveLength(0)
+    expect(mockWithdrawalPaidEmail).toHaveBeenCalledWith({
+      to: 'igor@test.local',
+      winnerName: 'Igor',
+      poolName: 'Bolão Um',
+      amount: 14000,
+      pixKey: '*******8909',
+    })
+  })
+
+  it('cannot be silenced — a stored opt-out on a locked type is ignored', async () => {
+    const bot = makeBot()
+    mockFindChatId.mockResolvedValue(4242)
+    const service = new CompositeNotificationService(
+      bot,
+      makeWebPush(),
+      makeStore(),
+      makePreferences({ 'user-1': { withdrawal_paid: false } }),
+    )
+
+    await service.notifyWithdrawalPaid(DATA)
+
+    expect(telegramCalls(bot)).toHaveLength(1)
+  })
+
+  it('sends only the masked key it was given', async () => {
+    const bot = makeBot()
+    mockFindChatId.mockResolvedValue(4242)
+    const service = new CompositeNotificationService(
+      bot,
+      makeWebPush(),
+      makeStore(),
+      makePreferences(),
+    )
+
+    await service.notifyWithdrawalPaid(DATA)
+
+    const message = String(telegramCalls(bot)[0]?.[1])
+    // The mask sits inside a Markdown code span, so it must render verbatim —
+    // no escaping backslashes should leak into the sent message.
+    expect(message).toContain('*******8909')
+    expect(message).not.toContain('12345678909')
   })
 })

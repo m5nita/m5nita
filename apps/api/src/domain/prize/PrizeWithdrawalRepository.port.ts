@@ -8,6 +8,7 @@ export type PrizeWithdrawal = {
   pixKey: string
   status: string
   createdAt: Date
+  updatedAt: Date
 }
 
 export type CreateWithdrawalData = {

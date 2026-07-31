@@ -38,6 +38,7 @@ export class DrizzlePrizeWithdrawalRepository implements PrizeWithdrawalReposito
       pixKey: decryptPixKey(row.pixKey),
       status: row.status,
       createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     }
   }
 
@@ -83,6 +84,7 @@ export class DrizzlePrizeWithdrawalRepository implements PrizeWithdrawalReposito
           pixKey: data.pixKey,
           status: row.status,
           createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
         }
       })
     } catch (err) {
@@ -121,10 +123,13 @@ export class DrizzlePrizeWithdrawalRepository implements PrizeWithdrawalReposito
         )
       }
 
-      await tx
+      const [updated] = await tx
         .update(prizeWithdrawal)
         .set({ status: 'completed', updatedAt: sql`NOW()` })
         .where(eq(prizeWithdrawal.id, id))
+        .returning()
+
+      const updatedRow = updated as NonNullable<typeof updated>
 
       await tx
         .update(payment)
@@ -132,15 +137,16 @@ export class DrizzlePrizeWithdrawalRepository implements PrizeWithdrawalReposito
         .where(eq(payment.id, existing.paymentId))
 
       return {
-        id: existing.id,
-        poolId: existing.poolId,
-        userId: existing.userId,
-        paymentId: existing.paymentId,
-        amount: existing.amount,
-        pixKeyType: existing.pixKeyType,
-        pixKey: decryptPixKey(existing.pixKey),
-        status: 'completed',
-        createdAt: existing.createdAt,
+        id: updatedRow.id,
+        poolId: updatedRow.poolId,
+        userId: updatedRow.userId,
+        paymentId: updatedRow.paymentId,
+        amount: updatedRow.amount,
+        pixKeyType: updatedRow.pixKeyType,
+        pixKey: decryptPixKey(updatedRow.pixKey),
+        status: updatedRow.status,
+        createdAt: updatedRow.createdAt,
+        updatedAt: updatedRow.updatedAt,
       }
     })
   }

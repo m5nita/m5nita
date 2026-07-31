@@ -76,6 +76,7 @@ describe('NotificationType', () => {
         'prediction_reminder',
         'match_points',
         'pool_result',
+        'withdrawal_paid',
       ])
       expect(new Set(NOTIFICATION_TYPE_CODES).size).toBe(NOTIFICATION_TYPE_CODES.length)
     })
