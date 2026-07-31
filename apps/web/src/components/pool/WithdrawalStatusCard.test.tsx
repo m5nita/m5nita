@@ -55,4 +55,34 @@ describe('WithdrawalStatusCard', () => {
 
     expect(screen.getByText('Bolão da firma')).toBeTruthy()
   })
+
+  // headline="win" is the pool hub, where this card is the only one on screen and
+  // has to carry both the celebration and the withdrawal state.
+  it('celebrates the win and demotes the paid state to the detail line', () => {
+    render(
+      <WithdrawalStatusCard
+        {...BASE}
+        status="completed"
+        paidAt="2026-07-31T09:10:00.000Z"
+        celebrateKey={null}
+        headline="win"
+      />,
+    )
+
+    expect(screen.getByText('Você ganhou')).toBeTruthy()
+    expect(screen.getByText(/Prêmio pago · enviado para/)).toBeTruthy()
+    // The state must not be dropped on the way — it is what distinguishes the
+    // two phases once the title stops announcing it.
+    expect(screen.queryByText('Prêmio pago')).toBeNull()
+  })
+
+  it('celebrates the win and demotes the requested state to the detail line', () => {
+    render(<WithdrawalStatusCard {...BASE} status="pending" headline="win" />)
+
+    expect(screen.getByText('Você ganhou')).toBeTruthy()
+    expect(screen.getByText(/Retirada solicitada · PIX/)).toBeTruthy()
+    expect(screen.queryByText('Retirada solicitada')).toBeNull()
+    // Still says what happens next — celebrating must not swallow the promise.
+    expect(screen.getByText(/avisamos assim que o PIX for enviado/i)).toBeTruthy()
+  })
 })

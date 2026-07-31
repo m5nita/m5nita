@@ -51,7 +51,7 @@ afterEach(() => {
 })
 
 describe('<PrizeWithdrawal /> — withdrawal status wired into the pool hub', () => {
-  it('shows the "acompanhe a retirada" copy and the pix key exactly as the API sent it (pending)', async () => {
+  it('announces the win once, with the requested state in the detail line (pending)', async () => {
     renderPrizeWithdrawal(
       prizePayload({
         withdrawal: {
@@ -69,18 +69,21 @@ describe('<PrizeWithdrawal /> — withdrawal status wired into the pool hub', ()
       'pool-pending',
     )
 
-    expect(
-      await screen.findByText('Parabéns! O prêmio é seu — acompanhe a retirada abaixo.'),
-    ).toBeTruthy()
-    expect(screen.getByText('Retirada solicitada')).toBeTruthy()
+    expect(await screen.findByText('Você ganhou')).toBeTruthy()
+    // The withdrawal state moved into the detail line — it is the only thing
+    // separating "we asked" from "it landed".
+    expect(screen.getByText(/Retirada solicitada · PIX/)).toBeTruthy()
+    // The point of the unification: one card, so the amount is stated once.
+    expect(screen.getAllByText(money(24000))).toHaveLength(1)
+    expect(screen.queryByText('Parabéns! O prêmio é seu — acompanhe a retirada abaixo.')).toBeNull()
     // The key must appear verbatim, exactly as the API masked it — never re-masked.
     expect(screen.getByText(/\*{11}8909/)).toBeTruthy()
-    // Regression guard for the double-masking bug this task fixed: the local
+    // Regression guard for the double-masking bug an earlier task fixed: the local
     // maskPixKey() bullet form must never show up anywhere on the page.
     expect(screen.queryByText(/•/)).toBeNull()
   })
 
-  it('shows the "Prêmio pago" copy and the paid card (completed)', async () => {
+  it('announces the win once, with the paid state in the detail line (completed)', async () => {
     renderPrizeWithdrawal(
       prizePayload({
         withdrawal: {
@@ -98,11 +101,13 @@ describe('<PrizeWithdrawal /> — withdrawal status wired into the pool hub', ()
       'pool-completed',
     )
 
-    expect(
-      await screen.findByText('Prêmio pago — o valor já saiu para a sua chave PIX.'),
-    ).toBeTruthy()
-    expect(screen.getByText('Prêmio pago')).toBeTruthy()
-    expect(screen.getAllByText(money(24000)).length).toBeGreaterThan(0)
-    expect(screen.queryByText('Retirada solicitada')).toBeNull()
+    expect(await screen.findByText('Você ganhou')).toBeTruthy()
+    expect(screen.getByText(/Prêmio pago · enviado para/)).toBeTruthy()
+    // One card means one amount. This is the assertion that fails if the
+    // duplicated hero ever comes back.
+    expect(screen.getAllByText(money(24000))).toHaveLength(1)
+    expect(screen.queryByText('Prêmio pago — o valor já saiu para a sua chave PIX.')).toBeNull()
+    expect(screen.queryByText(/Retirada solicitada/)).toBeNull()
+    expect(screen.queryByText(/Em análise/)).toBeNull()
   })
 })
