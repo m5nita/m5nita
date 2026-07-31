@@ -7,7 +7,6 @@ import { makeCompetition } from '../support/fixtures/makeCompetition'
 import { makeMatch } from '../support/fixtures/makeMatch'
 import { makePool } from '../support/fixtures/makePool'
 import { deliverInfinitePayPaidWebhook } from '../support/payments'
-import { telegramStub } from '../support/stubs'
 
 /**
  * A pool whose remaining matches were postponed. The repository must hand back
@@ -159,8 +158,6 @@ describe('Admin close pool — end to end', () => {
       awayTeam: 'Santos FC',
     })
 
-    telegramStub.reset()
-
     const result = await container.closePoolUseCase.execute({
       inviteCode: pool.inviteCode,
       force: false,
@@ -169,6 +166,13 @@ describe('Admin close pool — end to end', () => {
     expect(result.outcome).toBe('closed')
     if (result.outcome !== 'closed') return
     expect(result.stranded.map((m) => m.id)).toEqual([postponed.id])
+
+    // notifyPoolWinners ran: the sole paid member comes back as the winner,
+    // sharing the pot minus the platform fee (floor(100 × 1 × 0.95) = 95
+    // centavos, one winner). No prediction was ever submitted, so 0 points —
+    // being the only member is enough to hold first place.
+    expect(result.winners).toEqual([{ userId: owner.id, name: owner.phoneNumber, totalPoints: 0 }])
+    expect(result.prizeShare).toBe(95)
 
     const [row] = await sql`SELECT status FROM pool WHERE id = ${pool.id}`
     expect(row?.status).toBe('closed')
@@ -189,7 +193,8 @@ describe('Admin close pool — end to end', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ homeScore: 3, awayScore: 0 }),
     })
-    expect(late.status).toBeGreaterThanOrEqual(400)
+    expect(late.status).toBe(409)
+    expect(((await late.json()) as { error: string }).error).toBe('POOL_CLOSED')
   })
 
   it('refuses a pool whose next match has not kicked off yet', async () => {
