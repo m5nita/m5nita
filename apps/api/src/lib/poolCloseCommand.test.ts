@@ -76,7 +76,8 @@ describe('renderPoolCloseResult', () => {
     expect(text).toContain('2 jogo(s) em aberto')
     expect(text).toContain('• CR Flamengo × CR Vasco da Gama (agendado)')
     expect(text).toContain('• SE Palmeiras × São Paulo FC (em andamento)')
-    expect(text).toContain('/bolao_encerrar 9VZJQ9J9 confirmar')
+    // The command sits directly under its instruction, no blank line between.
+    expect(text).toContain('Para encerrar mesmo assim:\n/bolao_encerrar 9VZJQ9J9 confirmar')
   })
 
   it('lists stranded matches that already have predictions, distinct from blocking matches', () => {
@@ -95,7 +96,8 @@ describe('renderPoolCloseResult', () => {
     expect(text).toContain('• CR Flamengo × CR Vasco da Gama (agendado)')
     expect(text).toContain('já têm palpite registrado')
     expect(text).toContain('• São Paulo FC × Santos FC (2 palpite(s))')
-    expect(text).toContain('/bolao_encerrar 9VZJQ9J9 confirmar')
+    // The command sits directly under its instruction, no blank line between.
+    expect(text).toContain('Para encerrar mesmo assim:\n/bolao_encerrar 9VZJQ9J9 confirmar')
   })
 
   it('refuses on a predicted stranded match alone, with no blocking match at all', () => {
@@ -111,7 +113,8 @@ describe('renderPoolCloseResult', () => {
     expect(text).toContain('Rafinha é careca!')
     expect(text).toContain('• São Paulo FC × Santos FC (1 palpite(s))')
     expect(text).not.toContain('0 jogo(s) em aberto')
-    expect(text).toContain('/bolao_encerrar 9VZJQ9J9 confirmar')
+    // The command sits directly under its instruction, no blank line between.
+    expect(text).toContain('Para encerrar mesmo assim:\n/bolao_encerrar 9VZJQ9J9 confirmar')
   })
 
   it('flags a forced close that left matches open', () => {

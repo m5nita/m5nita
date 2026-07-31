@@ -57,8 +57,9 @@ export function renderPoolCloseResult(result: ClosePoolResult, code: string): st
     return [
       `❌ Bolão "${result.poolName}" não encerrado — ${result.blocking.length + result.predicted.length} jogo(s) pendente(s):`,
       ...sections,
-      'Para encerrar mesmo assim:',
-      `/bolao_encerrar ${code} confirmar`,
+      // The command goes on the line right under its own instruction — a blank
+      // line between them reads as two unrelated thoughts.
+      `Para encerrar mesmo assim:\n/bolao_encerrar ${code} confirmar`,
     ].join('\n\n')
   }
 
