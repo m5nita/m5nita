@@ -212,12 +212,16 @@ export interface ApiError {
 }
 
 export type PixKeyType = 'cpf' | 'email' | 'phone' | 'random'
-export type WithdrawalStatus = 'pending' | 'processing' | 'completed' | 'failed'
+/**
+ * Only the two states the application actually writes: a withdrawal is created
+ * `pending` and the admin marks it `completed`. There is no code path to any
+ * other value — adding one means adding the transition that produces it.
+ */
+export type WithdrawalStatus = 'pending' | 'completed'
 
+/** Mirrors what `GET /api/pools/:poolId/prize` returns — nothing more. */
 export interface PrizeWithdrawal {
   id: string
-  poolId: string
-  userId: string
   amount: number
   pixKeyType: PixKeyType
   pixKey: string

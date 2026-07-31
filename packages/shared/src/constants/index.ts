@@ -86,10 +86,6 @@ export const PIX = {
   KEY_TYPES: ['cpf', 'email', 'phone', 'random'] as const,
 } as const
 
-export const WITHDRAWAL = {
-  STATUSES: ['pending', 'processing', 'completed', 'failed'] as const,
-} as const
-
 export const COMPETITION = {
   TYPES: ['cup', 'league'] as const,
   STATUSES: ['active', 'finished'] as const,

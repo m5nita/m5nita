@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const mockApiFetch = vi.fn()
 
@@ -18,13 +18,6 @@ import { PendingPrizesSection } from './PendingPrizesSection'
 // mesmo jeito, sem introduzir um literal de moeda no teste (mesma
 // abordagem de WithdrawalStatusCard.test.tsx e PrizeWithdrawal.test.tsx).
 const money = (cents: number) => formatCurrency(cents).replace(/ /g, ' ')
-
-beforeEach(() => {
-  // WithdrawalStatusCard's paid branch mounts <Confetti> via useCelebrateOnce,
-  // which persists to localStorage under a global key — start each test clean
-  // so a celebration claimed in one test can't suppress it in the next.
-  localStorage.clear()
-})
 
 afterEach(() => {
   cleanup()
