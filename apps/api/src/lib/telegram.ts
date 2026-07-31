@@ -19,6 +19,7 @@ import {
 } from '../services/competition'
 import { CouponError, createCoupon, deactivateCoupon, listCoupons } from '../services/coupon'
 import { isAdmin } from './admin'
+import { parsePoolCloseArgs, renderPoolCloseResult } from './poolCloseCommand'
 
 export const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '')
 
@@ -378,6 +379,32 @@ bot.command('competicao_destacar', async (ctx) => {
       return
     }
     throw error
+  }
+})
+
+bot.command('bolao_encerrar', async (ctx) => {
+  if (!ctx.from || !isAdmin(ctx.from.id)) {
+    await ctx.reply('Você não tem permissão para este comando.')
+    return
+  }
+
+  const parsed = parsePoolCloseArgs(ctx.match)
+  // `typeof parsed.error === 'string'` (not a plain truthy check on
+  // `parsed.error`) is what actually narrows this union for TypeScript on
+  // both branches — `if (parsed.error)` leaves `code`/`force` typed as
+  // `string | undefined` / `boolean | undefined` below.
+  if (typeof parsed.error === 'string') {
+    await ctx.reply(parsed.error)
+    return
+  }
+
+  try {
+    const { closePoolUseCase } = getContainer()
+    const result = await closePoolUseCase.execute({ inviteCode: parsed.code, force: parsed.force })
+    await ctx.reply(renderPoolCloseResult(result, parsed.code))
+  } catch (error) {
+    console.error('[Telegram] /bolao_encerrar failed:', error)
+    await ctx.reply('Erro ao encerrar o bolão. Tente novamente.')
   }
 })
 

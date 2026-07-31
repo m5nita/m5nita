@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import type { DbExecutor } from '../../db/client'
 import { user } from '../../db/schema/auth'
 import { prediction } from '../../db/schema/prediction'
@@ -161,5 +161,17 @@ export class DrizzlePredictionRepository implements PredictionRepository {
       where: eq(prediction.matchId, matchId),
     })
     return rows.map(predictionToDomain)
+  }
+
+  async countByPoolMatches(poolId: string, matchIds: string[]): Promise<Map<string, number>> {
+    if (matchIds.length === 0) return new Map()
+
+    const rows = await this.db
+      .select({ matchId: prediction.matchId, count: sql<number>`count(*)::int` })
+      .from(prediction)
+      .where(and(eq(prediction.poolId, poolId), inArray(prediction.matchId, matchIds)))
+      .groupBy(prediction.matchId)
+
+    return new Map(rows.map((r) => [r.matchId, r.count]))
   }
 }

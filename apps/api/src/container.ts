@@ -5,6 +5,7 @@ import { UpdateNotificationPreferencesUseCase } from './application/notification
 import { CompleteCheckoutUseCase } from './application/payment/CompleteCheckoutUseCase'
 import { GetMyPerformanceUseCase } from './application/performance/GetMyPerformanceUseCase'
 import { AnnounceNewPoolUseCase } from './application/pool/AnnounceNewPoolUseCase'
+import { ClosePoolUseCase } from './application/pool/ClosePoolUseCase'
 import { CreatePoolUseCase } from './application/pool/CreatePoolUseCase'
 import { GetPoolDetailsUseCase } from './application/pool/GetPoolDetailsUseCase'
 import { GetUserPoolsUseCase } from './application/pool/GetUserPoolsUseCase'
@@ -194,6 +195,15 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     rescore: (matchId: string) => rescoreHook(matchId),
   })
 
+  const closePoolUseCase = new ClosePoolUseCase({
+    poolRepo,
+    matchRepo,
+    predictionRepo,
+    rankingRepo,
+    notificationService,
+    clock,
+  })
+
   return {
     db,
     clock,
@@ -221,6 +231,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
     unsubscribeFromPushUseCase: new UnsubscribeFromPushUseCase(pushSubscriptionRepo),
     notifyMatchPointsUseCase,
     finalizeMatchUseCase,
+    closePoolUseCase,
     createPoolUseCase: new CreatePoolUseCase(
       poolRepo,
       paymentGateway,
