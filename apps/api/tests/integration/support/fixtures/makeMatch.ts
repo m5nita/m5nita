@@ -7,7 +7,7 @@ export type TestMatch = {
   homeTeam: string
   awayTeam: string
   matchDate: Date
-  status: 'scheduled' | 'live' | 'finished'
+  status: 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled'
   stage: string
   matchday: number
   homeScore: number | null
@@ -25,7 +25,7 @@ export async function makeMatch(
     awayTeam?: string
     stage?: string
     matchday?: number
-    status?: 'scheduled' | 'live' | 'finished'
+    status?: 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled'
     homeScore?: number
     awayScore?: number
   },

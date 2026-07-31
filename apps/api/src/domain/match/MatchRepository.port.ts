@@ -70,6 +70,16 @@ export interface MatchRepository {
    */
   hasUnfinishedFor(query: UnfinishedMatchesQuery): Promise<boolean>
   /**
+   * The pool's in-scope matches that are NOT terminal, ordered by kickoff. Same
+   * predicate as `hasUnfinishedFor`, returning the rows so a caller can tell a
+   * blocking match from a stranded one and name it to a human.
+   *
+   * Deliberate asymmetry: for a single-match pool whose match row is gone,
+   * `hasUnfinishedFor` reports `true` (the job must not close it by accident)
+   * while this returns `[]` (an admin closing it is a decision, not an accident).
+   */
+  findUnfinishedFor(query: UnfinishedMatchesQuery): Promise<MatchData[]>
+  /**
    * The pool's not-yet-started in-scope matches (kickoff in the future, not
    * finished/cancelled), ordered by kickoff. Adapter translates the Pool query
    * so callers never branch on scope.

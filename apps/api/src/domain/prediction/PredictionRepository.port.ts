@@ -50,4 +50,10 @@ export interface PredictionRepository {
   /** Write many predictions' points in a single statement (post-match scoring). */
   updatePointsBatch(updates: Array<{ id: string; points: number }>): Promise<void>
   findByMatch(matchId: string): Promise<Prediction[]>
+  /**
+   * How many predictions exist in this pool for each of the given matches,
+   * keyed by matchId. A match with none is omitted from the result — callers
+   * should treat a missing key as zero.
+   */
+  countByPoolMatches(poolId: string, matchIds: string[]): Promise<Map<string, number>>
 }

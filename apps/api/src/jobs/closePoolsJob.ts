@@ -1,7 +1,5 @@
+import { notifyPoolWinners } from '../application/pool/notifyPoolWinners'
 import { getContainer } from '../container'
-import { PrizeCalculation } from '../domain/prize/PrizeCalculation'
-import { EntryFee } from '../domain/shared/EntryFee'
-import { FeePolicy } from '../domain/shared/FeePolicy'
 import { PoolStatus } from '../domain/shared/PoolStatus'
 
 export async function checkAndClosePools(): Promise<void> {
@@ -34,7 +32,15 @@ export async function checkAndClosePools(): Promise<void> {
 
       console.log(`[ClosePoolsJob] Closed pool "${p.name}" (${p.id})`)
 
-      await notifyWinnersForPool(p)
+      await notifyPoolWinners(
+        {
+          id: p.id,
+          name: p.name,
+          entryFee: p.entryFee,
+          discountPercent: p.discountPercent,
+        },
+        { poolRepo, rankingRepo, notificationService },
+      )
     } catch (err) {
       console.error(`[ClosePoolsJob] Failed to process pool ${p.id}:`, err)
     }
@@ -42,40 +48,5 @@ export async function checkAndClosePools(): Promise<void> {
 
   if (closedCount > 0) {
     console.log(`[ClosePoolsJob] Done. Closed ${closedCount} pool(s).`)
-  }
-
-  async function notifyWinnersForPool(p: {
-    id: string
-    name: string
-    entryFee: number
-    discountPercent: number
-  }) {
-    const ranking = await rankingRepo.getPoolRanking(p.id, '')
-    const winnerEntries = ranking.filter((r) => r.position === 1)
-    if (winnerEntries.length === 0) return
-
-    const memberCount = await poolRepo.getMemberCount(p.id)
-    const feePolicy = FeePolicy.from(p.discountPercent)
-    const prizeTotal = PrizeCalculation.calculatePrizeTotal(
-      EntryFee.hydrate(p.entryFee),
-      memberCount,
-      feePolicy,
-    )
-    const prizeShare = PrizeCalculation.calculateWinnerShare(prizeTotal, winnerEntries.length)
-
-    const members = await poolRepo.getMembersWithContact(p.id)
-    const contactByUserId = new Map(members.map((m) => [m.userId, m]))
-
-    const winners = winnerEntries.map((w) => {
-      const contact = contactByUserId.get(w.userId)
-      return {
-        userId: w.userId,
-        name: w.name,
-        phoneNumber: contact?.phoneNumber ?? null,
-        email: contact?.emailVerified && contact.email ? contact.email : null,
-      }
-    })
-
-    await notificationService.notifyWinners(p.id, p.name, winners, prizeShare.centavos)
   }
 }
