@@ -212,29 +212,39 @@ export class DrizzleMatchRepository implements MatchRepository {
       .where(eq(match.id, matchId))
   }
 
-  async hasUnfinishedMatches(
+  /**
+   * The in-scope, not-yet-terminal predicate shared by `hasUnfinishedMatches`
+   * and `findUnfinishedFor`, so the boolean and the list can never disagree.
+   * Cancelled counts as terminal alongside finished: a pool whose remaining
+   * matches are cancelled must still be closable, otherwise its prize is stuck.
+   */
+  private unfinishedConditions(
     competitionId: string,
     matchdayFrom?: number | null,
     matchdayTo?: number | null,
-  ): Promise<boolean> {
-    // Cancelled counts as terminal alongside finished: a pool whose remaining
-    // matches are cancelled must still be closable, otherwise its prize is stuck.
+  ) {
     const conditions = [
       eq(match.competitionId, competitionId),
       notInArray(match.status, [...MatchStatus.TERMINAL_VALUES]),
     ]
-
     if (matchdayFrom != null) {
       conditions.push(gte(match.matchday, matchdayFrom))
     }
     if (matchdayTo != null) {
       conditions.push(lte(match.matchday, matchdayTo))
     }
+    return conditions
+  }
 
+  async hasUnfinishedMatches(
+    competitionId: string,
+    matchdayFrom?: number | null,
+    matchdayTo?: number | null,
+  ): Promise<boolean> {
     const [row] = await this.db
       .select({ id: match.id })
       .from(match)
-      .where(and(...conditions))
+      .where(and(...this.unfinishedConditions(competitionId, matchdayFrom, matchdayTo)))
       .limit(1)
 
     return !!row
@@ -246,6 +256,25 @@ export class DrizzleMatchRepository implements MatchRepository {
       return m === null || !MatchStatus.from(m.status).isTerminal()
     }
     return this.hasUnfinishedMatches(query.competitionId, query.matchdayFrom, query.matchdayTo)
+  }
+
+  async findUnfinishedFor(query: UnfinishedMatchesQuery): Promise<MatchData[]> {
+    if (query.kind === 'single-match') {
+      const found = await this.findById(query.matchId)
+      if (!found) return []
+      return MatchStatus.from(found.status).isTerminal() ? [] : [found]
+    }
+
+    const rows = await this.db
+      .select()
+      .from(match)
+      .where(
+        and(
+          ...this.unfinishedConditions(query.competitionId, query.matchdayFrom, query.matchdayTo),
+        ),
+      )
+      .orderBy(asc(match.matchDate), asc(match.id))
+    return rows.map(toMatchData)
   }
 
   async findPendingFor(query: UnfinishedMatchesQuery, now: Date): Promise<MatchData[]> {
