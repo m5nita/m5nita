@@ -198,6 +198,7 @@ export function buildContainer(overrides: ContainerOverrides = {}) {
   const closePoolUseCase = new ClosePoolUseCase({
     poolRepo,
     matchRepo,
+    predictionRepo,
     rankingRepo,
     notificationService,
     clock,

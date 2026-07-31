@@ -15,11 +15,34 @@ import type { Match } from '../match/Match'
  *
  * This is the ADMIN threshold. The automatic job (`closePoolsJob`) keeps its own,
  * stricter rule: it closes only when nothing unfinished is left at all.
+ *
+ * A stranded match with no predictions is harmless to leave behind: nobody
+ * bet on it, so it can never move the ranking. But a stranded match that DOES
+ * carry a prediction — the pool was created (or the match postponed) after
+ * someone already called it — is not harmless. Closing a pool only stops
+ * *new* predictions (`PoolStatus.canAcceptPredictions`); it does not freeze
+ * the ranking. If the match is later rescheduled and played, the scoring job
+ * (`calcPointsForMatch`) scores every existing prediction on it and
+ * recomputes standings for the pool regardless of pool status — including a
+ * closed one — so a pre-existing prediction can still change who is in first
+ * place after the pool was declared settled. `blocksOnPredictions` is
+ * deliberately NOT gated on `calcPoints`: correcting a mis-scored match via
+ * `FinalizeMatchUseCase` must keep working in closed pools too. The fix lives
+ * here instead, at admission to closing.
  */
 export class PoolClosurePolicy {
   private constructor() {}
 
   static blocks(match: Match, now: Date): boolean {
     return match.status.isLive() || match.kickoffAt > now
+  }
+
+  /**
+   * Whether a stranded match's existing predictions still require an explicit
+   * `force` to close past. Zero predictions means nobody could be affected by
+   * the match ever being rescheduled and played, so it is safe to ignore.
+   */
+  static blocksOnPredictions(predictionCount: number): boolean {
+    return predictionCount > 0
   }
 }

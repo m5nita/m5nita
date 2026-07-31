@@ -43,6 +43,7 @@ describe('renderPoolCloseResult', () => {
       { id: 'm2', label: 'Botafogo FR × Grêmio FBPA', status: 'postponed' },
     ],
     blocking: [],
+    predicted: [],
     winners: [{ userId: 'u1', name: 'Igor Túllio', totalPoints: 22 }],
     prizeShare: 285,
   }
@@ -58,7 +59,7 @@ describe('renderPoolCloseResult', () => {
     expect(text).toContain('Notificação enviada.')
   })
 
-  it('lists the blocking matches and shows the confirmar form when refused', () => {
+  it('lists the blocking matches, names the pool and shows the confirmar form when refused', () => {
     const text = renderPoolCloseResult(
       {
         outcome: 'blocked',
@@ -67,12 +68,49 @@ describe('renderPoolCloseResult', () => {
           { id: 'm3', label: 'CR Flamengo × CR Vasco da Gama', live: false },
           { id: 'm4', label: 'SE Palmeiras × São Paulo FC', live: true },
         ],
+        predicted: [],
       },
       '9VZJQ9J9',
     )
+    expect(text).toContain('Rafinha é careca!')
     expect(text).toContain('2 jogo(s) em aberto')
     expect(text).toContain('• CR Flamengo × CR Vasco da Gama (agendado)')
     expect(text).toContain('• SE Palmeiras × São Paulo FC (em andamento)')
+    expect(text).toContain('/bolao_encerrar 9VZJQ9J9 confirmar')
+  })
+
+  it('lists stranded matches that already have predictions, distinct from blocking matches', () => {
+    const text = renderPoolCloseResult(
+      {
+        outcome: 'blocked',
+        poolName: 'Rafinha é careca!',
+        blocking: [{ id: 'm3', label: 'CR Flamengo × CR Vasco da Gama', live: false }],
+        predicted: [{ id: 'm5', label: 'São Paulo FC × Santos FC', predictionCount: 2 }],
+      },
+      '9VZJQ9J9',
+    )
+    expect(text).toContain('Rafinha é careca!')
+    // Two distinct reasons must be readable apart from one another.
+    expect(text).toContain('1 jogo(s) em aberto')
+    expect(text).toContain('• CR Flamengo × CR Vasco da Gama (agendado)')
+    expect(text).toContain('já têm palpite registrado')
+    expect(text).toContain('• São Paulo FC × Santos FC (2 palpite(s))')
+    expect(text).toContain('/bolao_encerrar 9VZJQ9J9 confirmar')
+  })
+
+  it('refuses on a predicted stranded match alone, with no blocking match at all', () => {
+    const text = renderPoolCloseResult(
+      {
+        outcome: 'blocked',
+        poolName: 'Rafinha é careca!',
+        blocking: [],
+        predicted: [{ id: 'm5', label: 'São Paulo FC × Santos FC', predictionCount: 1 }],
+      },
+      '9VZJQ9J9',
+    )
+    expect(text).toContain('Rafinha é careca!')
+    expect(text).toContain('• São Paulo FC × Santos FC (1 palpite(s))')
+    expect(text).not.toContain('0 jogo(s) em aberto')
     expect(text).toContain('/bolao_encerrar 9VZJQ9J9 confirmar')
   })
 
@@ -83,6 +121,18 @@ describe('renderPoolCloseResult', () => {
     )
     expect(text).toContain('⚠️')
     expect(text).toContain('1 jogo(s) ainda em aberto')
+  })
+
+  it('flags a forced close that overrode a predicted stranded match', () => {
+    const text = renderPoolCloseResult(
+      {
+        ...closed,
+        predicted: [{ id: 'm5', label: 'São Paulo FC × Santos FC', predictionCount: 3 }],
+      },
+      '9VZJQ9J9',
+    )
+    expect(text).toContain('⚠️')
+    expect(text).toContain('• São Paulo FC × Santos FC (3 palpite(s))')
   })
 
   it('names every tied winner and the per-winner share', () => {

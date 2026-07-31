@@ -34,20 +34,55 @@ export function renderPoolCloseResult(result: ClosePoolResult, code: string): st
   }
 
   if (result.outcome === 'blocked') {
+    const sections: string[] = []
+
+    if (result.blocking.length > 0) {
+      sections.push(
+        [
+          `${result.blocking.length} jogo(s) em aberto:`,
+          ...result.blocking.map((m) => `• ${m.label} (${m.live ? 'em andamento' : 'agendado'})`),
+        ].join('\n'),
+      )
+    }
+
+    if (result.predicted.length > 0) {
+      sections.push(
+        [
+          `${result.predicted.length} jogo(s) que não vão mais acontecer, mas já têm palpite registrado — se forem remarcados e pontuarem, o ranking pode mudar depois do encerramento:`,
+          ...result.predicted.map((m) => `• ${m.label} (${m.predictionCount} palpite(s))`),
+        ].join('\n'),
+      )
+    }
+
     return [
-      `❌ Não encerrado — ${result.blocking.length} jogo(s) em aberto:`,
-      ...result.blocking.map((m) => `• ${m.label} (${m.live ? 'em andamento' : 'agendado'})`),
-      '',
+      `❌ Bolão "${result.poolName}" não encerrado — ${result.blocking.length + result.predicted.length} jogo(s) pendente(s):`,
+      ...sections,
       'Para encerrar mesmo assim:',
       `/bolao_encerrar ${code} confirmar`,
-    ].join('\n')
+    ].join('\n\n')
+  }
+
+  const overridden: string[] = []
+  if (result.blocking.length > 0) {
+    overridden.push(
+      [
+        `${result.blocking.length} jogo(s) ainda em aberto:`,
+        ...result.blocking.map((m) => `• ${m.label} (${m.live ? 'em andamento' : 'agendado'})`),
+      ].join('\n'),
+    )
+  }
+  if (result.predicted.length > 0) {
+    overridden.push(
+      [
+        `${result.predicted.length} jogo(s) com palpite ignorado:`,
+        ...result.predicted.map((m) => `• ${m.label} (${m.predictionCount} palpite(s))`),
+      ].join('\n'),
+    )
   }
 
   const header =
-    result.blocking.length > 0
-      ? `⚠️ Bolão "${result.poolName}" encerrado com ${result.blocking.length} jogo(s) ainda em aberto:\n${result.blocking
-          .map((m) => `• ${m.label} (${m.live ? 'em andamento' : 'agendado'})`)
-          .join('\n')}`
+    overridden.length > 0
+      ? `⚠️ Bolão "${result.poolName}" encerrado com pendência:\n\n${overridden.join('\n\n')}`
       : `Bolão "${result.poolName}" encerrado.`
 
   const lines = [header, '', `Jogos pendentes ignorados: ${result.stranded.length}`]

@@ -36,3 +36,14 @@ describe('PoolClosurePolicy.blocks', () => {
     expect(PoolClosurePolicy.blocks(match(MatchStatus.Scheduled, NOW), NOW)).toBe(false)
   })
 })
+
+describe('PoolClosurePolicy.blocksOnPredictions', () => {
+  it('does not block a stranded match nobody predicted', () => {
+    expect(PoolClosurePolicy.blocksOnPredictions(0)).toBe(false)
+  })
+
+  it('blocks a stranded match carrying at least one prediction', () => {
+    expect(PoolClosurePolicy.blocksOnPredictions(1)).toBe(true)
+    expect(PoolClosurePolicy.blocksOnPredictions(3)).toBe(true)
+  })
+})

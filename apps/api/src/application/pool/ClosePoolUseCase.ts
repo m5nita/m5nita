@@ -3,6 +3,7 @@ import type { MatchData, MatchRepository } from '../../domain/match/MatchReposit
 import { MatchStatus } from '../../domain/match/MatchStatus'
 import { PoolClosurePolicy } from '../../domain/pool/PoolClosurePolicy'
 import type { PoolRepository } from '../../domain/pool/PoolRepository.port'
+import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
 import type { RankingRepository } from '../../domain/ranking/RankingRepository.port'
 import type { Clock } from '../../domain/shared/Clock'
 import { PoolStatus } from '../../domain/shared/PoolStatus'
@@ -11,30 +12,40 @@ import { notifyPoolWinners } from './notifyPoolWinners'
 
 export type ClosePoolBlockingMatch = { id: string; label: string; live: boolean }
 export type ClosePoolStrandedMatch = { id: string; label: string; status: string }
+/** A stranded match that already carries at least one prediction. */
+export type ClosePoolPredictedMatch = { id: string; label: string; predictionCount: number }
 export type ClosePoolWinner = { userId: string; name: string | null; totalPoints: number }
 
 export type ClosePoolResult =
   | { outcome: 'not-found' }
   | { outcome: 'not-active'; poolName: string; status: string }
-  | { outcome: 'blocked'; poolName: string; blocking: ClosePoolBlockingMatch[] }
+  | {
+      outcome: 'blocked'
+      poolName: string
+      blocking: ClosePoolBlockingMatch[]
+      predicted: ClosePoolPredictedMatch[]
+    }
   | {
       outcome: 'closed'
       poolName: string
       stranded: ClosePoolStrandedMatch[]
       blocking: ClosePoolBlockingMatch[]
+      predicted: ClosePoolPredictedMatch[]
       winners: ClosePoolWinner[]
       prizeShare: number
     }
 
 export type ClosePoolInput = {
   inviteCode: string
-  /** Close even when a match can still be played or predicted. */
+  /** Close even when a match can still be played or predicted, or a stranded
+   *  match already carries predictions. */
   force: boolean
 }
 
 export type ClosePoolDeps = {
   poolRepo: PoolRepository
   matchRepo: MatchRepository
+  predictionRepo: PredictionRepository
   rankingRepo: RankingRepository
   notificationService: NotificationService
   clock: Clock
@@ -65,6 +76,13 @@ function label(row: MatchData): string {
  * Mirrors `FinalizeMatchUseCase`: an escape hatch, not a rule. The automatic
  * path (`closePoolsJob`) is untouched and still waits for every in-scope match.
  *
+ * Closing does not freeze the ranking — it only stops *new* predictions
+ * (`PoolStatus.canAcceptPredictions`). A stranded match that already has a
+ * prediction can still be rescheduled, played and scored later, moving the
+ * ranking of a pool everyone thinks is settled. So this also refuses, without
+ * `force`, when any stranded match already carries a prediction — see
+ * `PoolClosurePolicy.blocksOnPredictions`.
+ *
  * Refusal is an expected outcome, so this returns a discriminated union rather
  * than throwing — every branch is then type-checked at the call site.
  */
@@ -94,8 +112,24 @@ export class ClosePoolUseCase {
       live: MatchStatus.from(row.status).isLive(),
     }))
 
-    if (blocking.length > 0 && !input.force) {
-      return { outcome: 'blocked', poolName: details.name, blocking }
+    const predictionCounts =
+      strandedRows.length > 0
+        ? await this.deps.predictionRepo.countByPoolMatches(
+            details.id,
+            strandedRows.map((row) => row.id),
+          )
+        : new Map<string, number>()
+
+    const predicted: ClosePoolPredictedMatch[] = strandedRows
+      .filter((row) => PoolClosurePolicy.blocksOnPredictions(predictionCounts.get(row.id) ?? 0))
+      .map((row) => ({
+        id: row.id,
+        label: label(row),
+        predictionCount: predictionCounts.get(row.id) ?? 0,
+      }))
+
+    if ((blocking.length > 0 || predicted.length > 0) && !input.force) {
+      return { outcome: 'blocked', poolName: details.name, blocking, predicted }
     }
 
     pool.close()
@@ -124,6 +158,7 @@ export class ClosePoolUseCase {
         status: row.status,
       })),
       blocking,
+      predicted,
       winners: notified.winners.map((w) => ({
         userId: w.userId,
         name: w.name,

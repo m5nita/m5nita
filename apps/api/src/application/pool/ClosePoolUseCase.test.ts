@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { MatchData, MatchRepository } from '../../domain/match/MatchRepository.port'
 import { Pool } from '../../domain/pool/Pool'
 import type { PoolRepository, PoolWithDetails } from '../../domain/pool/PoolRepository.port'
+import type { PredictionRepository } from '../../domain/prediction/PredictionRepository.port'
 import type { RankingEntry, RankingRepository } from '../../domain/ranking/RankingRepository.port'
 import { EntryFee } from '../../domain/shared/EntryFee'
 import { InviteCode } from '../../domain/shared/InviteCode'
@@ -104,6 +105,8 @@ function makeUseCase(over?: {
   pool?: PoolWithDetails | null
   unfinished?: MatchData[]
   ranking?: RankingEntry[]
+  /** matchId → prediction count in this pool. Absent id means zero. */
+  predictionCounts?: Record<string, number>
 }) {
   const resolved = over && 'pool' in over ? over.pool : details()
   const updateStatus = vi.fn(async () => {})
@@ -126,6 +129,12 @@ function makeUseCase(over?: {
   const matchRepo = {
     findUnfinishedFor: vi.fn(async () => over?.unfinished ?? []),
   } as unknown as MatchRepository
+  const predictionRepo = {
+    countByPoolMatches: vi.fn(async (_poolId: string, matchIds: string[]) => {
+      const counts = over?.predictionCounts ?? {}
+      return new Map(matchIds.filter((id) => counts[id]).map((id) => [id, counts[id] as number]))
+    }),
+  } as unknown as PredictionRepository
   const rankingRepo = {
     getPoolRanking: vi.fn(async () => over?.ranking ?? ranking()),
   } as unknown as RankingRepository
@@ -134,12 +143,13 @@ function makeUseCase(over?: {
   const useCase = new ClosePoolUseCase({
     poolRepo,
     matchRepo,
+    predictionRepo,
     rankingRepo,
     notificationService,
     clock: { now: () => NOW },
   })
 
-  return { useCase, updateStatus, notifyWinners, poolRepo, matchRepo }
+  return { useCase, updateStatus, notifyWinners, poolRepo, matchRepo, predictionRepo }
 }
 
 describe('ClosePoolUseCase', () => {
@@ -157,11 +167,107 @@ describe('ClosePoolUseCase', () => {
       { id: 'match-1', label: 'São Paulo FC × Santos FC', status: 'postponed' },
     ])
     expect(result.blocking).toEqual([])
+    expect(result.predicted).toEqual([])
     expect(result.winners).toEqual([{ userId: 'user-1', name: 'Igor Túllio', totalPoints: 22 }])
     // 3 members × R$ 1,00 entry, 5% platform fee.
     expect(result.prizeShare).toBe(285)
     expect(updateStatus).toHaveBeenCalledTimes(1)
     expect(notifyWinners).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes the production pool it was built for: 4 postponed matches, zero predictions on any of them', async () => {
+    // Mirrors pool 9VZJQ9J9 ("Rafinha é careca!"): four postponed matches past
+    // their kickoff, nobody ever predicted them. A bare command with no
+    // `confirmar` must still close it — this must not regress with the
+    // stranded-with-predictions guard added alongside it.
+    const { useCase, updateStatus, notifyWinners, predictionRepo } = makeUseCase({
+      unfinished: [
+        matchRow({ id: 'match-a', homeTeam: 'Time A', awayTeam: 'Time B' }),
+        matchRow({ id: 'match-b', homeTeam: 'Time C', awayTeam: 'Time D' }),
+        matchRow({ id: 'match-c', homeTeam: 'Time E', awayTeam: 'Time F' }),
+        matchRow({ id: 'match-d', homeTeam: 'Time G', awayTeam: 'Time H' }),
+      ],
+      predictionCounts: {},
+    })
+
+    const result = await useCase.execute({ inviteCode: CODE, force: false })
+
+    expect(result.outcome).toBe('closed')
+    if (result.outcome !== 'closed') return
+    expect(result.stranded.map((m) => m.id)).toEqual(['match-a', 'match-b', 'match-c', 'match-d'])
+    expect(result.predicted).toEqual([])
+    expect(predictionRepo.countByPoolMatches).toHaveBeenCalledWith('pool-1', [
+      'match-a',
+      'match-b',
+      'match-c',
+      'match-d',
+    ])
+    expect(updateStatus).toHaveBeenCalledTimes(1)
+    expect(notifyWinners).toHaveBeenCalledTimes(1)
+  })
+
+  it('refuses a stranded match that already carries a prediction, even though nothing is blocking', async () => {
+    const { useCase, updateStatus, notifyWinners } = makeUseCase({
+      unfinished: [matchRow({ id: 'match-1', status: 'postponed' })],
+      predictionCounts: { 'match-1': 2 },
+    })
+
+    const result = await useCase.execute({ inviteCode: CODE, force: false })
+
+    expect(result.outcome).toBe('blocked')
+    if (result.outcome !== 'blocked') return
+    expect(result.blocking).toEqual([])
+    expect(result.predicted).toEqual([
+      { id: 'match-1', label: 'São Paulo FC × Santos FC', predictionCount: 2 },
+    ])
+    expect(updateStatus).not.toHaveBeenCalled()
+    expect(notifyWinners).not.toHaveBeenCalled()
+  })
+
+  it('closes when force overrides a stranded match with predictions', async () => {
+    const { useCase, updateStatus } = makeUseCase({
+      unfinished: [matchRow({ id: 'match-1', status: 'postponed' })],
+      predictionCounts: { 'match-1': 2 },
+    })
+
+    const result = await useCase.execute({ inviteCode: CODE, force: true })
+
+    expect(result.outcome).toBe('closed')
+    if (result.outcome !== 'closed') return
+    expect(result.predicted).toEqual([
+      { id: 'match-1', label: 'São Paulo FC × Santos FC', predictionCount: 2 },
+    ])
+    expect(result.stranded.map((m) => m.id)).toEqual(['match-1'])
+    expect(updateStatus).toHaveBeenCalledTimes(1)
+  })
+
+  it('refuses on the mixed case: one blocking match plus one predicted-stranded match', async () => {
+    const { useCase, updateStatus, notifyWinners } = makeUseCase({
+      unfinished: [
+        matchRow({
+          id: 'match-2',
+          homeTeam: 'CR Flamengo',
+          awayTeam: 'CR Vasco da Gama',
+          status: 'scheduled',
+          matchDate: new Date('2026-08-05T21:30:00Z'),
+        }),
+        matchRow({ id: 'match-1', status: 'postponed' }),
+      ],
+      predictionCounts: { 'match-1': 1 },
+    })
+
+    const result = await useCase.execute({ inviteCode: CODE, force: false })
+
+    expect(result.outcome).toBe('blocked')
+    if (result.outcome !== 'blocked') return
+    expect(result.blocking).toEqual([
+      { id: 'match-2', label: 'CR Flamengo × CR Vasco da Gama', live: false },
+    ])
+    expect(result.predicted).toEqual([
+      { id: 'match-1', label: 'São Paulo FC × Santos FC', predictionCount: 1 },
+    ])
+    expect(updateStatus).not.toHaveBeenCalled()
+    expect(notifyWinners).not.toHaveBeenCalled()
   })
 
   it('refuses while a match is still scheduled for the future', async () => {
