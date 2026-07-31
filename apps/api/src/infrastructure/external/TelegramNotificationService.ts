@@ -128,10 +128,11 @@ export class TelegramNotificationService {
       `💸 *Solicitação de retirada*\n\n` +
       `Jogador: *${escapeMarkdown(params.userName)}*\n` +
       `Bolão: *${escapeMarkdown(params.poolName)}*\n` +
-      `Código: \`${escapeMarkdown(params.poolCode)}\`\n` +
+      // Values inside backticks are NOT escaped: legacy Markdown does not process
+      // escapes within an entity, so a backslash there renders literally. A code
+      // span already makes `*` and `_` inert.
+      `Código: \`${params.poolCode}\`\n` +
       `Valor: *${formattedAmount}*\n` +
-      // Same code-span-escaping bug as sendWithdrawalPaidMessage above: no
-      // escaping needed (or wanted) inside backticks.
       `Chave PIX (${escapeMarkdown(params.pixKeyType)}): \`${params.pixKey}\``
 
     const replyMarkup = {

@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import type { DbExecutor } from '../../db/client'
 import { notificationPreference } from '../../db/schema/notificationPreference'
 import { notificationType } from '../../db/schema/notificationType'
@@ -60,13 +60,18 @@ export class DrizzleNotificationPreferencesRepository implements NotificationPre
     return byUser
   }
 
+  // `updatedAt` comes from the database on both branches: the insert uses the
+  // column's `defaultNow()`, so the update must use `NOW()` too. Stamping it
+  // with the application's `new Date()` mixes two clocks — when they disagree
+  // (a container drifting from the host), an update can land *before* the
+  // insert it replaces.
   async upsert(userId: string, code: string, enabled: boolean): Promise<void> {
     await this.db
       .insert(notificationPreference)
       .values({ userId, typeCode: code, enabled })
       .onConflictDoUpdate({
         target: [notificationPreference.userId, notificationPreference.typeCode],
-        set: { enabled, updatedAt: new Date() },
+        set: { enabled, updatedAt: sql`NOW()` },
       })
   }
 }

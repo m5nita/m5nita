@@ -100,7 +100,20 @@ describe('Notification preferences — persistence', () => {
 
       expect(rows).toHaveLength(1)
       expect(rows[0]?.enabled).toBe(true)
-      expect(rows[0]?.updated_at.getTime()).toBeGreaterThanOrEqual(first?.updated_at.getTime() ?? 0)
+      // Strictly greater, not >=: both timestamps come from the database clock
+      // (insert via defaultNow(), update via NOW()), and the two upserts run in
+      // separate transactions. Stamping the update from the application clock
+      // instead lets a drifting container move this backwards.
+      expect(rows[0]?.updated_at.getTime()).toBeGreaterThan(first?.updated_at.getTime() ?? 0)
+
+      // The stored value must sit in the database's clock domain, not the host's.
+      // Computed inside Postgres on purpose: `updated_at` is a naive `timestamp`
+      // and `now()` is `timestamptz`, so comparing them through the client would
+      // measure the session's UTC offset instead of the drift.
+      const [drift] = await sql<{ seconds: number }[]>`
+        SELECT ABS(EXTRACT(EPOCH FROM (LOCALTIMESTAMP - updated_at)))::float8 AS seconds
+        FROM notification_preference WHERE user_id = ${userId}`
+      expect(drift?.seconds).toBeLessThan(5)
     })
 
     it('leaves the other types untouched when one is toggled', async () => {
