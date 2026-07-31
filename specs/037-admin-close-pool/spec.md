@@ -117,8 +117,13 @@ the pool stays `active` and the reply names the blocking matches.
   close is refused without `confirmar`. The feed can still promote it back to a
   predictable fixture before that kickoff.
 - **Postponed match that members did predict** (pool created before the postponement):
-  the close still discards those predictions' future points. The command reports the
-  stranded matches so the admin sees what is being given up before deciding.
+  the close is refused by default. Closing stops only *new* predictions
+  (`PoolStatus.canAcceptPredictions`) — it does not discard the points a pre-existing
+  prediction would score if the match were later rescheduled and played, and that can
+  still move the ranking of a pool everyone considers settled. So the command refuses,
+  distinctly from a blocking match, naming the stranded match and how many predictions
+  it already holds; `confirmar` overrides this the same way it overrides a blocking
+  match.
 
 ## Requirements *(mandatory)*
 
@@ -150,6 +155,12 @@ the pool stays `active` and the reply names the blocking matches.
   status, date and scores.
 - **FR-012**: A successful close MUST report the pool name, the count of ignored
   stranded matches, the winner(s) and the per-winner prize share.
+- **FR-013**: The close MUST also be refused, without `confirmar`, when a stranded
+  match already carries at least one prediction in the pool. Closing does not freeze
+  the ranking — it only stops *new* predictions — so an existing prediction on a
+  stranded match can still be scored, and move the ranking, if that match is later
+  rescheduled and played. The refusal MUST distinguish this reason from a blocking
+  match, naming the stranded match and its prediction count.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -170,8 +181,13 @@ the pool stays `active` and the reply names the blocking matches.
   `active`.
 - **SC-004**: `closePoolsJob.test.ts` passes unchanged, showing the automatic path did
   not move.
-- **SC-005**: After the close, a rescheduled and played round-21 match does not change
-  the pool's final ranking.
+- **SC-005**: Pool `c17fba18`'s four postponed round-21 matches carry zero predictions
+  (verified in production — see Assumptions), so a rescheduled and played round-21 match
+  cannot change the pool's final ranking after the close. This holds by construction, not
+  by luck: FR-013 refuses a non-`confirmar` close whenever a stranded match already has a
+  prediction, which is the only way a later reschedule could still score. The guarantee
+  is general for any close that completes without `confirmar` — it does not extend to a
+  close forced past FR-013's refusal.
 
 ## Assumptions
 

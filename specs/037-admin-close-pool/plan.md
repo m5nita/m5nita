@@ -1629,3 +1629,33 @@ Expected: pool `status = 'closed'`; the match counts **unchanged** from Step 3 �
 **Type consistency.** `ClosePoolResult` is defined once in Task 4 and consumed unchanged in Tasks 5 and 6. `PoolClosurePolicy.blocks(match, now)` keeps that signature in Tasks 1 and 4. `notifyPoolWinners` returns `{ winners: RankingEntry[]; prizeShare: number }` in Task 3 and is read as `notified.winners` / `notified.prizeShare` in Task 4. `findUnfinishedFor(query)` returns `MatchData[]` in Task 2 and is consumed as rows with `homeTeam`/`awayTeam`/`status` in Tasks 4 and 6.
 
 **Deviation from the brainstormed design, on purpose.** The design sketched in conversation had `closePoolsJob` delegating wholesale to `ClosePoolUseCase`. Implementing that would force `closePoolsJob.test.ts` to grow a `findUnfinishedFor` mock and would break its `hasUnfinishedFor` assertions, contradicting the spec's SC-004. Task 3 shares the winner-notification tail instead and leaves the job's control flow alone: the same outcome for the members, a smaller blast radius on the path that moves real money, and a test that proves it.
+
+---
+
+## As-built deviations
+
+Recorded after the final whole-branch code review, so re-running this plan from
+scratch does not reintroduce the same three gaps.
+
+1. **Task 5's file placement.** The plan places `parsePoolCloseArgs` and
+   `renderPoolCloseResult` in `lib/telegram.ts`. They shipped instead in a new
+   `lib/poolCloseCommand.ts`, imported by `lib/telegram.ts`. Reason: `lib/telegram.ts`
+   imports `./container` → `../db/client`, so a unit test for these two pure functions
+   would have pulled in the database module and required `DATABASE_URL` just to run —
+   defeating the point of keeping them pure and unit-testable. Extracting them into
+   their own leaf module keeps `poolCloseCommand.test.ts` free of that import chain.
+
+2. **Task 6's late-prediction assertion.** The plan's Step 1 asserts
+   `expect(late.status).toBeGreaterThanOrEqual(400)`. It shipped tighter:
+   `expect(late.status).toBe(409)` plus
+   `expect(((await late.json()) as { error: string }).error).toBe('POOL_CLOSED')`.
+   Reason: the loose assertion would also pass on an unrelated 4xx (a validation
+   error, say), which would not prove the closed-pool gate is what rejected the
+   request. Asserting the specific status and error code proves the right guard fired.
+
+3. **Task 6's unused `telegramStub` import.** The plan's Step 1 has the test import
+   `telegramStub` from `../support/stubs` and call `telegramStub.reset()` before
+   closing the pool, but never asserts on it. It shipped without that import or the
+   `reset()` call. Reason: in this test harness `sends()` is empty by construction
+   for a fresh stub in this scenario — there is nothing to reset or assert, and an
+   unused import is dead code the branch's own conventions forbid.
