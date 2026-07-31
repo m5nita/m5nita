@@ -36,7 +36,10 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
 
   return (
     <section>
-      {prize.isWinner && (
+      {/* Só até a chave PIX ser informada. Depois disso o WithdrawalStatusCard
+          assume o anúncio da vitória — dois cards repetindo o mesmo valor era
+          ruído, não ênfase. */}
+      {prize.isWinner && !prize.withdrawal && (
         <>
           {celebrateWin && <Confetti count={120} />}
           <div className="mb-6 border-2 border-green bg-green/5 p-6 text-center">
@@ -47,11 +50,7 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
               {formatCurrency(prize.winnerShare)}
             </p>
             <p className="mt-2 text-sm text-gray-dark">
-              {prize.withdrawal?.status === 'completed'
-                ? 'Prêmio pago — o valor já saiu para a sua chave PIX.'
-                : prize.withdrawal
-                  ? 'Parabéns! O prêmio é seu — acompanhe a retirada abaixo.'
-                  : 'Parabéns! Informe sua chave PIX abaixo para receber o prêmio.'}
+              Parabéns! Informe sua chave PIX abaixo para receber o prêmio.
             </p>
           </div>
         </>
@@ -110,6 +109,7 @@ export function PrizeWithdrawal({ poolId }: PrizeWithdrawalProps) {
           requestedAt={prize.withdrawal.createdAt}
           paidAt={prize.withdrawal.paidAt}
           celebrateKey={`paid:${poolId}`}
+          headline="win"
         />
       )}
     </section>
