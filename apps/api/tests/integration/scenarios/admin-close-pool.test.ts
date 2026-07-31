@@ -7,6 +7,7 @@ import { makeCompetition } from '../support/fixtures/makeCompetition'
 import { makeMatch } from '../support/fixtures/makeMatch'
 import { makePool } from '../support/fixtures/makePool'
 import { deliverInfinitePayPaidWebhook } from '../support/payments'
+import { telegramStub } from '../support/stubs'
 
 /**
  * A pool whose remaining matches were postponed. The repository must hand back
@@ -111,5 +112,125 @@ describe('Admin close pool — reading the unfinished matches', () => {
     })
 
     expect(rows).toEqual([])
+  })
+})
+
+describe('Admin close pool — end to end', () => {
+  let sql: ReturnType<typeof postgres>
+
+  beforeEach(() => {
+    sql = postgres(workerConnectionString(), { max: 2, onnotice: () => {} })
+  })
+
+  afterEach(async () => {
+    await sql.end({ timeout: 2 })
+  })
+
+  it('closes a pool stranded by postponed matches, and the close is final', async () => {
+    const baseline = new Date('2026-07-31T12:00:00Z')
+    const { app, container, clock } = buildTestApp({ initialNow: baseline })
+    const comp = await makeCompetition(sql)
+    const owner = await signInViaPhoneOtp(app, { phoneNumber: '+5511977700010' })
+    const pool = await makePool({
+      admin: owner,
+      competitionId: comp.id,
+      entryFeeCentavos: 100,
+      matchdayFrom: 21,
+      matchdayTo: 21,
+    })
+    expect((await deliverInfinitePayPaidWebhook(app, pool.paymentId)).status).toBe(200)
+
+    // Played and scored before the admin steps in.
+    await makeMatch(sql, {
+      competitionId: comp.id,
+      matchDate: new Date('2026-07-29T22:30:00Z'),
+      matchday: 21,
+      status: 'finished',
+      homeScore: 1,
+      awayScore: 1,
+    })
+    // Never kicked off; still holding the pool open.
+    const postponed = await makeMatch(sql, {
+      competitionId: comp.id,
+      matchDate: new Date('2026-07-29T00:00:00Z'),
+      matchday: 21,
+      status: 'postponed',
+      homeTeam: 'São Paulo FC',
+      awayTeam: 'Santos FC',
+    })
+
+    telegramStub.reset()
+
+    const result = await container.closePoolUseCase.execute({
+      inviteCode: pool.inviteCode,
+      force: false,
+    })
+
+    expect(result.outcome).toBe('closed')
+    if (result.outcome !== 'closed') return
+    expect(result.stranded.map((m) => m.id)).toEqual([postponed.id])
+
+    const [row] = await sql`SELECT status FROM pool WHERE id = ${pool.id}`
+    expect(row?.status).toBe('closed')
+
+    // The postponed match is untouched — no status was rewritten to force this.
+    const [stillPostponed] = await sql`SELECT status FROM "match" WHERE id = ${postponed.id}`
+    expect(stillPostponed?.status).toBe('postponed')
+
+    // The reason the close must be final: a reschedule must not reopen predictions.
+    clock.setNow(new Date('2026-08-01T12:00:00Z'))
+    await sql`
+      UPDATE "match"
+      SET status = 'scheduled', match_date = ${new Date('2026-08-10T21:30:00Z')}
+      WHERE id = ${postponed.id}
+    `
+    const late = await owner.fetch(`/api/pools/${pool.id}/predictions/${postponed.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ homeScore: 3, awayScore: 0 }),
+    })
+    expect(late.status).toBeGreaterThanOrEqual(400)
+  })
+
+  it('refuses a pool whose next match has not kicked off yet', async () => {
+    const baseline = new Date('2026-07-31T12:00:00Z')
+    const { app, container } = buildTestApp({ initialNow: baseline })
+    const comp = await makeCompetition(sql)
+    const owner = await signInViaPhoneOtp(app, { phoneNumber: '+5511977700011' })
+    const pool = await makePool({
+      admin: owner,
+      competitionId: comp.id,
+      entryFeeCentavos: 100,
+      matchdayFrom: 40,
+      matchdayTo: 40,
+    })
+    expect((await deliverInfinitePayPaidWebhook(app, pool.paymentId)).status).toBe(200)
+
+    await makeMatch(sql, {
+      competitionId: comp.id,
+      matchDate: new Date('2026-08-09T21:30:00Z'),
+      matchday: 40,
+      status: 'scheduled',
+      homeTeam: 'CR Flamengo',
+      awayTeam: 'CR Vasco da Gama',
+    })
+
+    const refused = await container.closePoolUseCase.execute({
+      inviteCode: pool.inviteCode,
+      force: false,
+    })
+    expect(refused.outcome).toBe('blocked')
+
+    const [stillActive] = await sql`SELECT status FROM pool WHERE id = ${pool.id}`
+    expect(stillActive?.status).toBe('active')
+
+    const forced = await container.closePoolUseCase.execute({
+      inviteCode: pool.inviteCode,
+      force: true,
+    })
+    expect(forced.outcome).toBe('closed')
+
+    const [nowClosed] = await sql`SELECT status FROM pool WHERE id = ${pool.id}`
+    expect(nowClosed?.status).toBe('closed')
   })
 })
